@@ -1,5 +1,5 @@
-// Rutas públicas (landing, login, registro, etc.)
+// // Rutas públicas (landing, login, registro, etc.)
 
-const publicoRoutes = [];
+// const publicoRoutes = [];
 
-export default publicoRoutes; 
+// export default publicoRoutes; 

@@ -1,5 +1,5 @@
-// Rutas exclusivas del cliente
+// // Rutas exclusivas del cliente
 
-const clienteRoutes = [];
+// const clienteRoutes = [];
 
-export default clienteRoutes; 
+// export default clienteRoutes; 

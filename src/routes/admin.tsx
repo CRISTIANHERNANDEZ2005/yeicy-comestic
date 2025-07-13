@@ -1,5 +1,5 @@
-// Rutas exclusivas del administrador
+// // Rutas exclusivas del administrador
 
-const adminRoutes = [];
+// const adminRoutes = [];
 
-export default adminRoutes; 
+// export default adminRoutes; 

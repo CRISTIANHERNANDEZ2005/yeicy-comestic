@@ -16,11 +16,12 @@ const Header = () => {
   }, []);
 
   const navItems = [
-    { path: '/', label: 'vistas' },
+    { path: '/', label: 'inicio' },
     { path: '/productos', label: 'Productos' },
     { path: '/categorias', label: 'Categorías' },
     { path: '/ofertas', label: 'Ofertas' },
     { path: '/contacto', label: 'Contacto' },
+    
   ];
 
   return (

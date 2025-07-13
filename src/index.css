@@ -2,5 +2,5 @@
 @tailwind components;
 @tailwind utilities;
 
-@import './components/publico/ui/skeleton.css';
-@import './components/publico/ui/animations.css';
+@import './skeleton.css';
+@import './animations.css';

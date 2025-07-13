@@ -13,7 +13,7 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ 
-  id, 
+  // id, 
   name, 
   price, 
   originalPrice, 

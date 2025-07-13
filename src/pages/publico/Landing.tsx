@@ -1,16 +1,18 @@
 import React from 'react';
 import PublicNavbar from '../../components/publico/layout/PublicNavbar';
-import Hero from '../../components/publico/Hero';
-import ProductosDestacados from '../../components/publico/ProductosDestacados';
-import InfoSection from '../../components/publico/InfoSection';
+import HeroSection from '../../components/publico/HeroSection';
+import CategoriasSection from '../../components/publico/CategoriasSection';
+import ProductosDestacadosSection from '../../components/publico/ProductosDestacadosSection';
+import BeneficiosSection from '../../components/publico/BeneficiosSection';
 import PublicFooter from '../../components/publico/PublicFooter';
 
 const Landing: React.FC = () => (
   <>
     <PublicNavbar />
-    <Hero />
-    <ProductosDestacados />
-    <InfoSection />
+    <HeroSection />
+    <CategoriasSection />
+    <ProductosDestacadosSection />
+    <BeneficiosSection />
     <PublicFooter />
   </>
 );

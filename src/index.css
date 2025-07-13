@@ -1,1 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './components/publico/ui/skeleton.css';
+@import './components/publico/ui/animations.css';

@@ -67,3 +67,38 @@ export default tseslint.config([
   },
 ])
 ```
+
+# Yecy Cosmetic - Frontend
+
+## Despliegue en Vercel
+
+1. Sube este proyecto a un repositorio en GitHub, GitLab o Bitbucket.
+2. Ingresa a [Vercel](https://vercel.com/) y crea un nuevo proyecto.
+3. Conecta tu repositorio.
+4. Vercel detectará automáticamente el framework Vite/React.
+5. En Settings > Environment Variables, agrega:
+   - `VITE_API_URL=https://backend-mc47.onrender.com`
+6. Haz deploy.
+
+## Entornos locales
+
+- Para desarrollo, usa `.env` con:
+  ```
+  VITE_API_URL=http://localhost:8000
+  ```
+- Para producción, usa `.env.production` con:
+  ```
+  VITE_API_URL=https://backend-mc47.onrender.com
+  ```
+
+## Scripts útiles
+
+- `npm install` — Instala dependencias
+- `npm run dev` — Inicia entorno de desarrollo
+- `npm run build` — Genera build de producción
+- `npm run preview` — Previsualiza el build
+
+---
+
+- El favicon se encuentra en `/public/yc-logo.svg` y se usa tanto en la pestaña como en el navbar del cliente.
+- Página 404 personalizada incluida en `src/pages/error/NotFound.tsx`.

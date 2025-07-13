@@ -1,13 +1,18 @@
 import React from 'react';
-import LandingLayout from '../../components/publico/layout/LandingLayout';
-import PublicButton from '../../components/publico/ui/PublicButton';
+import PublicNavbar from '../../components/publico/layout/PublicNavbar';
+import Hero from '../../components/publico/Hero';
+import ProductosDestacados from '../../components/publico/ProductosDestacados';
+import InfoSection from '../../components/publico/InfoSection';
+import PublicFooter from '../../components/publico/PublicFooter';
 
 const Landing: React.FC = () => (
-  <LandingLayout>
-    <h1 className="text-3xl font-bold mb-4">¡Bienvenido a Yecy Cosmetic!</h1>
-    <p className="mb-6">Descubre los mejores productos de belleza y cuidado personal.</p>
-    <PublicButton>Explorar Tienda</PublicButton>
-  </LandingLayout>
+  <>
+    <PublicNavbar />
+    <Hero />
+    <ProductosDestacados />
+    <InfoSection />
+    <PublicFooter />
+  </>
 );
 
 export default Landing; 

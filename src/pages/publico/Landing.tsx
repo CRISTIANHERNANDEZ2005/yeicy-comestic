@@ -3,7 +3,7 @@ import PublicNavbar from '../../components/publico/layout/PublicNavbar';
 import HeroSection from '../../components/publico/HeroSection';
 import CategoriasSection from '../../components/publico/CategoriasSection';
 import ProductosDestacadosSection from '../../components/publico/ProductosDestacadosSection';
-import BeneficiosSection from '../../components/publico/BeneficiosSection';
+import InfoSection from '../../components/publico/InfoSection';
 import PublicFooter from '../../components/publico/PublicFooter';
 
 const Landing: React.FC = () => (
@@ -12,7 +12,7 @@ const Landing: React.FC = () => (
     <HeroSection />
     <CategoriasSection />
     <ProductosDestacadosSection />
-    <BeneficiosSection />
+    <InfoSection />
     <PublicFooter />
   </>
 );

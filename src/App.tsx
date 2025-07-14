@@ -3,10 +3,12 @@ import Landing from './pages/publico/Landing';
 import Home from './pages/cliente/Home';
 import Dashboard from './pages/admin/Dashboard';
 import NotFound from './pages/error/NotFound';
+import WhatsAppFloatingButton from './components/publico/WhatsAppFloatingButton';
 
 function App() {
   return (
     <Router>
+      <WhatsAppFloatingButton />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/cliente" element={<Home />} />

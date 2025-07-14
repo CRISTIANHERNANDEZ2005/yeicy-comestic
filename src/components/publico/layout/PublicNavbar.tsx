@@ -61,7 +61,6 @@ const PublicNavbar: React.FC = () => {
   }`;
   // Clases dinámicas para el logo
   const logoImgClasses = `transition-transform duration-300 ${scrolled ? 'h-10 w-10' : 'h-12 w-12'} group-hover:scale-110 drop-shadow-md`;
-  const logoTextClasses = `font-extrabold ${scrolled ? 'text-xl md:text-2xl' : 'text-2xl md:text-3xl'} text-pink-600 tracking-wider group-hover:text-pink-800 transition-colors select-none`;
 
   return (
     <nav

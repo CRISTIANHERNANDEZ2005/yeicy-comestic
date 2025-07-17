@@ -205,7 +205,7 @@ export const categoriasService = {
       // Sincronización en segundo plano si los datos están próximos a expirar
       if (cacheService.isExpired(cacheKey)) {
         setTimeout(() => {
-          this.getCategorias(true);
+          categoriasService.getCategorias(true);
         }, 1000);
       }
       
@@ -221,7 +221,7 @@ export const categoriasService = {
       }
       
       // Devolver error amigable
-      const errorMessage = this.getErrorMessage(error, 'categorías');
+      const errorMessage = getErrorMessage(error, 'categorías');
       throw new Error(errorMessage);
     }
   },

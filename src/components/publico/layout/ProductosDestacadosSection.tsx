@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { productosDestacadosService } from '../../../services/api';
 import SkeletonLoader from '../ui/SkeletonLoader';
 import Badge from '../ui/Badge';
 import RatingStars from '../ui/RatingStars';
+import Carousel from '../ui/Carousel';
 
 interface ImagenProducto {
   id: number;
@@ -18,15 +19,19 @@ interface Producto {
   precio: string;
   imagenes: ImagenProducto[];
   destacado?: boolean;
+  subcategoria_nombre?: string;
+  total_reseñas?: number;
+  total_likes?: number;
+  calificacion_promedio?: number;
+  fecha_creacion?: string;
 }
 
 const ProductosDestacadosSection: React.FC = () => {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
 
-  // Cargar productos destacados (con botón de reintentar)
+  // Cargar productos destacados
   const loadProductos = async (forceRefresh: boolean = false) => {
     setLoading(true);
     setError(null);
@@ -43,27 +48,28 @@ const ProductosDestacadosSection: React.FC = () => {
   };
 
   useEffect(() => {
-    isMounted.current = true;
     loadProductos();
-    return () => {
-      isMounted.current = false;
-    };
   }, []);
 
-  // Función para limpiar caché y recargar
-  const handleRefreshData = () => {
-    productosDestacadosService.clearCache();
-    loadProductos(true);
+  // Badge "Nuevo" si el producto fue creado hace menos de 15 días
+  const isNuevo = (fecha?: string) => {
+    if (!fecha) return false;
+    const creado = new Date(fecha);
+    const ahora = new Date();
+    const diff = (ahora.getTime() - creado.getTime()) / (1000 * 3600 * 24);
+    return diff < 15;
   };
 
   return (
-    <section id="destacados" className="w-full py-16 bg-white animate-fade-in">
-      <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-3xl font-bold text-pink-600 mb-8 text-center animate-fade-in">Productos Destacados</h2>
+    <section id="destacados" className="w-full py-16 bg-white animate-fadeIn">
+      <div className="max-w-7xl mx-auto px-4">
+        <h2 className="section-title text-3xl font-bold text-pink-600 mb-8 text-center animate-fadeIn">
+          Productos Destacados
+        </h2>
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="flex gap-6 overflow-x-auto pb-6">
             {[...Array(3)].map((_, i) => (
-              <SkeletonLoader key={i} className="w-full h-72" />
+              <SkeletonLoader key={i} className="w-80 h-96" />
             ))}
           </div>
         ) : error ? (
@@ -80,13 +86,6 @@ const ProductosDestacadosSection: React.FC = () => {
                 aria-label="Reintentar cargar productos destacados"
               >
                 Reintentar
-              </button>
-              <button
-                className="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-700 transition focus:outline-none focus:ring-2 focus:ring-blue-400"
-                onClick={handleRefreshData}
-                aria-label="Actualizar datos de productos destacados"
-              >
-                Actualizar Datos
               </button>
             </div>
           </div>
@@ -108,36 +107,66 @@ const ProductosDestacadosSection: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Carousel className="mb-8 gap-12" ariaLabel="Carrusel de productos destacados">
             {productos.map((producto) => {
               const imagen = producto.imagenes.find(img => img.es_principal) || producto.imagenes[0];
               return (
                 <div
                   key={producto.id}
-                  className="relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-6 flex flex-col items-center group animate-fade-in-up"
-                >
-                  {producto.destacado && <Badge color="bg-pink-600 absolute top-4 left-4">Destacado</Badge>}
-                  <div className="w-32 h-32 mb-4 rounded-full overflow-hidden bg-pink-100 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
+                    className="producto-card group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 w-80 min-w-[20rem] max-w-xs flex-shrink-0 flex flex-col animate-fadeIn"
+                  >
+                    {/* Badges profesionales */}
+                    {producto.destacado && <Badge color="bg-pink-600 absolute top-4 left-4 animate-bounce">Destacado</Badge>}
+                    {isNuevo(producto.fecha_creacion) && <span className="badge-nuevo absolute top-4 right-4 animate-glow">Nuevo</span>}
+                    {/* Imagen principal */}
+                    <div className="producto-img-container w-full h-56 rounded-2xl overflow-hidden bg-pink-100 flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300">
                     {imagen ? (
-                      <img src={imagen.imagen_url} alt={producto.nombre} className="w-full h-full object-cover" />
+                        <img src={imagen.imagen_url} alt={producto.nombre} className="w-full h-full object-cover transition-transform duration-300" />
                     ) : (
                       <svg className="w-16 h-16 text-pink-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /><path d="M8 12l2 2 4-4" /></svg>
                     )}
                   </div>
-                  <h3 className="text-xl font-semibold text-pink-700 mb-1 text-center">{producto.nombre}</h3>
-                  <RatingStars rating={4.5} />
-                  <p className="text-gray-600 mb-2 text-center text-sm">{producto.descripcion}</p>
-                  <span className="text-lg font-bold text-pink-600 mb-4">${parseFloat(producto.precio).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</span>
-                  <button className="px-4 py-2 bg-pink-500 text-white rounded hover:bg-pink-600 font-semibold shadow transition-all duration-200 w-full mt-auto focus:outline-none focus:ring-2 focus:ring-pink-400" tabIndex={0}>Agregar al carrito</button>
+                    {/* Info principal */}
+                    <div className="flex flex-col gap-1 px-4 pt-4 pb-2">
+                      <h3 className="text-xl font-semibold text-pink-700 mb-0.5 text-center truncate" title={producto.nombre}>{producto.nombre}</h3>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-pink-500 bg-pink-50 rounded px-2 py-0.5 shadow animate-fadeIn">
+                          <svg className="inline w-4 h-4 mr-1 -mt-0.5 text-pink-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 17v-2a4 4 0 018 0v2" /><circle cx="12" cy="7" r="4" /></svg>
+                          {producto.subcategoria_nombre || 'Sin subcategoría'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <RatingStars rating={producto.calificacion_promedio || 0} />
+                        <span className="text-xs text-gray-500">({producto.calificacion_promedio || '0.0'})</span>
+                      </div>
+                      <div className="flex items-center justify-center gap-3 mb-1">
+                        <span className="flex items-center gap-1 text-gray-500 text-xs">
+                          <svg className="w-4 h-4 text-pink-400 animate-glow" fill="currentColor" viewBox="0 0 20 20"><path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" /></svg>
+                          {producto.total_likes || 0} Likes
+                        </span>
+                        <span className="flex items-center gap-1 text-gray-500 text-xs">
+                          <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M13.293 2.293a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-9 9a1 1 0 01-.293.207l-4 2a1 1 0 01-1.316-1.316l2-4a1 1 0 01.207-.293l9-9z" /></svg>
+                          {producto.total_reseñas || 0} Reseñas
+                        </span>
+                      </div>
+                      <p className="text-gray-600 mb-2 text-center text-sm line-clamp-2 min-h-[2.5rem]">{producto.descripcion}</p>
+                      <span className="text-lg font-bold text-pink-600 mb-2 block text-center">{parseFloat(producto.precio).toLocaleString('es-CO', { style: 'currency', currency: 'COP' })}</span>
+                    </div>
+                    {/* Botón visual */}
+                    <div className="px-4 pb-4 mt-auto">
+                      <button className="w-full py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl font-semibold shadow hover:from-pink-600 hover:to-rose-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-pink-400 flex items-center justify-center gap-2" tabIndex={0} disabled>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.35 2.7A2 2 0 007.48 19h9.04a2 2 0 001.83-1.3L17 13M7 13V6a1 1 0 011-1h5a1 1 0 011 1v7" /></svg>
+                        Solo visual
+                      </button>
+                    </div>
                 </div>
               );
             })}
-          </div>
+          </Carousel>
         )}
       </div>
     </section>
   );
 };
 
-// Comentarios profesionales agregados para facilitar el mantenimiento y la escalabilidad futura
-export default ProductosDestacadosSection; 
+export default ProductosDestacadosSection;

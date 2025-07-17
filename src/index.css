@@ -2,7 +2,8 @@
 @import './components/publico/style/animations.css';
 @import './components/publico/style/skeleton.css';
 @import './components/publico/style/CategoriasSection.css';
-
+@import './components/publico/style/ProductosDestacadosSection.css';
+@import './components/publico/style/Carousel.css';
 
 @tailwind base;
 @tailwind components;

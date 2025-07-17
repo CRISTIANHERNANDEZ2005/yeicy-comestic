@@ -1,48 +1,8 @@
-/* Animaciones personalizadas */
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.92) translateY(40px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
-}
-
-@keyframes modalContentIn {
-  from { opacity: 0; transform: scale(0.95); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-@keyframes glow {
-  0%, 100% { box-shadow: 0 0 16px 4px #f472b6, 0 0 0 0 #fff; }
-  50% { box-shadow: 0 0 32px 8px #c084fc, 0 0 0 0 #fff; }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.6s cubic-bezier(0.4,0,0.2,1) both;
-}
-.animate-modalIn {
-  animation: modalIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
-}
-.animate-modalContentIn {
-  animation: modalContentIn 0.5s cubic-bezier(0.4,0,0.2,1) both;
-}
-.animate-glow {
-  animation: glow 1.5s infinite alternate;
-}
-
-/* Botones de navegación del carrusel */
-.categories-carousel {
-  position: relative;
-  padding: 1rem 0 3rem;
-  margin-top: 1rem;
-  scroll-behavior: smooth;
-}
-
+/* Estilos específicos de la tarjeta de categoría y modal */
 .category-card {
   background: rgba(255,255,255,0.85);
   box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.18), 0 1.5px 8px 0 rgba(200, 132, 252, 0.10);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
   border: 1.5px solid #fce7f3;
   transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
@@ -62,8 +22,6 @@
 
 /* Modal glassmorphism y animaciones */
 .subcategories-modal {
-  /* Quitar animación del fondo */
-  /* animation: modalIn 0.4s cubic-bezier(0.4,0,0.2,1) both; */
   background: linear-gradient(120deg, rgba(236,72,153,0.10) 0%, rgba(168,85,247,0.10) 100%);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
@@ -92,10 +50,6 @@
 }
 
 /* Badge animado */
-@keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-8px); }
-}
 .animate-bounce {
   animation: bounce 1.2s infinite;
 }
@@ -109,41 +63,6 @@
   background: #fff7fb;
   color: #fbbf24;
   box-shadow: 0 4px 16px 0 rgba(236, 72, 153, 0.18);
-}
-
-/* Scrollbar mejorada */
-.categories-carousel::-webkit-scrollbar {
-  height: 7px;
-}
-.categories-carousel::-webkit-scrollbar-track {
-  background: #fce7f3;
-  border-radius: 10px;
-}
-.categories-carousel::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #f472b6 0%, #c084fc 100%);
-  border-radius: 10px;
-}
-.categories-carousel:hover::-webkit-scrollbar-thumb {
-  background: linear-gradient(90deg, #f472b6 0%, #a21caf 100%);
-}
-
-/* Estilos para el título */
-.section-title {
-  position: relative;
-  display: inline-block;
-  margin-bottom: 3rem;
-}
-
-.section-title::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 4px;
-  background: linear-gradient(to right, #ff6b8b, #ff8e9e);
-  border-radius: 2px;
 }
 
 /* Responsive adjustments */

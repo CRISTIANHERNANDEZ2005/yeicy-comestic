@@ -1,0 +1,100 @@
+/* Animaciones y efectos para carrusel reutilizable */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 24px 8px #f472b6, 0 0 0 0 #fff; }
+  50% { box-shadow: 0 0 48px 16px #c084fc, 0 0 0 0 #fff; }
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-fadeIn { animation: fadeIn 0.7s cubic-bezier(0.4,0,0.2,1) both; }
+.animate-glow { animation: glow 1.5s infinite alternate; }
+.animate-bounce { animation: bounce 1.2s infinite; }
+
+.carousel-container {
+  position: relative;
+  padding: 1rem 0 3rem;
+  margin-top: 1rem;
+  scroll-behavior: smooth;
+}
+.carousel-list {
+  scrollbar-width: thin;
+  scrollbar-color: #f472b6 #fce7f3;
+  padding-bottom: 2.5rem; /* Aumenta el espacio para la barra de scroll */
+  scroll-behavior: smooth;
+  scroll-snap-type: x mandatory;
+}
+.carousel-list::-webkit-scrollbar {
+  height: 7px;
+}
+.carousel-list::-webkit-scrollbar-track {
+  background: #fce7f3;
+  border-radius: 10px;
+}
+.carousel-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #f472b6 0%, #c084fc 100%);
+  border-radius: 10px;
+}
+.carousel-list:hover::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #f472b6 0%, #a21caf 100%);
+}
+.carousel-list > * {
+  scroll-snap-align: start;
+}
+
+.carousel-nav {
+  position: absolute;
+  top: 50%;
+  z-index: 10;
+  transform: translateY(-50%);
+  background: linear-gradient(135deg, #ec4899 0%, #a21caf 100%);
+  border-radius: 50%;
+  box-shadow: 0 4px 24px 0 rgba(236, 72, 153, 0.25), 0 2px 8px 0 rgba(200, 132, 252, 0.10);
+  border: 4px solid #fff;
+  width: 3.2rem;
+  height: 3.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s, transform 0.2s;
+  cursor: pointer;
+  opacity: 0.92;
+  font-size: 1.5rem;
+  outline: none;
+}
+.carousel-nav.left { left: -1.5rem; }
+.carousel-nav.right { right: -1.5rem; }
+.carousel-nav.disabled { opacity: 0.3; pointer-events: none; filter: grayscale(0.5); }
+.carousel-nav.active:hover {
+  background: linear-gradient(135deg, #f472b6 0%, #c084fc 100%);
+  color: #fbbf24;
+  box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.35), 0 4px 16px 0 rgba(200, 132, 252, 0.18);
+  /* Eliminar cualquier movimiento vertical, solo aplicar zoom */
+  transform: translateY(-50%) scale(1.12);
+  border-color: #fef3c7;
+}
+
+.carousel-nav svg {
+  color: #fff;
+  width: 2rem;
+  height: 2rem;
+  stroke-width: 2.5;
+  filter: drop-shadow(0 2px 8px #f472b6cc);
+}
+
+@media (max-width: 900px) {
+  .carousel-list { gap: 1.2rem; }
+  .carousel-nav.left { left: 0.2rem; }
+  .carousel-nav.right { right: 0.2rem; }
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+} 

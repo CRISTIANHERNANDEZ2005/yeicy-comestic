@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { categoriasService } from '../../../services/api';
 import SkeletonLoader from '../ui/SkeletonLoader';
+import Carousel from '../ui/Carousel';
 
 interface Categoria {
   id: number;
@@ -31,8 +32,7 @@ const CategoriasSection: React.FC = () => {
   const modalRef = useRef<HTMLDivElement>(null);
 
   // 1. Agregar estado y lógica para navegación del carrusel
-  const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(false);
+  // Eliminar refs y lógica de scroll del carrusel principal
 
   // 1. Estados y refs para el carrusel de subcategorías
   const subCarouselRef = useRef<HTMLDivElement>(null);
@@ -124,35 +124,6 @@ const CategoriasSection: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showSub]);
-
-  // 2. Funciones para scroll del carrusel
-  const scrollCarousel = (dir: 'left' | 'right') => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    const scrollAmount = carousel.offsetWidth * 0.7;
-    carousel.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
-  };
-
-  // 3. Actualizar visibilidad de botones
-  const updateScrollButtons = () => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    setCanScrollLeft(carousel.scrollLeft > 10);
-    setCanScrollRight(carousel.scrollLeft + carousel.offsetWidth < carousel.scrollWidth - 10);
-  };
-
-  useEffect(() => {
-    const carousel = carouselRef.current;
-    if (!carousel) return;
-    updateScrollButtons();
-    const onScroll = () => updateScrollButtons();
-    carousel.addEventListener('scroll', onScroll);
-    window.addEventListener('resize', updateScrollButtons);
-    return () => {
-      carousel.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', updateScrollButtons);
-    };
-  }, [loading]);
 
   // 2. Funciones para scroll del carrusel de subcategorías
   const scrollSubCarousel = (dir: 'left' | 'right') => {
@@ -252,89 +223,61 @@ const CategoriasSection: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="relative">
-            {canScrollLeft && (
-              <button
-                className="absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-gradient-to-br from-pink-400 via-fuchsia-400 to-rose-400 text-white shadow-xl rounded-full p-3 hover:scale-110 hover:shadow-2xl transition-all border-4 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 animate-glow"
-                style={{ boxShadow: '0 4px 24px 0 rgba(236, 72, 153, 0.25)' }}
-                onClick={() => scrollCarousel('left')}
-                aria-label="Desplazar categorías a la izquierda"
-              >
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-              </button>
-            )}
-            <div
-              ref={carouselRef}
-              className="flex gap-12 overflow-x-auto pb-8 px-2 cursor-grab select-none scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-pink-50 categories-carousel"
-              tabIndex={0}
-              aria-label="Carrusel de categorías"
-              style={{ scrollSnapType: 'x mandatory', paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
-            >
-              {categorias.map((cat, idx) => {
-                const descripcionCategoria = cat.descripcion?.trim() ? cat.descripcion : 'Descubre nuestra exclusiva selección de productos pensados para ti.';
-                return (
-                  <div
-                    key={cat.id}
-                    className="flex-shrink-0 w-56 rounded-2xl p-6 flex flex-col items-center gap-4 cursor-pointer relative group bg-white/70 backdrop-blur-md shadow-2xl hover:shadow-rose-300 transition-all duration-300 hover:-translate-y-1 category-card animate-fadeIn"
-                    style={{ scrollSnapAlign: idx === 0 ? 'start' : idx === categorias.length - 1 ? 'end' : 'center', marginRight: idx === categorias.length - 1 ? 0 : '-2rem' }}
-                    onClick={() => handleCategoriaClick(cat)}
-                    onMouseEnter={() => handleCategoriaHover(cat)}
-                    tabIndex={0}
-                    role="button"
-                    aria-label={`Explorar colecciones de ${cat.nombre}`}
-                    onKeyDown={e => { if (e.key === 'Enter') handleCategoriaClick(cat); }}
-                  >
-                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 via-fuchsia-100 to-rose-100 flex items-center justify-center border-4 border-white shadow-lg group-hover:shadow-xl transition-all category-image-container">
-                      {cat.imagen ? (
-                        <img
-                          src={cat.imagen}
-                          alt={cat.nombre}
-                          className="object-cover w-full h-full"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <img
-                          src={fallbackImg}
-                          alt="Categoría"
-                          className="object-contain w-12 h-12 opacity-60"
-                          loading="lazy"
-                        />
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <h3 className="font-bold text-pink-800 text-xl mb-2 line-clamp-2">
-                        {cat.nombre}
-                      </h3>
-                      <p className="text-gray-600 text-sm line-clamp-2">
-                        {descripcionCategoria}
-                      </p>
-                    </div>
-                    {/* Badge descriptivo para colecciones */}
-                    {typeof cat.subcategorias_count === 'number' && cat.subcategorias_count > 0 && (
-                      <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1 animate-fadeIn">
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                        Explorar colecciones
-                      </span>
-                    )}
-                    {/* Tooltip o texto visible para acción */}
-                    {typeof cat.subcategorias_count === 'number' && cat.subcategorias_count > 0 && (
-                      <span className="mt-2 text-xs text-pink-500 font-medium group-hover:underline">Haz clic para descubrir más</span>
+          <Carousel className="mb-8 gap-16" ariaLabel="Carrusel de categorías">
+            {categorias.map((cat, idx) => {
+              const descripcionCategoria = cat.descripcion?.trim() ? cat.descripcion : 'Descubre nuestra exclusiva selección de productos pensados para ti.';
+              return (
+                <div
+                  key={cat.id}
+                  className="flex-shrink-0 w-56 rounded-2xl p-6 flex flex-col items-center gap-4 cursor-pointer relative group bg-white/70 backdrop-blur-md shadow-2xl hover:shadow-rose-300 transition-all duration-300 hover:-translate-y-1 category-card animate-fadeIn"
+                  style={{ scrollSnapAlign: idx === 0 ? 'start' : idx === categorias.length - 1 ? 'end' : 'center', marginRight: idx === categorias.length - 1 ? 0 : '-2rem' }}
+                  onClick={() => handleCategoriaClick(cat)}
+                  onMouseEnter={() => handleCategoriaHover(cat)}
+                  tabIndex={0}
+                  role="button"
+                  aria-label={`Explorar colecciones de ${cat.nombre}`}
+                  onKeyDown={e => { if (e.key === 'Enter') handleCategoriaClick(cat); }}
+                >
+                  <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-pink-100 via-fuchsia-100 to-rose-100 flex items-center justify-center border-4 border-white shadow-lg group-hover:shadow-xl transition-all category-image-container">
+                    {cat.imagen ? (
+                      <img
+                        src={cat.imagen}
+                        alt={cat.nombre}
+                        className="object-cover w-full h-full"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <img
+                        src={fallbackImg}
+                        alt="Categoría"
+                        className="object-contain w-12 h-12 opacity-60"
+                        loading="lazy"
+                      />
                     )}
                   </div>
-                );
-              })}
-            </div>
-            {canScrollRight && (
-              <button
-                className="absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-gradient-to-br from-pink-400 via-fuchsia-400 to-rose-400 text-white shadow-xl rounded-full p-3 hover:scale-110 hover:shadow-2xl transition-all border-4 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 animate-glow"
-                style={{ boxShadow: '0 4px 24px 0 rgba(236, 72, 153, 0.25)' }}
-                onClick={() => scrollCarousel('right')}
-                aria-label="Desplazar categorías a la derecha"
-              >
-                <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-              </button>
-            )}
-          </div>
+                  <div className="text-center">
+                    <h3 className="font-bold text-pink-800 text-xl mb-2 line-clamp-2">
+                      {cat.nombre}
+                    </h3>
+                    <p className="text-gray-600 text-sm line-clamp-2">
+                      {descripcionCategoria}
+                    </p>
+                  </div>
+                  {/* Badge descriptivo para colecciones */}
+                  {typeof cat.subcategorias_count === 'number' && cat.subcategorias_count > 0 && (
+                    <span className="absolute top-0 right-0 transform translate-x-2 -translate-y-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg border-2 border-white flex items-center gap-1 animate-fadeIn">
+                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                      Explorar colecciones
+                    </span>
+                  )}
+                  {/* Tooltip o texto visible para acción */}
+                  {typeof cat.subcategorias_count === 'number' && cat.subcategorias_count > 0 && (
+                    <span className="mt-2 text-xs text-pink-500 font-medium group-hover:underline">Haz clic para descubrir más</span>
+                  )}
+                </div>
+              );
+            })}
+          </Carousel>
         )}
         
         {/* Modal mejorada con mensaje contextual y tarjetas de colección mejoradas */}
@@ -398,32 +341,57 @@ const CategoriasSection: React.FC = () => {
                   <div className="relative">
                     {/* Carrusel de subcategorías con botones de navegación solo en desktop */}
                     {subcategorias.length > 0 && (
-                      <div className="relative">
-                        {/* Botones solo visibles en md+ */}
-                        {canSubScrollLeft && (
-                          <button
-                            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 bg-gradient-to-br from-pink-400 via-fuchsia-400 to-rose-400 text-white shadow-xl rounded-full p-3 hover:scale-110 hover:shadow-2xl transition-all border-4 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 animate-glow"
-                            style={{ boxShadow: '0 4px 24px 0 rgba(236, 72, 153, 0.25)' }}
-                            onClick={() => scrollSubCarousel('left')}
-                            aria-label="Desplazar colecciones a la izquierda"
-                          >
-                            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-                          </button>
-                        )}
-                        <div
-                          ref={subCarouselRef}
-                          className="flex flex-col md:flex-row gap-6 overflow-x-visible md:overflow-x-auto pb-4 px-2 cursor-pointer select-none scrollbar-thin scrollbar-thumb-pink-200 scrollbar-track-pink-50 subcategories-carousel"
-                          style={{ scrollSnapType: 'x mandatory', paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
-                          tabIndex={0}
-                          aria-label="Carrusel de colecciones"
-                        >
+                      <>
+                        {/* Desktop: Carousel con animación y botones */}
+                        <div className="hidden md:block">
+                          <Carousel className="gap-6" ariaLabel="Carrusel de colecciones">
+                            {subcategorias.map((sub, idx) => {
+                              const descripcionSub = sub.descripcion?.trim() ? sub.descripcion : 'Explora productos seleccionados especialmente para ti en esta colección.';
+                              return (
+                                <div
+                                  key={sub.id}
+                                  className="w-64 flex-shrink-0 rounded-2xl p-6 cursor-pointer text-center bg-white/70 backdrop-blur-md border-2 border-pink-100 hover:bg-gradient-to-br hover:from-pink-50 hover:to-rose-100 hover:shadow-2xl transition-all subcategory-item animate-fadeIn group"
+                                  style={{ animationDelay: `${idx * 60}ms` }}
+                                  onClick={() => window.location.href = `/subcategoria/${sub.id}`}
+                                  tabIndex={0}
+                                  role="button"
+                                  aria-label={`Ver productos de la colección ${sub.nombre}`}
+                                  onKeyDown={e => { if (e.key === 'Enter') window.location.href = `/subcategoria/${sub.id}`; }}
+                                >
+                                  <div className="flex justify-center mb-2">
+                                    <svg className="w-8 h-8 text-pink-400 group-hover:scale-110 group-hover:text-rose-400 transition-transform" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="#fce7f3" /></svg>
+                                  </div>
+                                  <h4 className="font-bold text-pink-700 text-lg mb-1">
+                                    {sub.nombre}
+                                  </h4>
+                                  <p className="text-gray-600 text-sm line-clamp-2 mb-2">
+                                    {descripcionSub}
+                                  </p>
+                                  {/* Icono de acción y texto */}
+                                  <div className="flex flex-col items-center gap-1 mt-2">
+                                    <span className="inline-flex items-center gap-1 text-pink-500 text-xs font-semibold bg-pink-50 px-3 py-1 rounded-full shadow-sm animate-fadeIn">
+                                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 12H9m6 0l-3-3m3 3l-3 3" /></svg>
+                                      Haz clic para descubrir productos
+                                    </span>
+                                  </div>
+                                  {/* Badge ejemplo para colección destacada */}
+                                  {idx === 0 && (
+                                    <span className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-yellow-200 via-pink-200 to-rose-200 text-yellow-900 text-xs font-semibold rounded-full shadow border border-yellow-300 animate-bounce">¡Popular!</span>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </Carousel>
+                        </div>
+                        {/* Mobile: lista vertical sin scroll propio, solo el de la modal */}
+                        <div className="flex md:hidden flex-col gap-y-6 px-2 cursor-pointer select-none subcategories-carousel" tabIndex={0} aria-label="Lista de colecciones">
                           {subcategorias.map((sub, idx) => {
                             const descripcionSub = sub.descripcion?.trim() ? sub.descripcion : 'Explora productos seleccionados especialmente para ti en esta colección.';
                             return (
                               <div
                                 key={sub.id}
-                                className="w-full md:w-64 flex-shrink-0 rounded-2xl p-6 cursor-pointer text-center bg-white/70 backdrop-blur-md border-2 border-pink-100 hover:bg-gradient-to-br hover:from-pink-50 hover:to-rose-100 hover:shadow-2xl transition-all subcategory-item animate-fadeIn group"
-                                style={{ scrollSnapAlign: idx === 0 ? 'start' : idx === subcategorias.length - 1 ? 'end' : 'center', animationDelay: `${idx * 60}ms` }}
+                                className="w-full rounded-2xl p-6 cursor-pointer text-center bg-white/70 backdrop-blur-md border-2 border-pink-100 hover:bg-gradient-to-br hover:from-pink-50 hover:to-rose-100 hover:shadow-2xl transition-all subcategory-item animate-fadeIn group"
+                                style={{ animationDelay: `${idx * 60}ms` }}
                                 onClick={() => window.location.href = `/subcategoria/${sub.id}`}
                                 tabIndex={0}
                                 role="button"
@@ -454,17 +422,7 @@ const CategoriasSection: React.FC = () => {
                             );
                           })}
                         </div>
-                        {canSubScrollRight && (
-                          <button
-                            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 bg-gradient-to-br from-pink-400 via-fuchsia-400 to-rose-400 text-white shadow-xl rounded-full p-3 hover:scale-110 hover:shadow-2xl transition-all border-4 border-white focus:outline-none focus:ring-2 focus:ring-pink-300 animate-glow"
-                            style={{ boxShadow: '0 4px 24px 0 rgba(236, 72, 153, 0.25)' }}
-                            onClick={() => scrollSubCarousel('right')}
-                            aria-label="Desplazar colecciones a la derecha"
-                          >
-                            <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                          </button>
-                        )}
-                      </div>
+                      </>
                     )}
                   </div>
                 )}

@@ -59,7 +59,7 @@ const PublicFooter: React.FC = () => (
         <span className="flex items-center gap-2 text-pink-100 text-sm"><svg className="w-4 h-4 text-pink-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M3 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5zm0 0v14a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2v-2a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2zm16-2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2zm0 0v14a2 2 0 0 0 2 2h-2a2 2 0 0 0-2-2v-2a2 2 0 0 0 2-2h2a2 2 0 0 0 2 2v2z" /></svg> +57 300 000 0000</span>
         <div className="flex gap-3 mt-3">
           {redes.map((r) => (
-            <a key={r.name} href={r.href} className="rounded-full bg-pink-700/30 hover:bg-pink-500/80 transition-colors p-3 shadow-md focus:outline-none focus:ring-2 focus:ring-pink-400" aria-label={r.name}>
+            <a key={r.name} href={r.href} className="rounded-full bg-pink-700/30 hover:bg-pink-500/80 transition-colors p-3 shadow-md focus:outline-none focus:ring-2 focus:ring-pink-400" aria-label={r.name} target="_blank" rel="noopener noreferrer">
               {r.icon}
             </a>
           ))}

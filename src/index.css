@@ -1,6 +1,8 @@
 @import './components/publico/style/InfoSection.css';
 @import './components/publico/style/animations.css';
 @import './components/publico/style/skeleton.css';
+@import './components/publico/style/CategoriasSection.css';
+
 
 @tailwind base;
 @tailwind components;

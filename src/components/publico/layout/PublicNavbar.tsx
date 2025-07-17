@@ -55,6 +55,12 @@ const PublicNavbar: React.FC = () => {
     }
   };
 
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // Aquí puedes implementar la lógica de búsqueda o navegación
+    // Por ejemplo: navigate(`/buscar?q=${encodeURIComponent(search)}`);
+  };
+
   // Clases dinámicas para el navbar
   const navbarClasses = `sticky top-0 z-50 w-full shadow-xl border-b-2 border-pink-200 flex items-center justify-between px-4 md:px-8 transition-all duration-300 animate-fade-in-down bg-white ${
     scrolled ? 'py-2 min-h-[56px]' : 'py-4 min-h-[72px]'
@@ -131,7 +137,7 @@ const PublicNavbar: React.FC = () => {
         ))}
           {/* Buscador solo en desktop */}
           <li className="flex-1 flex justify-center">
-            <form className="w-full max-w-xs relative" role="search" aria-label="Buscar productos">
+            <form className="w-full max-w-xs relative" role="search" aria-label="Buscar productos" onSubmit={handleSearchSubmit}>
               <input
                 type="text"
                 value={search}
@@ -203,7 +209,7 @@ const PublicNavbar: React.FC = () => {
             <span className="font-extrabold text-pink-600 text-xl tracking-wider">Ye&Cy Cosmetic</span>
           </Link>
           {/* Buscador en menú móvil */}
-          <form className="w-full mb-4 relative" role="search" aria-label="Buscar productos">
+          <form className="w-full mb-4 relative" role="search" aria-label="Buscar productos" onSubmit={handleSearchSubmit}>
             <input
               type="text"
               value={search}

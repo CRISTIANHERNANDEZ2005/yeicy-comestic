@@ -4,7 +4,6 @@ import type { ReactNode } from 'react';
 interface CarouselProps {
   children: ReactNode;
   className?: string;
-  scrollAmount?: number;
   itemClassName?: string;
   ariaLabel?: string;
 }
@@ -12,7 +11,6 @@ interface CarouselProps {
 const Carousel: React.FC<CarouselProps> = ({
   children,
   className = '',
-  scrollAmount,
   itemClassName = '',
   ariaLabel = 'Carrusel',
 }) => {

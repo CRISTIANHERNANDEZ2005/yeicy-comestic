@@ -27,7 +27,6 @@ const CategoriasSection: React.FC = () => {
   const [catSeleccionada, setCatSeleccionada] = useState<Categoria | null>(null);
   const [subcategoriasLoading, setSubcategoriasLoading] = useState(false);
   const [subcategoriasError, setSubcategoriasError] = useState<string | null>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
   const subcategoriasCache = useRef<Map<number, Subcategoria[]>>(new Map());
   const modalRef = useRef<HTMLDivElement>(null);
 
@@ -35,9 +34,6 @@ const CategoriasSection: React.FC = () => {
   // Eliminar refs y lógica de scroll del carrusel principal
 
   // 1. Estados y refs para el carrusel de subcategorías
-  const subCarouselRef = useRef<HTMLDivElement>(null);
-  const [canSubScrollLeft, setCanSubScrollLeft] = useState(false);
-  const [canSubScrollRight, setCanSubScrollRight] = useState(false);
 
   const loadCategorias = async (forceRefresh: boolean = false) => {
     setLoading(true);
@@ -124,35 +120,6 @@ const CategoriasSection: React.FC = () => {
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showSub]);
-
-  // 2. Funciones para scroll del carrusel de subcategorías
-  const scrollSubCarousel = (dir: 'left' | 'right') => {
-    const carousel = subCarouselRef.current;
-    if (!carousel) return;
-    const scrollAmount = carousel.offsetWidth * 0.7;
-    carousel.scrollBy({ left: dir === 'left' ? -scrollAmount : scrollAmount, behavior: 'smooth' });
-  };
-
-  const updateSubScrollButtons = () => {
-    const carousel = subCarouselRef.current;
-    if (!carousel) return;
-    setCanSubScrollLeft(carousel.scrollLeft > 10);
-    setCanSubScrollRight(carousel.scrollLeft + carousel.offsetWidth < carousel.scrollWidth - 10);
-  };
-
-  useEffect(() => {
-    if (!showSub) return;
-    const carousel = subCarouselRef.current;
-    if (!carousel) return;
-    updateSubScrollButtons();
-    const onScroll = () => updateSubScrollButtons();
-    carousel.addEventListener('scroll', onScroll);
-    window.addEventListener('resize', updateSubScrollButtons);
-    return () => {
-      carousel.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', updateSubScrollButtons);
-    };
-  }, [showSub, subcategorias]);
 
   return (
     <section className="w-full py-16 bg-gradient-to-r from-pink-50 to-pink-100">

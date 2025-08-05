@@ -96,6 +96,12 @@ def index():
     from flask import session
     usuario_autenticado = 'user_id' in session
 
+    # Contar favoritos (likes activos) del usuario autenticado
+    total_favoritos = 0
+    if usuario_autenticado:
+        from app.models.models import Like
+        total_favoritos = Like.query.filter_by(usuario_id=session['user_id'], estado='activo').count()
+
     return render_template(
         'cliente/componentes/index.html',
         productos=productos,
@@ -106,10 +112,9 @@ def index():
         cart_items=cart_items,
         total_price=total_price,
         categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados',
-        usuario_autenticado=usuario_autenticado
+        usuario_autenticado=usuario_autenticado,
+        total_favoritos=total_favoritos
     )
-
-# Añadir estas mejoras al endpoint /buscar
 
 
 @products_bp.route('/buscar')

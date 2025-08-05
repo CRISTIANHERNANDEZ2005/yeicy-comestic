@@ -333,6 +333,20 @@
                 // Aquí iría la lógica real de like para usuarios autenticados
             }
         });
+        // Asignar lógica al logo de favoritos del navbar
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarFavBtn = document.getElementById('navbar-fav-btn');
+            if (navbarFavBtn) {
+                navbarFavBtn.addEventListener('click', function(e) {
+                    if (!window.USUARIO_AUTENTICADO) {
+                        e.preventDefault();
+                        showLikeAuthModal('Debes iniciar sesión para ver y gestionar tus favoritos.');
+                        return false;
+                    }
+                    // Si está autenticado, deja navegar normalmente
+                });
+            }
+        });
 
         // Mejorar tamaño/flotante del botón de like en móvil
         function updateLikeBtnStyles() {

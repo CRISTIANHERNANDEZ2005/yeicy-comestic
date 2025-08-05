@@ -4,6 +4,9 @@ from sqlalchemy import CheckConstraint, UniqueConstraint
 from datetime import datetime
 import json
 from flask_login import UserMixin
+import jwt
+from flask import current_app
+from datetime import datetime
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'

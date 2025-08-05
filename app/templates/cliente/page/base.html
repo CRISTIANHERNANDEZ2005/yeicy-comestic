@@ -117,12 +117,14 @@
                             class="flex items-center gap-5 md:gap-6">
                             <!-- Favoritos -->
                             <div class="relative">
-                                <a href="/favoritos" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-pink-400 group bg-white/90 shadow-sm hover:bg-pink-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none" aria-label="Favoritos">
+                                <a href="/favoritos" id="navbar-fav-btn" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-pink-400 group bg-white/90 shadow-sm hover:bg-pink-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none" aria-label="Favoritos">
                                     <div class="relative">
                                         <svg class="w-7 h-7 md:w-8 md:h-8 text-pink-500 group-hover:text-pink-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
                                             <path d="M12 21C12 21 4 13.686 4 8.857C4 6.099 6.238 4 8.857 4C10.324 4 11.667 4.857 12 6.086C12.333 4.857 13.676 4 15.143 4C17.762 4 20 6.099 20 8.857C20 13.686 12 21 12 21Z" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
-                                        <span class="absolute -top-0.5 -right-0.5 bg-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow animate-pulse border border-white">3</span>
+                                        {% if total_favoritos > 0 %}
+                                            <span class="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-xs font-bold rounded-full min-w-[1.5rem] h-6 flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-pink-200 animate-bounce z-10 select-none" aria-label="{{ total_favoritos }} favoritos" title="Tienes {{ total_favoritos }} favoritos">{{ total_favoritos }}</span>
+                                        {% endif %}
                                     </div>
                                 </a>
                             </div>
@@ -179,29 +181,40 @@
 
         <!-- Modal de advertencia de autenticación para LIKE -->
         <div id="like-auth-modal" class="fixed z-[9999] left-0 right-0 flex justify-center pointer-events-none" style="display:none;">
-            <div id="like-auth-modal-inner" class="bg-pink-600 text-white rounded-xl shadow-2xl px-4 py-3 text-base font-semibold flex items-center gap-3 pointer-events-auto modal-animate-in"
-                style="min-width:220px;max-width:95vw;">
-                <svg class="w-7 h-7 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+            <div id="like-auth-modal-inner" class="bg-pink-600 text-white rounded-xl shadow-2xl px-4 py-3 text-base font-semibold flex items-center gap-3 pointer-events-auto modal-animate-in" style="min-width:220px;max-width:95vw;">
+                <svg class="w-7 h-7 text-white flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
                 <span id="like-auth-modal-msg">Debes iniciar sesión para agregar productos a tus favoritos.</span>
                 <a href="/login" id="like-auth-login-btn" class="ml-4 bg-white text-pink-600 font-bold rounded-lg px-3 py-1 shadow hover:bg-pink-50 transition-colors duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" style="white-space:nowrap;">Iniciar sesión</a>
             </div>
         </div>
         <style>
-        /* Animaciones para la modal */
-        @keyframes modalFadeInUp {
-            0% { opacity: 0; transform: translateY(32px) scale(0.98); }
-            100% { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes modalFadeOutDown {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(32px) scale(0.98); }
-        }
-        .modal-animate-in {
-            animation: modalFadeInUp 0.5s cubic-bezier(0.4,0,0.2,1);
-        }
-        .modal-animate-out {
-            animation: modalFadeOutDown 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
-        }
+            /* Animaciones para la modal */
+            @keyframes modalFadeInUp {
+                0% {
+                    opacity: 0;
+                    transform: translateY(32px) scale(0.98);
+                }
+                100% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+            @keyframes modalFadeOutDown {
+                0% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translateY(32px) scale(0.98);
+                }
+            }
+            .modal-animate-in {
+                animation: modalFadeInUp 0.5s cubic-bezier(0.4,0,0.2,1);
+            }
+            .modal-animate-out {
+                animation: modalFadeOutDown 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
+            }
         </style>
         <main class="container mx-auto pt-20 pb-8 px-4 flex-1"> {% block content %}{% endblock %}
             </main>

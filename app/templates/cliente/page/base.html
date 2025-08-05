@@ -176,6 +176,33 @@
 
         <!-- Contenido principal -->
         {% block full_width_content %}{% endblock %}
+
+        <!-- Modal de advertencia de autenticación para LIKE -->
+        <div id="like-auth-modal" class="fixed z-[9999] left-0 right-0 flex justify-center pointer-events-none" style="display:none;">
+            <div id="like-auth-modal-inner" class="bg-pink-600 text-white rounded-xl shadow-2xl px-4 py-3 text-base font-semibold flex items-center gap-3 pointer-events-auto modal-animate-in"
+                style="min-width:220px;max-width:95vw;">
+                <svg class="w-7 h-7 text-white flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+                <span id="like-auth-modal-msg">Debes iniciar sesión para agregar productos a tus favoritos.</span>
+                <a href="/login" id="like-auth-login-btn" class="ml-4 bg-white text-pink-600 font-bold rounded-lg px-3 py-1 shadow hover:bg-pink-50 transition-colors duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" style="white-space:nowrap;">Iniciar sesión</a>
+            </div>
+        </div>
+        <style>
+        /* Animaciones para la modal */
+        @keyframes modalFadeInUp {
+            0% { opacity: 0; transform: translateY(32px) scale(0.98); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        @keyframes modalFadeOutDown {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(32px) scale(0.98); }
+        }
+        .modal-animate-in {
+            animation: modalFadeInUp 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
+        .modal-animate-out {
+            animation: modalFadeOutDown 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
+        }
+        </style>
         <main class="container mx-auto pt-20 pb-8 px-4 flex-1"> {% block content %}{% endblock %}
             </main>
 

@@ -92,6 +92,10 @@ def index():
     cart_items = get_cart_items(cart_info)
     total_price = sum(item['subtotal'] for item in cart_items)
 
+    # Determinar si el usuario está autenticado
+    from flask import session
+    usuario_autenticado = 'user_id' in session
+
     return render_template(
         'cliente/componentes/index.html',
         productos=productos,
@@ -101,7 +105,8 @@ def index():
         total_productos=total_productos,
         cart_items=cart_items,
         total_price=total_price,
-        categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados'
+        categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados',
+        usuario_autenticado=usuario_autenticado
     )
 
 # Añadir estas mejoras al endpoint /buscar

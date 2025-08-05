@@ -90,6 +90,7 @@
                     "fecha_creacion": "{{ producto.fecha_creacion.isoformat() if producto.fecha_creacion else '' }}"
                 }
                 {% if not loop.last %},{% endif %}{% endfor %}];
+        window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson }};
     </script>
 
     <style>
@@ -265,6 +266,91 @@
     </style>
 
     <script>
+        // --- LIKE AUTH MODAL LOGIC ---
+        let likeAuthModalTimeout;
+        function showLikeAuthModal(msg) {
+            const modal = document.getElementById('like-auth-modal');
+            const modalInner = document.getElementById('like-auth-modal-inner');
+            const modalMsg = document.getElementById('like-auth-modal-msg');
+            if (modal && modalMsg && modalInner) {
+                modalMsg.textContent = msg || 'Debes iniciar sesión para agregar productos a tus favoritos.';
+                // Responsive position
+                if (window.innerWidth < 768) {
+                    modal.classList.remove('items-end','justify-start');
+                    modal.classList.add('items-end','justify-center');
+                    modal.style.bottom = '70px';
+                    modal.style.top = '';
+                    modal.style.left = '0';
+                    modal.style.right = '0';
+                } else {
+                    modal.classList.remove('items-end','justify-center');
+                    modal.classList.add('items-end','justify-start');
+                    modal.style.bottom = '40px';
+                    modal.style.left = '40px';
+                    modal.style.right = '';
+                    modal.style.top = '';
+                }
+                modal.style.display = 'flex';
+                modalInner.classList.remove('modal-animate-out');
+                modalInner.classList.add('modal-animate-in');
+                clearTimeout(likeAuthModalTimeout);
+                likeAuthModalTimeout = setTimeout(() => {
+                    hideLikeAuthModal();
+                }, 5000);
+            }
+        }
+        function hideLikeAuthModal() {
+            const modal = document.getElementById('like-auth-modal');
+            const modalInner = document.getElementById('like-auth-modal-inner');
+            if (modal && modalInner) {
+                modalInner.classList.remove('modal-animate-in');
+                modalInner.classList.add('modal-animate-out');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 450);
+            }
+            clearTimeout(likeAuthModalTimeout);
+        }
+        // Cerrar modal si el usuario hace click en el botón de login
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginBtn = document.getElementById('like-auth-login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function() {
+                    hideLikeAuthModal();
+                });
+            }
+        });
+
+        // Asignar lógica al botón de like
+        document.addEventListener('click', function (e) {
+            const likeBtn = e.target.closest('.like-btn');
+            if (likeBtn) {
+                if (!window.USUARIO_AUTENTICADO) {
+                    e.preventDefault();
+                    showLikeAuthModal();
+                    return false;
+                }
+                // Aquí iría la lógica real de like para usuarios autenticados
+            }
+        });
+
+        // Mejorar tamaño/flotante del botón de like en móvil
+        function updateLikeBtnStyles() {
+            const isMobile = window.innerWidth < 768;
+            document.querySelectorAll('.like-btn .like-icon').forEach(icon => {
+                if (isMobile) {
+                    icon.classList.add('w-9', 'h-9');
+                    icon.classList.remove('w-7', 'h-7', 'w-6', 'h-6', 'w-5', 'h-5');
+                } else {
+                    icon.classList.remove('w-9', 'h-9');
+                    icon.classList.add('w-6', 'h-6', 'md:w-5', 'md:h-5');
+                }
+            });
+        }
+        window.addEventListener('resize', updateLikeBtnStyles);
+        document.addEventListener('DOMContentLoaded', updateLikeBtnStyles);
+
+        // --- RESTO DEL SCRIPT ORIGINAL ---
         document.addEventListener('DOMContentLoaded', function () { // Elementos DOM
             const track = document.getElementById('carouselTrack');
             const prevBtn = document.querySelector('.carousel-prev');
@@ -388,48 +474,52 @@
                 }
 
                 // Determinar si debemos mostrar el placeholder
-                const hasImage = producto.imagen_url && producto.imagen_url.trim() !== '' && !producto.imagen_url.includes('default');
-                
+                const hasImage = producto.imagen_url && producto.imagen_url.trim() !== '' && ! producto.imagen_url.includes('default');
+
                 // URL para el placeholder SVG
                 const placeholderSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDhkYWRiIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KPHBhdGggZD0iTTMuMTYgMTguODhMMTUuMTIgNi45M2EuMTYuMTYgMCAwIDEgLjIyIDBsMy4wNiAzLjA2YS4xNi4xNiAwIDAgMSAwIC4yMkw2LjQ0IDIyYTEgMSAwIDAgMS0xLjM5LjA2bC02LjE1LTUuNzlhMS4yNSAxLjI1IDAgMCAxIC4yNi0xLjM5eiIvPgo8cGF0aCBkPSJNMTkgMTlhMiAyIDAgMSAwIDAtNCAyIDIgMCAwIDAgMCA0eiIvPgo8cGF0aCBkPSJNMjIgMTB2OGEyIDIgMCAwIDEtMiAyaC0xM2wtMy4yLTIuN2ExIDEgMCAwIDAtMS42LjRsLTMuMzUgNCIvPgo8cGF0aCBkPSJNMiAxMHYtNGEyIDIgMCAwIDEgMi0yaDZhMSAxIDAgMCAwIC44LS40bDIuNi0zLjQ1YTEgMSAwIDAgMSAuOC0uMzVIMThhMiAyIDAgMCAxIDIgMlYxMCIvPgo8L3N2Zz4=';
-                
+
                 card.innerHTML = `
                <div class="group relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full transform hover:scale-[1.03]">
                     <div class="product-image-container relative overflow-hidden aspect-square ${
-                        !hasImage ? 'bg-gray-50 flex items-center justify-center' : 'bg-gray-100'
-                    }">
+                    ! hasImage ? 'bg-gray-50 flex items-center justify-center' : 'bg-gray-100'
+                }">
                         ${
-                            !hasImage
-                                ? `<div class="w-full h-full flex flex-col items-center justify-center p-4">
+                    ! hasImage ? `<div class="w-full h-full flex flex-col items-center justify-center p-4">
                                        <div class="w-16 h-16 mb-2 text-gray-300">
                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                            </svg>
                                        </div>
                                        <span class="text-xs text-center text-gray-400 font-medium">Imagen no disponible</span>
-                                   </div>`
-                                : `<img src="${producto.imagen_url}" alt="${producto.nombre}" loading="lazy" 
+                                   </div>` : `<img src="${
+                        producto.imagen_url
+                    }" alt="${
+                        producto.nombre
+                    }" loading="lazy" 
                                       class="product-image w-full h-full object-cover" 
                                       onerror="this.onerror=null; this.src='${placeholderSvg}'; this.classList.add('p-4', 'opacity-50')">`
-                        }
+                }
                         ${nuevoTag}
                         ${
-                            tiempoTranscurrido && hasImage 
-                                ? `<div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">${tiempoTranscurrido}</div>` 
-                                : ''
-                        }
+                    tiempoTranscurrido && hasImage ? `<div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">${tiempoTranscurrido}</div>` : ''
+                }
                     </div>
                     <div class="p-3 md:p-4 flex flex-col flex-grow">
                         <div class="flex items-center justify-between mb-1">
                             <span class="text-xs uppercase tracking-wide text-gray-600 font-medium">${
                     producto.marca || 'Sin marca'
                 }</span>
-                            <button class="text-pink-400 hover:text-pink-600 transition-all duration-200 hover:scale-110" title="Añadir a favoritos">
-                                <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                            </button>
+                            <button class="like-btn text-pink-400 hover:text-pink-600 transition-all duration-200 hover:scale-110"
+    title="Añadir a favoritos"
+    aria-label="Añadir a favoritos"
+    tabindex="0"
+    style="background: none; border: none; outline: none; position: relative; z-index: 30;">
+    <svg class="like-icon w-7 h-7 md:w-6 md:h-6 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    </svg>
+</button>
                         </div>
                         <h3 class="text-sm md:text-base font-semibold text-gray-800 mb-1 line-clamp-2">${
                     producto.nombre

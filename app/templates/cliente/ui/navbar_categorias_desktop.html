@@ -1,0 +1,176 @@
+{# Navbar de Categorías para DESKTOP (con mega menú/modal) #}
+<div class="w-full bg-fuchsia-600 shadow-lg min-h-[56px] md:min-h-[64px] transition-all duration-300 relative hidden md:block">
+  <!-- Contenedor flexible que centrará las categorías -->
+  <div class="flex justify-center items-center w-full h-full overflow-hidden px-2">
+    <!-- Contenedor interno con categorías -->
+    <ul class="flex flex-row items-center justify-center gap-2 md:gap-4 px-2 py-2 w-full max-w-screen-xl mx-auto"
+      id="categories-container-desktop" aria-label="Categorías principales">
+      {% for categoria in categorias %}
+      <li class="flex-shrink-0 category-item" data-category-id="{{ categoria.id }}">
+        <button class="category-trigger block px-4 py-2 md:px-6 md:py-2 rounded-full font-bold text-white bg-white/10 hover:bg-white/30 hover:text-yellow-300 shadow-md border border-white/20 transition-all duration-200 text-sm sm:text-base md:text-lg tracking-wide focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-fuchsia-600 whitespace-nowrap"
+          data-category-id="{{ categoria.id }}" tabindex="0">
+          {{ categoria.nombre }}
+        </button>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <!-- Modal de categorías - Mega menú con diseño estructurado -->
+  <div id="megaMenu-desktop" class="mega-menu absolute top-full left-0 right-0 bg-white shadow-lg border-t border-gray-200 hidden" style="z-index: 9999;">
+    <div class="max-w-screen-xl mx-auto px-4">
+      <div class="mega-menu-content p-4">
+        <!-- Contenido dinámico se cargará aquí -->
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Estilos para el mega menú - Versión estructurada */
+.mega-menu {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-top: 1px solid #e5e7eb;
+}
+.mega-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+.mega-menu-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+.mega-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+}
+.category-section {
+  padding: 0.5rem 0;
+}
+.category-section h3 {
+  color: #111827;
+  font-weight: 600;
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.subcategory-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+</style>
+<!-- Overlay para fondo oscuro (solo desktop si lo deseas, puedes quitar si no es necesario) -->
+<div class="mega-menu-overlay" id="megaMenuOverlay-desktop" style="display:none;"></div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  // Solo activar funcionalidad en desktop
+  function isDesktop() { return window.innerWidth >= 768; }
+  const container = document.getElementById('categories-container-desktop');
+  const categoryItems = container.querySelectorAll('.category-item');
+  const megaMenu = document.getElementById('megaMenu-desktop');
+  const megaMenuContent = megaMenu.querySelector('.mega-menu-content');
+  const megaMenuOverlay = document.getElementById('megaMenuOverlay-desktop');
+  let currentCategory = null;
+  let closeTimeout = null;
+  let isMouseOverMenu = false;
+  let isMenuOpen = false;
+
+  // Datos de categorías
+  const categoriesData = {
+    {% for categoria in categorias %}
+    {{ categoria.id }}: {
+      nombre: "{{ categoria.nombre }}",
+      subcategorias: [
+        {% for sub in categoria.subcategorias %}
+        {
+          id: {{ sub.id }},
+          nombre: "{{ sub.nombre }}",
+          seudocategorias: [
+            {% for seudo in sub.seudocategorias %}
+            {
+              id: {{ seudo.id }},
+              nombre: "{{ seudo.nombre }}"
+            }{% if not loop.last %},{% endif %}
+            {% endfor %}
+          ]
+        }{% if not loop.last %},{% endif %}
+        {% endfor %}
+      ]
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  };
+
+  function buildMegaMenuContent(categoryId) {
+    const category = categoriesData[categoryId];
+    if (!category) return '<div class="text-center py-8">Cargando...</div>';
+    let html = '<div class="mega-menu-grid">';
+    category.subcategorias.forEach(sub => {
+      const seudoCount = sub.seudocategorias.length;
+      html += `
+        <div class="category-section">
+          <h3>
+            ${sub.nombre}
+            ${seudoCount > 0 ? `<span class="category-count">${seudoCount}</span>` : ''}
+          </h3>
+          <ul class="subcategory-list">
+            ${sub.seudocategorias.map(seudo => `
+              <li class="subcategory-item">
+                <a href="/products?seudocategoria=${seudo.id}" class="subcategory-link">
+                  ${seudo.nombre}
+                </a>
+              </li>
+            `).join('')}
+          </ul>
+        </div>
+      `;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function showMegaMenu(categoryId) {
+    clearTimeout(closeTimeout);
+    if (currentCategory === categoryId && isMenuOpen) return;
+    currentCategory = categoryId;
+    megaMenuContent.innerHTML = buildMegaMenuContent(categoryId);
+    megaMenu.classList.remove('hidden');
+    if (megaMenuOverlay) megaMenuOverlay.style.display = 'block';
+    isMenuOpen = true;
+  }
+  function hideMegaMenu() {
+    closeTimeout = setTimeout(() => {
+      if (!isMouseOverMenu && isMenuOpen) {
+        megaMenu.classList.add('hidden');
+        if (megaMenuOverlay) megaMenuOverlay.style.display = 'none';
+        currentCategory = null;
+        isMenuOpen = false;
+      }
+    }, 120);
+  }
+  // Eventos de interacción
+  categoryItems.forEach(item => {
+    const trigger = item.querySelector('.category-trigger');
+    trigger.addEventListener('mouseenter', () => { if (isDesktop()) showMegaMenu(item.dataset.categoryId); });
+    trigger.addEventListener('mouseleave', hideMegaMenu);
+    trigger.addEventListener('focus', () => { if (isDesktop()) showMegaMenu(item.dataset.categoryId); });
+    trigger.addEventListener('blur', hideMegaMenu);
+  });
+  megaMenu.addEventListener('mouseenter', function() { isMouseOverMenu = true; clearTimeout(closeTimeout); });
+  megaMenu.addEventListener('mouseleave', function() { isMouseOverMenu = false; hideMegaMenu(); });
+  if (megaMenuOverlay) megaMenuOverlay.addEventListener('click', hideMegaMenu);
+  // Cerrar menú al hacer scroll o resize
+  window.addEventListener('scroll', hideMegaMenu);
+  window.addEventListener('resize', hideMegaMenu);
+});
+</script>

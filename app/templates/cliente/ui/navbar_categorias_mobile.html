@@ -1,0 +1,37 @@
+{# Navbar de Categorías para MÓVIL - Mejorado #}
+<div class="w-full bg-fuchsia-600 shadow-lg min-h-[56px] md:hidden transition-all duration-300 relative">
+  <nav aria-label="Navegación de categorías móviles">
+    <div class="flex items-center w-full h-full px-2 overflow-x-auto scrollbar-thin scrollbar-thumb-fuchsia-400 scrollbar-track-fuchsia-100 snap-x snap-mandatory">
+      <ul class="flex flex-row items-center gap-2 px-2 py-2 w-full max-w-screen-xl mx-auto" id="categories-container-mobile">
+        {% for categoria in categorias %}
+        <li class="flex-shrink-0 snap-start">
+          <a href="/products?categoria={{ categoria.id }}"
+            class="block px-4 py-2 rounded-full font-bold text-white bg-white/10 hover:bg-white/30 hover:text-yellow-300 shadow-md border border-white/20 transition-all duration-200 text-sm tracking-wide focus:outline-none focus-visible:ring-2 focus-visible:ring-yellow-300 focus-visible:ring-offset-2 focus-visible:ring-offset-fuchsia-600 whitespace-nowrap"
+            tabindex="0" aria-label="Ver productos de la categoría {{ categoria.nombre }}">
+            {{ categoria.nombre }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </nav>
+  
+  <style>
+    .scrollbar-thin::-webkit-scrollbar {
+      height: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+      background: #d946ef;
+      border-radius: 6px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+      background: #fae8ff;
+    }
+    .snap-x {
+      scroll-snap-type: x mandatory;
+    }
+    .snap-start {
+      scroll-snap-align: start;
+    }
+  </style>
+</div>

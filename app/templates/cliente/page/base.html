@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es">
+
+    <head>
+        <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Tienda de Cosméticos</title>
+                <!-- Tailwind CSS CDN -->
+                <script src="https://cdn.tailwindcss.com"></script>
+                <!-- Estilos personalizados -->
+                <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+                    <style>
+                        @keyframes fadeInDown {
+                            from {
+                                opacity: 0;
+                                transform: translateY(-20px);
+                            }
+
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+
+                        @keyframes fadeInUp {
+                            from {
+                                opacity: 0;
+                                transform: translateY(10px);
+                            }
+
+                            to {
+                                opacity: 1;
+                                transform: translateY(0);
+                            }
+                        }
+
+                        .animate-fade-in-down {
+                            animation: fadeInDown 0.5s ease-out;
+                        }
+
+                        .animate-fade-in-up {
+                            animation: fadeInUp 0.3s ease-out;
+                        }
+
+                        .animate-pulse {
+                            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+                        }
+
+                        @keyframes pulse {
+
+                            0,
+                            100% {
+                                opacity: 1;
+                            }
+
+                            50% {
+                                opacity: 0.5;
+                            }
+                        }
+
+                        .animate-bounce {
+                            animation: bounce 1s infinite;
+                        }
+
+                        @keyframes bounce {
+
+                            0,
+                            100% {
+                                transform: translateY(-25%);
+                                animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+                            }
+
+                            50% {
+                                transform: none;
+                                animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+                            }
+                        }
+                    </style>
+                </head>
+
+                <body
+                    class="bg-gray-100 font-sans flex flex-col min-h-screen">
+                    <!-- Navbar principal -->
+                    <div class="w-full">
+                        <div class="bg-white border-b-2 border-pink-200 shadow-xl sticky top-0 z-50">
+                            <nav
+                                class="sticky top-0 z-50 w-full shadow-xl border-b-2 border-pink-200 flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 md:px-8 transition-all duration-300 animate-fade-in-down bg-white py-4" style="opacity: 1" role="navigation" aria-label="Navegación principal">
+
+                                <!-- Contenido principal de la barra de navegación -->
+                                <div
+                                    class="w-full flex items-center justify-between">
+                                    <!-- Logo -->
+                                    <div class="flex items-center">
+                                        <a href="/" class="flex items-center gap-2 group focus:outline-none" aria-label="Inicio" tabindex="0">
+                                            <span class="relative select-none" style="letter-spacing: 0.04em">
+                                                <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-pink-400 to-fuchsia-500 drop-shadow-md transition-all duration-300 text-xl sm:text-2xl md:text-3xl tracking-wider group-hover:from-fuchsia-500 group-hover:to-pink-500 group-hover:drop-shadow-lg">
+                                                    <span class="hidden sm:inline">Ye&Cy Cosmetic</span>
+                                                    <span class="sm:hidden">Ye&Cy Cosmetic</span>
+                                                </span>
+                                                <span class="absolute -top-2 -right-6 md:-right-8 animate-pulse">
+                                                    <svg class="w-5 h-5 md:w-6 md:h-6 text-pink-400 group-hover:text-fuchsia-500 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"/>
+                                                    </svg>
+                                                </span>
+                                                <span class="absolute left-0 -bottom-1 w-0 h-1 bg-gradient-to-r from-pink-400 to-fuchsia-400 rounded-full group-hover:w-full transition-all duration-500"></span>
+                                            </span>
+                                        </a>
+                                    </div>
+
+                                    <!-- Buscador Desktop -->
+                                    <div class="hidden md:flex flex-1 max-w-xl mx-4">
+                                        {% include 'cliente/ui/buscador_desktop.html' %}
+                                    </div>
+
+                                    <!-- Iconos de acción (carrito, favoritos, usuario) -->
+                                    <div
+                                        class="flex items-center gap-5 md:gap-6">
+                                        <!-- Favoritos -->
+                                        <div class="relative">
+                                            <a href="/favoritos" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-pink-400 group bg-white/90 shadow-sm hover:bg-pink-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none" aria-label="Favoritos">
+                                                <div class="relative">
+                                                    <svg class="w-7 h-7 md:w-8 md:h-8 text-pink-500 group-hover:text-pink-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                        <path d="M12 21C12 21 4 13.686 4 8.857C4 6.099 6.238 4 8.857 4C10.324 4 11.667 4.857 12 6.086C12.333 4.857 13.676 4 15.143 4C17.762 4 20 6.099 20 8.857C20 13.686 12 21 12 21Z" stroke-linecap="round" stroke-linejoin="round"/>
+                                                    </svg>
+                                                    <span class="absolute -top-0.5 -right-0.5 bg-pink-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow animate-pulse border border-white">3</span>
+                                                </div>
+                                            </a>
+                                        </div>
+
+                                        <!-- Carrito -->
+                                        <div class="relative">
+                                            <button type="button" id="cartIcon" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 group bg-white/90 shadow-sm hover:bg-yellow-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none cursor-pointer" aria-label="Carrito">
+                                                <div class="relative">
+                                                    <svg class="w-7 h-7 md:w-8 md:h-8 text-yellow-500 group-hover:text-yellow-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+                                                        <circle cx="9" cy="21" r="1"/>
+                                                        <circle cx="20" cy="21" r="1"/>
+                                                        <path d="M1 1h2l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                                                    </svg>
+                                                    <span id="cartCounter" class="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-white transform transition-all duration-300 hover:scale-110">
+                                                        0
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        </div>
+
+                                        <!-- Menú usuario (desktop) -->
+                                        <!-- Componente de Menú de Usuario - Diseño Premium -->
+                                        <div
+                                            class="relative hidden md:block" role="navigation" aria-label="Menú de usuario premium">
+                                            <!-- Contenedor del menú -->
+                                            {% include 'cliente/ui/menu_usuario.html' %}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Buscador Mobile -->
+                                <div class="w-full px-4 pb-3 md:hidden">
+                                    {% include 'cliente/ui/buscador_mobile.html' %}
+                                </div>
+                            </nav>
+                        </div>
+
+                        <!-- Barra secundaria de categorías principales -->
+                        <div class="relative w-full" style="z-index: 20">
+                            {% include 'cliente/ui/navbar_categorias.html' %}
+                        </div>
+                    </div>
+
+                    <!-- Contenido principal -->
+                    {% block full_width_content %}{% endblock %}
+                    <main class="container mx-auto pt-20 pb-8 px-4 flex-1"> {% block content %}{% endblock %}
+                        </main>
+
+                        <!-- WhatsApp Floating Button -->
+                        {% include 'cliente/ui/whatsapp_button.html' %}
+
+                        <!-- seccion de confianza -->
+                        {% include 'cliente/ui/seccion_confianza.html' %}
+
+                        <!-- Footer -->
+                        {% include 'cliente/ui/footer.html' %}
+
+                        <!-- Bottom Navigation - Only on mobile -->
+                        {% include 'cliente/ui/mobile_nav.html' %}
+                        <!-- Incluir el carrito -->
+                        {% include 'cliente/ui/carrito.html' %}
+
+                        {% include 'cliente/ui/notifications.html' %}
+
+                        <!-- Al final de base.html -->
+                        <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+                        <script>
+                            window.userId = {{ session.get('user_id', 'null') }};
+                        </script>
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function () { // Verificar disponibilidad del sistema Toast
+                                if (typeof ToastNotification !== 'undefined') {
+                                    console.log('✅ Sistema de notificaciones Toast disponible');
+                                } else {
+                                    console.warn('⚠️ Sistema de notificaciones no encontrado - usando fallback');
+
+                                    // Fallback básico
+                                    window.toast = {
+                                        success: (msg, duration = 3000) => {
+                                            console.log(`✅ ${msg}`);
+                                            // Crear notificación visual simple si no hay Toast
+                                            createSimpleNotification(msg, 'bg-green-500');
+                                        },
+                                        error: (msg, duration = 4000) => {
+                                            console.log(`❌ ${msg}`);
+                                            createSimpleNotification(msg, 'bg-red-500');
+                                        },
+                                        warning: (msg, duration = 3500) => {
+                                            console.log(`⚠️ ${msg}`);
+                                            createSimpleNotification(msg, 'bg-yellow-500');
+                                        },
+                                        info: (msg, duration = 3000) => {
+                                            console.log(`ℹ️ ${msg}`);
+                                            createSimpleNotification(msg, 'bg-blue-500');
+                                        }
+                                    };
+                                }
+
+                                // Función auxiliar para notificaciones simples
+                                function createSimpleNotification(message, bgClass) {
+                                    const notification = document.createElement('div');
+                                    notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${bgClass} shadow-lg animate-fade-in-up`;
+                                    notification.textContent = message;
+
+                                    document.body.appendChild(notification);
+
+                                    setTimeout(() => {
+                                        notification.classList.add('animate-fade-out-down');
+                                        setTimeout(() => {
+                                            if (notification.parentNode) {
+                                                notification.parentNode.removeChild(notification);
+                                            }
+                                        }, 300);
+                                    }, 3000);
+                                }
+                            });
+                        </script>
+                    </body>
+
+                </html>

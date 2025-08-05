@@ -1,0 +1,251 @@
+<!-- Sistema de Notificaciones Toast Profesional con Tailwind -->
+<div id="notification-container" class="fixed top-5 right-5 z-[9999] space-y-3 w-full max-w-xs"></div>
+
+<script>
+class ToastNotification {
+    constructor() {
+        this.container = document.getElementById('notification-container');
+        this.injectSVGIcons();
+        this.injectAnimations();
+    }
+
+    injectSVGIcons() {
+        if (!document.getElementById('toast-icons')) {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('id', 'toast-icons');
+            svg.setAttribute('style', 'position: absolute; width: 0; height: 0; overflow: hidden;');
+            svg.innerHTML = `
+                <symbol id="toast-success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </symbol>
+                <symbol id="toast-error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </symbol>
+                <symbol id="toast-warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </symbol>
+                <symbol id="toast-info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </symbol>
+                <symbol id="toast-close-icon" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </symbol>
+            `;
+            document.body.appendChild(svg);
+        }
+    }
+
+    injectAnimations() {
+        if (!document.getElementById('toast-animations')) {
+            const style = document.createElement('style');
+            style.id = 'toast-animations';
+            style.textContent = `
+                @keyframes toast-progress {
+                    from { width: 100%; }
+                    to { width: 0%; }
+                }
+                @keyframes toast-slide-in {
+                    0% {
+                        transform: translateX(100%) translateY(0) scale(0.9);
+                        opacity: 0;
+                    }
+                    80% {
+                        transform: translateX(-10%) translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateX(0) translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                }
+                @keyframes toast-slide-out {
+                    0% {
+                        transform: translateX(0) translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                    20% {
+                        transform: translateX(-10%) translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                    100% {
+                        transform: translateX(120%) translateY(0) scale(0.9);
+                        opacity: 0;
+                    }
+                }
+                @keyframes toast-bounce-in {
+                    0% {
+                        transform: translateY(100px) scale(0.8);
+                        opacity: 0;
+                    }
+                    60% {
+                        transform: translateY(-10px) scale(1.05);
+                        opacity: 1;
+                    }
+                    80% {
+                        transform: translateY(5px) scale(1);
+                    }
+                    100% {
+                        transform: translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                }
+                @keyframes toast-bounce-out {
+                    0% {
+                        transform: translateY(0) scale(1);
+                        opacity: 1;
+                    }
+                    30% {
+                        transform: translateY(-10px) scale(1.05);
+                    }
+                    100% {
+                        transform: translateY(100px) scale(0.8);
+                        opacity: 0;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+
+    show(message, type = 'info', duration = 3000, animationType = 'slide') {
+        const toast = this.createToast(message, type, duration, animationType);
+        this.container.appendChild(toast);
+        
+        // Trigger animation
+        setTimeout(() => {
+            toast.classList.add(`animate-toast-${animationType}-in`);
+        }, 10);
+        
+        // Auto remove
+        const autoRemoveTimer = setTimeout(() => {
+            this.removeToast(toast, animationType);
+        }, duration);
+        
+        toast.dataset.autoRemoveTimer = autoRemoveTimer;
+    }
+
+    createToast(message, type, duration, animationType) {
+        const toast = document.createElement('div');
+        
+        // Base classes
+        const baseClasses = [
+            'flex', 'items-center', 'w-full', 'max-w-xs', 'p-4', 'text-gray-700', 
+            'bg-white', 'rounded-lg', 'shadow-xl', 'border-l-4', 'relative', 
+            'overflow-hidden', 'transform-gpu', 'opacity-0'
+        ];
+        
+        // Animation classes
+        const animationClasses = {
+            slide: ['translate-x-full'],
+            bounce: ['translate-y-full']
+        };
+        
+        // Type-specific classes
+        const typeClasses = {
+            success: ['border-green-500'],
+            error: ['border-red-500'],
+            warning: ['border-yellow-500'],
+            info: ['border-blue-500']
+        };
+        
+        // Icon background classes
+        const iconBgClasses = {
+            success: ['bg-green-100', 'text-green-500'],
+            error: ['bg-red-100', 'text-red-500'],
+            warning: ['bg-yellow-100', 'text-yellow-500'],
+            info: ['bg-blue-100', 'text-blue-500']
+        };
+        
+        // Apply classes
+        toast.className = [...baseClasses, ...animationClasses[animationType], ...typeClasses[type]].join(' ');
+        
+        const iconMap = {
+            success: 'toast-success-icon',
+            error: 'toast-error-icon',
+            warning: 'toast-warning-icon',
+            info: 'toast-info-icon'
+        };
+
+        toast.innerHTML = `
+            <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg ${iconBgClasses[type].join(' ')}">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <use href="#${iconMap[type]}"></use>
+                </svg>
+            </div>
+            <div class="ml-3 text-sm font-medium flex-1">${message}</div>
+            <button class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 inline-flex h-8 w-8 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <use href="#toast-close-icon"></use>
+                </svg>
+            </button>
+            <div class="absolute bottom-0 left-0 h-1 bg-current opacity-20" style="animation: toast-progress ${duration/1000}s ease-out forwards;"></div>
+        `;
+
+        // Add dismiss functionality
+        toast.querySelector('button').addEventListener('click', () => {
+            clearTimeout(toast.dataset.autoRemoveTimer);
+            this.removeToast(toast, animationType);
+        });
+
+        return toast;
+    }
+
+    removeToast(toast, animationType) {
+        toast.classList.remove(`animate-toast-${animationType}-in`);
+        toast.classList.add(`animate-toast-${animationType}-out`);
+        
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 500);
+    }
+
+    success(message, duration = 3000, animationType = 'slide') {
+        this.show(message, 'success', duration, animationType);
+    }
+
+    error(message, duration = 4000, animationType = 'slide') {
+        this.show(message, 'error', duration, animationType);
+    }
+
+    warning(message, duration = 3500, animationType = 'slide') {
+        this.show(message, 'warning', duration, animationType);
+    }
+
+    info(message, duration = 3000, animationType = 'slide') {
+        this.show(message, 'info', duration, animationType);
+    }
+}
+
+// Create global instance with enhanced options
+const toast = new ToastNotification();
+
+// Enhanced global function with animation options
+window.toast = {
+    success: (msg, duration, animation) => toast.success(msg, duration, animation),
+    error: (msg, duration, animation) => toast.error(msg, duration, animation),
+    warning: (msg, duration, animation) => toast.warning(msg, duration, animation),
+    info: (msg, duration, animation) => toast.info(msg, duration, animation),
+    // Advanced show method
+    show: (msg, type, duration, animation) => toast.show(msg, type, duration, animation)
+};
+
+// Add animation classes to the head
+const animationStyles = document.createElement('style');
+animationStyles.textContent = `
+    .animate-toast-slide-in {
+        animation: toast-slide-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    }
+    .animate-toast-slide-out {
+        animation: toast-slide-out 0.5s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+    }
+    .animate-toast-bounce-in {
+        animation: toast-bounce-in 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+    }
+    .animate-toast-bounce-out {
+        animation: toast-bounce-out 0.6s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
+    }
+`;
+document.head.appendChild(animationStyles);
+</script>

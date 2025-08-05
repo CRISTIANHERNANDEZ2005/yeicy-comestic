@@ -1,0 +1,104 @@
+<!-- ui/mobile_nav.html -->
+<nav
+  class="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 md:hidden shadow-[0_-4px_15px_-5px_rgba(0,0,0,0.1)]">
+  <div class="flex justify-around items-center py-3">
+    <a href="/" class="flex flex-col items-center text-pink-600 group">
+      <div class="p-2 rounded-full group-active:bg-pink-50 transition-colors">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <!-- Casa -->
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            class="text-pink-500" />
+          <!-- Detalle de la chimenea -->
+          <rect x="9" y="7" width="6" height="3" fill="currentColor" class="text-red-500" />
+          <!-- Ventana -->
+          <rect x="9" y="12" width="6" height="4" rx="1" fill="currentColor" class="text-blue-400" />
+          <!-- Marco de la puerta -->
+          <rect x="10" y="16" width="4" height="5" fill="currentColor" class="text-yellow-600" />
+          <!-- Manija -->
+          <circle cx="12" cy="18" r="1" fill="currentColor" class="text-yellow-800" />
+        </svg>
+      </div>
+      <span class="text-xs mt-0.5 font-medium">Inicio</span>
+    </a>
+
+    <button class="flex flex-col items-center text-gray-600 group">
+      <div class="p-2 rounded-full group-active:bg-gray-50 transition-colors">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <!-- Caja principal -->
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" class="text-amber-600" />
+          <!-- Etiqueta -->
+          <rect x="10" y="9" width="4" height="2" rx="1" fill="currentColor" class="text-blue-400" />
+          <!-- Contenido (burbujas representando productos) -->
+          <circle cx="12" cy="14" r="1" fill="currentColor" class="text-green-500" />
+          <circle cx="16" cy="14" r="1" fill="currentColor" class="text-red-500" />
+          <circle cx="8" cy="14" r="1" fill="currentColor" class="text-purple-500" />
+        </svg>
+      </div>
+      <span class="text-xs mt-0.5 font-medium">Productos</span>
+    </button>
+
+    <button class="flex flex-col items-center text-gray-600 group">
+      <div class="p-2 rounded-full group-active:bg-gray-50 transition-colors">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <!-- Pan superior -->
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 8h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" class="text-yellow-600"
+            fill="currentColor" />
+          <!-- Lechuga -->
+          <path d="M5 10h14c0 0-2 1-7 1s-7-1-7-1" stroke-linecap="round" stroke-linejoin="round"
+            class="text-green-500" fill="none" />
+          <!-- Carne -->
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 11h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a1 1 0 011-1z" class="text-red-700"
+            fill="currentColor" />
+          <!-- Queso -->
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 14h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a1 1 0 011-1z" class="text-yellow-300"
+            fill="currentColor" />
+          <!-- Tomate -->
+          <circle cx="12" cy="15" r="8" fill="currentColor" class="text-red-500 opacity-20" />
+          <!-- Pan inferior -->
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 17h16a1 1 0 011 1v1a1 1 0 01-1 1H4a1 1 0 01-1-1v-1a1 1 0 011-1z" class="text-yellow-600"
+            fill="currentColor" />
+          <!-- Semillas de sésamo -->
+          <circle cx="8" cy="9" r="0.5" fill="currentColor" class="text-yellow-800" />
+          <circle cx="16" cy="9" r="0.5" fill="currentColor" class="text-yellow-800" />
+          <circle cx="12" cy="7" r="0.5" fill="currentColor" class="text-yellow-800" />
+        </svg>
+      </div>
+      <span class="text-xs mt-0.5 font-medium">Menú</span>
+    </button>
+
+    <a href="/cuenta" class="flex flex-col items-center text-gray-600 group">
+      <div class="p-2 rounded-full group-active:bg-gray-50 transition-colors">
+        <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <!-- Cabeza -->
+          <circle cx="12" cy="8" r="4" fill="currentColor" class="text-yellow-200" />
+          <!-- Cuerpo -->
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 20c0-4 4-6 8-6s8 2 8 6" class="text-blue-400"
+            fill="none" />
+          <!-- Ojos -->
+          <circle cx="10" cy="7" r="1" fill="currentColor" class="text-blue-700" />
+          <circle cx="14" cy="7" r="1" fill="currentColor" class="text-blue-700" />
+          <!-- Sonrisa -->
+          <path d="M10 11h4" stroke-linecap="round" stroke-linejoin="round" class="text-pink-500" />
+          <!-- Cabello -->
+          <path d="M9 5c0 0 1-2 3-2s3 2 3 2" stroke-linecap="round" stroke-linejoin="round" class="text-yellow-800"
+            fill="none" />
+        </svg>
+      </div>
+      <span class="text-xs mt-0.5 font-medium">Cuenta</span>
+    </a>
+  </div>
+</nav>
+
+<script>
+    // Función para alternar el menú móvil
+    document.querySelector('nav button:nth-of-type(2)').addEventListener('click', function () {
+      const mobileMenu = document.getElementById('mobile-menu');
+      mobileMenu.classList.toggle('hidden');
+    });
+</script>

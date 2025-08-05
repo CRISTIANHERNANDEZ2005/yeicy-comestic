@@ -1,0 +1,26 @@
+<section class="relative w-full h-[70vh] md:h-[80vh] flex items-center justify-center overflow-hidden animate-fade-in">
+    <!-- Collage de imágenes -->
+    <div class="absolute inset-0 w-full h-full z-0 flex flex-col md:flex-row">
+        <img src="{{ url_for('static', filename='imagenes/imagen1.jpeg') }}" alt="Cosméticos fondo 1"
+            class="w-full md:w-1/2 h-1/2 md:h-full object-cover object-center opacity-80 scale-105 blur-[1px]" style="filter: brightness(0.7);" />
+        <img src="{{ url_for('static', filename='imagenes/imagen2.jpeg') }}" alt="Cosméticos fondo 2"
+            class="w-full md:w-1/2 h-1/2 md:h-full object-cover object-center opacity-80 scale-105 blur-[1px]" style="filter: brightness(0.7);" />
+    </div>
+    <div class="absolute inset-0 bg-gradient-to-br from-pink-700/80 via-pink-300/40 to-fuchsia-200/60 z-5"></div>
+    <div class="relative z-10 flex flex-col items-center text-center text-white px-4 animate-fade-in-up">
+        <h1 class="text-4xl md:text-6xl font-extrabold mb-4 drop-shadow-xl tracking-tight">
+            Belleza que Inspira <br />
+            <span class="bg-gradient-to-r from-pink-200 via-fuchsia-300 to-pink-400 bg-clip-text text-transparent drop-shadow-lg animate-gradient-x">Ye&Cy Cosmetic</span>
+        </h1>
+        <p class="text-lg md:text-2xl mb-8 max-w-2xl drop-shadow-md font-medium">
+            Cosméticos de alta calidad, seleccionados para realzar tu confianza y cuidar tu piel.
+        </p>
+        <a href="#destacados"
+            class="px-10 py-3 bg-white text-pink-700 font-extrabold rounded-full shadow-xl hover:bg-pink-100 hover:scale-105 transition-all text-lg md:text-xl flex items-center gap-2">
+            <svg class="w-6 h-6 text-pink-400 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M10 3v10m0 0l-3.5-3.5M10 13l3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            ¡Empieza a brillar!
+        </a>
+    </div>
+</section>

@@ -1,0 +1,448 @@
+<!-- Buscador Mobile - Dropdown Adaptado -->
+<div class="relative w-full">
+    <form role="search" id="searchFormMobile" autocomplete="off" class="relative">
+        <input type="text" id="searchInputMobile" class="w-full pl-4 pr-12 py-2.5 rounded-full border border-pink-200 shadow-sm focus:border-pink-400 focus:ring-2 focus:ring-pink-200 outline-none transition-all text-gray-700 placeholder-pink-300 bg-white" placeholder="¿Qué estás buscando hoy?" aria-label="Buscar"/>
+        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 text-pink-400 hover:text-pink-600 focus:outline-none" aria-label="Buscar">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+                <circle cx="11" cy="11" r="7"/>
+                <path d="M21 21l-3.5-3.5"/>
+            </svg>
+        </button>
+    </form>
+
+    <!-- Dropdown Mobile Adaptado -->
+    <div id="searchDropdownMobile" class="search-dropdown-mobile hidden">
+        <div
+            class="search-content-mobile">
+            <!-- Solo términos más buscados (se muestra cuando no hay query) -->
+            <div id="sugerenciasContainerMobile" class="mb-4">
+                <h4 class="text-sm font-semibold text-pink-600 mb-2">Términos más buscados</h4>
+                <ol id="sugerenciasListMobile" class="flex flex-col gap-1"></ol>
+            </div>
+
+            <!-- Solo resultados de búsqueda (se muestra cuando hay query) -->
+            <div id="resultadosContainerMobile" class="hidden">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">Resultados de búsqueda</h4>
+                <div id="resultadosListMobile" class="grid grid-cols-1 gap-3"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Estilos específicos para Mobile Dropdown */
+    .search-dropdown-mobile {
+        position: absolute;
+        top: calc(100% + 0.5rem);
+        left: 0;
+        right: 0;
+        background: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        border: 1px solid #fce7f3;
+        z-index: 99999;
+        max-height: 70vh;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(-10px) scale(0.95);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Mejora UX: En móviles, el dropdown no cubre el menú de usuario */
+    @media (max-width: 640px) {
+      .search-dropdown-mobile {
+        max-height: 90vh; /* Ocupa prácticamente toda la pantalla */
+        margin-bottom: 1vh; /* Margen mínimo absoluto */
+      }
+      #sugerenciasContainerMobile,
+      #resultadosContainerMobile {
+        max-height: 44vh;
+        overflow-y: auto;
+      }
+    }
+
+    .search-dropdown-mobile.show {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    .search-content-mobile {
+        padding: 0.75rem;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    /* Scrollbar personalizado para móvil */
+    .search-content-mobile::-webkit-scrollbar {
+        width: 4px;
+    }
+
+    .search-content-mobile::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 2px;
+    }
+
+    .search-content-mobile::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 2px;
+    }
+
+    .search-content-mobile::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Prevenir zoom en iOS */
+    @media screen and(-webkit-min-device-pixel-ratio: 0) {
+        #searchInputMobile {
+            font-size: 16px;
+            min-height: 48px;
+        }
+    }
+
+    /* Mejorar touch targets en móvil */
+    @media(max-width: 768px) {
+        #searchInputMobile {
+            min-height: 48px;
+        }
+
+        #searchFormMobile button {
+            min-width: 44px;
+            min-height: 44px;
+        }
+    }
+
+    /* Animaciones suaves para móvil */
+    .search-dropdown-mobile {
+        backdrop-filter: blur(0px);
+        transition: backdrop-filter 0.3s ease;
+    }
+
+    .search-dropdown-mobile.show {
+        backdrop-filter: blur(4px);
+    }
+
+    /* Animación para transición entre sugerencias y resultados */
+    .fade-in {
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .sugerencia-item-mobile {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 0.375rem;
+        background: #fdf2f8;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .sugerencia-item-mobile:active, .sugerencia-item-mobile:hover {
+        background: #fbcfe8;
+        transform: scale(1.02);
+    }
+    .sugerencia-numero-mobile {
+        display: inline-block;
+        min-width: 1.5em;
+        text-align: center;
+        font-weight: bold;
+        color: #ec4899;
+        background: #fce7f3;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        padding: 0.125rem 0.25rem;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () { // Elementos del DOM para Mobile
+        const searchInputMobile = document.getElementById('searchInputMobile');
+        const searchDropdownMobile = document.getElementById('searchDropdownMobile');
+        const sugerenciasListMobile = document.getElementById('sugerenciasListMobile');
+        const resultadosListMobile = document.getElementById('resultadosListMobile');
+        const sugerenciasContainerMobile = document.getElementById('sugerenciasContainerMobile');
+        const resultadosContainerMobile = document.getElementById('resultadosContainerMobile');
+
+        let searchTimeoutMobile;
+        let isDropdownOpenMobile = false;
+        let hasQuery = false;
+
+        // Función para mostrar dropdown en móvil
+        function mostrarDropdownMobile() {
+            if (isDropdownOpenMobile) 
+                return;
+            
+
+
+            console.log('Mostrando dropdown Mobile');
+            isDropdownOpenMobile = true;
+            searchDropdownMobile.classList.remove('hidden');
+
+            // Forzar reflow antes de mostrar
+            searchDropdownMobile.offsetHeight;
+            searchDropdownMobile.classList.add('show');
+
+            // Solo cargar sugerencias si no hay query
+            if (! hasQuery) {
+                cargarSugerenciasMobile();
+            }
+        }
+
+        // Función para ocultar dropdown en móvil
+        function ocultarDropdownMobile() {
+            if (! isDropdownOpenMobile) 
+                return;
+            
+
+
+            console.log('Ocultando dropdown Mobile');
+            isDropdownOpenMobile = false;
+            searchDropdownMobile.classList.remove('show');
+
+            setTimeout(() => {
+                if (! isDropdownOpenMobile) {
+                    searchDropdownMobile.classList.add('hidden');
+                }
+            }, 300);
+        }
+
+        // Función para cambiar entre sugerencias y resultados
+        function cambiarAModoResultados() {
+            sugerenciasContainerMobile.classList.add('hidden');
+            resultadosContainerMobile.classList.remove('hidden');
+            resultadosContainerMobile.classList.add('fade-in');
+        }
+
+        function cambiarAModoSugerencias() {
+            resultadosContainerMobile.classList.add('hidden');
+            sugerenciasContainerMobile.classList.remove('hidden');
+            sugerenciasContainerMobile.classList.add('fade-in');
+        }
+
+        // Función para cambiar entre sugerencias y resultados
+        function cambiarAModoResultados() {
+            sugerenciasContainerMobile.classList.add('hidden');
+            resultadosContainerMobile.classList.remove('hidden');
+            resultadosContainerMobile.classList.add('fade-in');
+        }
+
+        function cambiarAModoSugerencias() {
+            resultadosContainerMobile.classList.add('hidden');
+            sugerenciasContainerMobile.classList.remove('hidden');
+            sugerenciasContainerMobile.classList.add('fade-in');
+        }
+
+        // Event listeners para móvil
+        searchInputMobile.addEventListener('focus', function () {
+            console.log('Focus en input Mobile');
+            mostrarDropdownMobile();
+        });
+
+        searchInputMobile.addEventListener('click', function () {
+            console.log('Click en input Mobile');
+            mostrarDropdownMobile();
+        });
+
+        // Cerrar al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            const isClickInside = e.target.closest('#searchFormMobile') || e.target.closest('#searchDropdownMobile');
+            if (! isClickInside && isDropdownOpenMobile) {
+                console.log('Click fuera del buscador Mobile');
+                ocultarDropdownMobile();
+            }
+        });
+
+        // Cerrar con tecla Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && isDropdownOpenMobile) {
+                console.log('Tecla Escape presionada Mobile');
+                e.preventDefault();
+                ocultarDropdownMobile();
+                searchInputMobile.blur();
+            }
+        });
+
+        // Búsqueda instantánea para móvil
+        searchInputMobile.addEventListener('input', (e) => {
+            clearTimeout(searchTimeoutMobile);
+            const query = e.target.value.trim();
+
+            searchTimeoutMobile = setTimeout(() => {
+                if (query.length > 0) {
+                    console.log('Buscando productos Mobile para:', query);
+                    hasQuery = true;
+                    cambiarAModoResultados();
+                    buscarProductosMobile(query);
+                } else {
+                    console.log('Input vacío Mobile - Mostrando sugerencias');
+                    hasQuery = false;
+                    cambiarAModoSugerencias();
+                    cargarSugerenciasMobile();
+                }
+            }, 300);
+        });
+
+        // Función para mostrar estado de carga en móvil
+        function mostrarCargandoMobile() {
+            console.log('Mostrando estado de carga Mobile...');
+            resultadosListMobile.innerHTML = `
+                <div class="flex justify-center p-4">
+                    <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
+                </div>
+            `;
+        }
+
+        // Función para buscar productos en móvil
+        async function buscarProductosMobile(query) {
+            console.log('Iniciando búsqueda Mobile para:', query);
+            if (query.length === 0) {
+                console.log('Query vacío Mobile - Cargando sugerencias');
+                hasQuery = false;
+                cambiarAModoSugerencias();
+                cargarSugerenciasMobile();
+                return;
+            }
+
+            mostrarCargandoMobile();
+
+            try {
+                console.log('Realizando petición Mobile a /buscar?q=' + encodeURIComponent(query));
+                const response = await fetch(`/buscar?q=${
+                    encodeURIComponent(query)
+                }`);
+
+                if (! response.ok) {
+                    throw new Error('Error en la búsqueda Mobile');
+                }
+
+                const data = await response.json();
+                console.log('Respuesta recibida Mobile:', data);
+
+                if (data.error) {
+                    console.error('Error en la respuesta Mobile:', data.error);
+                    resultadosListMobile.innerHTML = `<p class="text-red-500">${
+                        data.error
+                    }</p>`;
+                    return;
+                }
+
+                console.log('Mostrando resultados Mobile:', data.resultados.length, 'productos encontrados');
+                mostrarResultadosMobile(data.resultados);
+            } catch (error) {
+                console.error('Error en la búsqueda Mobile:', error);
+                resultadosListMobile.innerHTML = '<p class="text-red-500">Error al buscar productos</p>';
+            }
+        }
+
+        // Mostrar resultados en móvil
+        function mostrarResultadosMobile(productos) {
+            console.log('Renderizando resultados Mobile:', productos.length, 'productos');
+            resultadosListMobile.innerHTML = '';
+
+            if (productos.length === 0) {
+                console.log('No se encontraron productos Mobile');
+                resultadosListMobile.innerHTML = '<p class="text-gray-500">No se encontraron productos</p>';
+                return;
+            }
+
+            productos.forEach(producto => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center gap-3 p-3 hover:bg-pink-50 rounded-lg cursor-pointer transition-all duration-200 hover:scale-105 border border-gray-100';
+                // Determinar si debemos mostrar el placeholder
+                const hasImage = producto.imagen_url && producto.imagen_url.trim() !== '' && !producto.imagen_url.includes('default');
+                
+                // URL para el placeholder SVG
+                const placeholderSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDhkYWRiIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KPHBhdGggZD0iTTMuMTYgMTguODhMMTUuMTIgNi45M2EuMTYuMTYgMCAwIDEgLjIyIDBsMy4wNiAzLjA2YS4xNi4xNiAwIDAgMSAwIC4yMkw2LjQ0IDIyYTEgMSAwIDAgMS0xLjM5LjA2bC02LjE1LTUuNzlhMS4yNSAxLjI1IDAgMCAxIC4yNi0xLjM5eiIvPgo8cGF0aCBkPSJNMTkgMTlhMiAyIDAgMSAwIDAtNCAyIDIgMCAwIDAgMCA0eiIvPgo8cGF0aCBkPSJNMjIgMTB2OGEyIDIgMCAwIDEtMiAyaC0xM2wtMy4yLTIuN2ExIDEgMCAwIDAtMS42LjRsLTMuMzUgNCIvPgo8cGF0aCBkPSJNMiAxMHYtNGEyIDIgMCAwIDEgMi0yaDZhMSAxIDAgMCAwIC44LS40bDIuNi0zLjQ1YTEgMSAwIDAgMSAuOC0uMzVIMThhMiAyIDAgMCAxIDIgMlYxMCIvPgo8L3N2Zz4=';
+                
+                div.innerHTML = `
+                    ${
+                        hasImage
+                            ? `<img src="${producto.imagen_url}" alt="${producto.nombre}" 
+                                 class="w-16 h-16 object-cover rounded-lg shadow-sm"
+                                 onerror="this.onerror=null; this.src='${placeholderSvg}'; this.classList.add('p-2', 'opacity-50')">`
+                            : `<div class="w-16 h-16 bg-gray-50 rounded-lg shadow-sm flex items-center justify-center">
+                                 <svg class="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                 </svg>
+                               </div>`
+                    }
+                    <div class="flex-1">
+                        <p class="font-medium text-sm text-gray-800">${
+                    producto.nombre
+                }</p>
+                        <p class="text-pink-600 font-bold">$${
+                    producto.precio.toLocaleString()
+                }</p>
+                    </div>
+                    <div class="text-pink-400">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                `;
+                div.addEventListener('click', () => {
+                    console.log('Producto clickeado Mobile:', producto.id, producto.nombre);
+                    window.location.href = `/producto/${
+                        producto.id
+                    }`;
+                });
+                resultadosListMobile.appendChild(div);
+            });
+        }
+
+        // Mostrar sugerencias en móvil
+        function mostrarSugerenciasMobile(terminos) {
+            console.log('Mostrando sugerencias Mobile:', terminos.length, 'términos');
+            sugerenciasListMobile.innerHTML = '';
+            terminos.forEach((termino, idx) => {
+                const li = document.createElement('li');
+                li.className = 'sugerencia-item-mobile';
+                li.innerHTML = `<span class="sugerencia-numero-mobile">${idx + 1}</span> <span>${termino}</span>`;
+                li.addEventListener('click', () => {
+                    console.log('Sugerencia seleccionada Mobile:', termino);
+                    searchInputMobile.value = termino;
+                    hasQuery = true;
+                    cambiarAModoResultados();
+                    buscarProductosMobile(termino);
+                });
+                sugerenciasListMobile.appendChild(li);
+            });
+        }
+
+        // Cargar sugerencias iniciales para móvil
+        async function cargarSugerenciasMobile() {
+            console.log('Cargando sugerencias iniciales Mobile...');
+            try {
+                const response = await fetch('/buscar?q=');
+                const data = await response.json();
+                console.log('Sugerencias recibidas Mobile:', data.sugerencias);
+                mostrarSugerenciasMobile(data.sugerencias);
+            } catch (error) {
+                console.error('Error al cargar sugerencias Mobile:', error);
+            }
+        }
+
+        // Prevenir envío del formulario en móvil
+        document.getElementById('searchFormMobile').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = searchInputMobile.value.trim();
+            if (query.length > 0) {
+                hasQuery = true;
+                cambiarAModoResultados();
+                buscarProductosMobile(query);
+            }
+        });
+    });
+</script>

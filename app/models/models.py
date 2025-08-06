@@ -11,6 +11,37 @@ from datetime import datetime
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
 
+    def generar_jwt(self):
+        import jwt
+        from datetime import datetime, timedelta
+        from flask import current_app
+        payload = {
+            'user_id': self.id,
+            'numero': self.numero,
+            'nombre': self.nombre,
+            'apellido': self.apellido,
+            'exp': datetime.utcnow() + timedelta(days=7)
+        }
+        secret = current_app.config.get('SECRET_KEY', 'super-secret')
+        return jwt.encode(payload, secret, algorithm='HS256')
+        
+    @classmethod
+    def verificar_jwt(cls, token):
+        """Verifica un token JWT y devuelve el payload si es válido"""
+        from flask import current_app
+        import jwt
+        from jwt import ExpiredSignatureError, InvalidTokenError
+        
+        secret = current_app.config.get('SECRET_KEY', 'super-secret')
+        
+        try:
+            payload = jwt.decode(token, secret, algorithms=['HS256'])
+            return payload
+        except ExpiredSignatureError:
+            return None
+        except InvalidTokenError:
+            return None
+
     id = db.Column(db.Integer, primary_key=True)
     numero = db.Column(db.String(10), nullable=False, unique=True)
     nombre = db.Column(db.String(50), nullable=False)

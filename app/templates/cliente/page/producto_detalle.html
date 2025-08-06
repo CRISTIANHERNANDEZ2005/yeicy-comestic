@@ -1,0 +1,281 @@
+{% extends 'cliente/page/base.html' %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Ruta de navegación -->
+    <nav class="flex mb-6" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{{ url_for('products.index') }}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-pink-600">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                    </svg>
+                    Inicio
+                </a>
+            </li>
+            {% if producto.categoria_principal %}
+            <li>
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <a href="{{ url_for('products.index', categoria_slug=producto.categoria_principal.slug) }}" class="ml-1 text-sm font-medium text-gray-700 hover:text-pink-600 md:ml-2">
+                        {{ producto.categoria_principal.nombre }}
+                    </a>
+                </div>
+            </li>
+            {% endif %}
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                    <span class="ml-1 text-sm font-medium text-gray-500 md:ml-2">{{ producto.nombre }}</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+
+    <!-- Contenido principal -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <div class="md:flex">
+            <!-- Galería de imágenes -->
+            <div class="md:w-1/2 p-6">
+                <div class="relative pb-[100%] mb-4 bg-gray-50 rounded-lg overflow-hidden">
+                    <img src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}" 
+                         alt="{{ producto.nombre }}" 
+                         class="absolute inset-0 w-full h-full object-contain p-4">
+                </div>
+                <div class="flex space-x-2 overflow-x-auto pb-2">
+                    <!-- Miniaturas de imágenes (puedes agregar más si el producto tiene múltiples imágenes) -->
+                    <div class="flex-shrink-0 w-16 h-16 border rounded-md overflow-hidden cursor-pointer hover:border-pink-500">
+                        <img src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}" 
+                             alt="{{ producto.nombre }}" 
+                             class="w-full h-full object-cover">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Información del producto -->
+            <div class="md:w-1/2 p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900">{{ producto.nombre }}</h1>
+                        <p class="text-gray-500 mt-1">Marca: {{ producto.marca or 'YE & CY' }}</p>
+                    </div>
+                    <button class="favorite-btn p-2 text-gray-400 hover:text-red-500 transition-colors" 
+                            data-product-id="{{ producto.id }}"
+                            aria-label="{{ 'Quitar de favoritos' if es_favorito else 'Agregar a favoritos' }}">
+                        <svg class="w-6 h-6 {{ 'text-red-500 fill-current' if es_favorito else 'text-gray-300' }}" 
+                             viewBox="0 0 24 24" 
+                             fill="{{ 'currentColor' if es_favorito else 'none' }}" 
+                             stroke="currentColor" 
+                             stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Calificación -->
+                <div class="flex items-center mt-2">
+                    <div class="flex items-center">
+                        {% for i in range(5) %}
+                            {% if i < calificacion_promedio|int %}
+                                <svg class="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                            {% else %}
+                                <svg class="w-5 h-5 text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="text-gray-600 text-sm ml-2">({{ reseñas|length }} reseñas)</span>
+                    </div>
+                </div>
+
+                <!-- Precio -->
+                <div class="mt-4">
+                    <span class="text-3xl font-bold text-gray-900">${{ "%.2f"|format(producto.precio) }}</span>
+                </div>
+
+                <!-- Stock -->
+                <div class="mt-4">
+                    {% if producto.stock > 0 %}
+                        <span class="text-green-600 font-medium">En stock ({{ producto.stock }} disponibles)</span>
+                    {% else %}
+                        <span class="text-red-600 font-medium">Agotado</span>
+                    {% endif %}
+                </div>
+
+                <!-- Descripción -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-900">Descripción</h3>
+                    <div class="mt-2 text-gray-600">
+                        {{ producto.descripcion or 'No hay descripción disponible para este producto.' }}
+                    </div>
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="mt-8 flex space-x-4">
+                    <button type="button" 
+                            class="flex-1 bg-pink-600 hover:bg-pink-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
+                            {% if producto.stock <= 0 %}disabled{% endif %}>
+                        Añadir al carrito
+                    </button>
+                    <button type="button" class="p-3 text-gray-400 hover:text-gray-500">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sección de detalles adicionales -->
+    <div class="mt-12">
+        <h2 class="text-xl font-bold text-gray-900 mb-4">Detalles del producto</h2>
+        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="font-medium text-gray-900">Categoría</h3>
+                        <p class="mt-1 text-gray-600">{{ producto.categoria_principal.nombre if producto.categoria_principal else 'No especificada' }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Subcategoría</h3>
+                        <p class="mt-1 text-gray-600">{{ producto.subcategoria.nombre if producto.subcategoria else 'No especificada' }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Código de producto</h3>
+                        <p class="mt-1 text-gray-600">{{ producto.codigo or 'N/A' }}</p>
+                    </div>
+                    <div>
+                        <h3 class="font-medium text-gray-900">Disponibilidad</h3>
+                        <p class="mt-1 {{ 'text-green-600' if producto.stock > 0 else 'text-red-600' }}">
+                            {{ 'En stock' if producto.stock > 0 else 'Agotado' }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Productos relacionados -->
+    {% if productos_relacionados %}
+    <div class="mt-12">
+        <h2 class="text-xl font-bold text-gray-900 mb-6">Productos relacionados</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for producto in productos_relacionados %}
+            <div class="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+                <div class="relative pb-[100%]">
+                    <a href="{{ url_for('products.producto_detalle', producto_id=producto.id) }}" class="block w-full h-full">
+                        <img src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}" 
+                             alt="{{ producto.nombre }}" 
+                             class="absolute inset-0 w-full h-full object-cover">
+                    </a>
+                    <button class="favorite-btn absolute top-3 right-3 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors" 
+                            data-product-id="{{ producto.id }}" 
+                            aria-label="Guardar en favoritos">
+                        <svg class="w-5 h-5 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-4">
+                    <h3 class="font-medium text-gray-900 line-clamp-2 h-12">
+                        <a href="{{ url_for('products.producto_detalle', producto_id=producto.id) }}" class="hover:text-pink-600 transition-colors">
+                            {{ producto.nombre }}
+                        </a>
+                    </h3>
+                    <div class="mt-2">
+                        <span class="text-lg font-bold text-pink-600">
+                                ${{ "%.2f"|format(producto.precio) }}
+                            </span>
+                    </div>
+                    <div class="mt-3">
+                        <button class="w-full bg-pink-100 hover:bg-pink-200 text-pink-700 font-medium py-2 px-4 rounded-lg transition-colors"
+                                onclick="addToCart({{ producto.id }})">
+                            Añadir al carrito
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Reseñas -->
+    <div class="mt-12">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900">Reseñas de clientes</h2>
+            <button type="button" class="text-pink-600 hover:text-pink-700 font-medium">
+                Escribir una reseña
+            </button>
+        </div>
+
+        {% if reseñas %}
+            <div class="space-y-6">
+                {% for reseña in reseñas %}
+                <div class="bg-white rounded-xl shadow-sm p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h4 class="font-medium text-gray-900">{{ reseña.usuario.nombre if reseña.usuario else 'Anónimo' }}</h4>
+                            <div class="flex items-center mt-1">
+                                {% for i in range(5) %}
+                                    {% if i < reseña.calificacion %}
+                                        <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                        </svg>
+                                    {% else %}
+                                        <svg class="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                        </svg>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="ml-2 text-sm text-gray-500">{{ reseña.fecha_creacion.strftime('%d/%m/%Y') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-gray-600">
+                        {{ reseña.comentario }}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-12 bg-white rounded-xl shadow-sm">
+                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                </svg>
+                <h3 class="mt-2 text-lg font-medium text-gray-900">Sin reseñas aún</h3>
+                <p class="mt-1 text-gray-500">Sé el primero en escribir una reseña sobre este producto.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// Inicializar el manejador de favoritos
+if (typeof FavoritesManager !== 'undefined') {
+    const favoritesManager = new FavoritesManager();
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inicializar botones de favoritos
+        document.querySelectorAll('.favorite-btn').forEach(button => {
+            button.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                favoritesManager.toggleFavorite(e, button);
+            });
+        });
+    });
+}
+</script>
+{% endblock %}

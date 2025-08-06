@@ -7,6 +7,25 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
 
+    # --- LOGGING PROFESIONAL ---
+    import logging
+    from logging.handlers import RotatingFileHandler
+    import os
+    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    file_handler = RotatingFileHandler(os.path.join(log_dir, 'app.log'), maxBytes=1_000_000, backupCount=5, encoding='utf-8')
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+    # También a consola
+    console_handler = logging.StreamHandler()
+    console_handler.setFormatter(formatter)
+    console_handler.setLevel(logging.INFO)
+    app.logger.addHandler(console_handler)
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('Logging profesional inicializado')
+
     # Configuración adicional para SQLAlchemy
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -70,10 +89,19 @@ def create_app(config_class=Config):
                 subcategoria.seudocategorias = [
                     seudo for seudo in subcategoria.seudocategorias if seudo.estado == 'activo']
         
+        # Exponer favoritos y autenticación global
+        from flask import session
+        from app.models.models import Like
+        usuario_autenticado = 'user_id' in session
+        total_favoritos = 0
+        if usuario_autenticado:
+            total_favoritos = Like.query.filter_by(usuario_id=session['user_id'], estado='activo').count()
         return {
             'cart_items': items,
             'total_price': total_price,
-            'categorias': categorias
+            'categorias': categorias,
+            'total_favoritos': total_favoritos,
+            'usuario_autenticado': usuario_autenticado
         }
 
     # Manejador de errores 404

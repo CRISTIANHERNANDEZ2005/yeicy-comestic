@@ -276,21 +276,20 @@
                 modalMsg.textContent = msg || 'Debes iniciar sesión para agregar productos a tus favoritos.';
                 // Responsive position
                 if (window.innerWidth < 768) {
-                    modal.classList.remove('items-end','justify-start');
-                    modal.classList.add('items-end','justify-center');
+                    modal.classList.remove('items-end', 'justify-start');
+                    modal.classList.add('items-end', 'justify-center');
                     modal.style.bottom = '70px';
                     modal.style.top = '';
                     modal.style.left = '0';
                     modal.style.right = '0';
                 } else {
-                    modal.classList.remove('items-end','justify-center');
-                    modal.classList.add('items-end','justify-start');
+                    modal.classList.remove('items-end', 'justify-center');
+                    modal.classList.add('items-end', 'justify-start');
                     modal.style.bottom = '40px';
                     modal.style.left = '40px';
                     modal.style.right = '';
                     modal.style.top = '';
-                }
-                modal.style.display = 'flex';
+                } modal.style.display = 'flex';
                 modalInner.classList.remove('modal-animate-out');
                 modalInner.classList.add('modal-animate-in');
                 clearTimeout(likeAuthModalTimeout);
@@ -312,10 +311,10 @@
             clearTimeout(likeAuthModalTimeout);
         }
         // Cerrar modal si el usuario hace click en el botón de login
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const loginBtn = document.getElementById('like-auth-login-btn');
             if (loginBtn) {
-                loginBtn.addEventListener('click', function() {
+                loginBtn.addEventListener('click', function () {
                     hideLikeAuthModal();
                 });
             }
@@ -334,10 +333,10 @@
             }
         });
         // Asignar lógica al logo de favoritos del navbar
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const navbarFavBtn = document.getElementById('navbar-fav-btn');
             if (navbarFavBtn) {
-                navbarFavBtn.addEventListener('click', function(e) {
+                navbarFavBtn.addEventListener('click', function (e) {
                     if (!window.USUARIO_AUTENTICADO) {
                         e.preventDefault();
                         showLikeAuthModal('Debes iniciar sesión para ver y gestionar tus favoritos.');
@@ -524,14 +523,16 @@
                             <span class="text-xs uppercase tracking-wide text-gray-600 font-medium">${
                     producto.marca || 'Sin marca'
                 }</span>
-                            <button class="like-btn text-pink-400 hover:text-pink-600 transition-all duration-200 hover:scale-110"
+                            <button class="favorite-btn text-gray-400 hover:text-red-500 transition-all duration-200 hover:scale-110"
     title="Añadir a favoritos"
     aria-label="Añadir a favoritos"
+    data-product-id="${
+                    producto.id
+                }"
     tabindex="0"
     style="background: none; border: none; outline: none; position: relative; z-index: 30;">
-    <svg class="like-icon w-7 h-7 md:w-6 md:h-6 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+        <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
     </svg>
 </button>
                         </div>

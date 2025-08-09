@@ -1,332 +1,391 @@
 <!DOCTYPE html>
 <html lang="es">
-
     <head>
         <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>Tienda de Cosméticos</title>
-                <!-- Tailwind CSS CDN -->
-                <script src="https://cdn.tailwindcss.com"></script>
-                
-                <!-- Interceptor de autenticación -->
-                <script src="{{ url_for('static', filename='js/auth_interceptor.js') }}"></script>
-                <!-- Estilos personalizados -->
-                <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-                    <style>
-                        @keyframes fadeInDown {
-                            from {
-                                opacity: 0;
-                                transform: translateY(-20px);
-                            }
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Tienda de Cosméticos</title>
+        <!-- Tailwind CSS CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
 
-                            to {
-                                opacity: 1;
-                                transform: translateY(0);
-                            }
-                        }
+        <!-- Interceptor de autenticación -->
+        <script src="{{ url_for('static', filename='js/auth_interceptor.js') }}"></script>
+        <!-- Estilos personalizados -->
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+        <style>
+            @keyframes fadeInDown {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px);
+                }
 
-                        @keyframes fadeInUp {
-                            from {
-                                opacity: 0;
-                                transform: translateY(10px);
-                            }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
 
-                            to {
-                                opacity: 1;
-                                transform: translateY(0);
-                            }
-                        }
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
 
-                        .animate-fade-in-down {
-                            animation: fadeInDown 0.5s ease-out;
-                        }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
 
-                        .animate-fade-in-up {
-                            animation: fadeInUp 0.3s ease-out;
-                        }
+            .animate-fade-in-down {
+                animation: fadeInDown 0.5s ease-out;
+            }
 
-                        .animate-pulse {
-                            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-                        }
+            .animate-fade-in-up {
+                animation: fadeInUp 0.3s ease-out;
+            }
 
-                        @keyframes pulse {
+            .animate-pulse {
+                animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            }
 
-                            0%,
-                            100% {
-                                opacity: 1;
-                            }
+            @keyframes pulse {
 
-                            50% {
-                                opacity: 0.5;
-                            }
-                        }
+                0,
+                100% {
+                    opacity: 1;
+                }
 
-                        .animate-bounce {
-                            animation: bounce 1s infinite;
-                        }
+                50% {
+                    opacity: 0.5;
+                }
+            }
 
-                        @keyframes bounce {
+            .animate-bounce {
+                animation: bounce 1s infinite;
+            }
 
-                            0%,
-                            100% {
-                                transform: translateY(-25%);
-                                animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
-                            }
+            @keyframes bounce {
 
-                            50% {
-                                transform: none;
-                                animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
-                            }
-                        }
-                    </style>
-                </head>
+                0,
+                100% {
+                    transform: translateY(-25%);
+                    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+                }
 
-                <body class="bg-gray-100 font-sans flex flex-col min-h-screen" {% if 'user' in session %} data-user-id="{{ session.user.id }}" {% endif %}>
-                    {% include 'cliente/ui/auth_modals.html' %}
-                    <!-- Navbar principal -->
-                    <div class="w-full">
-                        <div class="bg-white border-b-2 border-pink-200 shadow-xl sticky top-0 z-50">
-                            <nav
-                                class="sticky top-0 z-50 w-full shadow-xl border-b-2 border-pink-200 flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 md:px-8 transition-all duration-300 animate-fade-in-down bg-white py-4" style="opacity: 1" role="navigation" aria-label="Navegación principal">
+                50% {
+                    transform: none;
+                    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+                }
+            }
 
-                                <!-- Contenido principal de la barra de navegación -->
-                                <div
-                                    class="w-full flex items-center justify-between">
-                                    <!-- Logo -->
-                                    <div class="flex items-center">
-                                        <a href="/" class="flex items-center gap-2 group focus:outline-none" aria-label="Inicio" tabindex="0">
-                                            <span class="relative select-none" style="letter-spacing: 0.04em">
-                                                <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-pink-400 to-fuchsia-500 drop-shadow-md transition-all duration-300 text-xl sm:text-2xl md:text-3xl tracking-wider group-hover:from-fuchsia-500 group-hover:to-pink-500 group-hover:drop-shadow-lg">
-                                                    <span class="hidden sm:inline">Ye&Cy Cosmetic</span>
-                                                    <span class="sm:hidden">Ye&Cy Cosmetic</span>
-                                                </span>
-                                                <span class="absolute -top-2 -right-6 md:-right-8 animate-pulse">
-                                                    <svg class="w-5 h-5 md:w-6 md:h-6 text-pink-400 group-hover:text-fuchsia-500 transition-colors" fill="currentColor" viewbox="0 0 20 20">
-                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"/>
-                                                    </svg>
-                                                </span>
-                                                <span class="absolute left-0 -bottom-1 w-0 h-1 bg-gradient-to-r from-pink-400 to-fuchsia-400 rounded-full group-hover:w-full transition-all duration-500"></span>
-                                            </span>
-                                        </a>
+            /* Animaciones para la modal */
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @keyframes fadeOutDown {
+                from {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+                to {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+            }
+            .animate-fade-in-up {
+                animation: fadeInUp 0.3s ease-out forwards;
+            }
+            .animate-fade-out-down {
+                animation: fadeOutDown 0.3s ease-out forwards;
+            }
+        </style>
+    </head>
+
+    <body class="bg-gray-100 font-sans flex flex-col min-h-screen" {% if 'user' in session %} data-user-id="{{ session.user.id }}" {% endif %}>
+        {% include 'cliente/ui/auth_modals.html' %}
+        <!-- Navbar principal -->
+        <div class="w-full">
+            <div class="bg-white border-b-2 border-pink-200 shadow-xl sticky top-0 z-50">
+                <nav
+                    class="sticky top-0 z-50 w-full shadow-xl border-b-2 border-pink-200 flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 md:px-8 transition-all duration-300 animate-fade-in-down bg-white py-4" style="opacity: 1" role="navigation" aria-label="Navegación principal">
+
+                    <!-- Contenido principal de la barra de navegación -->
+                    <!-- Fila superior: Logo + Íconos -->
+                    <div class="flex items-center justify-between w-full">
+                        <!-- Logo -->
+                        <div class="flex items-center">
+                            <a href="/" class="flex items-center gap-2 group focus:outline-none" aria-label="Inicio" tabindex="0">
+                                <span class="relative select-none" style="letter-spacing: 0.04em">
+                                    <span class="font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-pink-400 to-fuchsia-500 drop-shadow-md transition-all duration-300 text-xl sm:text-2xl md:text-3xl tracking-wider group-hover:from-fuchsia-500 group-hover:to-pink-500 group-hover:drop-shadow-lg">
+                                        <span class="hidden sm:inline">Ye&Cy Cosmetic</span>
+                                        <span class="sm:hidden">Ye&Cy Cosmetic</span>
+                                    </span>
+                                    <span class="absolute -top-2 -right-6 md:-right-8 animate-pulse">
+                                        <svg class="w-5 h-5 md:w-6 md:h-6 text-pink-400 group-hover:text-fuchsia-500 transition-colors" fill="currentColor" viewbox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.049 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z"/>
+                                        </svg>
+                                    </span>
+                                    <span class="absolute left-0 -bottom-1 w-0 h-1 bg-gradient-to-r from-pink-400 to-fuchsia-400 rounded-full group-hover:w-full transition-all duration-500"></span>
+                                </span>
+                            </a>
+                        </div>
+
+                        <!-- Buscador Desktop -->
+                        <div class="hidden md:flex flex-1 max-w-xl mx-4">
+                            {% include 'cliente/ui/buscador_desktop.html' %}
+                        </div>
+
+                        <!-- Iconos de acción (carrito, favoritos, usuario) -->
+                        <div class="flex items-center gap-5 md:gap-6">
+                            <!-- Favoritos -->
+                            <div class="relative">
+                                <a href="{{ url_for('favorites.favoritos') }}" id="navbar-fav-btn" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-pink-400 group bg-white/90 shadow-sm hover:bg-pink-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none" aria-label="Favoritos">
+                                    <div class="relative">
+                                        <svg class="w-7 h-7 md:w-8 md:h-8 text-pink-500 group-hover:text-pink-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+                                            <path d="M12 21C12 21 4 13.686 4 8.857C4 6.099 6.238 4 8.857 4C10.324 4 11.667 4.857 12 6.086C12.333 4.857 13.676 4 15.143 4C17.762 4 20 6.099 20 8.857C20 13.686 12 21 12 21Z" stroke-linecap="round" stroke-linejoin="round"/>
+                                        </svg>
+                                        <span id="favorites-counter" class="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-xs font-bold rounded-full min-w-[1.5rem] h-6 flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-pink-200 animate-bounce z-10 select-none transition-all duration-300 transform scale-0 opacity-0" aria-label="0 favoritos" title="Tus productos favoritos">
+                                            0
+                                        </span>
                                     </div>
-
-                                    <!-- Buscador Desktop -->
-                                    <div class="hidden md:flex flex-1 max-w-xl mx-4">
-                                        {% include 'cliente/ui/buscador_desktop.html' %}
-                                    </div>
-
-                                    <!-- Iconos de acción (carrito, favoritos, usuario) -->
-                                    <div
-                                        class="flex items-center gap-5 md:gap-6">
-                                        <!-- Favoritos -->
-                                        <div class="relative">
-                                            <a href="{{ url_for('products.favoritos') }}" id="navbar-fav-btn" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-pink-400 group bg-white/90 shadow-sm hover:bg-pink-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none" aria-label="Favoritos">
-                                                <div class="relative">
-                                                    <svg class="w-7 h-7 md:w-8 md:h-8 text-pink-500 group-hover:text-pink-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
-                                                        <path d="M12 21C12 21 4 13.686 4 8.857C4 6.099 6.238 4 8.857 4C10.324 4 11.667 4.857 12 6.086C12.333 4.857 13.676 4 15.143 4C17.762 4 20 6.099 20 8.857C20 13.686 12 21 12 21Z" stroke-linecap="round" stroke-linejoin="round"/>
-                                                    </svg>
-                                                    <span id="favorites-counter" class="absolute -top-1.5 -right-1.5 bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white text-xs font-bold rounded-full min-w-[1.5rem] h-6 flex items-center justify-center shadow-lg border-2 border-white ring-2 ring-pink-200 animate-bounce z-10 select-none transition-all duration-300 transform scale-0 opacity-0" 
-                                                          aria-label="0 favoritos" 
-                                                          title="Tus productos favoritos">
-                                                        0
-                                                    </span>
-                                                </div>
-                                            </a>
-                                        </div>
-                                        <script>
-                                            // Actualizar el contador de favoritos cuando se actualice la lista
-                                            document.addEventListener('favorites:updated', (e) => {
-                                                const counter = document.getElementById('favorites-counter');
-                                                if (e.detail && e.detail.count !== undefined) {
-                                                    counter.textContent = e.detail.count > 0 ? e.detail.count : '';
-                                                    counter.setAttribute('aria-label', `${e.detail.count} favoritos`);
-                                                    counter.style.transform = e.detail.count > 0 ? 'scale(1)' : 'scale(0)';
-                                                    counter.style.opacity = e.detail.count > 0 ? '1' : '0';
-                                                }
-                                            });
-                                            
-                                            // Manejar clic en el botón de favoritos
-                                            document.addEventListener('DOMContentLoaded', function() {
-                                                const favButton = document.getElementById('navbar-fav-btn');
-                                                if (favButton) {
-                                                    favButton.addEventListener('click', function(e) {
-                                                        const isAuthenticated = {{ 'true' if 'user' in session else 'false' }};
-                                                        if (!isAuthenticated) {
-                                                            e.preventDefault();
-                                                            showLikeAuthModal('Debes iniciar sesión para ver tus favoritos');
-                                                            return false;
-                                                        }
-                                                        // Si está autenticado, la navegación normal continúa
-                                                    });
-                                                }
-                                            });
-                                        </script>
-
-                                        <!-- Carrito -->
-                                        <div class="relative">
-                                            <button type="button" id="cartIcon" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 group bg-white/90 shadow-sm hover:bg-yellow-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none cursor-pointer" aria-label="Carrito">
-                                                <div class="relative">
-                                                    <svg class="w-7 h-7 md:w-8 md:h-8 text-yellow-500 group-hover:text-yellow-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
-                                                        <circle cx="9" cy="21" r="1"/>
-                                                        <circle cx="20" cy="21" r="1"/>
-                                                        <path d="M1 1h2l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-                                                    </svg>
-                                                    <span id="cartCounter" class="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-white transform transition-all duration-300 hover:scale-110">
-                                                        0
-                                                    </span>
-                                                </div>
-                                            </button>
-                                        </div>
-
-                                        <!-- Menú usuario (desktop) -->
-                                        <div class="relative hidden md:block" role="navigation" aria-label="Menú de usuario premium">
-                                            <div class="ml-2 flex items-center">
-                                                {% if 'user' in session %}
-                                                    <span class="hidden md:inline-block mr-2 text-sm font-medium text-gray-700">
-                                                        Hola,
-                                                        {{ session.user.nombre.split(' ')[0] }}
-                                                    </span>
-                                                {% endif %}
-                                                {% include 'cliente/ui/menu_usuario.html' %}
-                                            </div>
-                                        </div>
-
-                                    </div>
-
-                                    <!-- Buscador Mobile -->
-                                    <div class="w-full px-4 pb-3 md:hidden">
-                                        {% include 'cliente/ui/buscador_mobile.html' %}
-                                    </div>
-                                </nav>
+                                </a>
                             </div>
 
-                            <!-- Barra secundaria de categorías principales -->
-                            <div
-                                class="relative w-full" style="z-index: 20">
-                                <!-- Navbar de categorías Desktop -->
-                                <div class="hidden md:block">
-                                    {% include 'cliente/ui/navbar_categorias_desktop.html' %}
-                                </div>
-                                <!-- Navbar de categorías Mobile -->
-                                <div class="md:hidden">
-                                    {% include 'cliente/ui/navbar_categorias_mobile.html' %}
+                            <!-- Carrito -->
+                            <div class="relative">
+                                <button type="button" id="cartIcon" class="p-2 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-yellow-300 group bg-white/90 shadow-sm hover:bg-yellow-50 hover:scale-110 mx-0.5 relative md:bg-transparent md:shadow-none cursor-pointer" aria-label="Carrito">
+                                    <div class="relative">
+                                        <svg class="w-7 h-7 md:w-8 md:h-8 text-yellow-500 group-hover:text-yellow-600 transition-colors" fill="none" stroke="currentColor" stroke-width="2.2" viewbox="0 0 24 24">
+                                            <circle cx="9" cy="21" r="1"/>
+                                            <circle cx="20" cy="21" r="1"/>
+                                            <path d="M1 1h2l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                                        </svg>
+                                        <span id="cartCounter" class="absolute -top-0.5 -right-0.5 bg-gradient-to-r from-yellow-500 to-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg border-2 border-white transform transition-all duration-300 hover:scale-110">
+                                            0
+                                        </span>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <!-- Menú usuario (desktop) -->
+                            <div class="relative hidden md:block" role="navigation" aria-label="Menú de usuario premium">
+                                <div class="ml-2 flex items-center">
+                                    {% if 'user' in session %}
+                                        <span class="hidden md:inline-block mr-2 text-sm font-medium text-gray-700">
+                                            Hola,
+                                            {{ session.user.nombre.split(' ')[0] }}
+                                        </span>
+                                    {% endif %}
+                                    {% include 'cliente/ui/menu_usuario.html' %}
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Contenido principal -->
-                        {% block full_width_content %}{% endblock %}
-
-                        <!-- Modal de advertencia de autenticación para LIKE -->
-                        <div id="like-auth-modal" class="fixed z-[9999] left-0 right-0 flex justify-center pointer-events-none" style="display:none;">
-                            <div id="like-auth-modal-inner" class="bg-pink-600 text-white rounded-xl shadow-2xl px-4 py-3 text-base font-semibold flex items-center gap-3 pointer-events-auto modal-animate-in" style="min-width:220px;max-width:95vw;">
-                                <svg class="w-7 h-7 text-white flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
-                                <span id="like-auth-modal-msg">Debes iniciar sesión para agregar productos a tus favoritos.</span>
-                                <a href="/login" id="like-auth-login-btn" class="ml-4 bg-white text-pink-600 font-bold rounded-lg px-3 py-1 shadow hover:bg-pink-50 transition-colors duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" style="white-space:nowrap;">Iniciar sesión</a>
-                            </div>
+                    <!-- Buscador Mobile -->
+                        <div class="w-full px-4 py-2 md:hidden mt-2">
+                            {% include 'cliente/ui/buscador_mobile.html' %}
                         </div>
-                        <style>
-                            /* Animaciones para la modal */
-                            @keyframes modalFadeInUp {
-                                0% {
-                                    opacity: 0;
-                                    transform: translateY(32px) scale(0.98);
-                                }
-                                100% {
-                                    opacity: 1;
-                                    transform: translateY(0) scale(1);
-                                }
-                            }
-                            @keyframes modalFadeOutDown {
-                                0% {
-                                    opacity: 1;
-                                    transform: translateY(0) scale(1);
-                                }
-                                100% {
-                                    opacity: 0;
-                                    transform: translateY(32px) scale(0.98);
-                                }
-                            }
-                            .modal-animate-in {
-                                animation: modalFadeInUp 0.5s cubic-bezier(0.4,0,0.2,1);
-                            }
-                            .modal-animate-out {
-                                animation: modalFadeOutDown 0.45s cubic-bezier(0.4,0,0.2,1) forwards;
-                            }
-                        </style>
-                        <main class="container mx-auto pt-20 pb-8 px-4 flex-1"> {% block content %}{% endblock %}
-                            </main>
+                    </div>
+                </nav>
+            </div>
 
-                            <!-- WhatsApp Floating Button -->
-                            {% include 'cliente/ui/whatsapp_button.html' %}
+            <!-- Barra secundaria de categorías principales -->
+            <div
+                class="relative w-full" style="z-index: 20">
+                <!-- Navbar de categorías Desktop -->
+                <div class="hidden md:block">
+                    {% include 'cliente/ui/navbar_categorias_desktop.html' %}
+                </div>
+                <!-- Navbar de categorías Mobile -->
+                <div class="md:hidden">
+                    {% include 'cliente/ui/navbar_categorias_mobile.html' %}
+                </div>
+            </div>
+        </div>
 
-                            <!-- seccion de confianza -->
-                            {% include 'cliente/ui/seccion_confianza.html' %}
+        <!-- Contenido principal -->
+        {% block full_width_content %}{% endblock %}
 
-                            <!-- Footer -->
-                            {% include 'cliente/ui/footer.html' %}
+        <!-- Modal de advertencia de autenticación para LIKE -->
+        <div id="like-auth-modal" class="fixed z-[9999] bottom-4 left-4 pointer-events-none" style="display:none;">
+            <div id="like-auth-modal-inner" class="bg-pink-600 text-white rounded-xl shadow-2xl px-4 py-3 text-base font-semibold flex items-center gap-3 pointer-events-auto transform transition-all duration-300 ease-in-out animate-fade-in-up" style="min-width:220px;max-width:90vw;">
+                <svg class="w-7 h-7 text-white flex-shrink-0" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/></svg>
+                <span id="like-auth-modal-msg">Debes iniciar sesión para agregar productos a tus favoritos.</span>
+                <a href="#" onclick="showAuthModal('login'); return false;" id="like-auth-login-btn" class="ml-4 bg-white text-pink-600 font-bold rounded-lg px-3 py-1 shadow hover:bg-pink-50 transition-colors duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400" style="white-space:nowrap;">Iniciar sesión</a>
+            </div>
+        </div>
 
-                            <!-- Bottom Navigation - Only on mobile -->
-                            {% include 'cliente/ui/mobile_nav.html' %}
-                            <!-- Incluir el carrito -->
-                            {% include 'cliente/ui/carrito.html' %}
+        <main class="container mx-auto pt-20 pb-8 px-4 flex-1"> {% block content %}{% endblock %}
+            </main>
+        </body>
+    </html>
+</main>
 
-                            {% include 'cliente/ui/notifications.html' %}
+<!-- WhatsApp Floating Button -->
+{% include 'cliente/ui/whatsapp_button.html' %}
 
-                            <!-- Al final de base.html -->
-                            <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
-                            <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
-                            <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
-                            <script>
-                                window.userId = {{ session.get('user_id', 'null') }};
-                            </script>
-                            <script>
-                                document.addEventListener('DOMContentLoaded', function () { // Verificar disponibilidad del sistema Toast
-                                    if (typeof ToastNotification !== 'undefined') {
-                                        console.log('✅ Sistema de notificaciones Toast disponible');
-                                    } else {
-                                        console.warn('⚠️ Sistema de notificaciones no encontrado - usando fallback');
+<!-- seccion de confianza -->
+{% include 'cliente/ui/seccion_confianza.html' %}
 
-                                        // Fallback básico
-                                        window.toast = {
-                                            success: (msg, duration = 3000) => {
-                                                console.log(`✅ ${msg}`);
-                                                // Crear notificación visual simple si no hay Toast
-                                                createSimpleNotification(msg, 'bg-green-500');
-                                            },
-                                            error: (msg, duration = 4000) => {
-                                                console.log(`❌ ${msg}`);
-                                                createSimpleNotification(msg, 'bg-red-500');
-                                            },
-                                            warning: (msg, duration = 3500) => {
-                                                console.log(`⚠️ ${msg}`);
-                                                createSimpleNotification(msg, 'bg-yellow-500');
-                                            },
-                                            info: (msg, duration = 3000) => {
-                                                console.log(`ℹ️ ${msg}`);
-                                                createSimpleNotification(msg, 'bg-blue-500');
-                                            }
-                                        };
-                                    }
+<!-- Footer -->
+{% include 'cliente/ui/footer.html' %}
 
-                                    // Función auxiliar para notificaciones simples
-                                    function createSimpleNotification(message, bgClass) {
-                                        const notification = document.createElement('div');
-                                        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${bgClass} shadow-lg animate-fade-in-up`;
-                                        notification.textContent = message;
+<!-- Bottom Navigation - Only on mobile -->
+{% include 'cliente/ui/mobile_nav.html' %}
 
-                                        document.body.appendChild(notification);
+<!-- Incluir el carrito -->
+{% include 'cliente/ui/carrito.html' %}
 
-                                        setTimeout(() => {
-                                            notification.classList.add('animate-fade-out-down');
-                                            setTimeout(() => {
-                                                if (notification.parentNode) {
-                                                    notification.parentNode.removeChild(notification);
-                                                }
-                                            }, 300);
-                                        }, 3000);
-                                    }
-                                });
-                            </script>
-                        </body>
-                    </html>
+{% include 'cliente/ui/notifications.html' %}
+
+<!-- Scripts -->
+<script src="{{ url_for('static', filename='js/cart.js') }}"></script>
+<script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
+<script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
+<script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+<script>
+    window.userId = {{ session.get('user_id', 'null') }};
+</script>
+<script>
+    // Manejador para mostrar el modal de autenticación
+    document.addEventListener('showAuthModal', function (e) {
+        const authModal = document.getElementById('auth-modal-bg');
+        if (authModal) { // Mostrar el modal
+            authModal.classList.remove('hidden');
+            authModal.classList.add('flex');
+
+            // Mostrar mensaje si está presente
+            if (e.detail && e.detail.message) { // Usar el sistema de notificaciones si está disponible
+                if (window.toast) {
+                    window.toast.warning(e.detail.message, 4000);
+                } else { // Fallback básico
+                    const message = document.createElement('div');
+                    message.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-pink-600 text-white px-6 py-3 rounded-lg shadow-lg z-[99999] flex items-center';
+                    message.innerHTML = `
+                                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                ${
+                        e.detail.message
+                    }
+                                            `;
+                    document.body.appendChild(message);
+
+                    // Eliminar el mensaje después de 4 segundos
+                    setTimeout(() => {
+                        if (message.parentNode) {
+                            message.parentNode.removeChild(message);
+                        }
+                    }, 4000);
+                }
+            }
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function () { // Verificar disponibilidad del sistema Toast
+        if (window.toast) {
+            console.log('✅ Sistema de notificaciones Toast disponible');
+        } else {
+            console.warn('⚠️ Sistema de notificaciones no encontrado - usando fallback');
+
+            // Fallback básico
+            window.toast = {
+                success: (msg, duration = 3000) => {
+                    console.log(`✅ ${msg}`);
+                    // Crear notificación visual simple si no hay Toast
+                    createSimpleNotification(msg, 'bg-green-500');
+                },
+                error: (msg, duration = 4000) => {
+                    console.log(`❌ ${msg}`);
+                    createSimpleNotification(msg, 'bg-red-500');
+                },
+                warning: (msg, duration = 3500) => {
+                    console.log(`⚠️ ${msg}`);
+                    createSimpleNotification(msg, 'bg-yellow-500');
+                },
+                info: (msg, duration = 3000) => {
+                    console.log(`ℹ️ ${msg}`);
+                    createSimpleNotification(msg, 'bg-blue-500');
+                }
+            };
+        }
+
+        // Función auxiliar para notificaciones simples
+        function createSimpleNotification(message, bgClass) {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${bgClass} shadow-lg animate-fade-in-up`;
+            notification.textContent = message;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('animate-fade-out-down');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    });
+</script>
+<script>
+    document.addEventListener('favorites:updated', (e) => {
+        const counter = document.getElementById('favorites-counter');
+        if (e.detail && e.detail.count !== undefined) {
+            counter.textContent = e.detail.count > 0 ? e.detail.count : '';
+            counter.setAttribute('aria-label', `${
+                e.detail.count
+            } favoritos`);
+            counter.style.transform = e.detail.count > 0 ? 'scale(1)' : 'scale(0)';
+            counter.style.opacity = e.detail.count > 0 ? '1' : '0';
+        }
+    });
+
+    // Manejar clic en el botón de favoritos
+    document.addEventListener('DOMContentLoaded', function () {
+        const favButton = document.getElementById('navbar-fav-btn');
+        if (favButton) {
+            favButton.addEventListener('click', function (e) {
+                const isAuthenticated = {{ 'true' if 'user' in session else 'false' }};
+                if (! isAuthenticated) {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    // Usar el método showAuthModal del FavoritesManager si está disponible
+                    if (window.favoritesManager) {
+                        window.favoritesManager.showAuthModal();
+                    } else { // Fallback en caso de que el FavoritesManager no esté disponible
+                        const modal = document.getElementById('like-auth-modal');
+                        const modalInner = document.getElementById('like-auth-modal-inner');
+                        const modalMsg = document.getElementById('like-auth-modal-msg');
+
+                        if (modal && modalInner && modalMsg) {
+                            modalMsg.textContent = 'Debes iniciar sesión para ver tus productos favoritos.';
+                            modal.style.display = 'flex';
+                            modalInner.style.animation = 'modalFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+
+                            // Ocultar después de 5 segundos
+                            setTimeout(() => {
+                                modalInner.style.animation = 'modalFadeOutDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards';
+                                setTimeout(() => {
+                                    modal.style.display = 'none';
+                                }, 350);
+                            }, 5000);
+                        }
+                    }
+                    return false;
+                }
+                // Si está autenticado, la navegación normal continúa
+            });
+        }
+    });
+</script></body></html></div></body></html>

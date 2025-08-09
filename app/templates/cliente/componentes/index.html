@@ -94,11 +94,13 @@
     </script>
 
     <style>
-
-        /* Reemplazar los estilos existentes del product-card con estos */
         .product-card {
             position: relative;
             background: white;
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
             border-radius: 0.75rem;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -129,14 +131,12 @@
             transition: opacity 0.3s ease;
         }
 
-        /* Sustituir el contenedor actual con estas mejoras profesionales */
         .carousel-container {
             position: relative;
             padding: 2rem 0; /* Espacio vertical para el zoom */
             margin: -2rem 1rem; /* Compensar el padding */
         }
 
-        /* Mejora profesional: contenedor interno con máscara */
         .carousel-viewport {
             position: relative;
             overflow: hidden;
@@ -252,6 +252,7 @@
             pointer-events: all;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
+            z-index: 20;
             border: 1px solid rgba(255, 255, 255, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             transition: all 0.3s ease;
@@ -455,10 +456,24 @@
 
             function createOptimizedProductCard(producto, delayIndex) {
                 const card = document.createElement('div');
-                card.className = 'product-card';
+                card.className = 'product-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative flex flex-col h-full';
+                card.setAttribute('data-product-id', producto.id);
+                
+                // Verificar si el producto está en favoritos
+                const isFavorite = window.favoritesManager ? 
+                    window.favoritesManager.favoriteProducts.has(parseInt(producto.id)) : false;
+
                 card.style.animationDelay = `${
                     delayIndex * 0.08
                 }s`;
+
+                // Prevenir la navegación cuando se hace clic en elementos interactivos
+                card.addEventListener('click', function (e) { // Si el clic fue en un botón o enlace dentro de la tarjeta, prevenir la navegación
+                    if (e.target.closest('button, a:not(.product-card)')) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                });
 
                 // Verificar si es nuevo con lógica profesional
                 const esNuevo = verificarEsNuevo(producto);
@@ -493,7 +508,7 @@
                 const placeholderSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZDhkYWRiIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KPHBhdGggZD0iTTMuMTYgMTguODhMMTUuMTIgNi45M2EuMTYuMTYgMCAwIDEgLjIyIDBsMy4wNiAzLjA2YS4xNi4xNiAwIDAgMSAwIC4yMkw2LjQ0IDIyYTEgMSAwIDAgMS0xLjM5LjA2bC02LjE1LTUuNzlhMS4yNSAxLjI1IDAgMCAxIC4yNi0xLjM5eiIvPgo8cGF0aCBkPSJNMTkgMTlhMiAyIDAgMSAwIDAtNCAyIDIgMCAwIDAgMCA0eiIvPgo8cGF0aCBkPSJNMjIgMTB2OGEyIDIgMCAwIDEtMiAyaC0xM2wtMy4yLTIuN2ExIDEgMCAwIDAtMS42LjRsLTMuMzUgNCIvPgo8cGF0aCBkPSJNMiAxMHYtNGEyIDIgMCAwIDEgMi0yaDZhMSAxIDAgMCAwIC44LS40bDIuNi0zLjQ1YTEgMSAwIDAgMSAuOC0uMzVIMThhMiAyIDAgMCAxIDIgMlYxMCIvPgo8L3N2Zz4=';
 
                 card.innerHTML = `
-               <div class="group relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full transform hover:scale-[1.03]">
+               <div class="relative bg-white rounded-xl shadow-md hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col h-full transform hover:scale-[1.03] group-hover:z-10">
                     <div class="product-image-container relative overflow-hidden aspect-square ${
                     ! hasImage ? 'bg-gray-50 flex items-center justify-center' : 'bg-gray-100'
                 }">
@@ -523,20 +538,29 @@
                             <span class="text-xs uppercase tracking-wide text-gray-600 font-medium">${
                     producto.marca || 'Sin marca'
                 }</span>
-                            <button class="favorite-btn text-gray-400 hover:text-red-500 transition-all duration-200 hover:scale-110"
-    title="Añadir a favoritos"
-    aria-label="Añadir a favoritos"
-    data-product-id="${
-                    producto.id
-                }"
-    tabindex="0"
-    style="background: none; border: none; outline: none; position: relative; z-index: 30;">
-    <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-        <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/>
-    </svg>
-</button>
-                        </div>
-                        <h3 class="text-sm md:text-base font-semibold text-gray-800 mb-1 line-clamp-2">${
+                             <button class="favorite-btn ${
+                                 !window.favoritesManager || !window.favoritesManager.isAuthenticated ? 'text-gray-300' : 
+                                 (isFavorite ? 'text-red-500' : 'text-gray-400')
+                             } transition-all duration-200 hover:scale-110 z-20 relative"
+                 title="${!window.favoritesManager || !window.favoritesManager.isAuthenticated ? 'Inicia sesión para guardar en favoritos' : 
+                         (isFavorite ? 'Eliminar de favoritos' : 'Añadir a favoritos')}"
+                 aria-label="${!window.favoritesManager || !window.favoritesManager.isAuthenticated ? 'Inicia sesión para guardar en favoritos' : 
+                               (isFavorite ? 'Eliminar de favoritos' : 'Añadir a favoritos')}"
+                 data-product-id="${producto.id}"
+                 tabindex="0"
+                 style="background: none; border: none; outline: none;"
+                 data-initialized="true">
+                <svg class="w-6 h-6" fill="${!window.favoritesManager || !window.favoritesManager.isAuthenticated ? 'none' : 
+                                           (isFavorite ? 'currentColor' : 'none')}" 
+                     viewBox="0 0 24 24" 
+                     stroke="currentColor" 
+                     stroke-width="1.5"
+                     ${!window.favoritesManager || !window.favoritesManager.isAuthenticated ? 'opacity="0.6"' : ''}>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                </svg>
+            </button>
+        </div>
+        <h3 class="text-sm md:text-base font-semibold text-gray-800 mb-1 line-clamp-2">${
                     producto.nombre
                 }</h3>
                         <div class="min-h-[36px] md:min-h-[40px] mb-2">
@@ -562,21 +586,21 @@
                             <p class="text-base md:text-lg font-bold text-pink-600">$${
                     parseFloat(producto.precio).toFixed(2)
                 }</p>
-                            <button class="add-to-cart bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-3 py-2 md:px-4 rounded-full hover:from-pink-600 hover:to-fuchsia-600 transition-all duration-300 flex items-center text-xs md:text-sm hover:shadow-lg hover:scale-105 active:scale-95"
-                                data-product-id="${
+                             <button class="add-to-cart bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-3 py-2 md:px-4 rounded-full hover:from-pink-600 hover:to-fuchsia-600 transition-all duration-300 flex items-center text-xs md:text-sm hover:shadow-lg hover:scale-105 active:scale-95 z-20 relative"
+                                   data-product-id="${
                     producto.id
                 }"
-                                data-quantity="1"
-                                data-product-name="${
+                                   data-quantity="1"
+                                   data-product-name="${
                     producto.nombre
-                }">
+                }"
+                                   onclick="event.stopPropagation(); event.preventDefault(); if(window.cart) { window.cart.addToCart(event.currentTarget); }">
                                 <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
                                 </svg>
                                 <span class="hidden sm:inline">Añadir</span>
                             </button>
                         </div>
-                    </div>
                 </div>
             `;
 
@@ -741,6 +765,8 @@
                 }, 250);
             });
 
+            // La función toggleFavorite ha sido movida a favorites.js
+
             // Auto-inicialización
             setTimeout(initializeProductCarousel, 800);
 
@@ -751,6 +777,74 @@
                     nuevosProductos.length
                 } productos nuevos disponibles`);
             }
-        });
+
+            // Inicialización de botones de favoritos
+            const initFavoriteButton = (button) => {
+                // Solo inicializar si no está ya inicializado
+                if (button.getAttribute('data-initialized') === 'true') return;
+                
+                const productId = parseInt(button.getAttribute('data-product-id'));
+                if (!productId || isNaN(productId)) return;
+                
+                // Verificar si el gestor de favoritos está disponible
+                if (window.favoritesManager) {
+                    // Verificar si el usuario está autenticado
+                    const isAuthenticated = window.favoritesManager.isAuthenticated;
+                    
+                    // Si no está autenticado, actualizar el botón en consecuencia
+                    if (!isAuthenticated) {
+                        button.classList.remove('text-red-500', 'text-gray-400');
+                        button.classList.add('text-gray-300');
+                        button.setAttribute('title', 'Inicia sesión para guardar en favoritos');
+                        button.setAttribute('aria-label', 'Inicia sesión para guardar en favoritos');
+                        const svg = button.querySelector('svg');
+                        if (svg) {
+                            svg.setAttribute('fill', 'none');
+                            svg.style.opacity = '0.6';
+                        }
+                    } else {
+                        // Obtener el estado actual del favorito solo si está autenticado
+                        const isFavorite = window.favoritesManager.favoriteProducts.has(productId);
+                        // Actualizar la apariencia del botón
+                        window.favoritesManager.updateFavoriteButton(button, isFavorite);
+                    }
+                    
+                    // Marcar como inicializado
+                    button.setAttribute('data-initialized', 'true');
+                    
+                    // No necesitamos agregar manejadores de eventos aquí ya que usamos delegación de eventos
+                }
+            };
+            
+            // Inicializar botones existentes cuando el DOM esté listo
+            document.addEventListener('DOMContentLoaded', function() {
+                // Inicializar el gestor de favoritos si existe
+                if (window.favoritesManager) {
+                    // Inicializar botones existentes
+                    document.querySelectorAll('.favorite-btn').forEach(initFavoriteButton);
+                    
+                    // Configurar un observador de mutación para manejar contenido dinámico
+                    const observer = new MutationObserver((mutations) => {
+                        mutations.forEach((mutation) => {
+                            mutation.addedNodes.forEach((node) => {
+                                if (node.nodeType === 1) { // Solo elementos
+                                    const newButtons = node.matches('.favorite-btn') ? 
+                                        [node] : 
+                                        node.querySelectorAll('.favorite-btn');
+                                    
+                                    newButtons.forEach(button => initFavoriteButton(button));
+                                }
+                            });
+                        });
+                    });
+                    
+                    // Observar cambios en el cuerpo del documento
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true
+                    });
+                }
+            });
+        }); // Cierre del DOMContentLoaded
     </script>
 {% endblock %}

@@ -1,4 +1,5 @@
 // static/js/cart.js - Versión Ultra Profesional con Contador de Productos Únicos
+if (typeof ShoppingCart === 'undefined') {
 class ShoppingCart {
   constructor() {
     this.cartCounter = document.getElementById("cartCounter");
@@ -703,9 +704,15 @@ class ShoppingCart {
   }
 }
 
+  // Hacer la clase accesible globalmente
+  window.ShoppingCart = ShoppingCart;
+}
+
 // Inicialización mejorada
 document.addEventListener("DOMContentLoaded", () => {
-  window.cart = new ShoppingCart();
+  if (!window.cart) {
+    window.cart = new ShoppingCart();
+  }
 
   window.openCart = () => cart.openCartModal();
   window.closeCart = () => cart.closeCartModal();

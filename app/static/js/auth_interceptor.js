@@ -67,27 +67,45 @@ window.fetch = async function(resource, options = {}) {
 
 // Función para verificar si el usuario está autenticado
 function isAuthenticated() {
-    return !!localStorage.getItem('token');
+    return !!getAuthToken();
 }
 
 // Función para obtener el token de autenticación
 function getAuthToken() {
-    return localStorage.getItem('token');
+  // Primero intentar obtener el token de las cookies (para compatibilidad con SSR)
+  const tokenFromCookie = document.cookie
+    .split('; ')
+    .find(row => row.startsWith('token='))
+    ?.split('=')[1];
+  
+  // Si no hay token en las cookies, intentar obtenerlo del localStorage
+  const tokenFromStorage = localStorage.getItem('token');
+  
+  // Devolver el token de las cookies si existe, si no, el del localStorage
+  return tokenFromCookie || tokenFromStorage;
 }
 
 // Función para establecer el token de autenticación
 function setAuthToken(token) {
-    if (token) {
-        localStorage.setItem('token', token);
-    } else {
-        localStorage.removeItem('token');
-    }
+  if (token) {
+    // Guardar en localStorage
+    localStorage.setItem('token', token);
+    
+    // También guardar en cookies para compatibilidad con SSR
+    const expires = new Date();
+    expires.setTime(expires.getTime() + (7 * 24 * 60 * 60 * 1000)); // 7 días
+    document.cookie = `token=${token};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
+  } else {
+    // Eliminar de ambos lugares
+    localStorage.removeItem('token');
+    document.cookie = 'token=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;';
+  }
 }
 
 // Función para cerrar sesión
 function logout() {
     // Eliminar el token del almacenamiento local
-    localStorage.removeItem('token');
+    setAuthToken(null);
     localStorage.removeItem('user');
     
     // Redirigir a la página de inicio

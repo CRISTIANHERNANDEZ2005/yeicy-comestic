@@ -18,6 +18,7 @@ def create_app(config_class=Config):
     file_handler.setFormatter(formatter)
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
+    
     # También a consola
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
@@ -44,12 +45,17 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
 
     # Registrar blueprints
-    from app.blueprints.auth import auth_bp
-    from app.blueprints.products import products_bp
-    from app.blueprints.cart import cart_bp
+    from app.blueprints.cliente.auth import auth_bp
+    from app.blueprints.cliente.products import products_bp
+    from app.blueprints.cliente.cart import cart_bp
+    from app.blueprints.cliente.favorites import favorites_bp
+    from app.blueprints.cliente.reviews import reviews_bp
+    
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(products_bp)
+    app.register_blueprint(favorites_bp)
+    app.register_blueprint(reviews_bp)
 
     # Verificar conexión a la base de datos al iniciar
     with app.app_context():
@@ -62,7 +68,7 @@ def create_app(config_class=Config):
     # Context processor para el carrito y categorías
     @app.context_processor
     def inject_global_data():
-        from app.blueprints.cart import get_or_create_cart, get_cart_items
+        from app.blueprints.cliente.cart import get_or_create_cart, get_cart_items
         from app.models.models import CategoriaPrincipal, Subcategoria, Seudocategoria
         from sqlalchemy.orm import joinedload
         
@@ -107,6 +113,6 @@ def create_app(config_class=Config):
     # Manejador de errores 404
     @app.errorhandler(404)
     def page_not_found(e):
-        return render_template('cliente/page/404.html'), 404
+        return render_template('cliente/componentes/404.html'), 404
 
     return app

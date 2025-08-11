@@ -1,5 +1,5 @@
 # app/models/models.py
-from app.extensions import db, bcrypt 
+from app.extensions import db, bcrypt
 from sqlalchemy import CheckConstraint, UniqueConstraint
 from datetime import datetime
 import json
@@ -7,6 +7,7 @@ from flask_login import UserMixin
 import jwt
 from flask import current_app
 from datetime import datetime
+
 
 class Usuario(db.Model):
     __tablename__ = 'usuarios'
@@ -24,19 +25,21 @@ class Usuario(db.Model):
         }
         secret = current_app.config.get('SECRET_KEY', 'super-secret')
         return jwt.encode(payload, secret, algorithm='HS256')
-        
+
     @classmethod
     def verificar_jwt(cls, token):
-        """Verifica un token JWT y devuelve el payload si es válido"""
+        """Verifica un token JWT y devuelve el usuario si es válido"""
         from flask import current_app
         import jwt
         from jwt import ExpiredSignatureError, InvalidTokenError
-        
         secret = current_app.config.get('SECRET_KEY', 'super-secret')
-        
         try:
             payload = jwt.decode(token, secret, algorithms=['HS256'])
-            return payload
+            user_id = payload.get('user_id')
+            if not user_id:
+                return None
+            usuario = cls.query.get(user_id)
+            return usuario
         except ExpiredSignatureError:
             return None
         except InvalidTokenError:
@@ -199,6 +202,7 @@ class Seudocategoria(db.Model):
         self.subcategoria_id = subcategoria_id
         self.estado = estado
 
+
 class Producto(db.Model):
     __tablename__ = 'productos'
 
@@ -212,7 +216,8 @@ class Producto(db.Model):
         'seudocategorias.id'), nullable=False)
     marca = db.Column(db.String(100), nullable=True)
     estado = db.Column(db.String(20), nullable=False, default='activo')
-    fecha_creacion = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)  # NUEVO CAMPO
+    fecha_creacion = db.Column(
+        db.DateTime, nullable=False, default=datetime.utcnow)  # NUEVO CAMPO
     likes = db.relationship('Like', backref='producto', lazy=True)
     reseñas = db.relationship('Reseña', backref='producto', lazy=True)
 
@@ -332,41 +337,46 @@ class Reseña(db.Model):
 class CartSession(db.Model):
     """Modelo para usuarios no autenticados"""
     __tablename__ = 'cart_sessions'
-    
+
     id = db.Column(db.String(36), primary_key=True)  # UUID de sesión
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     expires_at = db.Column(db.DateTime)
     items = db.Column(db.Text)  # JSON de items
-    
+
     def __repr__(self):
         return f'<CartSession {self.id}>'
+
 
 class CartItem(db.Model):
     """Modelo para usuarios autenticados"""
     __tablename__ = 'cart_items'
-    
+
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=True)
+    user_id = db.Column(db.Integer, db.ForeignKey(
+        'usuarios.id'), nullable=True)
     session_id = db.Column(db.String(36), nullable=True)
-    product_id = db.Column(db.Integer, db.ForeignKey('productos.id'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey(
+        'productos.id'), nullable=False)
     quantity = db.Column(db.Integer, default=1)
     added_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-    
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
     # Relaciones
     product = db.relationship('Producto', backref='cart_items')
     user = db.relationship('Usuario', backref='cart_items')
-    
+
     __table_args__ = (
         db.Index('idx_user_product', 'user_id', 'product_id'),
         db.Index('idx_session_product', 'session_id', 'product_id'),
     )
-    
+
     @property
     def subtotal(self):
         return self.product.precio * self.quantity
-    
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -382,7 +392,8 @@ class CartItem(db.Model):
             },
             'subtotal': float(self.subtotal)
         }
-        
+
+
 class BusquedaTermino(db.Model):
     __tablename__ = 'busqueda_terminos'
 

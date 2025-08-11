@@ -1,9 +1,68 @@
 # app/blueprints/auth.py
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, session, g
 from app.models.models import Usuario
 from app.extensions import db, bcrypt
 
+
 auth_bp = Blueprint('auth', __name__)
+
+# Middleware para restaurar sesión desde JWT si existe
+@auth_bp.before_app_request
+def restore_session_from_jwt():
+    # Si ya hay usuario en la sesión, no hacer nada
+    if session.get('user'):
+        return
+    # Buscar token en cookies o Authorization header
+    token = None
+    # 1. Buscar en cookies
+    token = request.cookies.get('token')
+    # 2. Si no está en cookies, buscar en Authorization header
+    if not token:
+        auth_header = request.headers.get('Authorization', None)
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+    if not token:
+        return
+    # Verificar el token
+    usuario = Usuario.verificar_jwt(token)
+    if usuario:
+        # Restaurar usuario en la sesión de Flask
+        session['user'] = {
+            'id': usuario.id,
+            'numero': usuario.numero,
+            'nombre': usuario.nombre,
+            'apellido': usuario.apellido
+        }
+        session.modified = True
+
+# Endpoint para restaurar sesión desde el token JWT
+@auth_bp.route('/me', methods=['GET'])
+def me():
+    from flask import current_app as app
+    # Buscar token en cookies o Authorization header
+    token = request.cookies.get('token')
+    if not token:
+        auth_header = request.headers.get('Authorization', None)
+        if auth_header and auth_header.startswith('Bearer '):
+            token = auth_header.split(' ')[1]
+    if not token:
+        return jsonify({'error': 'Token no proporcionado'}), 401
+    try:
+        usuario = Usuario.verificar_jwt(token)
+        if not usuario:
+            return jsonify({'error': 'Token inválido o expirado'}), 401
+        # Opcional: refrescar token si está por expirar
+        return jsonify({
+            'usuario': {
+                'id': usuario.id,
+                'numero': usuario.numero,
+                'nombre': usuario.nombre,
+                'apellido': usuario.apellido
+            }
+        }), 200
+    except Exception as e:
+        app.logger.error(f"Error al verificar token: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Token inválido'}), 401
 
 # Registro de usuario
 @auth_bp.route('/register', methods=['POST'])

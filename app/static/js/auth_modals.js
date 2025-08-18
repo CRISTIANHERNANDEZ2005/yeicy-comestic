@@ -374,7 +374,6 @@
 
           // Guardar token e información del usuario en localStorage
           if (result.token) {
-            // Usar la función setAuthToken si está disponible (definida en auth_interceptor.js)
             if (window.auth && typeof window.auth.setAuthToken === 'function') {
               window.auth.setAuthToken(result.token);
             } else {
@@ -383,18 +382,15 @@
             console.log('Token guardado en localStorage');
           }
 
-          // Guardar información del usuario en localStorage
           if (result.usuario) {
             localStorage.setItem('user', JSON.stringify(result.usuario));
             console.log('Información del usuario guardada en localStorage');
           }
 
-          // Actualizar el estado de autenticación
           if (window.favoritesManager) {
             window.favoritesManager.isAuthenticated = true;
           }
 
-          // Disparar evento personalizado para notificar el inicio de sesión exitoso
           const authEvent = new CustomEvent('auth:success', {
             detail: { 
               usuario: result.usuario,
@@ -403,19 +399,51 @@
           });
           document.dispatchEvent(authEvent);
 
-          // Redirigir después de un breve retraso
           setTimeout(() => {
             if (endpoint === "/auth/register") {
               window.showAuthModal("login");
             } else {
-              // Recargar la página para asegurar que todos los componentes se actualicen
               window.location.href = '/';
             }
           }, 1500);
         } else {
-          throw new Error(
-            result.message || result.error || "Error en el proceso."
-          );
+          // Mostrar errores específicos en los campos si existen
+          let fieldErrorShown = false;
+          if (result && typeof result === 'object') {
+            // Si el backend especifica el campo con error
+            if (result.field && result.error) {
+              const input = form.querySelector(`[name="${result.field}"]`);
+              if (input) {
+                setFieldError(input, result.error, input.nextElementSibling);
+                fieldErrorShown = true;
+              }
+            } else {
+              // Buscar errores de campos comunes por texto
+              const fieldMap = {
+                'numero': ['numero', 'phone', 'telefono'],
+                'contraseña': ['contraseña', 'password'],
+                'nombre': ['nombre'],
+                'apellido': ['apellido']
+              };
+              Object.entries(fieldMap).forEach(([field, keys]) => {
+                keys.forEach(key => {
+                  if (result.error && result.error.toLowerCase().includes(key)) {
+                    const input = form.querySelector(`[name="${field}"]`);
+                    if (input) {
+                      setFieldError(input, result.error, input.nextElementSibling);
+                      fieldErrorShown = true;
+                    }
+                  }
+                });
+              });
+            }
+          }
+          // Mensaje general arriba del formulario solo si no es error de campo
+          if (!fieldErrorShown) {
+            msg.textContent = result.error || result.message || "Error en el proceso. Verifica tus datos.";
+            msg.classList.remove("text-green-400", "hidden");
+            msg.classList.add("text-red-400");
+          }
         }
       } catch (err) {
         msg.textContent =

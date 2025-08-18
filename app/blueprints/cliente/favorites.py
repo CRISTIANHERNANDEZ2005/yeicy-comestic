@@ -4,7 +4,9 @@ Módulo para manejar las operaciones relacionadas con los favoritos del usuario.
 from app.extensions import db
 from app.utils.jwt_utils import jwt_required
 from datetime import datetime
-from app.models.models import Producto, Like, CategoriaPrincipal, Subcategoria, Seudocategoria
+from app.models.domains.product_models import Productos, CategoriasPrincipales, Subcategorias, Seudocategorias
+from app.models.domains.review_models import Likes
+from app.models.serializers import producto_to_dict, categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, like_to_dict
 from flask import Blueprint, render_template, request, jsonify
 from sqlalchemy.orm import joinedload
 from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
@@ -35,77 +37,47 @@ def manejar_favoritos(usuario):
     
     if request.method == 'GET':
         try:
-            # Obtener parámetros de la solicitud
+            # Validación y obtención de parámetros
             page = request.args.get('page', 1, type=int)
-            per_page = min(request.args.get('per_page', 20, type=int), 100)  # Máximo 100 por página
+            per_page = min(request.args.get('per_page', 20, type=int), 100)
             ids_only = request.args.get('ids_only', 'false').lower() == 'true'
-            
-            # Configurar ordenación
             sort_by = request.args.get('sort_by', 'fecha').lower()
             sort_order = request.args.get('sort_order', 'desc').lower()
-            
-            # Validar parámetros
+
             if page < 1 or per_page < 1:
-                return jsonify({
-                    'success': False,
-                    'error': 'Los parámetros de paginación deben ser mayores a 0',
-                    'code': 'INVALID_PAGINATION'
-                }), 400
-                
-            # Obtener favoritos actuales del usuario de manera más eficiente
-            favoritos_actuales = set(
-                fav[0] for fav in db.session.query(Like.producto_id)
-                .filter(
-                    Like.usuario_id == usuario.id,
-                    Like.estado == 'activo',
-                    Producto.estado == 'activo'
-                )
-                .join(Producto)
-                .all()
-            )
-            
-            # Construir consulta base con todas las relaciones necesarias
-            query = Like.query.filter_by(
-                usuario_id=usuario.id,
-                estado='activo'
-            ).join(Producto).filter(Producto.estado == 'activo')
-            
-            # Cargar relaciones para evitar N+1
-            query = query.options(
-                joinedload(Like.producto).joinedload(Producto.seudocategoria)
-                .joinedload(Seudocategoria.subcategoria)
-                .joinedload(Subcategoria.categoria_principal)
-            )
-            
-            # Aplicar ordenación
-            if sort_by == 'nombre':
-                order_field = Producto.nombre.asc() if sort_order == 'asc' else Producto.nombre.desc()
-            elif sort_by == 'precio':
-                order_field = Producto.precio.asc() if sort_order == 'asc' else Producto.precio.desc()
-            else:  # fecha por defecto
-                order_field = Like.fecha.asc() if sort_order == 'asc' else Like.fecha.desc()
-                
-            query = query.order_by(order_field)
-            
-            # Si solo se necesitan los IDs
+                return jsonify({'success': False, 'error': 'Los parámetros de paginación deben ser mayores a 0', 'code': 'INVALID_PAGINATION'}), 400
+
+            # Validar sort_by y sort_order
+            valid_sort_fields = {'fecha': Likes.created_at, 'nombre': Productos.nombre, 'precio': Productos.precio}
+            if sort_by not in valid_sort_fields:
+                sort_by = 'fecha'
+            order_field = valid_sort_fields[sort_by].asc() if sort_order == 'asc' else valid_sort_fields[sort_by].desc()
+
+            # Consulta de favoritos
+            query = Likes.query.filter_by(usuario_id=usuario.id, estado='activo')\
+                .join(Productos).filter(Productos.estado == 'activo')\
+                .options(
+                    joinedload(Likes.producto).joinedload(Productos.seudocategoria)
+                    .joinedload(Seudocategorias.subcategoria)
+                    .joinedload(Subcategorias.categoria_principal)
+                )\
+                .order_by(order_field)
+
+            # IDs only
             if ids_only:
                 favoritos_ids = [str(fav.producto_id) for fav in query.all()]
-                return jsonify({
-                    'success': True,
-                    'favoritos': favoritos_ids,
-                    'total': len(favoritos_ids)
-                }), 200
-            
-            # Aplicar paginación
+                return jsonify({'success': True, 'favoritos': favoritos_ids, 'total': len(favoritos_ids)}), 200
+
+            # Paginación
             pagination = query.paginate(page=page, per_page=per_page, error_out=False)
             favoritos = pagination.items
-            
-            # Preparar respuesta
+
+            # Respuesta
             response_data = {
                 'success': True,
                 'favoritos': [{
                     'id': fav.producto.id,
-                    'fecha_agregado': fav.fecha.isoformat(),
+                    'fecha_agregado': fav.created_at.isoformat() if hasattr(fav, 'created_at') else None,
                     'producto': {
                         'id': fav.producto.id,
                         'nombre': fav.producto.nombre,
@@ -127,25 +99,15 @@ def manejar_favoritos(usuario):
                     'has_next': pagination.has_next,
                     'has_prev': pagination.has_prev
                 },
-                'sort': {
-                    'by': sort_by,
-                    'order': sort_order
-                }
+                'sort': {'by': sort_by, 'order': sort_order}
             }
-            
-            # Agregar caché control
             response = jsonify(response_data)
             response.headers['Cache-Control'] = 'private, max-age=60'
             return response, 200
-            
         except Exception as e:
             current_app.logger.error(f'Error al obtener favoritos: {str(e)}', exc_info=True)
-            return jsonify({
-                'success': False, 
-                'error': 'Error al obtener la lista de favoritos',
-                'details': str(e) if current_app.debug else None,
-                'code': 'SERVER_ERROR'
-            }), 500
+            db.session.rollback()
+            return jsonify({'success': False, 'error': 'Error interno', 'details': str(e), 'code': 'SERVER_ERROR'}), 500
 
     elif request.method == 'POST':
         try:
@@ -157,8 +119,11 @@ def manejar_favoritos(usuario):
                     'code': 'MISSING_DATA'
                 }), 400
                 
+            # Asegurarse que el producto_id sea string (UUID)
             producto_id = data.get('producto_id')
-            accion = data.get('accion', 'toggle').lower()  # Por defecto: toggle
+            if producto_id is not None:
+                producto_id = str(producto_id)
+            accion = data.get('accion', 'toggle').lower() # Por defecto: toggle
             
             # Validar acción
             if accion not in ['agregar', 'eliminar', 'toggle']:
@@ -176,7 +141,7 @@ def manejar_favoritos(usuario):
                 }), 400
             
             # Verificar si el producto existe y está activo
-            producto = Producto.query.filter_by(
+            producto = Productos.query.filter_by(
                 id=producto_id,
                 estado='activo'
             ).first()
@@ -189,7 +154,7 @@ def manejar_favoritos(usuario):
                 }), 404
             
             # Buscar favorito existente (activo o inactivo)
-            favorito = Like.query.filter_by(
+            favorito = Likes.query.filter_by(
                 usuario_id=usuario.id,
                 producto_id=producto_id
             ).first()
@@ -241,7 +206,7 @@ def manejar_favoritos(usuario):
                         accion_realizada = 'reactivado'
                 else:
                     # Crear nuevo favorito
-                    favorito = Like(
+                    favorito = Likes(
                         usuario_id=usuario.id,
                         producto_id=producto_id,
                         estado='activo'
@@ -282,7 +247,7 @@ def eliminar_favorito(usuario, producto_id):
     
     try:
         # Verificar si el producto existe y está activo
-        producto = Producto.query.filter_by(
+        producto = Productos.query.filter_by(
             id=producto_id,
             estado='activo'
         ).first()
@@ -295,7 +260,7 @@ def eliminar_favorito(usuario, producto_id):
             }), 404
         
         # Buscar el favorito (activo o inactivo)
-        favorito = Like.query.filter_by(
+        favorito = Likes.query.filter_by(
             usuario_id=usuario.id,
             producto_id=producto_id
         ).first()
@@ -375,13 +340,13 @@ def sincronizar_favoritos(usuario):
     try:
         # Obtener favoritos actuales del usuario
         favoritos_actuales = set(
-            fav[0] for fav in db.session.query(Like.producto_id)
+            fav[0] for fav in db.session.query(Likes.producto_id)
             .filter(
-                Like.usuario_id == usuario.id,
-                Like.estado == 'activo',
-                Producto.estado == 'activo'
+                Likes.usuario_id == usuario.id,
+                Likes.estado == 'activo',
+                Productos.estado == 'activo'
             )
-            .join(Producto)
+            .join(Productos)
             .all()
         )
         
@@ -421,9 +386,9 @@ def sincronizar_favoritos(usuario):
         # Procesar eliminaciones
         if acciones_por_tipo['eliminar']:
             # Eliminar en lote
-            Like.query.filter(
-                Like.usuario_id == usuario.id,
-                Like.producto_id.in_(acciones_por_tipo['eliminar'])
+            Likes.query.filter(
+                Likes.usuario_id == usuario.id,
+                Likes.producto_id.in_(acciones_por_tipo['eliminar'])
             ).update({'estado': 'inactivo'}, synchronize_session='fetch')
             
             # Actualizar conjunto local
@@ -440,10 +405,10 @@ def sincronizar_favoritos(usuario):
             if productos_a_agregar:
                 # Verificar que los productos existan y estén activos
                 productos_validos = set(
-                    pid[0] for pid in db.session.query(Producto.id)
+                    pid[0] for pid in db.session.query(Productos.id)
                     .filter(
-                        Producto.id.in_(productos_a_agregar),
-                        Producto.estado == 'activo'
+                        Productos.id.in_(productos_a_agregar),
+                        Productos.estado == 'activo'
                     )
                     .all()
                 )
@@ -460,7 +425,7 @@ def sincronizar_favoritos(usuario):
                 ]
                 
                 if nuevos_favoritos:
-                    db.session.bulk_insert_mappings(Like, nuevos_favoritos)
+                    db.session.bulk_insert_mappings(Likes.__mapper__, nuevos_favoritos)  # type: ignore[arg-type]
                     favoritos_actuales.update(productos_validos)
         
         # Confirmar cambios en la base de datos
@@ -474,12 +439,12 @@ def sincronizar_favoritos(usuario):
                 'error': 'Error al procesar las acciones de sincronización',
                 'code': 'SYNC_ERROR'
             }), 500
-        
+
         # Obtener lista de IDs eliminados
-        app.logger.info(f"Favoritos sincronizados para usuario {user_id}")
-        
+        current_app.logger.info(f"Favoritos sincronizados para usuario {usuario.id}")
+
         # Obtener la lista completa de favoritos actualizada
-        favoritos_actuales = Like.query.filter_by(usuario_id=user_id, estado='activo').all()
+        favoritos_actuales = Likes.query.filter_by(usuario_id=usuario.id, estado='activo').all()
         todos_favoritos = [{
             'id': fav.producto.id,
             'nombre': fav.producto.nombre,
@@ -489,7 +454,7 @@ def sincronizar_favoritos(usuario):
             'stock': fav.producto.stock,
             'es_favorito': True
         } for fav in favoritos_actuales if fav.producto and fav.producto.estado == 'activo']
-        
+
         return jsonify({
             'success': True,
             'message': 'Favoritos sincronizados correctamente',
@@ -498,7 +463,7 @@ def sincronizar_favoritos(usuario):
         
     except Exception as e:
         db.session.rollback()
-        app.logger.error(f"Error al sincronizar favoritos: {str(e)}", exc_info=True)
+        current_app.logger.error(f"Error al sincronizar favoritos: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error al sincronizar favoritos'}), 500
 
 # Ruta para la página de favoritos
@@ -509,55 +474,39 @@ def favoritos(usuario):
     Muestra la página de productos favoritos del usuario
     """
     from flask import current_app as app, session
-    
-    # Obtener el ID del usuario autenticado
-    user_id = usuario.id if hasattr(usuario, 'id') else None
-    
-    if not user_id and 'user' in session:
-        user_id = session['user'].get('id')
-    
-    if not user_id:
-        return jsonify({'error': 'No autorizado'}), 401
-    
-    # Obtener productos favoritos
-    favoritos = Like.query.filter_by(usuario_id=user_id, estado='activo')\
-        .join(Like.producto)\
-        .filter(Producto.estado == 'activo')\
-        .options(joinedload(Like.producto))\
-        .all()
-    
-    # Obtener categorías para el menú
-    categorias = CategoriaPrincipal.query.filter_by(estado='activo')\
-        .options(
-            joinedload(CategoriaPrincipal.subcategorias).joinedload(Subcategoria.seudocategorias)
-        ).all()
-    
-    # Obtener información del carrito
-    cart = get_or_create_cart()
-    cart_items = get_cart_items(cart)
-    total_price = sum(item['precio'] * item['cantidad'] for item in cart_items)
-    
-    # Preparar datos de productos para la plantilla
-    productos = [fav.producto for fav in favoritos if fav.producto]
-    
-    return render_template(
-        'cliente/componentes/favoritos.html',
-        productos=productos,
-        productos_data=[{
-            'id': p.id,
-            'nombre': p.nombre,
-            'descripcion': p.descripcion,
-            'precio': float(p.precio),
-            'imagen_url': p.imagen_url,
-            'marca': p.marca or '',
-            'calificacion_promedio': p.calificacion_promedio,
-            'reseñas': len(p.reseñas),
-            'stock': p.stock,
-            'es_nuevo': bool(p.es_nuevo),  # FORZAR BOOLEANO
-            'fecha_creacion': p.fecha_creacion.isoformat() if p.fecha_creacion else None
-        } for p in productos],
-        categorias=categorias,
-        cart_items=cart_items,
-        total_price=total_price,
-        categoria_actual='Mis Favoritos'
-    )
+
+    try:
+        # Validar que el usuario esté autenticado
+        user_id = usuario.id if hasattr(usuario, 'id') else None
+
+        if not user_id and 'user' in session:
+            user_id = session['user'].get('id')
+
+        if not user_id:
+            return jsonify({'error': 'No autorizado'}), 401
+
+        # Obtener productos favoritos
+        favoritos = Likes.query.filter_by(usuario_id=user_id, estado='activo')\
+            .join(Likes.producto)\
+            .filter(Productos.estado == 'activo')\
+            .options(joinedload(Likes.producto))\
+            .all()
+
+        if not favoritos:
+            app.logger.info(f"No se encontraron productos favoritos para el usuario con ID {user_id}")
+
+        # Obtener categorías para el menú
+        categorias = CategoriasPrincipales.query.filter_by(estado='activo')\
+            .options(
+                joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
+            ).all()
+
+        if not categorias:
+            app.logger.info("No se encontraron categorías activas")
+
+        # Renderizar la plantilla con los datos obtenidos
+        return render_template('cliente/componentes/favoritos.html', favoritos=favoritos, categorias=categorias), 200
+
+    except Exception as e:
+        app.logger.error(f"Error al procesar la página de favoritos: {str(e)}", exc_info=True)
+        return jsonify({'error': 'Error interno del servidor'}), 500

@@ -2,7 +2,10 @@
 Módulo para manejar las operaciones relacionadas con las reseñas de productos.
 """
 from flask import Blueprint, request, jsonify, current_app
-from app.models.models import Producto, Reseña, Usuario
+from app.models.domains.product_models import Productos
+from app.models.domains.review_models import Reseñas
+from app.models.domains.user_models import Usuarios
+from app.models.serializers import producto_to_dict, resena_to_dict, usuario_to_dict
 from app.extensions import db
 from app.utils.jwt_utils import jwt_required
 from sqlalchemy.orm import joinedload
@@ -24,19 +27,19 @@ def listar_resenas(producto_id):
     current_app.logger.info(f"Listando reseñas para producto {producto_id}")
     
     # Verificar si el producto existe y está activo
-    producto = Producto.query.get(producto_id)
+    producto = Productos.query.get(producto_id)
     if not producto or producto.estado != 'activo':
         current_app.logger.warning(f"Producto {producto_id} no encontrado o inactivo al listar reseñas")
         return jsonify({'error': 'Producto no encontrado'}), 404
     
     # Obtener reseñas activas con información del usuario
-    resenas = Reseña.query.filter_by(
+    resenas = Reseñas.query.filter_by(
         producto_id=producto_id, 
         estado='activo'
     ).options(
-        joinedload(Reseña.usuario)
+        joinedload(Reseñas.usuario)
     ).order_by(
-        Reseña.fecha.desc()
+        Reseñas.fecha.desc()
     ).all()
     
     # Formatear respuesta
@@ -93,12 +96,12 @@ def crear_resena(usuario, producto_id):
         return jsonify({'success': False, 'error': 'La calificación debe ser un número entre 1 y 5'}), 400
     
     # Verificar si el producto existe y está activo
-    producto = Producto.query.get(producto_id)
+    producto = Productos.query.get(producto_id)
     if not producto or producto.estado != 'activo':
         return jsonify({'success': False, 'error': 'Producto no encontrado o inactivo'}), 404
     
     # Verificar si el usuario ya ha dejado una reseña para este producto
-    existe_resena = Reseña.query.filter_by(
+    existe_resena = Reseñas.query.filter_by(
         usuario_id=usuario.id,
         producto_id=producto_id,
         estado='activo'
@@ -112,12 +115,11 @@ def crear_resena(usuario, producto_id):
     
     try:
         # Crear nueva reseña
-        nueva_resena = Reseña(
+        nueva_resena = Reseñas(
             usuario_id=usuario.id,
             producto_id=producto_id,
             texto=texto,
             calificacion=calificacion,
-            fecha=datetime.utcnow(),
             estado='activo'
         )
         

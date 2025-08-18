@@ -14,12 +14,14 @@
         <div class="category-section mb-12">
             <div class="flex justify-between items-center mb-6 px-2">
                 <h2 class="text-2xl font-semibold text-gray-700">Productos Destacados</h2>
+                {% if categorias and categorias|length > 0 %}
                 <a href="/products?categoria={{ categorias[0].id }}" class="flex items-center text-pink-600 hover:text-pink-800 font-medium transition-colors">
                     Ver Todos
                     <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
                     </svg>
                 </a>
+                {% endif %}
             </div>
 
             <!-- Carrusel de productos - VERSIÓN ULTRA PROFESIONAL CON CORRECCIONES -->
@@ -77,20 +79,8 @@
 
     <!-- Datos de productos para JavaScript -->
     <script>
-        window.PRODUCTS_DATA = [{% for producto in productos %}{
-                    "id": {{ producto.id }},
-                    "nombre": "{{ producto.nombre | escape }}",
-                    "descripcion": "{{ producto.descripcion | escape }}",
-                    "precio": {{ "%.2f"|format(producto.precio) }},
-                    "imagen_url": "{{ producto.imagen_url }}",
-                    "marca": "{{ producto.marca or '' | escape }}",
-                    "calificacion_promedio": {{ producto.calificacion_promedio or 0 }},
-                    "reseñas": {{ producto.reseñas|length }},
-                    "es_nuevo": {{ 'true' if producto.es_nuevo else 'false' }},
-                    "fecha_creacion": "{{ producto.fecha_creacion.isoformat() if producto.fecha_creacion else '' }}"
-                }
-                {% if not loop.last %},{% endif %}{% endfor %}];
-        window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson }};
+        window.PRODUCTS_DATA = {{ productos_data|tojson|safe }};
+        window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
     </script>
 
     <style>
@@ -461,7 +451,7 @@
                 
                 // Verificar si el producto está en favoritos
                 const isFavorite = window.favoritesManager ? 
-                    window.favoritesManager.favoriteProducts.has(parseInt(producto.id)) : false;
+                    window.favoritesManager.favoriteProducts.has(String(producto.id)) : false;
 
                 card.style.animationDelay = `${
                     delayIndex * 0.08

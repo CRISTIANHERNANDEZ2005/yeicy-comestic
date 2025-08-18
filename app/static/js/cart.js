@@ -188,7 +188,7 @@ class ShoppingCart {
   async addToCart(button) {
     if (this.isUpdating) return;
 
-    const productId = parseInt(button.dataset.productId);
+  const productId = button.dataset.productId;
     const quantity = parseInt(button.dataset.quantity || 1);
 
     if (!productId) {
@@ -217,11 +217,11 @@ class ShoppingCart {
       }
 
       const isNewItem = !this.cartItems.find(
-        (item) => item.product_id === productId
+    (item) => item.product_id == productId
       );
 
       const existingItem = this.cartItems.find(
-        (item) => item.product_id === productId
+    (item) => item.product_id == productId
       );
 
       if (existingItem) {
@@ -238,7 +238,7 @@ class ShoppingCart {
           product_id: productId,
           quantity: Math.min(quantity, product.stock),
           product: {
-            id: productId,
+            id: product.id,
             nombre: product.nombre,
             precio: parseFloat(product.precio),
             imagen_url: product.imagen_url,
@@ -496,9 +496,7 @@ class ShoppingCart {
               item.product.nombre
             }</h4>
             <p class="text-sm text-gray-500">${item.product.marca || ""}</p>
-            <p class="text-pink-600 font-bold text-lg">$${item.product.precio.toFixed(
-              2
-            )}</p>
+            <p class="text-pink-600 font-bold text-lg">$${(item.product.precio != null ? Number(item.product.precio).toFixed(2) : '0.00')}</p>
           </div>
           
           <div class="flex flex-col items-end gap-2">
@@ -534,9 +532,7 @@ class ShoppingCart {
               </button>
             </div>
             
-            <p class="text-sm font-bold text-gray-900">$${item.subtotal.toFixed(
-              2
-            )}</p>
+            <p class="text-sm font-bold text-gray-900">$${(item.subtotal != null ? Number(item.subtotal).toFixed(2) : '0.00')}</p>
           </div>
         </div>
       </div>

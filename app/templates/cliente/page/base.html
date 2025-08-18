@@ -223,29 +223,26 @@
             </div>
         </div>
 
-        <main class="container mx-auto pt-20 pb-8 px-4 flex-1"> {% block content %}{% endblock %}
-            </main>
-        </body>
-    </html>
-</main>
+        <main class="container mx-auto pt-20 pb-8 px-4 flex-1">
+            {% block content %}{% endblock %}
+        </main>
 
-<!-- WhatsApp Floating Button -->
-{% include 'cliente/ui/whatsapp_button.html' %}
+    <!-- WhatsApp Floating Button -->
+    {% include 'cliente/ui/whatsapp_button.html' %}
 
-<!-- seccion de confianza -->
-{% include 'cliente/ui/seccion_confianza.html' %}
+    <!-- seccion de confianza -->
+    {% include 'cliente/ui/seccion_confianza.html' %}
 
-<!-- Footer -->
-{% include 'cliente/ui/footer.html' %}
+    <!-- Footer -->
+    {% include 'cliente/ui/footer.html' %}
 
-<!-- Bottom Navigation - Only on mobile -->
-{% include 'cliente/ui/mobile_nav.html' %}
+    <!-- Bottom Navigation - Only on mobile -->
+    {% include 'cliente/ui/mobile_nav.html' %}
 
-<!-- Incluir el carrito -->
-{% include 'cliente/ui/carrito.html' %}
+    <!-- Incluir el carrito -->
+    {% include 'cliente/ui/carrito.html' %}
 
-{% include 'cliente/ui/notifications.html' %}
-
+    {% include 'cliente/ui/notifications.html' %}
 <!-- Scripts -->
 <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
 <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
@@ -253,139 +250,7 @@
 <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 <script>
     window.userId = {{ session.get('user_id', 'null') }};
+    window.isAuthenticated = {{ 'true' if 'user' in session else 'false' }};
 </script>
-<script>
-    // Manejador para mostrar el modal de autenticación
-    document.addEventListener('showAuthModal', function (e) {
-        const authModal = document.getElementById('auth-modal-bg');
-        if (authModal) { // Mostrar el modal
-            authModal.classList.remove('hidden');
-            authModal.classList.add('flex');
-
-            // Mostrar mensaje si está presente
-            if (e.detail && e.detail.message) { // Usar el sistema de notificaciones si está disponible
-                if (window.toast) {
-                    window.toast.warning(e.detail.message, 4000);
-                } else { // Fallback básico
-                    const message = document.createElement('div');
-                    message.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-pink-600 text-white px-6 py-3 rounded-lg shadow-lg z-[99999] flex items-center';
-                    message.innerHTML = `
-                                                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                </svg>
-                                                ${
-                        e.detail.message
-                    }
-                                            `;
-                    document.body.appendChild(message);
-
-                    // Eliminar el mensaje después de 4 segundos
-                    setTimeout(() => {
-                        if (message.parentNode) {
-                            message.parentNode.removeChild(message);
-                        }
-                    }, 4000);
-                }
-            }
-        }
-    });
-
-    document.addEventListener('DOMContentLoaded', function () { // Verificar disponibilidad del sistema Toast
-        if (window.toast) {
-            console.log('✅ Sistema de notificaciones Toast disponible');
-        } else {
-            console.warn('⚠️ Sistema de notificaciones no encontrado - usando fallback');
-
-            // Fallback básico
-            window.toast = {
-                success: (msg, duration = 3000) => {
-                    console.log(`✅ ${msg}`);
-                    // Crear notificación visual simple si no hay Toast
-                    createSimpleNotification(msg, 'bg-green-500');
-                },
-                error: (msg, duration = 4000) => {
-                    console.log(`❌ ${msg}`);
-                    createSimpleNotification(msg, 'bg-red-500');
-                },
-                warning: (msg, duration = 3500) => {
-                    console.log(`⚠️ ${msg}`);
-                    createSimpleNotification(msg, 'bg-yellow-500');
-                },
-                info: (msg, duration = 3000) => {
-                    console.log(`ℹ️ ${msg}`);
-                    createSimpleNotification(msg, 'bg-blue-500');
-                }
-            };
-        }
-
-        // Función auxiliar para notificaciones simples
-        function createSimpleNotification(message, bgClass) {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${bgClass} shadow-lg animate-fade-in-up`;
-            notification.textContent = message;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                notification.classList.add('animate-fade-out-down');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 300);
-            }, 3000);
-        }
-    });
-</script>
-<script>
-    document.addEventListener('favorites:updated', (e) => {
-        const counter = document.getElementById('favorites-counter');
-        if (e.detail && e.detail.count !== undefined) {
-            counter.textContent = e.detail.count > 0 ? e.detail.count : '';
-            counter.setAttribute('aria-label', `${
-                e.detail.count
-            } favoritos`);
-            counter.style.transform = e.detail.count > 0 ? 'scale(1)' : 'scale(0)';
-            counter.style.opacity = e.detail.count > 0 ? '1' : '0';
-        }
-    });
-
-    // Manejar clic en el botón de favoritos
-    document.addEventListener('DOMContentLoaded', function () {
-        const favButton = document.getElementById('navbar-fav-btn');
-        if (favButton) {
-            favButton.addEventListener('click', function (e) {
-                const isAuthenticated = {{ 'true' if 'user' in session else 'false' }};
-                if (! isAuthenticated) {
-                    e.preventDefault();
-                    e.stopPropagation();
-
-                    // Usar el método showAuthModal del FavoritesManager si está disponible
-                    if (window.favoritesManager) {
-                        window.favoritesManager.showAuthModal();
-                    } else { // Fallback en caso de que el FavoritesManager no esté disponible
-                        const modal = document.getElementById('like-auth-modal');
-                        const modalInner = document.getElementById('like-auth-modal-inner');
-                        const modalMsg = document.getElementById('like-auth-modal-msg');
-
-                        if (modal && modalInner && modalMsg) {
-                            modalMsg.textContent = 'Debes iniciar sesión para ver tus productos favoritos.';
-                            modal.style.display = 'flex';
-                            modalInner.style.animation = 'modalFadeInUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-
-                            // Ocultar después de 5 segundos
-                            setTimeout(() => {
-                                modalInner.style.animation = 'modalFadeOutDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards';
-                                setTimeout(() => {
-                                    modal.style.display = 'none';
-                                }, 350);
-                            }, 5000);
-                        }
-                    }
-                    return false;
-                }
-                // Si está autenticado, la navegación normal continúa
-            });
-        }
-    });
-</script></body></html></div></body></html>
+</body>
+</html>

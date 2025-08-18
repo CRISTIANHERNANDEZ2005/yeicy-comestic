@@ -1,28 +1,28 @@
 # script_prueba.py
 from app import create_app
 from app.extensions import db
-from app.models.models import CategoriaPrincipal, Subcategoria, Seudocategoria, Producto
+from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias, Productos
 
 app = create_app()
 
 with app.app_context():
     # Crear categorías principales
-    cat_maquillaje = CategoriaPrincipal(
+    cat_maquillaje = CategoriasPrincipales(
         nombre="Maquillaje", 
         descripcion="Productos de maquillaje para realzar tu belleza", 
         estado="activo"
     )
-    cat_cuidado_facial = CategoriaPrincipal(
+    cat_cuidado_facial = CategoriasPrincipales(
         nombre="Cuidado Facial", 
         descripcion="Productos para el cuidado y tratamiento de la piel", 
         estado="activo"
     )
-    cat_cuidado_cabello = CategoriaPrincipal(
+    cat_cuidado_cabello = CategoriasPrincipales(
         nombre="Cuidado del Cabello", 
         descripcion="Productos para el cuidado y tratamiento capilar", 
         estado="activo"
     )
-    cat_fragancias = CategoriaPrincipal(
+    cat_fragancias = CategoriasPrincipales(
         nombre="Fragancias", 
         descripcion="Perfumes y colonias para hombre y mujer", 
         estado="activo"
@@ -33,7 +33,7 @@ with app.app_context():
 
     # --- MAQUILLAJE ---
     # Subcategoría: Labios
-    sub_labios = Subcategoria(
+    sub_labios = Subcategorias(
         nombre="Labios", 
         descripcion="Productos para el maquillaje de labios", 
         categoria_principal_id=cat_maquillaje.id, 
@@ -43,13 +43,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Labios
-    seudo_labiales_mate = Seudocategoria(
+    seudo_labiales_mate = Seudocategorias(
         nombre="Labiales Mate", 
         descripcion="Labiales de acabado mate y larga duración", 
         subcategoria_id=sub_labios.id, 
         estado="activo"
     )
-    seudo_gloss = Seudocategoria(
+    seudo_gloss = Seudocategorias(
         nombre="Gloss Labiales", 
         descripcion="Brillos y gloss para labios con efecto brillante", 
         subcategoria_id=sub_labios.id, 
@@ -59,7 +59,7 @@ with app.app_context():
     db.session.commit()
     
     # Subcategoría: Ojos
-    sub_ojos = Subcategoria(
+    sub_ojos = Subcategorias(
         nombre="Ojos", 
         descripcion="Productos para el maquillaje de ojos", 
         categoria_principal_id=cat_maquillaje.id, 
@@ -69,13 +69,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Ojos
-    seudo_mascaras = Seudocategoria(
+    seudo_mascaras = Seudocategorias(
         nombre="Máscaras de Pestañas", 
         descripcion="Productos para dar volumen y longitud a las pestañas", 
         subcategoria_id=sub_ojos.id, 
         estado="activo"
     )
-    seudo_sombras = Seudocategoria(
+    seudo_sombras = Seudocategorias(
         nombre="Sombras de Ojos", 
         descripcion="Paletas y sombras individuales para ojos", 
         subcategoria_id=sub_ojos.id, 
@@ -86,7 +86,7 @@ with app.app_context():
 
     # --- CUIDADO FACIAL ---
     # Subcategoría: Limpieza
-    sub_limpieza = Subcategoria(
+    sub_limpieza = Subcategorias(
         nombre="Limpieza Facial", 
         descripcion="Productos para la limpieza diaria de la piel", 
         categoria_principal_id=cat_cuidado_facial.id, 
@@ -96,13 +96,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Limpieza
-    seudo_geles = Seudocategoria(
+    seudo_geles = Seudocategorias(
         nombre="Geles Limpiadores", 
         descripcion="Geles de limpieza para todo tipo de piel", 
         subcategoria_id=sub_limpieza.id, 
         estado="activo"
     )
-    seudo_aguas_micelares = Seudocategoria(
+    seudo_aguas_micelares = Seudocategorias(
         nombre="Aguas Micelares", 
         descripcion="Soluciones micelares para desmaquillar y limpiar", 
         subcategoria_id=sub_limpieza.id, 
@@ -112,7 +112,7 @@ with app.app_context():
     db.session.commit()
     
     # Subcategoría: Hidratación
-    sub_hidratacion = Subcategoria(
+    sub_hidratacion = Subcategorias(
         nombre="Hidratación", 
         descripcion="Productos para hidratar y nutrir la piel", 
         categoria_principal_id=cat_cuidado_facial.id, 
@@ -122,13 +122,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Hidratación
-    seudo_cremas = Seudocategoria(
+    seudo_cremas = Seudocategorias(
         nombre="Cremas Hidratantes", 
         descripcion="Cremas faciales para hidratación diaria", 
         subcategoria_id=sub_hidratacion.id, 
         estado="activo"
     )
-    seudo_serums = Seudocategoria(
+    seudo_serums = Seudocategorias(
         nombre="Sérums Faciales", 
         descripcion="Sérums concentrados para tratamientos específicos", 
         subcategoria_id=sub_hidratacion.id, 
@@ -139,7 +139,7 @@ with app.app_context():
 
     # --- CUIDADO DEL CABELLO ---
     # Subcategoría: Shampoo
-    sub_shampoo = Subcategoria(
+    sub_shampoo = Subcategorias(
         nombre="Shampoo", 
         descripcion="Shampoos para diferentes tipos de cabello", 
         categoria_principal_id=cat_cuidado_cabello.id, 
@@ -149,13 +149,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Shampoo
-    seudo_shampoo_hidratante = Seudocategoria(
+    seudo_shampoo_hidratante = Seudocategorias(
         nombre="Shampoo Hidratante", 
         descripcion="Shampoos con propiedades hidratantes", 
         subcategoria_id=sub_shampoo.id, 
         estado="activo"
     )
-    seudo_shampoo_anticaspa = Seudocategoria(
+    seudo_shampoo_anticaspa = Seudocategorias(
         nombre="Shampoo Anticaspa", 
         descripcion="Shampoos para tratamiento de caspa", 
         subcategoria_id=sub_shampoo.id, 
@@ -165,7 +165,7 @@ with app.app_context():
     db.session.commit()
     
     # Subcategoría: Tratamientos
-    sub_tratamientos = Subcategoria(
+    sub_tratamientos = Subcategorias(
         nombre="Tratamientos", 
         descripcion="Productos para tratamientos capilares", 
         categoria_principal_id=cat_cuidado_cabello.id, 
@@ -175,13 +175,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Tratamientos
-    seudo_mascarillas = Seudocategoria(
+    seudo_mascarillas = Seudocategorias(
         nombre="Mascarillas Capilares", 
         descripcion="Mascarillas nutritivas para el cabello", 
         subcategoria_id=sub_tratamientos.id, 
         estado="activo"
     )
-    seudo_aceites = Seudocategoria(
+    seudo_aceites = Seudocategorias(
         nombre="Aceites Capilares", 
         descripcion="Aceites para tratamiento y brillo del cabello", 
         subcategoria_id=sub_tratamientos.id, 
@@ -192,7 +192,7 @@ with app.app_context():
 
     # --- FRAGANCIAS ---
     # Subcategoría: Mujer
-    sub_fragancias_mujer = Subcategoria(
+    sub_fragancias_mujer = Subcategorias(
         nombre="Fragancias para Mujer", 
         descripcion="Perfumes y colonias para mujer", 
         categoria_principal_id=cat_fragancias.id, 
@@ -202,13 +202,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Fragancias Mujer
-    seudo_eau_de_parfum = Seudocategoria(
+    seudo_eau_de_parfum = Seudocategorias(
         nombre="Eau de Parfum", 
         descripcion="Perfumes con alta concentración de esencias", 
         subcategoria_id=sub_fragancias_mujer.id, 
         estado="activo"
     )
-    seudo_eau_de_toilette = Seudocategoria(
+    seudo_eau_de_toilette = Seudocategorias(
         nombre="Eau de Toilette", 
         descripcion="Fragancias ligeras para uso diario", 
         subcategoria_id=sub_fragancias_mujer.id, 
@@ -218,7 +218,7 @@ with app.app_context():
     db.session.commit()
     
     # Subcategoría: Hombre
-    sub_fragancias_hombre = Subcategoria(
+    sub_fragancias_hombre = Subcategorias(
         nombre="Fragancias para Hombre", 
         descripcion="Perfumes y colonias para hombre", 
         categoria_principal_id=cat_fragancias.id, 
@@ -228,13 +228,13 @@ with app.app_context():
     db.session.commit()
     
     # Seudocategorías para Fragancias Hombre
-    seudo_parfum_hombre = Seudocategoria(
+    seudo_parfum_hombre = Seudocategorias(
         nombre="Perfumes para Hombre", 
         descripcion="Fragancias masculinas intensas", 
         subcategoria_id=sub_fragancias_hombre.id, 
         estado="activo"
     )
-    seudo_colonias = Seudocategoria(
+    seudo_colonias = Seudocategorias(
         nombre="Colonias", 
         descripcion="Fragancias ligeras para hombre", 
         subcategoria_id=sub_fragancias_hombre.id, 
@@ -248,7 +248,7 @@ with app.app_context():
 
     # --- PRODUCTOS DE MAQUILLAJE ---
     # Labiales Mate
-    producto1 = Producto(
+    producto1 = Productos(
         nombre="Labial Mate Rojo Pasión",
         descripcion="Labial mate de larga duración en tono rojo intenso",
         precio=18.99,
@@ -259,7 +259,7 @@ with app.app_context():
         estado="activo"
     )
     
-    producto2 = Producto(
+    producto2 = Productos(
         nombre="Labial Mate Nude Elegante",
         descripcion="Tonos nude mate para un look natural y sofisticado",
         precio=16.50,
@@ -271,7 +271,7 @@ with app.app_context():
     )
     
     # Gloss Labiales
-    producto3 = Producto(
+    producto3 = Productos(
         nombre="Gloss Brillante Rosé",
         descripcion="Gloss con efecto brillante y tono rosado",
         precio=12.99,
@@ -283,7 +283,7 @@ with app.app_context():
     )
     
     # Máscaras de Pestañas
-    producto4 = Producto(
+    producto4 = Productos(
         nombre="Máscara Volumen Extremo",
         descripcion="Máscara de pestañas para un volumen impactante",
         precio=22.00,
@@ -295,7 +295,7 @@ with app.app_context():
     )
     
     # Sombras de Ojos
-    producto5 = Producto(
+    producto5 = Productos(
         nombre="Paleta Sombras Nude",
         descripcion="Paleta con 12 tonos nude para crear diferentes looks",
         precio=29.99,
@@ -308,7 +308,7 @@ with app.app_context():
 
     # --- PRODUCTOS DE CUIDADO FACIAL ---
     # Geles Limpiadores
-    producto6 = Producto(
+    producto6 = Productos(
         nombre="Gel Limpiador Piel Mixta",
         descripcion="Gel limpiador suave para piel mixta, libre de jabón",
         precio=15.50,
@@ -320,7 +320,7 @@ with app.app_context():
     )
     
     # Aguas Micelares
-    producto7 = Producto(
+    producto7 = Productos(
         nombre="Agua Micelar Sensibio",
         descripcion="Agua micelar para pieles sensibles, sin alcohol",
         precio=12.99,
@@ -332,7 +332,7 @@ with app.app_context():
     )
     
     # Cremas Hidratantes
-    producto8 = Producto(
+    producto8 = Productos(
         nombre="Crema Hidratante 24h",
         descripcion="Hidratación intensa durante 24 horas, para todo tipo de piel",
         precio=18.75,
@@ -344,7 +344,7 @@ with app.app_context():
     )
     
     # Sérums Faciales
-    producto9 = Producto(
+    producto9 = Productos(
         nombre="Sérum Vitamina C",
         descripcion="Sérum antioxidante con vitamina C para un brillo saludable",
         precio=32.99,
@@ -357,7 +357,7 @@ with app.app_context():
 
     # --- PRODUCTOS DE CUIDADO DEL CABELLO ---
     # Shampoo Hidratante
-    producto10 = Producto(
+    producto10 = Productos(
         nombre="Shampoo Hidratación Profunda",
         descripcion="Shampoo con aceite de argán para cabellos secos",
         precio=14.99,
@@ -369,7 +369,7 @@ with app.app_context():
     )
     
     # Shampoo Anticaspa
-    producto11 = Producto(
+    producto11 = Productos(
         nombre="Shampoo Anticaspa Control",
         descripcion="Controla la caspa y alivia el picor del cuero cabelludo",
         precio=16.50,
@@ -381,7 +381,7 @@ with app.app_context():
     )
     
     # Mascarillas Capilares
-    producto12 = Producto(
+    producto12 = Productos(
         nombre="Mascarilla Reparadora",
         descripcion="Tratamiento intensivo para cabellos dañados",
         precio=21.99,
@@ -393,7 +393,7 @@ with app.app_context():
     )
     
     # Aceites Capilares
-    producto13 = Producto(
+    producto13 = Productos(
         nombre="Aceite de Argán Puro",
         descripcion="Aceite 100% puro para nutrición y brillo del cabello",
         precio=19.99,
@@ -406,7 +406,7 @@ with app.app_context():
 
     # --- PRODUCTOS DE FRAGANCIAS ---
     # Eau de Parfum (Mujer)
-    producto14 = Producto(
+    producto14 = Productos(
         nombre="Floral Dream EDP",
         descripcion="Fragancia floral con notas de jazmín y vainilla",
         precio=65.00,
@@ -418,7 +418,7 @@ with app.app_context():
     )
     
     # Eau de Toilette (Mujer)
-    producto15 = Producto(
+    producto15 = Productos(
         nombre="Fresh Breeze EDT",
         descripcion="Fragancia fresca con notas cítricas y florales",
         precio=45.99,
@@ -430,7 +430,7 @@ with app.app_context():
     )
     
     # Perfumes para Hombre
-    producto16 = Producto(
+    producto16 = Productos(
         nombre="Wood Essence Parfum",
         descripcion="Fragancia masculina con notas amaderadas y especiadas",
         precio=70.00,
@@ -442,7 +442,7 @@ with app.app_context():
     )
     
     # Colonias (Hombre)
-    producto17 = Producto(
+    producto17 = Productos(
         nombre="Blue Ocean Cologne",
         descripcion="Colonia fresca con notas acuáticas y amaderadas",
         precio=38.50,
@@ -462,4 +462,4 @@ with app.app_context():
     db.session.commit()
 
 
-    print("Datos de prueba creados con éxito. Total de productos:", Producto.query.count())
+    print("Datos de prueba creados con éxito. Total de productos:", Productos.query.count())

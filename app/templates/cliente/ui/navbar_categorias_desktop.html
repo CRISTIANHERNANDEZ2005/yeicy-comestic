@@ -77,30 +77,34 @@ document.addEventListener('DOMContentLoaded', function () {
   // Solo activar funcionalidad en desktop
   function isDesktop() { return window.innerWidth >= 768; }
   const container = document.getElementById('categories-container-desktop');
+  // Si el contenedor no existe (p. ej. render en otro layout), salir sin errores
+  if (!container) return;
   const categoryItems = container.querySelectorAll('.category-item');
   const megaMenu = document.getElementById('megaMenu-desktop');
+  if (!megaMenu) return;
   const megaMenuContent = megaMenu.querySelector('.mega-menu-content');
+  if (!megaMenuContent) return;
   const megaMenuOverlay = document.getElementById('megaMenuOverlay-desktop');
   let currentCategory = null;
   let closeTimeout = null;
   let isMouseOverMenu = false;
   let isMenuOpen = false;
 
-  // Datos de categorías
+  // Datos de categorías (generados como JSON seguro)
   const categoriesData = {
     {% for categoria in categorias %}
-    {{ categoria.id }}: {
-      nombre: "{{ categoria.nombre }}",
-      subcategorias: [
+    "{{ categoria.id }}": {
+      "nombre": {{ categoria.nombre | tojson }},
+      "subcategorias": [
         {% for sub in categoria.subcategorias %}
         {
-          id: {{ sub.id }},
-          nombre: "{{ sub.nombre }}",
-          seudocategorias: [
+          "id": "{{ sub.id }}",
+          "nombre": {{ sub.nombre | tojson }},
+          "seudocategorias": [
             {% for seudo in sub.seudocategorias %}
             {
-              id: {{ seudo.id }},
-              nombre: "{{ seudo.nombre }}"
+              "id": "{{ seudo.id }}",
+              "nombre": {{ seudo.nombre | tojson }}
             }{% if not loop.last %},{% endif %}
             {% endfor %}
           ]
@@ -121,7 +125,6 @@ document.addEventListener('DOMContentLoaded', function () {
         <div class="category-section">
           <h3>
             ${sub.nombre}
-            ${seudoCount > 0 ? `<span class="category-count">${seudoCount}</span>` : ''}
           </h3>
           <ul class="subcategory-list">
             ${sub.seudocategorias.map(seudo => `
@@ -159,8 +162,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }, 120);
   }
   // Eventos de interacción
+  // Añadir listeners sólo si existen triggers dentro de cada item
   categoryItems.forEach(item => {
     const trigger = item.querySelector('.category-trigger');
+    if (!trigger) return;
     trigger.addEventListener('mouseenter', () => { if (isDesktop()) showMegaMenu(item.dataset.categoryId); });
     trigger.addEventListener('mouseleave', hideMegaMenu);
     trigger.addEventListener('focus', () => { if (isDesktop()) showMegaMenu(item.dataset.categoryId); });

@@ -1,6 +1,9 @@
 # app/blueprints/products.py
 from flask import Blueprint, render_template, request, jsonify, session
-from app.models.models import Producto, CategoriaPrincipal, Subcategoria, Seudocategoria, BusquedaTermino
+from app.models.domains.product_models import Productos, CategoriasPrincipales, Subcategorias, Seudocategorias
+from app.models.domains.review_models import Reseñas, Likes
+from app.models.domains.search_models import BusquedaTermino
+from app.models.serializers import producto_to_dict, categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, busqueda_termino_to_dict
 from app.extensions import db
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
@@ -17,72 +20,58 @@ def index():
     o todos los productos si no existe la categoría
     """
     # Obtener categorías principales (sin cambios - ya está perfecto)
-    categorias = CategoriaPrincipal.query\
+    categorias = CategoriasPrincipales.query\
         .filter_by(estado='activo')\
         .options(
-            joinedload(CategoriaPrincipal.subcategorias)
-            .joinedload(Subcategoria.seudocategorias)
+            joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
         )\
         .all()
 
     # Filtrar subcategorías y seudocategorías activas
     for categoria in categorias:
         categoria.subcategorias = [
-            sub for sub in categoria.subcategorias if sub.estado == 'activo']
+            sub for sub in getattr(categoria, 'subcategorias', []) if sub.estado == 'activo']
         for subcategoria in categoria.subcategorias:
             subcategoria.seudocategorias = [
-                seudo for seudo in subcategoria.seudocategorias if seudo.estado == 'activo']
+                seudo for seudo in getattr(subcategoria, 'seudocategorias', []) if seudo.estado == 'activo']
 
     # Buscar la categoría principal "Maquillaje"
-    categoria_maquillaje = CategoriaPrincipal.query.filter(
-        func.lower(CategoriaPrincipal.nombre) == 'maquillaje',
-        CategoriaPrincipal.estado == 'activo'
+    categoria_maquillaje = CategoriasPrincipales.query.filter(
+        func.lower(CategoriasPrincipales.nombre) == 'maquillaje',
+        CategoriasPrincipales.estado == 'activo'
     ).first()
 
     # Obtener productos de la categoría "Maquillaje" o productos destacados si no existe
     if categoria_maquillaje:
         # Obtener IDs de todas las seudocategorías bajo "Maquillaje"
-        seudocategoria_ids = db.session.query(Seudocategoria.id)\
-            .join(Subcategoria)\
+        seudocategoria_ids = db.session.query(Seudocategorias.id)\
+            .join(Subcategorias)\
             .filter(
-                Subcategoria.categoria_principal_id == categoria_maquillaje.id,
-                Seudocategoria.estado == 'activo'
+                Subcategorias.categoria_principal_id == categoria_maquillaje.id,
+                Seudocategorias.estado == 'activo'
         ).all()
 
         seudocategoria_ids = [id[0] for id in seudocategoria_ids]
 
         # Filtrar productos de esta categoría
-        productos = Producto.query\
+        productos = Productos.query\
             .filter(
-                Producto.seudocategoria_id.in_(seudocategoria_ids),
-                Producto.estado == 'activo'
+                Productos.seudocategoria_id.in_(seudocategoria_ids),
+                Productos.estado == 'activo'
             )\
             .order_by(func.random())\
             .limit(12)\
             .all()
     else:
         # Fallback: productos destacados si no existe "Maquillaje"
-        productos = Producto.query\
+        productos = Productos.query\
             .filter_by(estado='activo')\
             .order_by(func.random())\
             .limit(12)\
             .all()
 
     # Preparar datos para JavaScript con lógica de "nuevo"
-
-    productos_data = [{
-        'id': p.id,
-        'nombre': p.nombre,
-        'descripcion': p.descripcion,
-        'precio': float(p.precio),
-        'imagen_url': p.imagen_url,
-        'marca': p.marca or '',
-        'calificacion_promedio': p.calificacion_promedio,
-        'reseñas': len(p.reseñas),
-        'stock': p.stock,
-        'es_nuevo': bool(p.es_nuevo),  # FORZAR BOOLEANO
-        'fecha_creacion': p.fecha_creacion.isoformat() if p.fecha_creacion else None
-    } for p in productos]
+    productos_data = [producto_to_dict(p) for p in productos]
 
     total_productos = len(productos)
 
@@ -103,12 +92,12 @@ def index():
         categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados'
     )
 
-@products_bp.route('/producto/<int:producto_id>')
+@products_bp.route('/producto/<producto_id>')
 def producto_detalle(producto_id):
     """
     Muestra los detalles de un producto específico
     """
-    producto = Producto.query.get_or_404(producto_id)
+    producto = Productos.query.get_or_404(producto_id)
     
     # Verificar si el producto está activo
     if producto.estado != 'activo':
@@ -116,34 +105,34 @@ def producto_detalle(producto_id):
         abort(404)
     
     # Obtener productos relacionados (misma categoría principal)
-    productos_relacionados = Producto.query.join(
-        Seudocategoria, Producto.seudocategoria_id == Seudocategoria.id
+    productos_relacionados = Productos.query.join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
     ).join(
-        Subcategoria, Seudocategoria.subcategoria_id == Subcategoria.id
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
     ).filter(
-        Producto.id != producto.id,
-        Producto.estado == 'activo',
-        Subcategoria.categoria_principal_id == producto.seudocategoria.subcategoria.categoria_principal_id
+        Productos.id != producto.id,
+        Productos.estado == 'activo',
+        Subcategorias.categoria_principal_id == producto.seudocategorias.subcategorias.categoria_principal_id
     ).limit(4).all()
     
     # Obtener reseñas del producto
-    reseñas = Reseña.query.filter_by(
+    reseñas = Reseñas.query.filter_by(
         producto_id=producto.id,
         estado='activo'
-    ).order_by(Reseña.fecha.desc()).all()
+    ).order_by(Reseñas.fecha.desc()).all()
     
     # Calcular calificación promedio
     calificacion_promedio = db.session.query(
-        db.func.avg(Reseña.calificacion)
+        db.func.avg(Reseñas.calificacion)
     ).filter(
-        Reseña.producto_id == producto.id,
-        Reseña.estado == 'activo'
+        Reseñas.producto_id == producto.id,
+        Reseñas.estado == 'activo'
     ).scalar() or 0
     
     # Verificar si el usuario actual ha dado like al producto
     es_favorito = False
     if 'user' in session:
-        like = Like.query.filter_by(
+        like = Likes.query.filter_by(
             usuario_id=session['user'].get('id'),
             producto_id=producto.id,
             estado='activo'
@@ -189,35 +178,28 @@ def buscar():
         BusquedaTermino.registrar(query)
 
         # Búsqueda mejorada con prioridad
-        productos = Producto.query.filter(
+        productos = Productos.query.filter(
             db.or_(
-                Producto.nombre.ilike(f'%{query}%'),
-                Producto.marca.ilike(f'%{query}%'),
-                Producto.descripcion.ilike(f'%{query}%')
+                Productos.nombre.ilike(f'%{query}%'),
+                Productos.marca.ilike(f'%{query}%'),
+                Productos.descripcion.ilike(f'%{query}%')
             ),
-            Producto.estado == 'activo'
+            Productos.estado == 'activo'
         ).order_by(
             # Priorizar coincidencias exactas al inicio
             db.case(
-                (Producto.nombre.ilike(f'{query}%'), 1),
-                (Producto.marca.ilike(f'{query}%'), 2),
+                (Productos.nombre.ilike(f'{query}%'), 1),
+                (Productos.marca.ilike(f'{query}%'), 2),
                 else_=3
             ),
-            Producto.nombre.asc()
+            Productos.nombre.asc()
         ).limit(12).all()
 
         # Top términos actualizados
         sugerencias = BusquedaTermino.top_terminos(10)
 
         return jsonify({
-            'resultados': [{
-                'id': p.id,
-                'nombre': p.nombre,
-                'imagen_url': p.imagen_url,
-                'precio': float(p.precio),
-                'marca': p.marca or '',
-                'stock': p.stock
-            } for p in productos],
+            'resultados': [producto_to_dict(p) for p in productos],
             'sugerencias': [s.termino for s in sugerencias],
             'total': len(productos),
             'query': query

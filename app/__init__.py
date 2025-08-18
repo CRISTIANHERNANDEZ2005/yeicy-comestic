@@ -1,6 +1,8 @@
 # app/__init__.py
 from flask import Flask, render_template
 from config import Config
+from .extensions import db, bcrypt, migrate, login_manager
+from .models.domains.user_models import Usuarios
 
 
 def create_app(config_class=Config):
@@ -38,11 +40,21 @@ def create_app(config_class=Config):
         }
     }
 
+
     # Inicializar extensiones
-    from app.extensions import db, bcrypt, migrate
     db.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
+    login_manager.init_app(app)
+
+    # Configuración de login_manager después de asociar la app
+    login_manager.login_view = 'auth.login'  # type: ignore
+    login_manager.login_message = 'Por favor inicia sesión para acceder a esta página.'  # type: ignore
+    login_manager.login_message_category = 'info'  # type: ignore
+
+    @login_manager.user_loader
+    def load_user(id):
+        return Usuarios.query.get(id)
 
     # Registrar blueprints
     from app.blueprints.cliente.auth import auth_bp
@@ -69,7 +81,7 @@ def create_app(config_class=Config):
     @app.context_processor
     def inject_global_data():
         from app.blueprints.cliente.cart import get_or_create_cart, get_cart_items
-        from app.models.models import CategoriaPrincipal, Subcategoria, Seudocategoria
+        from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
         from sqlalchemy.orm import joinedload
         
         # Datos del carrito
@@ -79,11 +91,11 @@ def create_app(config_class=Config):
         total_price = sum(item['subtotal'] for item in items)
         
         # Obtener categorías activas
-        categorias = CategoriaPrincipal.query\
+        categorias = CategoriasPrincipales.query\
             .filter_by(estado='activo')\
             .options(
-                joinedload(CategoriaPrincipal.subcategorias)
-                .joinedload(Subcategoria.seudocategorias)
+                joinedload(CategoriasPrincipales.subcategorias)
+                .joinedload(Subcategorias.seudocategorias)
             )\
             .all()
 
@@ -97,11 +109,11 @@ def create_app(config_class=Config):
         
         # Exponer favoritos y autenticación global
         from flask import session
-        from app.models.models import Like
+        from app.models.domains.review_models import Likes
         usuario_autenticado = 'user_id' in session
         total_favoritos = 0
         if usuario_autenticado:
-            total_favoritos = Like.query.filter_by(usuario_id=session['user_id'], estado='activo').count()
+            total_favoritos = Likes.query.filter_by(usuario_id=session['user_id'], estado='activo').count()
         return {
             'cart_items': items,
             'total_price': total_price,

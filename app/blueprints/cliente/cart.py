@@ -1,6 +1,8 @@
 # app/blueprints/cart.py
 from flask import Blueprint, request, jsonify, session, render_template, current_app
-from app.models.models import Producto, CartItem, CartSession
+from app.models.domains.product_models import Productos
+from app.models.domains.cart_models import CartItem, CartSession
+from app.models.serializers import producto_to_dict, cart_item_to_dict, cart_session_to_dict
 from app.extensions import db
 from datetime import datetime, timedelta
 import uuid
@@ -71,7 +73,7 @@ def add_to_cart():
     if not product_id:
         return jsonify({'success': False, 'message': 'Producto no especificado'})
 
-    product = Producto.query.get(product_id)
+    product = Productos.query.get(str(product_id))
     if not product or product.estado != 'activo':
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
@@ -114,9 +116,6 @@ def add_to_cart():
                     'quantity': quantity
                 })
 
-            cart_session.items = json.dumps(items_data)
-            cart_session.updated_at = datetime.utcnow()
-
         db.session.commit()
         return jsonify({
             'success': True,
@@ -128,97 +127,6 @@ def add_to_cart():
         db.session.rollback()
         current_app.logger.error(f"Error adding to cart: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al agregar al carrito'})
-
-
-@cart_bp.route('/api/update_cart', methods=['POST'])
-def update_cart():
-    item_id = request.form.get('item_id')
-    new_quantity = int(request.form.get('quantity', 1))
-
-    if not item_id or new_quantity < 1:
-        return jsonify({'success': False, 'message': 'Datos inválidos'})
-
-    cart_info, cart_session = get_or_create_cart()
-
-    try:
-        if 'user_id' in cart_info:
-            # Usuario autenticado
-            cart_item = CartItem.query.filter_by(
-                id=item_id,
-                user_id=cart_info['user_id']
-            ).first()
-
-            if cart_item:
-                cart_item.quantity = new_quantity
-                cart_item.updated_at = datetime.utcnow()
-        else:
-            # Usuario no autenticado
-            if cart_session and cart_session.items:
-                items_data = json.loads(cart_session.items)
-                for item in items_data:
-                    if item.get('id') == item_id:
-                        item['quantity'] = new_quantity
-                        break
-                cart_session.items = json.dumps(items_data)
-                cart_session.updated_at = datetime.utcnow()
-
-        db.session.commit()
-        items = get_cart_items(cart_info)
-        total_price = sum(item['subtotal'] for item in items)
-
-        return jsonify({
-            'success': True,
-            'subtotal': next((item['subtotal'] for item in items if item['id'] == item_id), 0),
-            'total_price': total_price,
-            'items': get_cart_items(cart_info)
-        })
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error updating cart: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error al actualizar el carrito'})
-
-
-@cart_bp.route('/api/remove_from_cart', methods=['POST'])
-def remove_from_cart():
-    item_id = request.form.get('item_id')
-
-    if not item_id:
-        return jsonify({'success': False, 'message': 'Ítem no especificado'})
-
-    cart_info, cart_session = get_or_create_cart()
-
-    try:
-        if 'user_id' in cart_info:
-            # Usuario autenticado
-            CartItem.query.filter_by(
-                id=item_id,
-                user_id=cart_info['user_id']
-            ).delete()
-        else:
-            # Usuario no autenticado
-            if cart_session and cart_session.items:
-                items_data = json.loads(cart_session.items)
-                items_data = [
-                    item for item in items_data if item.get('id') != item_id]
-                cart_session.items = json.dumps(items_data)
-                cart_session.updated_at = datetime.utcnow()
-
-        db.session.commit()
-        items = get_cart_items(cart_info)
-        total_price = sum(item['subtotal'] for item in items)
-
-        return jsonify({
-            'success': True,
-            'total_items': len(items),
-            'total_price': total_price,
-            'items': get_cart_items(cart_info),
-            'message': 'Producto eliminado exitosamente'
-        })
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error removing from cart: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error al eliminar del carrito'})
-
 
 @cart_bp.route('/api/get_cart_data', methods=['GET'])
 def get_cart_data():
@@ -281,7 +189,7 @@ def add_to_cart_optimized():
     if not product_id:
         return jsonify({'success': False, 'message': 'Producto no especificado'})
 
-    product = Producto.query.get(product_id)
+    product = Productos.query.get(str(product_id))
     if not product or product.estado != 'activo':
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
@@ -330,6 +238,8 @@ def sync_cart():
         if 'user_id' not in session:
             return jsonify({'success': False, 'message': 'Usuario no autenticado'})
 
+        if not request.is_json or request.json is None:
+            return jsonify({'success': False, 'message': 'Solicitud inválida: se requiere JSON'}), 400
         cart_data = request.json.get('cart_items', [])
         user_id = session['user_id']
 
@@ -338,7 +248,7 @@ def sync_cart():
 
         # Agregar nuevos items
         for item in cart_data:
-            product = Producto.query.get(item['product_id'])
+            product = Productos.query.get(str(item['product_id']))
             if product and product.estado == 'activo':
                 cart_item = CartItem(
                     user_id=user_id,
@@ -366,10 +276,10 @@ def sync_cart():
         return jsonify({'success': False, 'message': 'Error al sincronizar carrito'})
 
 
-@cart_bp.route('/api/product/<int:product_id>')
+@cart_bp.route('/api/product/<product_id>')
 def get_product_details(product_id):
     """Obtiene los detalles de un producto específico"""
-    product = Producto.query.get(product_id)
+    product = Productos.query.get(product_id)
 
     if not product or product.estado != 'activo':
         return jsonify({'error': 'Producto no encontrado'}), 404

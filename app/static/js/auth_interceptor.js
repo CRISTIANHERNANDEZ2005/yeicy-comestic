@@ -47,22 +47,26 @@ window.fetch = async function (resource, options = {}) {
   try {
     const response = await originalFetch(resource, newOptions);
 
-    // Si la respuesta es 401 (No autorizado), redirigir al login
+    // Si la respuesta es 401 (No autorizado), manejar según el contexto
     if (response.status === 401) {
+      // Si la petición es de login o register, no redirigir, solo devolver el error
+      if (
+        typeof resource === "string" &&
+        (resource.includes("/auth/login") || resource.includes("/auth/register"))
+      ) {
+        return response;
+      }
+      // Para otras rutas protegidas, mostrar notificación y redirigir
       console.error("Error de autenticación. Redirigiendo al login...");
-      // Mostrar mensaje al usuario
       if (typeof showNotification === "function") {
         showNotification(
           "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
           "error"
         );
       }
-
-      // Redirigir al login después de un breve retraso
       setTimeout(() => {
         window.location.href = "/login";
       }, 2000);
-
       return Promise.reject(new Error("No autorizado"));
     }
 
@@ -80,45 +84,60 @@ function isAuthenticated() {
 
 // Función para obtener el token de autenticación
 function getAuthToken() {
-  // Primero intentar obtener el token de las cookies (para compatibilidad con SSR)
+  // Prioridad: cookie > sessionStorage > localStorage
   const tokenFromCookie = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
-
-  // Si no hay token en las cookies, intentar obtenerlo del localStorage
+  const tokenFromSession = sessionStorage.getItem("token");
   const tokenFromStorage = localStorage.getItem("token");
-
-  // Devolver el token de las cookies si existe, si no, el del localStorage
-  return tokenFromCookie || tokenFromStorage;
+  return tokenFromCookie || tokenFromSession || tokenFromStorage;
 }
 
 // Función para establecer el token de autenticación
 function setAuthToken(token) {
   if (token) {
-    // Guardar en localStorage
     localStorage.setItem("token", token);
-
-    // También guardar en cookies para compatibilidad con SSR
+    sessionStorage.setItem("token", token);
     const expires = new Date();
     expires.setTime(expires.getTime() + 7 * 24 * 60 * 60 * 1000); // 7 días
     document.cookie = `token=${token};expires=${expires.toUTCString()};path=/;SameSite=Lax`;
   } else {
-    // Eliminar de ambos lugares
     localStorage.removeItem("token");
-    document.cookie = "token=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;";
+    sessionStorage.removeItem("token");
+    // Borrar cookie con los mismos atributos que al setearla
+    document.cookie = "token=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
   }
 }
 
 // Función para cerrar sesión
-function logout() {
-  // Eliminar el token del almacenamiento local
+
+async function logout() {
+  try {
+    await fetch('/auth/logout', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+  } catch (e) {}
+  // Notificar a otras pestañas que se cerró sesión
+  localStorage.setItem('logout-event', Date.now().toString());
   setAuthToken(null);
   localStorage.removeItem("user");
-
-  // Redirigir a la página de inicio
-  window.location.href = "/";
+  // Forzar recarga sin restaurar sesión
+  window.location.replace("/");
 }
+
+// Sincronizar logout entre pestañas
+window.addEventListener('storage', function(event) {
+  if (event.key === 'logout-event') {
+    setAuthToken(null);
+    localStorage.removeItem("user");
+    window.location.href = "/";
+  }
+});
 
 // Exportar funciones para su uso en otros archivos
 window.auth = {
@@ -128,10 +147,16 @@ window.auth = {
   logout,
 };
 
-// Restaurar sesión automáticamente si hay token válido
+// Restaurar sesión automáticamente si hay token válido y la cookie no está vacía
 async function restoreSession() {
+  // Solo restaurar si hay token en cookie, sessionStorage o localStorage
   const token = getAuthToken();
-  if (!token) return;
+  // Verificar que la cookie no esté vacía (previene restauración tras logout)
+  const cookieToken = document.cookie
+    .split('; ')
+    .find((row) => row.startsWith('token='))
+    ?.split('=')[1];
+  if (!token || cookieToken === undefined || cookieToken === "") return;
   try {
     const response = await originalFetch("/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
@@ -140,14 +165,12 @@ async function restoreSession() {
     if (response.ok) {
       const data = await response.json();
       if (data.usuario) {
-        // Guardar usuario en localStorage para acceso rápido en el frontend
         localStorage.setItem("user", JSON.stringify(data.usuario));
         window.dispatchEvent(
           new CustomEvent("user-restored", { detail: data.usuario })
         );
       }
     } else {
-      // Token inválido, limpiar sesión
       setAuthToken(null);
       localStorage.removeItem("user");
     }

@@ -99,3 +99,8 @@ env/
 
 # Pyre type checker
 .pyre/
+
+# Archivos y directorios específicos para ignorar
+migrations/
+script_prueba.py
+script_registrar_admin.py

@@ -1,22 +1,25 @@
-<!-- Sistema de Notificaciones Toast Profesional con Tailwind -->
-<div id="notification-container" class="fixed top-5 right-5 z-[9999] space-y-3 w-full max-w-xs"></div>
-
 <script>
-    // Evitar declaración duplicada
-    if (typeof ToastNotification === 'undefined') {
-        class ToastNotification {
-            constructor() {
-                this.container = document.getElementById('notification-container');
-                this.injectSVGIcons();
-                this.injectAnimations();
+// Evitar declaración duplicada
+if (typeof ToastNotification === 'undefined') {
+    class ToastNotification {
+        constructor() {
+            this.container = document.getElementById('notification-container');
+            if (!this.container) {
+                this.container = document.createElement('div');
+                this.container.id = 'notification-container';
+                this.container.className = 'fixed top-4 right-4 z-[9999] w-full max-w-xs space-y-3';
+                document.body.appendChild(this.container);
             }
+            this.injectSVGIcons();
+            this.injectAnimations();
+        }
 
-            injectSVGIcons() {
-                if (!document.getElementById('toast-icons')) {
-                    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                    svg.setAttribute('id', 'toast-icons');
-                    svg.setAttribute('style', 'position: absolute; width: 0; height: 0; overflow: hidden;');
-                    svg.innerHTML = `
+        injectSVGIcons() {
+            if (!document.getElementById('toast-icons')) {
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('id', 'toast-icons');
+                svg.setAttribute('style', 'position: absolute; width: 0; height: 0; overflow: hidden;');
+                svg.innerHTML = `
                 <symbol id="toast-success-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                 </symbol>
@@ -33,15 +36,15 @@
                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                 </symbol>
             `;
-                    document.body.appendChild(svg);
-                }
+                document.body.appendChild(svg);
             }
+        }
 
-            injectAnimations() {
-                if (!document.getElementById('toast-animations')) {
-                    const style = document.createElement('style');
-                    style.id = 'toast-animations';
-                    style.textContent = `
+        injectAnimations() {
+            if (!document.getElementById('toast-animations')) {
+                const style = document.createElement('style');
+                style.id = 'toast-animations';
+                style.textContent = `
                 @keyframes toast-progress {
                     from { width: 100%; }
                     to { width: 0%; }
@@ -105,169 +108,191 @@
                     }
                 }
             `;
-                    document.head.appendChild(style);
-                }
+                document.head.appendChild(style);
+            }
+        }
+
+        show(message, type = 'info', duration = 3000, options = {}) {
+            const toast = this.createToast(message, type, duration, options);
+            this.container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add(`animate-toast-${options.animationType || 'slide'}-in`);
+            }, 10);
+
+            // Auto remove
+            const autoRemoveTimer = setTimeout(() => {
+                this.removeToast(toast, options.animationType || 'slide');
+            }, duration);
+
+            toast.dataset.autoRemoveTimer = autoRemoveTimer;
+        }
+
+        createToast(message, type, duration, options = {}) {
+            const toast = document.createElement('div');
+            const animationType = options.animationType || 'slide';
+
+            // Base classes
+            const baseClasses = [
+                'flex',
+                'items-center',
+                'w-full',
+                'max-w-xs',
+                'p-4',
+                'text-gray-700',
+                'bg-white',
+                'rounded-lg',
+                'shadow-xl',
+                'border-l-4',
+                'relative',
+                'overflow-hidden',
+                'transform-gpu',
+                'opacity-0'
+            ];
+
+            // Animation classes
+            const animationClasses = {
+                slide: ['translate-x-full'],
+                bounce: ['translate-y-full']
+            };
+
+            // Type-specific classes
+            const typeClasses = {
+                success: ['border-green-500'],
+                error: ['border-red-500'],
+                warning: ['border-yellow-500'],
+                info: ['border-blue-500']
+            };
+
+            // Icon background classes
+            const iconBgClasses = {
+                success: [
+                    'bg-green-100', 'text-green-500'
+                ],
+                error: [
+                    'bg-red-100', 'text-red-500'
+                ],
+                warning: [
+                    'bg-yellow-100', 'text-yellow-500'
+                ],
+                info: ['bg-blue-100', 'text-blue-500']
+            };
+
+            // Apply classes
+            toast.className = [
+                ...baseClasses,
+                ...(animationClasses[animationType] || []),
+                ...typeClasses[type]
+            ].join(' ');
+
+            const iconMap = {
+                success: 'toast-success-icon',
+                error: 'toast-error-icon',
+                warning: 'toast-warning-icon',
+                info: 'toast-info-icon'
+            };
+
+            // Add action button if present
+            let actionButtonHtml = '';
+            if (options.action && options.action.text && options.action.onClick) {
+                actionButtonHtml = `
+                        <a href="#" class="ml-4 bg-white text-${type}-600 font-bold rounded-lg px-3 py-1 shadow hover:bg-${type}-50 transition-colors duration-200 text-sm focus:outline-none focus:ring-2 focus:ring-${type}-400" style="white-space:nowrap;">${options.action.text}</a>
+                    `;
             }
 
-            show(message, type = 'info', duration = 3000, animationType = 'slide') {
-                const toast = this.createToast(message, type, duration, animationType);
-                this.container.appendChild(toast);
-
-                // Trigger animation
-                setTimeout(() => {
-                    toast.classList.add(`animate-toast-${animationType}-in`);
-                }, 10);
-
-                // Auto remove
-                const autoRemoveTimer = setTimeout(() => {
-                    this.removeToast(toast, animationType);
-                }, duration);
-
-                toast.dataset.autoRemoveTimer = autoRemoveTimer;
-            }
-
-            createToast(message, type, duration, animationType) {
-                const toast = document.createElement('div');
-
-                // Base classes
-                const baseClasses = [
-                    'flex',
-                    'items-center',
-                    'w-full',
-                    'max-w-xs',
-                    'p-4',
-                    'text-gray-700',
-                    'bg-white',
-                    'rounded-lg',
-                    'shadow-xl',
-                    'border-l-4',
-                    'relative',
-                    'overflow-hidden',
-                    'transform-gpu',
-                    'opacity-0'
-                ];
-
-                // Animation classes
-                const animationClasses = {
-                    slide: ['translate-x-full'],
-                    bounce: ['translate-y-full']
-                };
-
-                // Type-specific classes
-                const typeClasses = {
-                    success: ['border-green-500'],
-                    error: ['border-red-500'],
-                    warning: ['border-yellow-500'],
-                    info: ['border-blue-500']
-                };
-
-                // Icon background classes
-                const iconBgClasses = {
-                    success: [
-                        'bg-green-100', 'text-green-500'
-                    ],
-                    error: [
-                        'bg-red-100', 'text-red-500'
-                    ],
-                    warning: [
-                        'bg-yellow-100', 'text-yellow-500'
-                    ],
-                    info: ['bg-blue-100', 'text-blue-500']
-                };
-
-                // Apply classes
-                toast.className = [
-                    ... baseClasses,
-                    ... animationClasses[animationType],
-                    ... typeClasses[type]
-                ].join(' ');
-
-                const iconMap = {
-                    success: 'toast-success-icon',
-                    error: 'toast-error-icon',
-                    warning: 'toast-warning-icon',
-                    info: 'toast-info-icon'
-                };
-
-                toast.innerHTML = `
+            toast.innerHTML = `
             <div class="inline-flex items-center justify-center flex-shrink-0 w-8 h-8 rounded-lg ${
-                    iconBgClasses[type].join(' ')
-                }">
+                iconBgClasses[type].join(' ')
+            }">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <use href="#${
-                    iconMap[type]
-                }"></use>
+                iconMap[type]
+            }"></use>
                 </svg>
             </div>
             <div class="ml-3 text-sm font-medium flex-1">${message}</div>
+            ${actionButtonHtml} <!-- Insert action button -->
             <button class="ml-auto -mx-1.5 -my-1.5 bg-white text-gray-400 hover:text-gray-900 rounded-lg p-1.5 inline-flex h-8 w-8 focus:outline-none focus:ring-2 focus:ring-gray-300">
                 <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                     <use href="#toast-close-icon"></use>
                 </svg>
             </button>
             <div class="absolute bottom-0 left-0 h-1 bg-current opacity-20" style="animation: toast-progress ${
-                    duration / 1000
-                }s ease-out forwards;"></div>
+                duration / 1000
+            }s ease-out forwards;"></div>
         `;
 
-                // Add dismiss functionality
-                toast.querySelector('button').addEventListener('click', () => {
-                    clearTimeout(toast.dataset.autoRemoveTimer);
-                    this.removeToast(toast, animationType);
-                });
+            // Add dismiss functionality
+            toast.querySelector('button').addEventListener('click', () => {
+                clearTimeout(toast.dataset.autoRemoveTimer);
+                this.removeToast(toast, animationType);
+            });
 
-                return toast;
+            // Add action button click listener
+            if (options.action && options.action.onClick) {
+                const actionButton = toast.querySelector('a');
+                if (actionButton) {
+                    actionButton.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        options.action.onClick();
+                        this.removeToast(toast, animationType); // Dismiss toast after click
+                    });
+                }
             }
 
-            removeToast(toast, animationType) {
-                toast.classList.remove(`animate-toast-${animationType}-in`);
-                toast.classList.add(`animate-toast-${animationType}-out`);
+            return toast;
+        }
 
-                setTimeout(() => {
-                    if (toast.parentNode) {
-                        toast.parentNode.removeChild(toast);
-                    }
-                }, 500);
-            }
+        removeToast(toast, animationType) {
+            toast.classList.remove(`animate-toast-${animationType}-in`);
+            toast.classList.add(`animate-toast-${animationType}-out`);
 
-            success(message, duration = 3000, animationType = 'slide') {
-                this.show(message, 'success', duration, animationType);
-            }
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 500);
+        }
 
-            error(message, duration = 4000, animationType = 'slide') {
-                this.show(message, 'error', duration, animationType);
-            }
+        success(message, duration = 3000, options = {}) {
+            this.show(message, 'success', duration, options);
+        }
 
-            warning(message, duration = 3500, animationType = 'slide') {
-                this.show(message, 'warning', duration, animationType);
-            }
+        error(message, duration = 4000, options = {}) {
+            this.show(message, 'error', duration, options);
+        }
 
-            info(message, duration = 3000, animationType = 'slide') {
-                this.show(message, 'info', duration, animationType);
-            }
-        };
+        warning(message, duration = 3500, options = {}) {
+            this.show(message, 'warning', duration, options);
+        }
 
-        // Hacer la clase accesible globalmente
-        window.ToastNotification = ToastNotification;
+        info(message, duration = 3000, options = {}) {
+            this.show(message, 'info', duration, options);
+        }
+    };
 
-        // Create global instance with enhanced options
-        const toast = new ToastNotification();
+    // Hacer la clase accesible globalmente
+    window.ToastNotification = ToastNotification;
 
-        // Enhanced global function with animation options
-        window.toast = {
-            success: (msg, duration, animation) => toast.success(msg, duration, animation),
-            error: (msg, duration, animation) => toast.error(msg, duration, animation),
-            warning: (msg, duration, animation) => toast.warning(msg, duration, animation),
-            info: (msg, duration, animation) => toast.info(msg, duration, animation),
-            // Advanced show method
-            show: (msg, type, duration, animation) => toast.show(msg, type, duration, animation)
-        };
+    // Create global instance with enhanced options
+    const toast = new ToastNotification();
 
-        // Add animation classes to the head
-        if (!document.getElementById('toast-global-animations')) {
-            const animationStyles = document.createElement('style');
-            animationStyles.id = 'toast-global-animations';
-            animationStyles.textContent = `
+    // Enhanced global function with animation options
+    window.toast = {
+        success: (msg, duration, animation) => toast.success(msg, duration, { animationType: animation }),
+        error: (msg, duration, animation) => toast.error(msg, duration, { animationType: animation }),
+        warning: (msg, duration, animation) => toast.warning(msg, duration, { animationType: animation }),
+        info: (msg, duration, animation) => toast.info(msg, duration, { animationType: animation }),
+        // Advanced show method
+        show: (msg, type, duration, options) => toast.show(msg, type, duration, options)
+    };
+
+    // Add animation classes to the head
+    if (!document.getElementById('toast-global-animations')) {
+        const animationStyles = document.createElement('style');
+        animationStyles.id = 'toast-global-animations';
+        animationStyles.textContent = `
     .animate-toast-slide-in {
         animation: toast-slide-in 0.5s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
     }
@@ -281,7 +306,7 @@
         animation: toast-bounce-out 0.6s cubic-bezier(0.55, 0.06, 0.68, 0.19) forwards;
     }
 `;
-            document.head.appendChild(animationStyles);
-        }
+        document.head.appendChild(animationStyles);
     }
+}
 </script>

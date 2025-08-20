@@ -14,12 +14,13 @@ from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 # Crear el blueprint para favoritos
 favorites_bp = Blueprint('favorites', __name__)
 
+
 @favorites_bp.route('/api/favoritos', methods=['GET', 'POST'])
 @jwt_required
 def manejar_favoritos(usuario):
     """
     Maneja las operaciones CRUD para los favoritos del usuario.
-    
+
     GET: 
       - Retorna la lista de favoritos del usuario
       - Parámetros opcionales:
@@ -28,13 +29,13 @@ def manejar_favoritos(usuario):
         - ids_only: Si es 'true', devuelve solo los IDs (default: false)
         - sort_by: Campo para ordenar (fecha, nombre, precio)
         - sort_order: Orden (asc, desc)
-        
+
     POST: 
       - Agrega o elimina un producto de favoritos
       - Body: { "producto_id": int, "accion": "agregar"|"eliminar" (opcional) }
     """
     from flask import current_app
-    
+
     if request.method == 'GET':
         try:
             # Validación y obtención de parámetros
@@ -48,19 +49,22 @@ def manejar_favoritos(usuario):
                 return jsonify({'success': False, 'error': 'Los parámetros de paginación deben ser mayores a 0', 'code': 'INVALID_PAGINATION'}), 400
 
             # Validar sort_by y sort_order
-            valid_sort_fields = {'fecha': Likes.created_at, 'nombre': Productos.nombre, 'precio': Productos.precio}
+            valid_sort_fields = {'fecha': Likes.created_at,
+                                 'nombre': Productos.nombre, 'precio': Productos.precio}
             if sort_by not in valid_sort_fields:
                 sort_by = 'fecha'
-            order_field = valid_sort_fields[sort_by].asc() if sort_order == 'asc' else valid_sort_fields[sort_by].desc()
+            order_field = valid_sort_fields[sort_by].asc(
+            ) if sort_order == 'asc' else valid_sort_fields[sort_by].desc()
 
             # Consulta de favoritos
             query = Likes.query.filter_by(usuario_id=usuario.id, estado='activo')\
                 .join(Productos).filter(Productos.estado == 'activo')\
                 .options(
-                    joinedload(Likes.producto).joinedload(Productos.seudocategoria)
+                    joinedload(Likes.producto).joinedload(
+                        Productos.seudocategoria)
                     .joinedload(Seudocategorias.subcategoria)
                     .joinedload(Subcategorias.categoria_principal)
-                )\
+            )\
                 .order_by(order_field)
 
             # IDs only
@@ -69,7 +73,8 @@ def manejar_favoritos(usuario):
                 return jsonify({'success': True, 'favoritos': favoritos_ids, 'total': len(favoritos_ids)}), 200
 
             # Paginación
-            pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+            pagination = query.paginate(
+                page=page, per_page=per_page, error_out=False)
             favoritos = pagination.items
 
             # Respuesta
@@ -105,7 +110,8 @@ def manejar_favoritos(usuario):
             response.headers['Cache-Control'] = 'private, max-age=60'
             return response, 200
         except Exception as e:
-            current_app.logger.error(f'Error al obtener favoritos: {str(e)}', exc_info=True)
+            current_app.logger.error(
+                f'Error al obtener favoritos: {str(e)}', exc_info=True)
             db.session.rollback()
             return jsonify({'success': False, 'error': 'Error interno', 'details': str(e), 'code': 'SERVER_ERROR'}), 500
 
@@ -114,17 +120,18 @@ def manejar_favoritos(usuario):
             data = request.get_json()
             if not data:
                 return jsonify({
-                    'success': False, 
+                    'success': False,
                     'error': 'No se proporcionaron datos en la solicitud',
                     'code': 'MISSING_DATA'
                 }), 400
-                
+
             # Asegurarse que el producto_id sea string (UUID)
             producto_id = data.get('producto_id')
             if producto_id is not None:
                 producto_id = str(producto_id)
-            accion = data.get('accion', 'toggle').lower() # Por defecto: toggle
-            
+            # Por defecto: toggle
+            accion = data.get('accion', 'toggle').lower()
+
             # Validar acción
             if accion not in ['agregar', 'eliminar', 'toggle']:
                 return jsonify({
@@ -132,37 +139,38 @@ def manejar_favoritos(usuario):
                     'error': 'Acción no válida. Use: agregar, eliminar o toggle',
                     'code': 'INVALID_ACTION'
                 }), 400
-                
+
             if not producto_id:
                 return jsonify({
-                    'success': False, 
+                    'success': False,
                     'error': 'ID de producto no proporcionado',
                     'code': 'MISSING_PRODUCT_ID'
                 }), 400
-            
+
             # Verificar si el producto existe y está activo
             producto = Productos.query.filter_by(
                 id=producto_id,
                 estado='activo'
             ).first()
-            
+
             if not producto:
                 return jsonify({
-                    'success': False, 
+                    'success': False,
                     'error': 'Producto no encontrado o no disponible',
                     'code': 'PRODUCT_NOT_FOUND'
                 }), 404
-            
+
             # Buscar favorito existente (activo o inactivo)
             favorito = Likes.query.filter_by(
                 usuario_id=usuario.id,
                 producto_id=producto_id
             ).first()
-            
+
             # Determinar la acción a realizar
             if accion == 'toggle':
-                accion = 'eliminar' if (favorito and favorito.estado == 'activo') else 'agregar'
-            
+                accion = 'eliminar' if (
+                    favorito and favorito.estado == 'activo') else 'agregar'
+
             # Procesar la acción
             if accion == 'eliminar':
                 if not favorito or favorito.estado == 'inactivo':
@@ -173,14 +181,15 @@ def manejar_favoritos(usuario):
                         'producto_id': producto_id,
                         'accion': 'noop'
                     }), 200
-                
+
                 # Marcar como inactivo (eliminación lógica)
                 favorito.estado = 'inactivo'
                 favorito.fecha_actualizacion = datetime.utcnow()
                 db.session.commit()
-                
-                current_app.logger.info(f'Usuario {usuario.id} eliminó el producto {producto_id} de favoritos')
-                
+
+                current_app.logger.info(
+                    f'Usuario {usuario.id} eliminó el producto {producto_id} de favoritos')
+
                 return jsonify({
                     'success': True,
                     'message': 'Producto eliminado de favoritos',
@@ -188,7 +197,7 @@ def manejar_favoritos(usuario):
                     'producto_id': producto_id,
                     'accion': 'eliminado'
                 }), 200
-                
+
             else:  # accion == 'agregar'
                 if favorito:
                     if favorito.estado == 'activo':
@@ -213,10 +222,11 @@ def manejar_favoritos(usuario):
                     )
                     db.session.add(favorito)
                     accion_realizada = 'agregado'
-                
+
                 db.session.commit()
-                current_app.logger.info(f'Usuario {usuario.id} {accion_realizada} el producto {producto_id} en favoritos')
-                
+                current_app.logger.info(
+                    f'Usuario {usuario.id} {accion_realizada} el producto {producto_id} en favoritos')
+
                 return jsonify({
                     'success': True,
                     'message': f'Producto {accion_realizada} a favoritos',
@@ -224,10 +234,11 @@ def manejar_favoritos(usuario):
                     'producto_id': producto_id,
                     'accion': accion_realizada
                 }), 201 if accion_realizada == 'agregado' else 200
-            
+
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f'Error al agregar a favoritos: {str(e)}', exc_info=True)
+            current_app.logger.error(
+                f'Error al agregar a favoritos: {str(e)}', exc_info=True)
             return jsonify({
                 'success': False,
                 'error': 'Error al procesar la solicitud',
@@ -235,36 +246,37 @@ def manejar_favoritos(usuario):
                 'code': 'SERVER_ERROR'
             }), 500
 
+
 @favorites_bp.route('/api/favoritos/<int:producto_id>', methods=['DELETE'])
 @jwt_required
 def eliminar_favorito(usuario, producto_id):
     """
     Elimina un producto de los favoritos del usuario.
-    
+
     Este endpoint es un alias para POST /api/favoritos con accion=eliminar
     """
     from flask import current_app, jsonify, request
-    
+
     try:
         # Verificar si el producto existe y está activo
         producto = Productos.query.filter_by(
             id=producto_id,
             estado='activo'
         ).first()
-        
+
         if not producto:
             return jsonify({
-                'success': False, 
+                'success': False,
                 'error': 'Producto no encontrado o no disponible',
                 'code': 'PRODUCT_NOT_FOUND'
             }), 404
-        
+
         # Buscar el favorito (activo o inactivo)
         favorito = Likes.query.filter_by(
             usuario_id=usuario.id,
             producto_id=producto_id
         ).first()
-        
+
         # Si no existe o ya está inactivo, devolver éxito
         if not favorito or favorito.estado == 'inactivo':
             return jsonify({
@@ -274,15 +286,16 @@ def eliminar_favorito(usuario, producto_id):
                 'producto_id': producto_id,
                 'accion': 'noop'
             }), 200
-        
+
         # Marcar como inactivo (eliminación lógica)
         favorito.estado = 'inactivo'
         favorito.fecha_actualizacion = datetime.utcnow()
         db.session.commit()
-        
+
         # Registrar la acción
-        current_app.logger.info(f'Usuario {usuario.id} eliminó el producto {producto_id} de favoritos')
-        
+        current_app.logger.info(
+            f'Usuario {usuario.id} eliminó el producto {producto_id} de favoritos')
+
         # Devolver respuesta consistente con el endpoint POST
         return jsonify({
             'success': True,
@@ -291,23 +304,25 @@ def eliminar_favorito(usuario, producto_id):
             'producto_id': producto_id,
             'accion': 'eliminado'
         }), 200
-        
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f'Error al eliminar de favoritos: {str(e)}', exc_info=True)
+        current_app.logger.error(
+            f'Error al eliminar de favoritos: {str(e)}', exc_info=True)
         return jsonify({
-            'success': False, 
+            'success': False,
             'error': 'Error al eliminar el producto de favoritos',
             'details': str(e) if current_app.debug else None,
             'code': 'SERVER_ERROR'
         }), 500
+
 
 @favorites_bp.route('/api/favoritos/sincronizar', methods=['POST'])
 @jwt_required
 def sincronizar_favoritos(usuario):
     """
     Sincroniza los favoritos locales con los del servidor de manera más eficiente.
-    
+
     Body:
     {
         "favoritos_locales": [int],  # Lista de IDs de productos favoritos locales
@@ -320,7 +335,7 @@ def sincronizar_favoritos(usuario):
             }
         ]
     }
-    
+
     Retorna:
     {
         "success": bool,
@@ -336,7 +351,7 @@ def sincronizar_favoritos(usuario):
     }
     """
     from flask import current_app, request, jsonify
-    
+
     try:
         # Obtener favoritos actuales del usuario
         favoritos_actuales = set(
@@ -349,16 +364,16 @@ def sincronizar_favoritos(usuario):
             .join(Productos)
             .all()
         )
-        
+
         # Obtener datos de la solicitud
         data = request.get_json()
         favoritos_locales = data.get('favoritos_locales', [])
         timestamp = data.get('timestamp')
         acciones_pendientes = data.get('acciones', [])
-        
+
         # Obtener timestamp del servidor
         server_timestamp = int(datetime.utcnow().timestamp())
-        
+
         # Verificar si los favoritos locales coinciden con los del servidor
         if set(favoritos_locales) == favoritos_actuales and not acciones_pendientes:
             return jsonify({
@@ -373,16 +388,16 @@ def sincronizar_favoritos(usuario):
                     'timestamp': server_timestamp
                 }
             }), 200
-        
+
         # Procesar acciones pendientes de manera más eficiente
         acciones_por_tipo = {'agregar': [], 'eliminar': []}
-        
+
         # Agrupar acciones por tipo para procesamiento por lotes
         for accion in acciones_pendientes:
             if not accion.get('producto_id') or accion.get('accion') not in ['agregar', 'eliminar']:
                 continue
             acciones_por_tipo[accion['accion']].append(accion['producto_id'])
-        
+
         # Procesar eliminaciones
         if acciones_por_tipo['eliminar']:
             # Eliminar en lote
@@ -390,18 +405,18 @@ def sincronizar_favoritos(usuario):
                 Likes.usuario_id == usuario.id,
                 Likes.producto_id.in_(acciones_por_tipo['eliminar'])
             ).update({'estado': 'inactivo'}, synchronize_session='fetch')
-            
+
             # Actualizar conjunto local
             favoritos_actuales.difference_update(acciones_por_tipo['eliminar'])
-        
+
         # Procesar adiciones
         if acciones_por_tipo['agregar']:
             # Filtrar productos que ya están en favoritos
             productos_a_agregar = [
-                pid for pid in acciones_por_tipo['agregar'] 
+                pid for pid in acciones_por_tipo['agregar']
                 if pid not in favoritos_actuales
             ]
-            
+
             if productos_a_agregar:
                 # Verificar que los productos existan y estén activos
                 productos_validos = set(
@@ -412,7 +427,7 @@ def sincronizar_favoritos(usuario):
                     )
                     .all()
                 )
-                
+
                 # Insertar en lote
                 nuevos_favoritos = [
                     {
@@ -423,17 +438,20 @@ def sincronizar_favoritos(usuario):
                     }
                     for pid in productos_validos
                 ]
-                
+
                 if nuevos_favoritos:
-                    db.session.bulk_insert_mappings(Likes.__mapper__, nuevos_favoritos)  # type: ignore[arg-type]
+                    db.session.bulk_insert_mappings(
+                        # type: ignore[arg-type]
+                        Likes.__mapper__, nuevos_favoritos)
                     favoritos_actuales.update(productos_validos)
-        
+
         # Confirmar cambios en la base de datos
         try:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(f'Error en sincronización de favoritos: {str(e)}')
+            current_app.logger.error(
+                f'Error en sincronización de favoritos: {str(e)}')
             return jsonify({
                 'success': False,
                 'error': 'Error al procesar las acciones de sincronización',
@@ -441,10 +459,12 @@ def sincronizar_favoritos(usuario):
             }), 500
 
         # Obtener lista de IDs eliminados
-        current_app.logger.info(f"Favoritos sincronizados para usuario {usuario.id}")
+        current_app.logger.info(
+            f"Favoritos sincronizados para usuario {usuario.id}")
 
         # Obtener la lista completa de favoritos actualizada
-        favoritos_actuales = Likes.query.filter_by(usuario_id=usuario.id, estado='activo').all()
+        favoritos_actuales = Likes.query.filter_by(
+            usuario_id=usuario.id, estado='activo').all()
         todos_favoritos = [{
             'id': fav.producto.id,
             'nombre': fav.producto.nombre,
@@ -460,10 +480,11 @@ def sincronizar_favoritos(usuario):
             'message': 'Favoritos sincronizados correctamente',
             'favorites': todos_favoritos
         })
-        
+
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error al sincronizar favoritos: {str(e)}", exc_info=True)
+        current_app.logger.error(
+            f"Error al sincronizar favoritos: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error al sincronizar favoritos'}), 500
 
 # Ruta para la página de favoritos
@@ -493,13 +514,15 @@ def favoritos(usuario):
             .all()
 
         if not favoritos:
-            app.logger.info(f"No se encontraron productos favoritos para el usuario con ID {user_id}")
+            app.logger.info(
+                f"No se encontraron productos favoritos para el usuario con ID {user_id}")
 
         # Obtener categorías para el menú
         categorias = CategoriasPrincipales.query.filter_by(estado='activo')\
             .options(
-                joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
-            ).all()
+                joinedload(CategoriasPrincipales.subcategorias).joinedload(
+                    Subcategorias.seudocategorias)
+        ).all()
 
         if not categorias:
             app.logger.info("No se encontraron categorías activas")
@@ -508,5 +531,6 @@ def favoritos(usuario):
         return render_template('cliente/componentes/favoritos.html', favoritos=favoritos, categorias=categorias), 200
 
     except Exception as e:
-        app.logger.error(f"Error al procesar la página de favoritos: {str(e)}", exc_info=True)
+        app.logger.error(
+            f"Error al procesar la página de favoritos: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error interno del servidor'}), 500

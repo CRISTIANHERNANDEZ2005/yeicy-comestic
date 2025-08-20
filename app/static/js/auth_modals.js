@@ -376,19 +376,16 @@
           if (result.token) {
             if (window.auth && typeof window.auth.setAuthToken === 'function') {
               window.auth.setAuthToken(result.token);
-            } else {
-              localStorage.setItem('token', result.token);
             }
-            console.log('Token guardado en localStorage');
-          }
-
-          if (result.usuario) {
-            localStorage.setItem('user', JSON.stringify(result.usuario));
-            console.log('Información del usuario guardada en localStorage');
-          }
-
-          if (window.favoritesManager) {
-            window.favoritesManager.isAuthenticated = true;
+            // Set global userId for cart synchronization
+            window.userId = result.usuario.id;
+            // Trigger cart synchronization immediately after login/registration
+            if (window.cart) {
+              window.cart.hydrateCartFromServer();
+            }
+            if (window.favoritesManager) {
+              window.favoritesManager.isAuthenticated = true;
+            }
           }
 
           const authEvent = new CustomEvent('auth:success', {

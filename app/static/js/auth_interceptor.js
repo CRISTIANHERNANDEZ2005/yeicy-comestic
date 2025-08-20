@@ -113,6 +113,30 @@ function setAuthToken(token) {
 // Función para cerrar sesión
 
 async function logout() {
+  console.log("Iniciando proceso de logout...");
+
+  // 1. Limpiar estado del cliente PRIMERO
+  try {
+    // Limpiar el carrito local
+    if (window.cart && typeof window.cart.clearCartOnLogout === 'function') {
+      window.cart.clearCartOnLogout();
+      console.log("Función clearCartOnLogout() llamada exitosamente.");
+    } else {
+      console.warn("No se encontró window.cart.clearCartOnLogout() para llamar.");
+    }
+
+    // Limpiar tokens y datos de usuario
+    setAuthToken(null);
+    localStorage.removeItem("user");
+    
+    // Notificar a otras pestañas para que cierren sesión también
+    localStorage.setItem('logout-event', Date.now().toString());
+
+  } catch (error) {
+    console.error("Error durante la limpieza del cliente en logout:", error);
+  }
+
+  // 2. Notificar al servidor
   try {
     await fetch('/auth/logout', {
       method: 'POST',
@@ -121,12 +145,13 @@ async function logout() {
         'Content-Type': 'application/json'
       }
     });
-  } catch (e) {}
-  // Notificar a otras pestañas que se cerró sesión
-  localStorage.setItem('logout-event', Date.now().toString());
-  setAuthToken(null);
-  localStorage.removeItem("user");
-  // Forzar recarga sin restaurar sesión
+    console.log("Notificación de logout enviada al servidor.");
+  } catch (e) {
+    console.error("Error al notificar al servidor sobre el logout. La limpieza del cliente ya se realizó.", e);
+  }
+
+  // 3. Redirigir
+  console.log("Redirigiendo a la página principal...");
   window.location.replace("/");
 }
 
@@ -166,6 +191,12 @@ async function restoreSession() {
       const data = await response.json();
       if (data.usuario) {
         localStorage.setItem("user", JSON.stringify(data.usuario));
+        // Set global userId for cart synchronization
+        window.userId = data.usuario.id;
+        // Trigger cart synchronization immediately after session restoration
+        if (window.cart) {
+          window.cart.hydrateCartFromServer();
+        }
         window.dispatchEvent(
           new CustomEvent("user-restored", { detail: data.usuario })
         );

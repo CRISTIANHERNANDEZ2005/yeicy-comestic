@@ -1,12 +1,13 @@
 # app/blueprints/cart.py
 from flask import Blueprint, request, jsonify, session, render_template, current_app
 from app.models.domains.product_models import Productos
-from app.models.domains.cart_models import CartItem, CartSession
-from app.models.serializers import producto_to_dict, cart_item_to_dict, cart_session_to_dict
+from app.models.domains.cart_models import CartItem
+from app.models.serializers import producto_to_dict, cart_item_to_dict
 from app.extensions import db
 from datetime import datetime, timedelta
 import uuid
 import json
+from app.utils.jwt_utils import jwt_required
 
 cart_bp = Blueprint('cart', __name__)
 
@@ -15,28 +16,27 @@ def get_or_create_cart():
     """Obtiene o crea un carrito basado en la sesión del usuario"""
     if 'user_id' in session:
         # Usuario autenticado - retorna user_id
-        return {'user_id': session['user_id']}, None
+        return {'user_id': session['user_id']}
     else:
         # Usuario no autenticado - generar session_id temporal
         if 'cart_id' not in session:
             session['cart_id'] = str(uuid.uuid4())
-        return {'session_id': session['cart_id']}, None
-
+        return {'session_id': session['cart_id']}
 
 def get_cart_items(cart_info):
     """Obtiene los items del carrito con datos completos de productos"""
     if 'user_id' in cart_info:
         # Usuario autenticado - obtener de BD
         items = CartItem.query.filter_by(user_id=cart_info['user_id']).all()
-        return [item.to_dict() for item in items]
     else:
-        # Usuario no autenticado - retornar lista vacía (se maneja desde JS)
-        return []
+        # Usuario no autenticado - obtener de BD por session_id
+        items = CartItem.query.filter_by(session_id=cart_info['session_id']).all()
+    return [item.to_dict() for item in items]
 
 
 @cart_bp.route('/carrito')
 def view_cart():
-    cart_info, _ = get_or_create_cart()
+    cart_info = get_or_create_cart()
     items = get_cart_items(cart_info)
 
     # Calcular totales
@@ -58,7 +58,7 @@ def view_cart():
 
 @cart_bp.route('/api/cart_count')
 def get_cart_count():
-    cart_info, _ = get_or_create_cart()
+    cart_info = get_or_create_cart()
     items = get_cart_items(cart_info)
     total_items = sum(item['quantity'] for item in items)
 
@@ -77,7 +77,7 @@ def add_to_cart():
     if not product or product.estado != 'activo':
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
-    cart_info, cart_session = get_or_create_cart()
+    cart_info = get_or_create_cart()
 
     try:
         if 'user_id' in cart_info:
@@ -99,22 +99,8 @@ def add_to_cart():
                 db.session.add(cart_item)
         else:
             # Usuario no autenticado
-            items_data = []
-            if cart_session and cart_session.items:
-                items_data = json.loads(cart_session.items)
-
-            item_found = False
-            for item in items_data:
-                if item['product_id'] == product_id:
-                    item['quantity'] += quantity
-                    item_found = True
-                    break
-
-            if not item_found:
-                items_data.append({
-                    'product_id': product_id,
-                    'quantity': quantity
-                })
+            # Redirigir a la página de inicio de sesión o mostrar un mensaje
+            return jsonify({'success': False, 'message': 'Debes iniciar sesión para agregar productos al carrito'})
 
         db.session.commit()
         return jsonify({
@@ -131,7 +117,7 @@ def add_to_cart():
 @cart_bp.route('/api/get_cart_data', methods=['GET'])
 def get_cart_data():
     """Endpoint optimizado para obtener datos del carrito"""
-    cart_info, _ = get_or_create_cart()
+    cart_info = get_or_create_cart()
     items = get_cart_items(cart_info)
     total_items = sum(item['quantity'] for item in items)
     total_price = sum(item['subtotal'] for item in items)
@@ -144,40 +130,7 @@ def get_cart_data():
     })
 
 
-def merge_carts(user_id, session_id):
-    """Fusión de carritos cuando un usuario inicia sesión"""
-    try:
-        # Obtener items de la sesión
-        cart_session = CartSession.query.get(session_id)
-        if cart_session and cart_session.items:
-            session_items = json.loads(cart_session.items)
 
-            # Transferir items al usuario
-            for item in session_items:
-                existing_item = CartItem.query.filter_by(
-                    user_id=user_id,
-                    product_id=item['product_id']
-                ).first()
-
-                if existing_item:
-                    existing_item.quantity += item['quantity']
-                else:
-                    new_item = CartItem(
-                        user_id=user_id,
-                        product_id=item['product_id'],
-                        quantity=item['quantity']
-                    )
-                    db.session.add(new_item)
-
-            # Eliminar la sesión del carrito
-            db.session.delete(cart_session)
-            db.session.commit()
-
-        return True
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error merging carts: {str(e)}")
-        return False
 
 
 @cart_bp.route('/api/add_to_cart', methods=['POST'])
@@ -196,7 +149,7 @@ def add_to_cart_optimized():
     if quantity > product.stock:
         return jsonify({'success': False, 'message': 'Stock insuficiente'})
 
-    cart_info, _ = get_or_create_cart()
+    cart_info = get_or_create_cart()
 
     try:
         if 'user_id' in cart_info:
@@ -206,18 +159,12 @@ def add_to_cart_optimized():
                 product_id=product_id
             ).first()
 
-            if cart_item:
-                new_quantity = min(cart_item.quantity +
-                                   quantity, product.stock)
-                cart_item.quantity = new_quantity
-            else:
-                cart_item = CartItem(
-                    user_id=cart_info['user_id'],
-                    product_id=product_id,
-                    quantity=min(quantity, product.stock)
-                )
-                db.session.add(cart_item)
-            db.session.commit()
+            # Para usuarios autenticados, el frontend debe manejar el localStorage
+            # y luego llamar a /api/sync_cart para sincronizar con la BD.
+            # Este endpoint solo confirma la disponibilidad del producto.
+            pass
+        # No se hace nada para usuarios no autenticados en el backend,
+        # el frontend maneja el localStorage.
 
         return jsonify({
             'success': True,
@@ -230,50 +177,100 @@ def add_to_cart_optimized():
         current_app.logger.error(f"Error adding to cart: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al agregar al carrito'})
 
-
 @cart_bp.route('/api/sync_cart', methods=['POST'])
-def sync_cart():
+@jwt_required
+def sync_cart(usuario):
     """Sincroniza el carrito del localStorage con la BD para usuarios autenticados"""
     try:
-        if 'user_id' not in session:
-            return jsonify({'success': False, 'message': 'Usuario no autenticado'})
-
         if not request.is_json or request.json is None:
             return jsonify({'success': False, 'message': 'Solicitud inválida: se requiere JSON'}), 400
-        cart_data = request.json.get('cart_items', [])
-        user_id = session['user_id']
 
-        # Limpiar carrito actual del usuario
-        CartItem.query.filter_by(user_id=user_id).delete()
+        cart_data_from_frontend = request.json.get('cart_items', [])
+        user_id = usuario.id
 
-        # Agregar nuevos items
-        for item in cart_data:
-            product = Productos.query.get(str(item['product_id']))
-            if product and product.estado == 'activo':
+        # Obtener items del carrito actuales del usuario desde la base de datos
+        existing_db_cart_items = CartItem.query.filter_by(user_id=user_id).all()
+        existing_db_cart_map = {item.product_id: item for item in existing_db_cart_items}
+
+        # Procesar items del carrito del frontend
+        for item_data in cart_data_from_frontend:
+            product_id = item_data.get('product_id')
+            quantity = item_data.get('quantity')
+
+            if not product_id or not isinstance(quantity, int) or quantity <= 0:
+                current_app.logger.warning(f"Invalid cart item data received: {item_data}")
+                continue
+
+            product = Productos.query.get(str(product_id))
+            if not product or product.estado != 'activo':
+                current_app.logger.warning(f"Product {product_id} not found or inactive during sync.")
+                continue
+
+            # Limitar la cantidad al stock disponible
+            quantity = min(quantity, product.stock)
+
+            if product_id in existing_db_cart_map:
+                # Actualizar cantidad si el item ya existe en la DB
+                db_item = existing_db_cart_map[product_id]
+                if db_item.quantity != quantity:
+                    db_item.quantity = quantity
+                    db_item.updated_at = datetime.utcnow()
+                del existing_db_cart_map[product_id] # Eliminar del mapa para saber cuáles eliminar después
+            else:
+                # Añadir nuevo item a la DB
                 cart_item = CartItem(
                     user_id=user_id,
-                    product_id=item['product_id'],
-                    quantity=min(item['quantity'], product.stock)
+                    product_id=product_id,
+                    quantity=quantity
                 )
                 db.session.add(cart_item)
 
+        # Eliminar items de la DB que no están en el carrito del frontend
+        for product_id_to_delete in existing_db_cart_map:
+            db.session.delete(existing_db_cart_map[product_id_to_delete])
+
         db.session.commit()
 
-        # Retornar carrito actualizado
+        # Retornar el carrito actualizado desde la base de datos
         items = CartItem.query.filter_by(user_id=user_id).all()
-        cart_items = [item.to_dict() for item in items]
+        cart_items_response = [item.to_dict() for item in items]
+
+        total_items = sum(item['quantity'] for item in cart_items_response)
+        total_price = sum(item['subtotal'] for item in cart_items_response)
 
         return jsonify({
             'success': True,
-            'items': cart_items,
-            'total_items': sum(item['quantity'] for item in items),
-            'total_price': sum(item['subtotal'] for item in items)
+            'items': cart_items_response,
+            'total_items': total_items,
+            'total_price': total_price
         })
 
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error syncing cart: {str(e)}")
-        return jsonify({'success': False, 'message': 'Error al sincronizar carrito'})
+        return jsonify({'success': False, 'message': 'Error al sincronizar carrito'}), 500
+
+@cart_bp.route('/api/load_cart', methods=['GET'])
+@jwt_required
+def load_cart(usuario):
+    """Carga el carrito del usuario desde la BD para hidratar el frontend"""
+    try:
+        user_id = usuario.id
+        items = CartItem.query.filter_by(user_id=user_id).all()
+        cart_items_response = [item.to_dict() for item in items]
+
+        total_items = sum(item['quantity'] for item in cart_items_response)
+        total_price = sum(item['subtotal'] for item in cart_items_response)
+
+        return jsonify({
+            'success': True,
+            'items': cart_items_response,
+            'total_items': total_items,
+            'total_price': total_price
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error loading cart for user {usuario.id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error al cargar el carrito'}), 500
 
 
 @cart_bp.route('/api/product/<product_id>')

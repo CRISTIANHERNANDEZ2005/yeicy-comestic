@@ -1,5 +1,5 @@
 # Serializadores
-from app.models.serializers import cart_session_to_dict, cart_item_to_dict
+from app.models.serializers import cart_item_to_dict
 from app.extensions import db
 from datetime import datetime
 import uuid
@@ -10,19 +10,7 @@ if TYPE_CHECKING:
     from app.models.domains.product_models import Productos
     from app.models.domains.user_models import Usuarios
 
-class CartSession(TimestampMixin,db.Model):
-    """Modelo para usuarios no autenticados"""
-    __tablename__ = 'cart_sessions'
-
-    id: Mapped[str] = mapped_column(db.String(36), primary_key=True)  # UUID de sesión
-    expires_at: Mapped[Optional[datetime]] = mapped_column(db.DateTime)
-    items: Mapped[Optional[str]] = mapped_column(db.Text)  # JSON de items
-
-    def __repr__(self):
-        return f'<CartSession {self.id}>'
-
-
-class CartItem(db.Model):
+class CartItem(db.Model, TimestampMixin):
     """Modelo para usuarios autenticados"""
     __tablename__ = 'cart_items'
 
@@ -44,6 +32,9 @@ class CartItem(db.Model):
     @property
     def subtotal(self):
         return self.product.precio * self.quantity
+
+    def to_dict(self):
+        return cart_item_to_dict(self)
 
     def __init__(self, user_id=None, session_id=None, product_id=None, quantity=1, id=None):
         self.user_id = user_id

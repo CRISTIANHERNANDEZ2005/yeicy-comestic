@@ -92,14 +92,7 @@ def resena_to_dict(resena):
         'updated_at': resena.updated_at.isoformat() if resena.updated_at else None
     }
 
-def cart_session_to_dict(session):
-    return {
-        'id': session.id,
-        'created_at': session.created_at.isoformat() if session.created_at else None,
-        'updated_at': session.updated_at.isoformat() if session.updated_at else None,
-        'expires_at': session.expires_at.isoformat() if session.expires_at else None,
-        'items': session.items
-    }
+
 
 def cart_item_to_dict(item):
     return {

@@ -85,7 +85,7 @@ def create_app(config_class=Config):
         from sqlalchemy.orm import joinedload
         
         # Datos del carrito
-        cart_info, cart_session = get_or_create_cart()
+        cart_info = get_or_create_cart()
         items = get_cart_items(cart_info)
         total_items = sum(item['quantity'] for item in items)
         total_price = sum(item['subtotal'] for item in items)

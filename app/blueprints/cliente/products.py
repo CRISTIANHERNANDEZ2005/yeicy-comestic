@@ -76,7 +76,7 @@ def index():
     total_productos = len(productos)
 
     # Obtener datos del carrito
-    cart_info, _ = get_or_create_cart()
+    cart_info = get_or_create_cart()
     cart_items = get_cart_items(cart_info)
     total_price = sum(item['subtotal'] for item in cart_items)
 

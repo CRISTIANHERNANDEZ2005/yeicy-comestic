@@ -100,6 +100,37 @@ if (typeof ShoppingCart === "undefined") {
       }
     }
 
+    async mergeLocalCartWithServer() {
+      if (window.userId && this.cartItems.length > 0) {
+        try {
+          const response = await fetch(this.syncEndpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              cart_items: this.cartItems,
+              merge: true,
+            }),
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            this.cartItems = data.items;
+            this.saveToStorage();
+            this.updateCartCounter();
+            this.refreshCartModal();
+            console.log("Local cart merged with server cart.");
+          } else {
+            console.error("Error merging carts:", data.message);
+          }
+        } catch (error) {
+          console.error("Connection error while merging carts:", error);
+        }
+      } else {
+        // If there's no local cart, just load the server cart
+        this.hydrateCartFromServer();
+      }
+    }
+
     async hydrateCartFromServer() {
       if (window.userId) {
         try {
@@ -312,24 +343,28 @@ if (typeof ShoppingCart === "undefined") {
     }
 
     removeItemWithAnimation(itemId) {
-      const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
-      if (itemElement) {
-        itemElement.style.transition = "all 0.3s ease-out";
-        itemElement.style.transform = "translateX(100%)";
-        itemElement.style.opacity = "0";
+      return new Promise((resolve) => {
+        const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+        if (itemElement) {
+          itemElement.style.transition = "all 0.3s ease-out";
+          itemElement.style.transform = "translateX(100%)";
+          itemElement.style.opacity = "0";
 
-        setTimeout(() => {
+          setTimeout(() => {
+            this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
+            this.saveToStorage();
+            this.updateCartModal();
+            this.updateCartCounter();
+            resolve();
+          }, 300);
+        } else {
           this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
           this.saveToStorage();
           this.updateCartModal();
           this.updateCartCounter();
-        }, 300);
-      } else {
-        this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
-        this.saveToStorage();
-        this.updateCartModal();
-        this.updateCartCounter();
-      }
+          resolve();
+        }
+      });
     }
 
     async confirmDelete() {
@@ -343,7 +378,7 @@ if (typeof ShoppingCart === "undefined") {
       confirmBtn.disabled = true;
 
       try {
-        this.removeItemWithAnimation(this.currentItemToDelete);
+        await this.removeItemWithAnimation(this.currentItemToDelete);
 
         if (window.userId) {
           await this.syncLocalChanges();

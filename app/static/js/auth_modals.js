@@ -381,7 +381,7 @@
             window.userId = result.usuario.id;
             // Trigger cart synchronization immediately after login/registration
             if (window.cart) {
-              window.cart.hydrateCartFromServer();
+              await window.cart.mergeLocalCartWithServer();
             }
             if (window.favoritesManager) {
               window.favoritesManager.isAuthenticated = true;

@@ -186,13 +186,12 @@ def sync_cart(usuario):
             return jsonify({'success': False, 'message': 'Solicitud inválida: se requiere JSON'}), 400
 
         cart_data_from_frontend = request.json.get('cart_items', [])
+        merge = request.json.get('merge', False)
         user_id = usuario.id
 
-        # Obtener items del carrito actuales del usuario desde la base de datos
         existing_db_cart_items = CartItem.query.filter_by(user_id=user_id).all()
         existing_db_cart_map = {item.product_id: item for item in existing_db_cart_items}
 
-        # Procesar items del carrito del frontend
         for item_data in cart_data_from_frontend:
             product_id = item_data.get('product_id')
             quantity = item_data.get('quantity')
@@ -206,18 +205,18 @@ def sync_cart(usuario):
                 current_app.logger.warning(f"Product {product_id} not found or inactive during sync.")
                 continue
 
-            # Limitar la cantidad al stock disponible
             quantity = min(quantity, product.stock)
 
             if product_id in existing_db_cart_map:
-                # Actualizar cantidad si el item ya existe en la DB
                 db_item = existing_db_cart_map[product_id]
-                if db_item.quantity != quantity:
+                if merge:
+                    db_item.quantity += quantity
+                else:
                     db_item.quantity = quantity
-                    db_item.updated_at = datetime.utcnow()
-                del existing_db_cart_map[product_id] # Eliminar del mapa para saber cuáles eliminar después
+                db_item.quantity = min(db_item.quantity, product.stock)
+                db_item.updated_at = datetime.utcnow()
+                del existing_db_cart_map[product_id]
             else:
-                # Añadir nuevo item a la DB
                 cart_item = CartItem(
                     user_id=user_id,
                     product_id=product_id,
@@ -225,13 +224,12 @@ def sync_cart(usuario):
                 )
                 db.session.add(cart_item)
 
-        # Eliminar items de la DB que no están en el carrito del frontend
-        for product_id_to_delete in existing_db_cart_map:
-            db.session.delete(existing_db_cart_map[product_id_to_delete])
+        if not merge:
+            for product_id_to_delete in existing_db_cart_map:
+                db.session.delete(existing_db_cart_map[product_id_to_delete])
 
         db.session.commit()
 
-        # Retornar el carrito actualizado desde la base de datos
         items = CartItem.query.filter_by(user_id=user_id).all()
         cart_items_response = [item.to_dict() for item in items]
 

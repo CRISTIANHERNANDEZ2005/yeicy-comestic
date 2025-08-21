@@ -80,6 +80,8 @@ if (typeof ShoppingCart === "undefined") {
 
     async syncLocalChanges() {
       if (window.userId) {
+        const previousCartItems = JSON.parse(JSON.stringify(this.cartItems)); // Deep copy
+
         try {
           const response = await fetch(this.syncEndpoint, {
             method: "POST",
@@ -89,13 +91,32 @@ if (typeof ShoppingCart === "undefined") {
 
           const data = await response.json();
           if (data.success) {
-            this.cartItems = data.items;
+            // Removed: this.updateCartItemsFromBackend(data.items);
+            this.saveToStorage();
+
+            // Only update UI if the cart state actually changed after backend sync
+            // This comparison is now less relevant as we're not updating from backend response
+            // but keeping it for consistency if other parts of the code modify cartItems
+            if (JSON.stringify(previousCartItems) !== JSON.stringify(this.cartItems)) {
+                this.updateCartCounter();
+                this.refreshCartModal();
+            }
+          } else {
+            // If sync fails, revert to previous local state
+            this.cartItems = previousCartItems;
             this.saveToStorage();
             this.updateCartCounter();
             this.refreshCartModal();
+            this.showToast("Error al sincronizar el carrito con el servidor.", "error");
           }
         } catch (error) {
           console.error("Error syncing local changes with backend:", error);
+          // If connection error, revert to previous local state
+          this.cartItems = previousCartItems;
+          this.saveToStorage();
+          this.updateCartCounter();
+          this.refreshCartModal();
+          this.showToast("Error de conexión al sincronizar el carrito.", "error");
         }
       }
     }
@@ -114,7 +135,7 @@ if (typeof ShoppingCart === "undefined") {
 
           const data = await response.json();
           if (data.success) {
-            this.cartItems = data.items;
+            this.updateCartItemsFromBackend(data.items);
             this.saveToStorage();
             this.updateCartCounter();
             this.refreshCartModal();
@@ -129,6 +150,58 @@ if (typeof ShoppingCart === "undefined") {
         // If there's no local cart, just load the server cart
         this.hydrateCartFromServer();
       }
+    }
+
+    updateCartItemsFromBackend(backendItems) {
+      const newCartItems = [];
+      const backendMapById = new Map(); // Map backend items by their actual database ID
+      const backendMapByProductId = new Map(); // Map backend items by product_id for temp ID matching
+
+      backendItems.forEach(item => {
+        backendMapById.set(item.id, item);
+        backendMapByProductId.set(item.product_id, item);
+      });
+
+      // Iterate through current local cart items
+      this.cartItems.forEach(localItem => {
+        let matchedBackendItem = null;
+
+        if (localItem.id.startsWith('temp_')) {
+          // For temporary items, try to find a match in backend by product_id
+          matchedBackendItem = backendMapByProductId.get(localItem.product_id);
+        } else {
+          // For items with real IDs, try to find a match in backend by real ID
+          matchedBackendItem = backendMapById.get(localItem.id);
+        }
+
+        if (matchedBackendItem) {
+          // Update local item with backend data (especially the ID)
+          newCartItems.push({
+            ...localItem,
+            id: matchedBackendItem.id, // Use the backend-generated ID
+            // Only update quantity if backend quantity is different AND
+            // either the local item was temporary (just added)
+            // or the backend quantity is explicitly different (e.g., stock adjustment)
+            quantity: (localItem.id.startsWith('temp_') || localItem.quantity !== matchedBackendItem.quantity)
+                      ? matchedBackendItem.quantity
+                      : localItem.quantity,
+            subtotal: matchedBackendItem.subtotal, // Subtotal should always come from backend or be recalculated based on backend quantity
+            product: matchedBackendItem.product || localItem.product // Use backend product data if available
+          });
+          // Remove from maps to avoid processing again
+          backendMapById.delete(matchedBackendItem.id);
+          backendMapByProductId.delete(matchedBackendItem.product_id); // Also remove from product_id map
+        }
+        // If no match, it means this local item was deleted from backend, so don't add it to newCartItems
+        // Or it's a temporary item that wasn't successfully added to backend (error case)
+      });
+
+      // Add any items that are only in the backend (newly added or from another device)
+      backendMapById.forEach(item => { // Iterate over remaining items in backendMapById
+        newCartItems.push(item);
+      });
+
+      this.cartItems = newCartItems;
     }
 
     async hydrateCartFromServer() {
@@ -285,18 +358,17 @@ if (typeof ShoppingCart === "undefined") {
         }
 
         this.saveToStorage();
-
-        if (window.userId) {
-          await this.syncLocalChanges();
-        }
+        this.updateCartCounter();
+        this.refreshCartModal();
+        this.showSuccessAnimation(button);
 
         if (isNewItem && this.autoOpenOnNewItem) {
           this.openCartModal();
         }
 
-        this.showSuccessAnimation(button);
-        this.updateCartCounter();
-        this.refreshCartModal();
+        if (window.userId) {
+          this.syncLocalChanges();
+        }
       } catch (error) {
         console.error("Error:", error);
         this.showToast("Error de conexión - Intenta nuevamente", "error");
@@ -379,12 +451,11 @@ if (typeof ShoppingCart === "undefined") {
 
       try {
         await this.removeItemWithAnimation(this.currentItemToDelete);
+        this.showToast("Producto eliminado exitosamente", "success");
 
         if (window.userId) {
-          await this.syncLocalChanges();
+          this.syncLocalChanges();
         }
-
-        this.showToast("Producto eliminado exitosamente", "success");
       } catch (error) {
         this.showToast("Error al eliminar el producto", "error");
       } finally {
@@ -617,14 +688,13 @@ if (typeof ShoppingCart === "undefined") {
         item.quantity = newQuantity;
         item.subtotal = item.product.precio * newQuantity;
         this.saveToStorage();
-
-        if (window.userId) {
-          await this.syncLocalChanges();
-        }
-
         this.updateCartModal();
         this.updateCartCounter();
         this.showToast("Cantidad actualizada", "success");
+
+        if (window.userId) {
+          this.syncLocalChanges();
+        }
       } catch (error) {
         console.error("Error:", error);
         this.showToast("Error al actualizar cantidad", "error");

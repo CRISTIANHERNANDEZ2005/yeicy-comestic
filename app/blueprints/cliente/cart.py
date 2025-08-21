@@ -190,9 +190,13 @@ def sync_cart(usuario):
         user_id = usuario.id
 
         existing_db_cart_items = CartItem.query.filter_by(user_id=user_id).all()
-        existing_db_cart_map = {item.product_id: item for item in existing_db_cart_items}
+        existing_db_cart_map_by_id = {item.id: item for item in existing_db_cart_items}
+        existing_db_cart_map_by_product_id = {item.product_id: item for item in existing_db_cart_items}
+
+        items_to_keep_in_db = set() # Track items that are in frontend cart and should remain in DB
 
         for item_data in cart_data_from_frontend:
+            frontend_item_id = item_data.get('id')
             product_id = item_data.get('product_id')
             quantity = item_data.get('quantity')
 
@@ -207,29 +211,44 @@ def sync_cart(usuario):
 
             quantity = min(quantity, product.stock)
 
-            if product_id in existing_db_cart_map:
-                db_item = existing_db_cart_map[product_id]
+            db_item = None
+            if frontend_item_id and not frontend_item_id.startswith('temp_'):
+                # Try to find by real ID if available
+                db_item = existing_db_cart_map_by_id.get(frontend_item_id)
+            
+            if not db_item:
+                # If not found by real ID, or if it's a temp ID, try to find by product_id
+                db_item = existing_db_cart_map_by_product_id.get(product_id)
+
+            if db_item:
+                # Update existing item
                 if merge:
                     db_item.quantity += quantity
                 else:
                     db_item.quantity = quantity
                 db_item.quantity = min(db_item.quantity, product.stock)
                 db_item.updated_at = datetime.utcnow()
-                del existing_db_cart_map[product_id]
+                items_to_keep_in_db.add(db_item.id) # Mark as kept
             else:
+                # Add new item
                 cart_item = CartItem(
                     user_id=user_id,
                     product_id=product_id,
                     quantity=quantity
                 )
                 db.session.add(cart_item)
+                db.session.flush() # Get the ID for the newly added item
+                items_to_keep_in_db.add(cart_item.id) # Mark as kept
 
+        # Delete items from DB that are not in the frontend cart (only if not merging)
         if not merge:
-            for product_id_to_delete in existing_db_cart_map:
-                db.session.delete(existing_db_cart_map[product_id_to_delete])
+            for db_item in existing_db_cart_items:
+                if db_item.id not in items_to_keep_in_db:
+                    db.session.delete(db_item)
 
         db.session.commit()
 
+        # Return the updated cart from the database
         items = CartItem.query.filter_by(user_id=user_id).all()
         cart_items_response = [item.to_dict() for item in items]
 

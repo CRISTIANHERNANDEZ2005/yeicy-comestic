@@ -147,11 +147,15 @@ def add_to_cart_optimized():
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
     if quantity > product.stock:
-        return jsonify({'success': False, 'message': 'Stock insuficiente'})
+        return jsonify({'success': False, 'message': f'Stock insuficiente para {product.nombre}. Solo hay {product.stock} unidades disponibles.', 'type': 'stock_error'})
 
     cart_info = get_or_create_cart()
 
     try:
+        response_message = 'Producto agregado exitosamente'
+        response_type = 'success'
+        warnings = []
+
         if 'user_id' in cart_info:
             # Usuario autenticado - guardar en BD
             cart_item = CartItem.query.filter_by(
@@ -162,14 +166,24 @@ def add_to_cart_optimized():
             # Para usuarios autenticados, el frontend debe manejar el localStorage
             # y luego llamar a /api/sync_cart para sincronizar con la BD.
             # Este endpoint solo confirma la disponibilidad del producto.
+            # If the quantity was adjusted in the frontend, we should reflect that here.
+            # However, this endpoint is primarily for initial add/check.
+            # The actual quantity adjustment for authenticated users happens in sync_cart.
             pass
         # No se hace nada para usuarios no autenticados en el backend,
         # el frontend maneja el localStorage.
 
+        # If the requested quantity was more than available stock, but not a full error
+        # (e.g., if frontend already adjusted, or if we want to warn for non-authenticated)
+        if quantity > product.stock:
+            warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.stock} debido a la disponibilidad.')
+            response_type = 'warning' # Change type if there's a warning
+
         return jsonify({
             'success': True,
-            'message': 'Producto agregado exitosamente',
-            'stock_warning': quantity >= product.stock
+            'message': response_message,
+            'type': response_type,
+            'warnings': warnings
         })
 
     except Exception as e:
@@ -182,6 +196,7 @@ def add_to_cart_optimized():
 def sync_cart(usuario):
     """Sincroniza el carrito del localStorage con la BD para usuarios autenticados"""
     try:
+        warnings = [] # Initialize warnings list
         if not request.is_json or request.json is None:
             return jsonify({'success': False, 'message': 'Solicitud inválida: se requiere JSON'}), 400
 
@@ -209,7 +224,11 @@ def sync_cart(usuario):
                 current_app.logger.warning(f"Product {product_id} not found or inactive during sync.")
                 continue
 
+            original_quantity = quantity # Store original quantity for comparison
             quantity = min(quantity, product.stock)
+            if original_quantity > product.stock:
+                warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.stock} debido a la disponibilidad.')
+
 
             db_item = None
             if frontend_item_id and not frontend_item_id.startswith('temp_'):
@@ -231,7 +250,12 @@ def sync_cart(usuario):
                         current_db_item.quantity += quantity
                     else:
                         current_db_item.quantity = quantity
-                    current_db_item.quantity = min(current_db_item.quantity, product.stock)
+                    
+                    # Check if quantity was adjusted due to stock during merge/update
+                    if current_db_item.quantity > product.stock:
+                        current_db_item.quantity = product.stock
+                        warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.stock} debido a la disponibilidad.')
+
                     current_db_item.updated_at = datetime.utcnow()
                     items_to_keep_in_db.add(current_db_item.id) # Mark as kept
                 else:
@@ -275,7 +299,8 @@ def sync_cart(usuario):
             'success': True,
             'items': cart_items_response,
             'total_items': total_items,
-            'total_price': total_price
+            'total_price': total_price,
+            'warnings': warnings # Include warnings in the response
         })
 
     except Exception as e:

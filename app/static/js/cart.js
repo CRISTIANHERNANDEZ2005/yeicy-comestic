@@ -5,6 +5,7 @@ if (typeof ShoppingCart === "undefined") {
       this.cartCounter = document.getElementById("cartCounter");
       this.cartItems = [];
       this.isUpdating = false;
+      this.isDeleting = false;
       this.currentItemToDelete = null;
       this.storageKey = "ye_cy_cart";
       this.syncEndpoint = "/api/sync_cart"; // Endpoint para enviar cambios locales
@@ -101,13 +102,20 @@ if (typeof ShoppingCart === "undefined") {
                 this.updateCartCounter();
                 this.refreshCartModal();
             }
+            // Handle warnings from the backend
+            if (data.warnings && data.warnings.length > 0) {
+                data.warnings.forEach(warningMsg => {
+                    this.showToast(warningMsg, "warning");
+                });
+            }
           } else {
             // If sync fails, revert to previous local state
             this.cartItems = previousCartItems;
             this.saveToStorage();
             this.updateCartCounter();
             this.refreshCartModal();
-            this.showToast("Error al sincronizar el carrito con el servidor.", "error");
+            // Use the specific message from the backend if available, otherwise a generic one
+            this.showToast(data.message || "Error al sincronizar el carrito con el servidor.", "error");
           }
         } catch (error) {
           console.error("Error syncing local changes with backend:", error);
@@ -140,8 +148,15 @@ if (typeof ShoppingCart === "undefined") {
             this.updateCartCounter();
             this.refreshCartModal();
             console.log("Local cart merged with server cart.");
+            // Handle warnings from the backend
+            if (data.warnings && data.warnings.length > 0) {
+                data.warnings.forEach(warningMsg => {
+                    this.showToast(warningMsg, "warning");
+                });
+            }
           } else {
             console.error("Error merging carts:", data.message);
+            this.showToast(data.message || "Error al fusionar el carrito con el servidor.", "error");
           }
         } catch (error) {
           console.error("Connection error while merging carts:", error);
@@ -331,13 +346,31 @@ if (typeof ShoppingCart === "undefined") {
         );
 
         if (existingItem) {
+          const oldQuantity = existingItem.quantity;
           const newQuantity = Math.min(
-            existingItem.quantity + quantity,
+            oldQuantity + quantity,
             product.stock
           );
-          existingItem.quantity = newQuantity;
-          existingItem.subtotal = parseFloat(product.precio) * newQuantity;
-          this.showToast("Cantidad actualizada en el carrito", "success");
+
+          if (oldQuantity === newQuantity) {
+            // Quantity did not change, likely already at max stock
+            this.showToast(
+              `El producto "${product.nombre}" ya está en la cantidad máxima disponible (${product.stock} unidades).`,
+              "warning"
+            );
+          } else {
+            existingItem.quantity = newQuantity;
+            existingItem.subtotal = parseFloat(product.precio) * newQuantity;
+            if (newQuantity < (oldQuantity + quantity)) {
+                // Quantity was adjusted due to stock
+                this.showToast(
+                    `Cantidad de "${product.nombre}" ajustada a ${newQuantity} debido a la disponibilidad.`,
+                    "warning"
+                );
+            } else {
+                this.showToast("Cantidad actualizada en el carrito", "success");
+            }
+          }
         } else {
           this.cartItems.push({
             id: `temp_${Date.now()}`,
@@ -400,9 +433,6 @@ if (typeof ShoppingCart === "undefined") {
     showDeleteModal(itemId) {
       this.currentItemToDelete = itemId;
       const modal = document.getElementById("deleteModal");
-      const confirmBtn = document.getElementById("confirmDelete");
-
-      confirmBtn.onclick = () => this.confirmDelete();
 
       modal.classList.remove("hidden");
       document.body.style.overflow = "hidden";
@@ -440,7 +470,9 @@ if (typeof ShoppingCart === "undefined") {
     }
 
     async confirmDelete() {
-      if (!this.currentItemToDelete) return;
+      if (!this.currentItemToDelete || this.isDeleting) return;
+
+      this.isDeleting = true;
 
       const confirmBtn = document.getElementById("confirmDelete");
       const originalText = confirmBtn.innerHTML;
@@ -462,6 +494,7 @@ if (typeof ShoppingCart === "undefined") {
         confirmBtn.innerHTML = originalText;
         confirmBtn.disabled = false;
         this.hideDeleteModal();
+        this.isDeleting = false;
       }
     }
 
@@ -640,8 +673,7 @@ if (typeof ShoppingCart === "undefined") {
               
               <button onclick="cart.updateQuantity('${ 
                 item.id 
-              }', 1)" class="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50"
-                ${item.quantity >= item.product.stock ? "disabled" : ""}>
+              }', 1)" class="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
                 </svg>

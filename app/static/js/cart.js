@@ -98,15 +98,18 @@ if (typeof ShoppingCart === "undefined") {
             // Only update UI if the cart state actually changed after backend sync
             // This comparison is now less relevant as we're not updating from backend response
             // but keeping it for consistency if other parts of the code modify cartItems
-            if (JSON.stringify(previousCartItems) !== JSON.stringify(this.cartItems)) {
-                this.updateCartCounter();
-                this.refreshCartModal();
+            if (
+              JSON.stringify(previousCartItems) !==
+              JSON.stringify(this.cartItems)
+            ) {
+              this.updateCartCounter();
+              this.refreshCartModal();
             }
             // Handle warnings from the backend
             if (data.warnings && data.warnings.length > 0) {
-                data.warnings.forEach(warningMsg => {
-                    this.showToast(warningMsg, "warning");
-                });
+              data.warnings.forEach((warningMsg) => {
+                this.showToast(warningMsg, "warning");
+              });
             }
           } else {
             // If sync fails, revert to previous local state
@@ -115,7 +118,11 @@ if (typeof ShoppingCart === "undefined") {
             this.updateCartCounter();
             this.refreshCartModal();
             // Use the specific message from the backend if available, otherwise a generic one
-            this.showToast(data.message || "Error al sincronizar el carrito con el servidor.", "error");
+            this.showToast(
+              data.message ||
+                "Error al sincronizar el carrito con el servidor.",
+              "error"
+            );
           }
         } catch (error) {
           console.error("Error syncing local changes with backend:", error);
@@ -124,7 +131,10 @@ if (typeof ShoppingCart === "undefined") {
           this.saveToStorage();
           this.updateCartCounter();
           this.refreshCartModal();
-          this.showToast("Error de conexión al sincronizar el carrito.", "error");
+          this.showToast(
+            "Error de conexión al sincronizar el carrito.",
+            "error"
+          );
         }
       }
     }
@@ -150,13 +160,16 @@ if (typeof ShoppingCart === "undefined") {
             console.log("Local cart merged with server cart.");
             // Handle warnings from the backend
             if (data.warnings && data.warnings.length > 0) {
-                data.warnings.forEach(warningMsg => {
-                    this.showToast(warningMsg, "warning");
-                });
+              data.warnings.forEach((warningMsg) => {
+                this.showToast(warningMsg, "warning");
+              });
             }
           } else {
             console.error("Error merging carts:", data.message);
-            this.showToast(data.message || "Error al fusionar el carrito con el servidor.", "error");
+            this.showToast(
+              data.message || "Error al fusionar el carrito con el servidor.",
+              "error"
+            );
           }
         } catch (error) {
           console.error("Connection error while merging carts:", error);
@@ -172,16 +185,16 @@ if (typeof ShoppingCart === "undefined") {
       const backendMapById = new Map(); // Map backend items by their actual database ID
       const backendMapByProductId = new Map(); // Map backend items by product_id for temp ID matching
 
-      backendItems.forEach(item => {
+      backendItems.forEach((item) => {
         backendMapById.set(item.id, item);
         backendMapByProductId.set(item.product_id, item);
       });
 
       // Iterate through current local cart items
-      this.cartItems.forEach(localItem => {
+      this.cartItems.forEach((localItem) => {
         let matchedBackendItem = null;
 
-        if (localItem.id.startsWith('temp_')) {
+        if (localItem.id.startsWith("temp_")) {
           // For temporary items, try to find a match in backend by product_id
           matchedBackendItem = backendMapByProductId.get(localItem.product_id);
         } else {
@@ -197,11 +210,13 @@ if (typeof ShoppingCart === "undefined") {
             // Only update quantity if backend quantity is different AND
             // either the local item was temporary (just added)
             // or the backend quantity is explicitly different (e.g., stock adjustment)
-            quantity: (localItem.id.startsWith('temp_') || localItem.quantity !== matchedBackendItem.quantity)
-                      ? matchedBackendItem.quantity
-                      : localItem.quantity,
+            quantity:
+              localItem.id.startsWith("temp_") ||
+              localItem.quantity !== matchedBackendItem.quantity
+                ? matchedBackendItem.quantity
+                : localItem.quantity,
             subtotal: matchedBackendItem.subtotal, // Subtotal should always come from backend or be recalculated based on backend quantity
-            product: matchedBackendItem.product || localItem.product // Use backend product data if available
+            product: matchedBackendItem.product || localItem.product, // Use backend product data if available
           });
           // Remove from maps to avoid processing again
           backendMapById.delete(matchedBackendItem.id);
@@ -212,7 +227,8 @@ if (typeof ShoppingCart === "undefined") {
       });
 
       // Add any items that are only in the backend (newly added or from another device)
-      backendMapById.forEach(item => { // Iterate over remaining items in backendMapById
+      backendMapById.forEach((item) => {
+        // Iterate over remaining items in backendMapById
         newCartItems.push(item);
       });
 
@@ -347,10 +363,7 @@ if (typeof ShoppingCart === "undefined") {
 
         if (existingItem) {
           const oldQuantity = existingItem.quantity;
-          const newQuantity = Math.min(
-            oldQuantity + quantity,
-            product.stock
-          );
+          const newQuantity = Math.min(oldQuantity + quantity, product.stock);
 
           if (oldQuantity === newQuantity) {
             // Quantity did not change, likely already at max stock
@@ -361,14 +374,14 @@ if (typeof ShoppingCart === "undefined") {
           } else {
             existingItem.quantity = newQuantity;
             existingItem.subtotal = parseFloat(product.precio) * newQuantity;
-            if (newQuantity < (oldQuantity + quantity)) {
-                // Quantity was adjusted due to stock
-                this.showToast(
-                    `Cantidad de "${product.nombre}" ajustada a ${newQuantity} debido a la disponibilidad.`,
-                    "warning"
-                );
+            if (newQuantity < oldQuantity + quantity) {
+              // Quantity was adjusted due to stock
+              this.showToast(
+                `Cantidad de "${product.nombre}" ajustada a ${newQuantity} debido a la disponibilidad.`,
+                "warning"
+              );
             } else {
-                this.showToast("Cantidad actualizada en el carrito", "success");
+              this.showToast("Cantidad actualizada en el carrito", "success");
             }
           }
         } else {
@@ -446,14 +459,18 @@ if (typeof ShoppingCart === "undefined") {
 
     removeItemWithAnimation(itemId) {
       return new Promise((resolve) => {
-        const itemElement = document.querySelector(`[data-item-id="${itemId}"]`);
+        const itemElement = document.querySelector(
+          `[data-item-id="${itemId}"]`
+        );
         if (itemElement) {
           itemElement.style.transition = "all 0.3s ease-out";
           itemElement.style.transform = "translateX(100%)";
           itemElement.style.opacity = "0";
 
           setTimeout(() => {
-            this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
+            this.cartItems = this.cartItems.filter(
+              (item) => item.id !== itemId
+            );
             this.saveToStorage();
             this.updateCartModal();
             this.updateCartCounter();
@@ -599,7 +616,7 @@ if (typeof ShoppingCart === "undefined") {
       const totalQuantity = this.cache.totalQuantity;
       const totalPrice = this.cache.totalPrice;
 
-      itemCount.textContent = `${totalQuantity} ${ 
+      itemCount.textContent = `${totalQuantity} ${
         totalQuantity === 1 ? "producto" : "productos"
       }`;
       subtotalElement.textContent = `$${totalPrice.toFixed(2)}`;
@@ -608,12 +625,12 @@ if (typeof ShoppingCart === "undefined") {
       container.innerHTML = this.cartItems
         .map(
           (item) => `
-      <div class="group p-4 hover:bg-gray-50 transition-colors" data-item-id="${ 
-            item.id 
-          }">
+      <div class="group p-4 hover:bg-gray-50 transition-colors" data-item-id="${
+        item.id
+      }">
         <div class="flex gap-4">
           <div class="relative">
-            ${ 
+            ${
               item.product.imagen_url &&
               item.product.imagen_url.trim() !== "" &&
               !item.product.imagen_url.includes("default")
@@ -629,7 +646,7 @@ if (typeof ShoppingCart === "undefined") {
                      </svg>
                    </div>`
             }
-            ${ 
+            ${
               item.product.stock < 10
                 ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-1">¡Últimos!</span>`
                 : ""
@@ -637,11 +654,11 @@ if (typeof ShoppingCart === "undefined") {
           </div>
           
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 line-clamp-1">${ 
+            <h4 class="font-semibold text-gray-900 line-clamp-1">${
               item.product.nombre
             }</h4>
             <p class="text-sm text-gray-500">${item.product.marca || ""}</p>
-            <p class="text-pink-600 font-bold text-lg">$${ 
+            <p class="text-pink-600 font-bold text-lg">$${
               item.product.precio != null
                 ? Number(item.product.precio).toFixed(2)
                 : "0.00"
@@ -649,8 +666,8 @@ if (typeof ShoppingCart === "undefined") {
           </div>
           
           <div class="flex flex-col items-end gap-2">
-            <button onclick="cart.showDeleteModal('${ 
-              item.id 
+            <button onclick="cart.showDeleteModal('${
+              item.id
             }')" class="text-red-500 hover:text-red-700 transition-colors">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -658,8 +675,8 @@ if (typeof ShoppingCart === "undefined") {
             </button>
             
             <div class="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-              <button onclick="cart.updateQuantity('${ 
-                item.id 
+              <button onclick="cart.updateQuantity('${
+                item.id
               }', -1)" class="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50"
                 ${item.quantity <= 1 ? "disabled" : ""}>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -667,12 +684,12 @@ if (typeof ShoppingCart === "undefined") {
                 </svg>
               </button>
               
-              <span class="px-3 py-1 text-center font-semibold min-w-[3rem]">${ 
+              <span class="px-3 py-1 text-center font-semibold min-w-[3rem]">${
                 item.quantity
               }</span>
               
-              <button onclick="cart.updateQuantity('${ 
-                item.id 
+              <button onclick="cart.updateQuantity('${
+                item.id
               }', 1)" class="p-2 hover:bg-gray-100 transition-colors disabled:opacity-50">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
@@ -680,7 +697,7 @@ if (typeof ShoppingCart === "undefined") {
               </button>
             </div>
             
-            <p class="text-sm font-bold text-gray-900">$${ 
+            <p class="text-sm font-bold text-gray-900">$${
               item.subtotal != null ? Number(item.subtotal).toFixed(2) : "0.00"
             }</p>
           </div>
@@ -767,9 +784,7 @@ if (typeof ShoppingCart === "undefined") {
         }) - $${item.subtotal.toFixed(2)}\n`;
       });
       message += `
-*Total: $${total.toFixed(
-        2
-      )}*\n\n¿Podrían confirmar disponibilidad?`;
+*Total: $${total.toFixed(2)}*\n\n¿Podrían confirmar disponibilidad?`;
 
       const encodedMessage = encodeURIComponent(message);
       const phoneNumber = "3044931438";
@@ -782,8 +797,7 @@ if (typeof ShoppingCart === "undefined") {
       button.dataset.originalHTML = button.innerHTML;
       button.dataset.originalDisabled = button.disabled;
 
-      button.innerHTML =
-        `
+      button.innerHTML = `
       <span class="flex items-center">
         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -808,8 +822,7 @@ if (typeof ShoppingCart === "undefined") {
     showSuccessAnimation(button) {
       if (!button) return;
 
-      const successHTML =
-        `
+      const successHTML = `
       <span class="flex items-center">
         <svg class="w-4 h-4 mr-1 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>

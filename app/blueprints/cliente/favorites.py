@@ -14,7 +14,6 @@ from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 # Crear el blueprint para favoritos
 favorites_bp = Blueprint('favorites', __name__)
 
-
 @favorites_bp.route('/api/favoritos', methods=['GET', 'POST'])
 @jwt_required
 def manejar_favoritos(usuario):
@@ -506,14 +505,17 @@ def favoritos(usuario):
         if not user_id:
             return jsonify({'error': 'No autorizado'}), 401
 
-        # Obtener productos favoritos
-        favoritos = Likes.query.filter_by(usuario_id=user_id, estado='activo')\
+        # Obtener los objetos 'Like' de los favoritos, asegurando que el producto esté activo
+        likes = Likes.query.filter_by(usuario_id=user_id, estado='activo')\
             .join(Likes.producto)\
             .filter(Productos.estado == 'activo')\
-            .options(joinedload(Likes.producto))\
+            .options(joinedload(Likes.producto).joinedload(Productos.seudocategoria))\
             .all()
 
-        if not favoritos:
+        # Extraer los objetos 'Producto' de los 'Likes'
+        productos = [like.producto for like in likes if like.producto]
+
+        if not productos:
             app.logger.info(
                 f"No se encontraron productos favoritos para el usuario con ID {user_id}")
 
@@ -527,8 +529,8 @@ def favoritos(usuario):
         if not categorias:
             app.logger.info("No se encontraron categorías activas")
 
-        # Renderizar la plantilla con los datos obtenidos
-        return render_template('cliente/componentes/favoritos.html', favoritos=favoritos, categorias=categorias), 200
+        # Renderizar la plantilla, pasando la lista de productos con el nombre correcto
+        return render_template('cliente/componentes/favoritos.html', productos=productos, categorias=categorias), 200
 
     except Exception as e:
         app.logger.error(

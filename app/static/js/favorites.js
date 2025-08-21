@@ -34,6 +34,7 @@ if (typeof FavoritesManager === "undefined") {
       // Sincronización
       this.syncTimeout = null;
       this.syncQueue = Promise.resolve();
+      this.pendingSyncs = new Map();
       this.syncInProgress = false;
       this.pendingSync = false;
       this._syncInterval = null;
@@ -321,12 +322,17 @@ if (typeof FavoritesManager === "undefined") {
     // Actualizar todos los botones de favoritos en la página
     updateAllFavoriteButtons() {
       // Depuración profesional: mostrar IDs en el Set y en los botones
-      console.log("[Favoritos] IDs en favoriteProducts:", Array.from(this.favoriteProducts));
+      console.log(
+        "[Favoritos] IDs en favoriteProducts:",
+        Array.from(this.favoriteProducts)
+      );
       document.querySelectorAll(".favorite-btn").forEach((button) => {
         const productId = String(button.getAttribute("data-product-id"));
         if (!productId) return;
         const isFavorite = this.favoriteProducts.has(productId);
-        console.log(`[Favoritos] Botón data-product-id: ${productId}, isFavorite: ${isFavorite}`);
+        console.log(
+          `[Favoritos] Botón data-product-id: ${productId}, isFavorite: ${isFavorite}`
+        );
         this.updateFavoriteButton(button, isFavorite);
       });
     }
@@ -408,24 +414,16 @@ if (typeof FavoritesManager === "undefined") {
       const favoriteBtn = event.target.closest(".favorite-btn");
       if (!favoriteBtn) return;
 
-      // Detener la propagación del evento
+      // Detener la propagación del evento para evitar comportamientos no deseados
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      // Si ya hay un procesamiento en curso, ignorar nuevos clics
-      if (favoriteBtn.getAttribute("data-processing") === "true") {
-        return false;
-      }
-
-      // Verificar autenticación
+      // Verificar autenticación antes de continuar
       if (!this.isAuthenticated) {
-        // Mostrar mensaje de autenticación
         this.showAuthNotification(
           "Inicia sesión para guardar productos en favoritos"
         );
-
-        // Disparar evento para mostrar el modal de login
         const loginEvent = new CustomEvent("show:login", {
           detail: {
             message: "Inicia sesión para guardar productos en favoritos",
@@ -436,14 +434,8 @@ if (typeof FavoritesManager === "undefined") {
         return false;
       }
 
-      // Llamar a toggleFavorite con el botón
+      // La UI se siente instantánea, la lógica de debounce se maneja en toggleFavorite
       this.toggleFavorite(event, favoriteBtn);
-
-      // Prevenir clics adicionales durante 500ms
-      favoriteBtn.setAttribute("data-processing", "true");
-      setTimeout(() => {
-        favoriteBtn.removeAttribute("data-processing");
-      }, 500);
 
       return false;
     }
@@ -453,31 +445,20 @@ if (typeof FavoritesManager === "undefined") {
       // Intentar usar el sistema de notificaciones si está disponible
       if (window.showNotification) {
         window.showNotification(message, "info", 3000);
-      }
-      // Si no, usar el sistema de notificaciones de toast si está disponible
-      else if (window.toast && typeof window.toast.info === "function") {
+      } else if (window.toast && typeof window.toast.info === "function") {
         window.toast.info(message, 3000);
-      }
-      // Si no hay sistema de notificaciones, usar un alert
-      else {
+      } else {
         alert(message);
       }
     }
 
     /**
-     * Alterna el estado de favorito de un producto
+     * Alterna el estado de favorito de un producto con debounce para la sincronización.
      * @param {Event} event - Evento de clic (opcional)
      * @param {HTMLElement|string} button - Elemento del botón o ID del producto
      * @returns {Promise<boolean>} - True si la operación fue exitosa
      */
     async toggleFavorite(event, button) {
-      // Si se proporciona un evento, prevenir el comportamiento por defecto
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-
-      // Obtener el ID del producto del botón o del parámetro
       let productId, buttonElement;
 
       if (typeof button === "string") {
@@ -485,172 +466,178 @@ if (typeof FavoritesManager === "undefined") {
         buttonElement = document.querySelector(
           `[data-product-id="${productId}"]`
         );
-      } else if (button && button.nodeType === Node.ELEMENT_NODE) {
+      } else {
         buttonElement = button;
         productId = buttonElement.getAttribute("data-product-id");
-      } else if (event && event.currentTarget) {
-        buttonElement = event.currentTarget;
-        productId = buttonElement.getAttribute("data-product-id");
-      } else {
-        console.error("Error: No se pudo determinar el producto");
-        return false;
       }
 
-      // Verificar si ya hay una operación en curso para este botón
-      if (buttonElement && buttonElement.hasAttribute("data-processing")) {
-        console.log("Operación de favorito ya en curso para este producto");
-        return false;
-      }
-
-      // Marcar el botón como procesando
-      if (buttonElement) buttonElement.setAttribute("data-processing", "true");
-
-      // Validar que el ID sea string (UUID)
       if (!productId || typeof productId !== "string") {
-        console.error("Error: ID de producto no válido");
-        if (buttonElement) buttonElement.removeAttribute("data-processing");
+        console.error("Error: ID de producto no válido.");
         return false;
       }
 
-      // Determinar el nuevo estado (si no está en favoritos, el nuevo estado es true)
+      // 1. Actualizar estado y UI localmente de forma optimista
       const newState = !this.favoriteProducts.has(productId);
-      console.log(
-        `Alternando favorito para producto ${productId}, nuevo estado: ${newState}`
-      );
-
-      // 1. Actualizar estado local inmediatamente
       if (newState) {
         this.favoriteProducts.add(productId);
       } else {
         this.favoriteProducts.delete(productId);
       }
-
-      // 2. Actualizar interfaz de usuario inmediatamente
       this.updateFavoriteButton(buttonElement, newState);
       this.updateFavoritesCounter();
       this.saveLocalFavorites();
 
-      // Mostrar notificación inmediata
+      // Notificación instantánea para el usuario
       await this._showNotification(
         `Producto ${newState ? "agregado a" : "eliminado de"} favoritos`,
         "success"
       );
 
-      // Si no está autenticado, mostrar mensaje y salir
-      if (!this.isAuthenticated) {
-        this.showAuthModal("Debes iniciar sesión para guardar favoritos");
-        if (buttonElement) buttonElement.removeAttribute("data-processing");
-        return false;
+      // 2. Debounce de la sincronización con el servidor
+      // Si ya hay una sincronización pendiente para este producto, se cancela para reemplazarla por la nueva.
+      if (this.pendingSyncs.has(productId)) {
+        clearTimeout(this.pendingSyncs.get(productId).timeoutId);
+        console.log(`Acción de favorito para ${productId} consolidada.`);
       }
 
-      // 3. Sincronizar con el servidor en segundo plano
-      this._syncWithServerInBackground(buttonElement, productId, newState);
+      // Se programa una nueva sincronización para dentro de 1.5 segundos.
+      const timeoutId = setTimeout(() => {
+        console.log(
+          `Iniciando sincronización para producto ${productId} con estado final: ${newState}`
+        );
+        // La sincronización real se encola para no sobrecargar el servidor
+        this._syncWithServerInBackground(buttonElement, productId, newState);
+        this.pendingSyncs.delete(productId); // Limpiar del mapa una vez ejecutado
+      }, 1500);
+
+      // Guardar el timeout y el estado final para el debounce
+      this.pendingSyncs.set(productId, { timeoutId, state: newState });
 
       return true;
     }
 
-    // Sincroniza los cambios con el servidor en segundo plano
+    // Sincroniza los cambios con el servidor en segundo plano de forma robusta
     async _syncWithServerInBackground(buttonElement, productIdNum, newState) {
-      try {
-        // Obtener el token de autenticación
-        const token =
-          window.auth?.getAuthToken?.() || this.getCookie("access_token");
-        if (!token) {
-          throw new Error("No se encontró el token de autenticación");
-        }
-
-        // Usar fetch con timeout para evitar congelamientos
-        const response = await this.fetchWithTimeout(
-          `/api/favoritos`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-              "X-Requested-With": "XMLHttpRequest",
-            },
-            body: JSON.stringify({
-              producto_id: String(productIdNum),
-              accion: newState ? "agregar" : "eliminar",
-            }),
-          },
-          10000
-        ); // 10 segundos
-
-        // Si hay un error en la respuesta, lanzar excepción
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(
-            errorData.error ||
-              `Error al ${newState ? "agregar a" : "eliminar de"} favoritos: ${
-                response.statusText
-              }`
-          );
-        }
-
-        const result = await response.json();
-
-        // Verificar si la operación fue exitosa
-        if (!result.success) {
-          throw new Error(result.message || "Error al actualizar favoritos");
-        }
-
-        // Si estamos en la página de favoritos y estamos eliminando, animar la eliminación
-        const isOnFavoritesPage =
-          window.location.pathname.includes("favoritos");
-        const productCard = buttonElement?.closest?.(
-          ".product-card, .bg-white, .favorite-item"
-        );
-
-        if (!newState && isOnFavoritesPage && productCard) {
-          productCard.style.transform = "translateX(-100%)";
-          productCard.style.opacity = "0";
-          productCard.style.transition =
-            "transform 0.3s ease, opacity 0.3s ease";
-
-          // Eliminar el elemento después de la animación
-          setTimeout(() => {
-            productCard.remove();
-            this.updateFavoritesCounter();
-          }, 300);
-        }
-      } catch (error) {
-        console.error("Error en sincronización en segundo plano:", error);
-
-        // Revertir cambios locales solo si el error es de autenticación
-        if (
-          error.message.includes("autenticación") ||
-          error.message.includes("token")
-        ) {
-          if (newState) {
-            this.favoriteProducts.delete(productIdNum);
-          } else {
-            this.favoriteProducts.add(productIdNum);
+      // Encolar la operación de sincronización para evitar condiciones de carrera
+      this.syncQueue = this.syncQueue.then(async () => {
+        try {
+          // Obtener el token de autenticación
+          const token =
+            window.auth?.getAuthToken?.() || this.getCookie("access_token");
+          if (!token) {
+            throw new Error("No se encontró el token de autenticación");
           }
-          this.updateFavoriteButton(buttonElement, !newState);
-          this.updateFavoritesCounter();
-          this.saveLocalFavorites();
 
-          // Mostrar notificación de error de autenticación
-          this._showNotification(
-            "Sesión expirada. Por favor, inicia sesión nuevamente.",
-            "error"
+          // Usar fetch con timeout para evitar congelamientos
+          const response = await this.fetchWithTimeout(
+            `/api/favoritos`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: JSON.stringify({
+                producto_id: String(productIdNum),
+                accion: newState ? "agregar" : "eliminar",
+              }),
+            },
+            10000
+          ); // 10 segundos
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(
+              errorData.error ||
+                `Error del servidor: ${response.status} ${response.statusText}`
+            );
+          }
+
+          const result = await response.json();
+          if (!result.success) {
+            throw new Error(
+              result.message || "Error al actualizar favoritos en el servidor"
+            );
+          }
+
+          console.log(`Sincronización exitosa para producto ${productIdNum}`);
+
+          // Si estamos en la página de favoritos y se elimina un producto, animar y quitarlo
+          const isOnFavoritesPage =
+            window.location.pathname.includes("favoritos");
+          const productCard = buttonElement?.closest?.(
+            ".product-card, .bg-white, .favorite-item"
           );
-        } else {
-          // Para otros errores, mostrar notificación pero mantener los cambios locales
-          this._showNotification(
-            error.message?.includes("Timeout")
-              ? "No se pudo conectar con el servidor. Intenta más tarde."
-              : "Los cambios se guardarán localmente y se sincronizarán más tarde.",
-            "warning"
-          );
+
+          if (!newState && isOnFavoritesPage && productCard) {
+            productCard.style.transition =
+              "transform 0.3s ease, opacity 0.3s ease";
+            productCard.style.transform = "translateX(-100%)";
+            productCard.style.opacity = "0";
+            setTimeout(() => {
+              productCard.remove();
+              this.updateFavoritesCounter(); // Actualizar contador después de eliminar
+            }, 300);
+          }
+        } catch (error) {
+          // Si el error es de autenticación, revertir el cambio y notificar al usuario
+          if (
+            error.message.includes("autenticación") ||
+            error.message.includes("token") ||
+            error.message.includes("401")
+          ) {
+            console.group(
+              `Fallo de autenticación para producto: ${productIdNum}`
+            );
+            console.error("Error original:", error);
+            console.warn(
+              `Revertiendo cambio para el producto ${productIdNum}.`
+            );
+            console.groupEnd();
+
+            // Revertir el estado en la UI
+            if (newState) {
+              this.favoriteProducts.delete(productIdNum);
+            } else {
+              this.favoriteProducts.add(productIdNum);
+            }
+            this.updateFavoriteButton(buttonElement, !newState);
+            this.updateFavoritesCounter();
+            this.saveLocalFavorites(); // Guardar el estado revertido
+
+            this._showNotification(
+              "Sesión expirada. Por favor, inicia sesión de nuevo.",
+              "error"
+            );
+          } else {
+            // Para cualquier otro error (timeout, red, etc.), agrupar los logs para mayor claridad.
+            console.group(
+              `Fallo en sincronización de favorito: ${productIdNum}`
+            );
+            console.error("Error original:", error);
+            console.warn(
+              "El cambio se ha guardado localmente y se sincronizará automáticamente más tarde."
+            );
+            console.groupEnd();
+          }
+          // No se retorna `false` aquí para no interrumpir la cadena de promesas
+        } finally {
+          // Desbloquear el botón después de que la operación (exitosa o fallida) termine
+          if (buttonElement) {
+            buttonElement.removeAttribute("data-processing");
+          }
         }
-        return false;
-      } finally {
-        // Asegurarse de desbloquear el botón
-        if (buttonElement) {
-          buttonElement.removeAttribute("data-processing");
-        }
+      });
+
+      // Esperar a que la cola de promesas termine para manejar errores si es necesario
+      try {
+        await this.syncQueue;
+      } catch (queueError) {
+        console.error(
+          "Error en la cola de sincronización de favoritos:",
+          queueError
+        );
       }
     }
 

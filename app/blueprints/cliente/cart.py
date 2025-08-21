@@ -221,16 +221,32 @@ def sync_cart(usuario):
                 db_item = existing_db_cart_map_by_product_id.get(product_id)
 
             if db_item:
-                # Update existing item
-                if merge:
-                    db_item.quantity += quantity
+                # Re-fetch the item to ensure it's not stale and still exists
+                # This is a defensive check against race conditions
+                current_db_item = db.session.query(CartItem).filter_by(id=db_item.id, user_id=user_id).first()
+                
+                if current_db_item:
+                    # Item still exists, proceed with update
+                    if merge:
+                        current_db_item.quantity += quantity
+                    else:
+                        current_db_item.quantity = quantity
+                    current_db_item.quantity = min(current_db_item.quantity, product.stock)
+                    current_db_item.updated_at = datetime.utcnow()
+                    items_to_keep_in_db.add(current_db_item.id) # Mark as kept
                 else:
-                    db_item.quantity = quantity
-                db_item.quantity = min(db_item.quantity, product.stock)
-                db_item.updated_at = datetime.utcnow()
-                items_to_keep_in_db.add(db_item.id) # Mark as kept
+                    # Item was found in initial map but deleted concurrently.
+                    # If frontend still has it, add it as a new item.
+                    cart_item = CartItem(
+                        user_id=user_id,
+                        product_id=product_id,
+                        quantity=quantity
+                    )
+                    db.session.add(cart_item)
+                    db.session.flush() # Get the ID for the newly added item
+                    items_to_keep_in_db.add(cart_item.id) # Mark as kept
             else:
-                # Add new item
+                # Item not found by ID or product_id, add as new
                 cart_item = CartItem(
                     user_id=user_id,
                     product_id=product_id,
@@ -288,7 +304,6 @@ def load_cart(usuario):
     except Exception as e:
         current_app.logger.error(f"Error loading cart for user {usuario.id}: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al cargar el carrito'}), 500
-
 
 @cart_bp.route('/api/product/<product_id>')
 def get_product_details(product_id):

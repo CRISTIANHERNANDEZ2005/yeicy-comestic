@@ -112,14 +112,14 @@ def producto_detalle(producto_id):
     ).filter(
         Productos.id != producto.id,
         Productos.estado == 'activo',
-        Subcategorias.categoria_principal_id == producto.seudocategorias.subcategorias.categoria_principal_id
+        Subcategorias.categoria_principal_id == producto.seudocategoria.subcategoria.categoria_principal_id
     ).limit(4).all()
     
     # Obtener reseñas del producto
     reseñas = Reseñas.query.filter_by(
         producto_id=producto.id,
         estado='activo'
-    ).order_by(Reseñas.fecha.desc()).all()
+    ).order_by(Reseñas.created_at.desc()).all()
     
     # Calcular calificación promedio
     calificacion_promedio = db.session.query(

@@ -1,6 +1,6 @@
 # YE&CY-COSMETIC
 
-YE&CY-COSMETIC es una aplicación web desarrollada en Flask para la gestión de clientes, productos y ventas de una tienda de cosméticos. El sistema está preparado para despliegue profesional en Render.com y utiliza buenas prácticas de seguridad, modularidad y despliegue.
+YE&CY-COSMETIC es una aplicación web desarrollada en Flask para la gestión de clientes, productos y ventas de una tienda de cosméticos. El sistema está preparado para despliegue profesional y utiliza buenas prácticas de seguridad, modularidad y despliegue.
 
 ## Características principales
 - Gestión de clientes, productos y carrito de compras
@@ -10,7 +10,7 @@ YE&CY-COSMETIC es una aplicación web desarrollada en Flask para la gestión de 
 - Contraseñas seguras con Flask-Bcrypt
 - Arquitectura modular usando Blueprints
 - Archivos estáticos y plantillas organizados
-- Listo para producción en Render.com
+
 
 ## Estructura del proyecto
 ```
@@ -26,8 +26,7 @@ YE&CY-COMESTIC/
 ├── config.py               # Configuración de entornos (dev/prod)
 ├── requirements.txt        # Dependencias del proyecto
 ├── run.py                  # Entry point de la aplicación
-├── Procfile                # Configuración para Render.com
-├── render.yaml             # Configuración avanzada para Render.com
+
 └── .gitignore              # Exclusión de archivos sensibles
 ```
 
@@ -62,18 +61,12 @@ YE&CY-COMESTIC/
    python run.py
    ```
 
-## Despliegue en Render.com
 
-1. Sube tu código a un repositorio (GitHub, GitLab, etc.)
-2. Crea un nuevo servicio Web en Render y conecta el repositorio.
-3. Render detectará automáticamente el `Procfile` y `render.yaml`.
-4. Configura las variables de entorno en Render (usa los valores de tu `.env` local).
-5. El sistema se desplegará usando Gunicorn en modo producción.
 
 ## Variables de entorno necesarias
 - `SECRET_KEY` — Secreto para Flask
 - `DATABASE_URL` — Cadena de conexión a la base de datos PostgreSQL
-- `FLASK_ENV` — development o production (Render usa production)
+- `FLASK_ENV` — development o production
 
 ## Notas de seguridad y producción
 - Nunca subas tu archivo `.env` al repositorio

@@ -1,0 +1,7 @@
+# .vercelignore
+render.yaml
+Procfile
+*.pyc
+__pycache__/
+logs/
+.env

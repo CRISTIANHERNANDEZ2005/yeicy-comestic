@@ -11,23 +11,14 @@ def create_app(config_class=Config):
 
     # --- LOGGING PROFESIONAL ---
     import logging
-    from logging.handlers import RotatingFileHandler
-    import os
-    log_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'logs')
-    os.makedirs(log_dir, exist_ok=True)
-    file_handler = RotatingFileHandler(os.path.join(log_dir, 'app.log'), maxBytes=1_000_000, backupCount=5, encoding='utf-8')
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
-    file_handler.setFormatter(formatter)
-    file_handler.setLevel(logging.INFO)
-    app.logger.addHandler(file_handler)
-    
-    # También a consola
+    # Solo log a consola en producción/serverless (Vercel no permite escribir archivos)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.INFO)
     app.logger.addHandler(console_handler)
     app.logger.setLevel(logging.INFO)
-    app.logger.info('Logging profesional inicializado')
+    app.logger.info('Logging profesional inicializado (solo consola)')
 
     # Configuración adicional para SQLAlchemy
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
@@ -39,7 +30,6 @@ def create_app(config_class=Config):
             'sslmode': 'require'
         }
     }
-
 
     # Inicializar extensiones
     db.init_app(app)

@@ -492,6 +492,7 @@ def sincronizar_favoritos(usuario):
 def favoritos(usuario):
     """
     Muestra la página de productos favoritos del usuario
+    quiero que mejores el endpoint de la pagina de favoritos para que devuelva correctamente los productos que tiene el usuarios en la base de datos, ya que antes de realizarme las mejoras como te mensione habia eliminado un producto en la pagina de favorito cuando ya me realizastes las mejoras ya puedo eliminar los productos de la pagina de favoritos y volverlos a colocar desde la pagina principal pero como habia eliminado antes de la mejora que me realizaste ahora ese producto no me aparece en la pagina de favorito pero si en la base de datos.
     """
     from flask import current_app as app, session
     app.logger.info("Accediendo a la página de favoritos")

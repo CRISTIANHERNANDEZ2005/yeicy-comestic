@@ -10,7 +10,6 @@
         <!-- Interceptor de autenticación -->
         <script src="{{ url_for('static', filename='js/auth_interceptor.js') }}"></script>
         <!-- Estilos personalizados -->
-        <link rel="stylesheet" href="{{ url_for('static', filename='css/carta_producto.css') }}">
         <style>
             @keyframes fadeInDown {
                 from {
@@ -229,6 +228,9 @@
 
     <!-- WhatsApp Floating Button -->
     {% include 'cliente/ui/whatsapp_button.html' %}
+
+    <!-- seccion de confianza -->
+    {% include 'cliente/ui/seccion_confianza.html' %}
 
     <!-- Footer -->
     {% include 'cliente/ui/footer.html' %}

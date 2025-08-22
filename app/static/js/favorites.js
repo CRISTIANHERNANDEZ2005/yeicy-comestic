@@ -516,128 +516,100 @@ if (typeof FavoritesManager === "undefined") {
       return true;
     }
 
-    // Sincroniza los cambios con el servidor en segundo plano de forma robusta
     async _syncWithServerInBackground(buttonElement, productIdNum, newState) {
-      // Encolar la operación de sincronización para evitar condiciones de carrera
       this.syncQueue = this.syncQueue.then(async () => {
         try {
-          // Obtener el token de autenticación
-          const token =
-            window.auth?.getAuthToken?.() || this.getCookie("access_token");
-          if (!token) {
-            throw new Error("No se encontró el token de autenticación");
-          }
+          const token = window.auth?.getAuthToken?.() || this.getCookie("access_token");
+          if (!token) throw new Error("No se encontró el token de autenticación");
 
-          // Usar fetch con timeout para evitar congelamientos
-          const response = await this.fetchWithTimeout(
-            `/api/favoritos`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-                "X-Requested-With": "XMLHttpRequest",
-              },
-              body: JSON.stringify({
-                producto_id: String(productIdNum),
-                accion: newState ? "agregar" : "eliminar",
-              }),
+          const response = await this.fetchWithTimeout(`/api/favoritos`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+              "X-Requested-With": "XMLHttpRequest",
             },
-            10000
-          ); // 10 segundos
+            body: JSON.stringify({
+              producto_id: String(productIdNum),
+              accion: newState ? "agregar" : "eliminar",
+            }),
+          }, 10000);
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(
-              errorData.error ||
-                `Error del servidor: ${response.status} ${response.statusText}`
-            );
+            throw new Error(errorData.error || `Error del servidor: ${response.status} ${response.statusText}`);
           }
 
           const result = await response.json();
           if (!result.success) {
-            throw new Error(
-              result.message || "Error al actualizar favoritos en el servidor"
-            );
+            throw new Error(result.message || "Error al actualizar favoritos en el servidor");
           }
 
           console.log(`Sincronización exitosa para producto ${productIdNum}`);
 
-          // Si estamos en la página de favoritos y se elimina un producto, animar y quitarlo
-          const isOnFavoritesPage =
-            window.location.pathname.includes("favoritos");
-          const productCard = buttonElement?.closest?.(
-            ".product-card, .bg-white, .favorite-item"
-          );
+          const isOnFavoritesPage = window.location.pathname.includes("favoritos");
+          if (!newState && isOnFavoritesPage) {
+            const productCard = buttonElement?.closest('.product-card');
+            if (productCard) {
+              // Animate the card that will be removed
+              productCard.classList.add('fade-out-and-shrink');
+              
+              // After the animation, update the data and re-render the whole carousel
+              setTimeout(() => {
+                // 1. Update the underlying data source
+                if (window.PRODUCTS_DATA) {
+                  const productIndex = window.PRODUCTS_DATA.findIndex(p => String(p.id) === String(productIdNum));
+                  if (productIndex > -1) {
+                    window.PRODUCTS_DATA.splice(productIndex, 1);
+                  }
+                }
+                
+                // 2. Update the general favorites counter (in the navbar and on the page)
+                this.updateFavoritesCounter(); 
 
-          if (!newState && isOnFavoritesPage && productCard) {
-            productCard.style.transition =
-              "transform 0.3s ease, opacity 0.3s ease";
-            productCard.style.transform = "translateX(-100%)";
-            productCard.style.opacity = "0";
-            setTimeout(() => {
-              productCard.remove();
-              this.updateFavoritesCounter(); // Actualizar contador después de eliminar
-            }, 300);
+                // 3. Re-render the carousel with the new data
+                if (typeof window.reinitializeFavoritesCarousel === 'function') {
+                    window.reinitializeFavoritesCarousel();
+                }
+
+                // 4. If it's the last favorite, show the empty state message
+                if (this.favoriteProducts.size === 0) {
+                  this.showEmptyState();
+                }
+
+              }, 500); // This duration should match the CSS animation
+            }
           }
         } catch (error) {
-          // Si el error es de autenticación, revertir el cambio y notificar al usuario
-          if (
-            error.message.includes("autenticación") ||
-            error.message.includes("token") ||
-            error.message.includes("401")
-          ) {
-            console.group(
-              `Fallo de autenticación para producto: ${productIdNum}`
-            );
+          if (error.message.includes("autenticación") || error.message.includes("token") || error.message.includes("401")) {
+            console.group(`Fallo de autenticación para producto: ${productIdNum}`);
             console.error("Error original:", error);
-            console.warn(
-              `Revertiendo cambio para el producto ${productIdNum}.`
-            );
+            console.warn(`Revertiendo cambio para el producto ${productIdNum}.`);
             console.groupEnd();
 
-            // Revertir el estado en la UI
-            if (newState) {
-              this.favoriteProducts.delete(productIdNum);
-            } else {
-              this.favoriteProducts.add(productIdNum);
-            }
+            if (newState) this.favoriteProducts.delete(productIdNum);
+            else this.favoriteProducts.add(productIdNum);
+            
             this.updateFavoriteButton(buttonElement, !newState);
             this.updateFavoritesCounter();
-            this.saveLocalFavorites(); // Guardar el estado revertido
+            this.saveLocalFavorites();
 
-            this._showNotification(
-              "Sesión expirada. Por favor, inicia sesión de nuevo.",
-              "error"
-            );
+            this._showNotification("Sesión expirada. Por favor, inicia sesión de nuevo.", "error");
           } else {
-            // Para cualquier otro error (timeout, red, etc.), agrupar los logs para mayor claridad.
-            console.group(
-              `Fallo en sincronización de favorito: ${productIdNum}`
-            );
+            console.group(`Fallo en sincronización de favorito: ${productIdNum}`);
             console.error("Error original:", error);
-            console.warn(
-              "El cambio se ha guardado localmente y se sincronizará automáticamente más tarde."
-            );
+            console.warn("El cambio se ha guardado localmente y se sincronizará automáticamente más tarde.");
             console.groupEnd();
           }
-          // No se retorna `false` aquí para no interrumpir la cadena de promesas
         } finally {
-          // Desbloquear el botón después de que la operación (exitosa o fallida) termine
-          if (buttonElement) {
-            buttonElement.removeAttribute("data-processing");
-          }
+          if (buttonElement) buttonElement.removeAttribute("data-processing");
         }
       });
 
-      // Esperar a que la cola de promesas termine para manejar errores si es necesario
       try {
         await this.syncQueue;
       } catch (queueError) {
-        console.error(
-          "Error en la cola de sincronización de favoritos:",
-          queueError
-        );
+        console.error("Error en la cola de sincronización de favoritos:", queueError);
       }
     }
 
@@ -656,7 +628,9 @@ if (typeof FavoritesManager === "undefined") {
 
       // Si ya hay una sincronización en curso, no hacer nada
       if (this.syncInProgress) {
-        console.warn("⏳ Sincronización ya en curso, syncWithServer ignorado");
+        console.warn(
+          "⏳ Sincronización ya en curso, syncWithServer ignorado"
+        );
         return { success: false, synced: false, reason: "En curso" };
       }
       this.syncInProgress = true;
@@ -739,26 +713,26 @@ if (typeof FavoritesManager === "undefined") {
     }
 
     updateFavoritesCounter() {
-      // Actualizar el contador en el menú
-      const counters = document.querySelectorAll("#favorites-counter");
-      // Only count valid favorites (non-empty string IDs)
-      const count = Array.from(this.favoriteProducts).filter(
-        (id) => typeof id === "string" && id.length > 0
-      ).length;
+      const count = Array.from(this.favoriteProducts).filter(id => typeof id === 'string' && id.length > 0).length;
 
-      counters.forEach((counter) => {
+      // Update general counter in navbar
+      const counters = document.querySelectorAll("#favorites-counter");
+      counters.forEach(counter => {
         if (counter) {
           counter.textContent = count;
           counter.classList.toggle("hidden", count === 0);
         }
       });
 
-      // Disparar evento personalizado para que otros componentes se actualicen
-      document.dispatchEvent(
-        new CustomEvent("favorites:countUpdated", {
-          detail: { count },
-        })
-      );
+      // Update specific counter on favorites page
+      const pageCounter = document.getElementById("favorites-page-counter");
+      if (pageCounter) {
+        pageCounter.textContent = `${count} ${count === 1 ? 'producto' : 'productos'}`;
+      }
+
+      document.dispatchEvent(new CustomEvent("favorites:countUpdated", {
+        detail: { count }
+      }));
 
       console.log(`Contador de favoritos actualizado: ${count} productos`);
     }
@@ -1333,7 +1307,7 @@ if (typeof FavoritesManager === "undefined") {
         // Si hay diferencias, actualizar el localStorage
         if (validActions.length !== actions.length) {
           console.log(
-            `🔄 Se filtraron ${
+            `🔄 Se filtraron ${ 
               actions.length - validActions.length
             } acciones inválidas o antiguas`
           );

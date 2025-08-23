@@ -82,6 +82,11 @@
 <!-- Indicadores mejorados - OCULTOS SI ES SOLO UNA PÁGINA -->
 <div class="flex justify-center mt-8 space-x-2" id="carouselIndicators"></div>
 <style>
+  .favorite-removed-state {
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+
   .product-card {
     position: relative;
     background: white;
@@ -260,6 +265,7 @@
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   }
 </style>
+  
 <script>
   document.addEventListener("DOMContentLoaded", function () {
     // Elementos DOM
@@ -522,7 +528,7 @@
                             } reseñas)</span>
                         </div>
                         <div class="flex items-center justify-between mt-auto pt-2">
-                            <p class="text-base md:text-lg font-bold text-pink-600">$${parseFloat(
+                            <p class="text-base md:text-lg font-bold text-pink-600">${parseFloat(
                               producto.precio
                             ).toFixed(2)}</p>
                              <button class="add-to-cart bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-3 py-2 md:px-4 rounded-full hover:from-pink-600 hover:to-fuchsia-600 transition-all duration-300 flex items-center text-xs md:text-sm hover:shadow-lg hover:scale-105 active:scale-95 z-20 relative"

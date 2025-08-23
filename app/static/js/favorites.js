@@ -487,6 +487,19 @@ if (typeof FavoritesManager === "undefined") {
       this.updateFavoritesCounter();
       this.saveLocalFavorites();
 
+      // INICIO: Cambio para opacidad en página de favoritos
+      // Si estamos en la página de favoritos, aplicamos un efecto visual a la tarjeta del producto.
+      const isOnFavoritesPage = window.location.pathname.includes("favoritos");
+      if (isOnFavoritesPage && buttonElement) {
+        const productCard = buttonElement.closest('.product-card');
+        if (productCard) {
+          // Si el producto se añade a favoritos, se quita el estado opaco.
+          // Si se elimina, se añade el estado opaco.
+          productCard.classList.toggle('favorite-removed-state', !newState);
+        }
+      }
+      // FIN: Cambio para opacidad en página de favoritos
+
       // Notificación instantánea para el usuario
       await this._showNotification(
         `Producto ${newState ? "agregado a" : "eliminado de"} favoritos`,
@@ -547,39 +560,6 @@ if (typeof FavoritesManager === "undefined") {
 
           console.log(`Sincronización exitosa para producto ${productIdNum}`);
 
-          const isOnFavoritesPage = window.location.pathname.includes("favoritos");
-          if (!newState && isOnFavoritesPage) {
-            const productCard = buttonElement?.closest('.product-card');
-            if (productCard) {
-              // Animate the card that will be removed
-              productCard.classList.add('fade-out-and-shrink');
-              
-              // After the animation, update the data and re-render the whole carousel
-              setTimeout(() => {
-                // 1. Update the underlying data source
-                if (window.PRODUCTS_DATA) {
-                  const productIndex = window.PRODUCTS_DATA.findIndex(p => String(p.id) === String(productIdNum));
-                  if (productIndex > -1) {
-                    window.PRODUCTS_DATA.splice(productIndex, 1);
-                  }
-                }
-                
-                // 2. Update the general favorites counter (in the navbar and on the page)
-                this.updateFavoritesCounter(); 
-
-                // 3. Re-render the carousel with the new data
-                if (typeof window.reinitializeFavoritesCarousel === 'function') {
-                    window.reinitializeFavoritesCarousel();
-                }
-
-                // 4. If it's the last favorite, show the empty state message
-                if (this.favoriteProducts.size === 0) {
-                  this.showEmptyState();
-                }
-
-              }, 500); // This duration should match the CSS animation
-            }
-          }
         } catch (error) {
           if (error.message.includes("autenticación") || error.message.includes("token") || error.message.includes("401")) {
             console.group(`Fallo de autenticación para producto: ${productIdNum}`);
@@ -593,6 +573,15 @@ if (typeof FavoritesManager === "undefined") {
             this.updateFavoriteButton(buttonElement, !newState);
             this.updateFavoritesCounter();
             this.saveLocalFavorites();
+
+            // Revertir el cambio visual si falla la autenticación
+            const isOnFavoritesPage = window.location.pathname.includes("favoritos");
+            if (isOnFavoritesPage && buttonElement) {
+                const productCard = buttonElement.closest('.product-card');
+                if (productCard) {
+                    productCard.classList.toggle('favorite-removed-state', !newState);
+                }
+            }
 
             this._showNotification("Sesión expirada. Por favor, inicia sesión de nuevo.", "error");
           } else {
@@ -925,7 +914,7 @@ if (typeof FavoritesManager === "undefined") {
             <h3 class="text-lg font-medium text-gray-900 mb-2">No tienes productos favoritos</h3>
             <p class="text-gray-500 mb-6">Guarda tus productos favoritos para encontrarlos fácilmente más tarde</p>
             <a 
-              href="/" 
+              href="/"
               class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
             >
               <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">

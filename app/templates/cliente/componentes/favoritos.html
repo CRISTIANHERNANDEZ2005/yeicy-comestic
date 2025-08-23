@@ -8,9 +8,7 @@ Cosméticos {% endblock %} {% block content %}
       <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
         Mis Favoritos
       </h1>
-      <p class="text-gray-600 mt-2">
-        Tus productos guardados en un solo lugar
-      </p>
+      <p class="text-gray-600 mt-2">Tus productos guardados en un solo lugar</p>
     </div>
     <div class="mt-4 md:mt-0">
       <span
@@ -25,6 +23,7 @@ Cosméticos {% endblock %} {% block content %}
 
   {% if productos %}
   <script>
+    // Define los datos de productos y el estado de autenticación para los scripts.
     window.PRODUCTS_DATA = {{ productos|tojson|safe }};
     window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
   </script>
@@ -76,20 +75,4 @@ Cosméticos {% endblock %} {% block content %}
   </div>
   {% endif %}
 </div>
-{% endblock %} {% block scripts %} {{ super() }}
-<script src="{{ url_for('static', filename='js/favorites_carousel.js') }}"></script>
-<script>
-  // Los datos de productos ahora se definen antes del carrusel.
-  // Mantenemos la autenticación aquí si es necesario para otros scripts.
-  window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
-
-  // Forzar la recarga de la página si se carga desde el caché (bfcache)
-  // para asegurar que los datos de favoritos estén siempre actualizados.
-  window.addEventListener('pageshow', function(event) {
-    if (event.persisted) {
-      console.log('Página cargada desde caché, forzando recarga para actualizar favoritos.');
-      window.location.reload();
-    }
-  });
-</script>
 {% endblock %}

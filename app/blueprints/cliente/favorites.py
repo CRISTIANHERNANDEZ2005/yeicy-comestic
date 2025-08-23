@@ -14,6 +14,7 @@ from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 # Crear el blueprint para favoritos
 favorites_bp = Blueprint('favorites', __name__)
 
+
 @favorites_bp.route('/api/favoritos', methods=['GET', 'POST'])
 @jwt_required
 def manejar_favoritos(usuario):
@@ -487,6 +488,8 @@ def sincronizar_favoritos(usuario):
         return jsonify({'error': 'Error al sincronizar favoritos'}), 500
 
 # Ruta para la página de favoritos
+
+
 @favorites_bp.route('/favoritos')
 @jwt_required
 def favoritos(usuario):
@@ -504,9 +507,10 @@ def favoritos(usuario):
             user_id = session['user'].get('id')
 
         if not user_id:
-            app.logger.warning("Intento de acceso a favoritos sin ID de usuario.")
+            app.logger.warning(
+                "Intento de acceso a favoritos sin ID de usuario.")
             return jsonify({'error': 'No autorizado'}), 401
-        
+
         app.logger.info(f"Buscando favoritos para el usuario ID: {user_id}")
 
         # Obtener los objetos 'Like' de los favoritos, asegurando que el producto esté activo
@@ -515,18 +519,19 @@ def favoritos(usuario):
             .filter(Productos.estado == 'activo')\
             .options(joinedload(Likes.producto).joinedload(Productos.seudocategoria))\
             .all()
-        app.logger.info(f"Se encontraron {len(likes)} registros de 'likes' activos.")
+        app.logger.info(
+            f"Se encontraron {len(likes)} registros de 'likes' activos.")
 
         # Extraer los objetos 'Producto' de los 'Likes'
         productos_obj = [like.producto for like in likes if like.producto]
-        app.logger.info(f"Se extrajeron {len(productos_obj)} objetos de producto.")
+        app.logger.info(
+            f"Se extrajeron {len(productos_obj)} objetos de producto.")
 
         # Serializar los productos para pasarlos al frontend
         productos = [producto_to_dict(p) for p in productos_obj]
         app.logger.info(f"Se serializaron {len(productos)} productos.")
         if len(productos) > 0:
             app.logger.debug(f"Primer producto serializado: {productos[0]}")
-
 
         if not productos:
             app.logger.info(
@@ -550,4 +555,3 @@ def favoritos(usuario):
         app.logger.error(
             f"Error al procesar la página de favoritos: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error interno del servidor'}), 500
-

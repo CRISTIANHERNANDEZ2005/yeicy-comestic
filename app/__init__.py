@@ -112,6 +112,11 @@ def create_app(config_class=Config):
             'usuario_autenticado': usuario_autenticado
         }
 
+    # Custom Jinja2 filters
+    def slugify_filter(s):
+        return s.lower().replace(" ", "-").replace("_", "-")
+    app.jinja_env.filters['slugify'] = slugify_filter
+
     # Manejador de errores 404
     @app.errorhandler(404)
     def page_not_found(e):

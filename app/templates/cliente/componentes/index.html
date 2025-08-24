@@ -1,5 +1,9 @@
-{% extends 'cliente/page/base.html' %} {% block full_width_content %} {% include
-'cliente/ui/hero.html' %} {% endblock %} {% block content %}
+{% extends 'cliente/page/base.html' %}
+{% block full_width_content %}
+  {% include 'cliente/ui/hero.html' %}
+{% endblock %}
+
+{% block content %}
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">
     Colección Exclusiva {{ categoria_actual }}
@@ -36,13 +40,19 @@
   </div>
 </div>
 
-<!-- seccion de confianza -->
-{% include 'cliente/ui/seccion_confianza.html' %}
-
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 <!-- Datos de productos para JavaScript -->
 <script>
   window.PRODUCTS_DATA = {{ productos_data|tojson|safe }};
   window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
+  document.addEventListener("DOMContentLoaded", function() {
+    if (typeof initializeProductCarousel === 'function') {
+      initializeProductCarousel();
+    }
+  });
 </script>
+{% endblock %}
+
+{% block full_width_footer_content %}
+  {% include 'cliente/ui/seccion_confianza.html' %}
 {% endblock %}

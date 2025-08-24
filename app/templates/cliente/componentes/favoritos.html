@@ -1,43 +1,162 @@
 {% extends 'cliente/page/base.html' %} {% block title %}Mis Favoritos - YE & CY
 Cosméticos {% endblock %} {% block content %}
 <div class="container mx-auto px-4 py-8">
-  <div
-    class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8"
-  >
-    <div>
-      <h1 class="text-3xl md:text-4xl font-bold text-gray-800">
+  <!-- Encabezado premium mejorado -->
+  <div class="relative mb-12 mt-[-2rem]">
+    <!-- Fondo decorativo con gradiente -->
+    <div
+      class="absolute inset-0 -top-8 -left-4 -right-4 h-48 bg-gradient-to-br from-pink-50 via-white to-fuchsia-50 rounded-3xl -z-10 opacity-80"
+    ></div>
+
+    <!-- Elementos decorativos -->
+    <div
+      class="absolute -top-6 -left-4 w-24 h-24 bg-pink-200 rounded-full opacity-20 blur-xl -z-10"
+    ></div>
+    <div
+      class="absolute -top-8 -right-4 w-32 h-32 bg-fuchsia-200 rounded-full opacity-20 blur-xl -z-10"
+    ></div>
+
+    <div class="text-center px-4 py-8">
+      <!-- Icono decorativo -->
+      <div class="mb-4 flex justify-center">
+        <div class="relative">
+          <div
+            class="absolute -inset-4 bg-pink-500 rounded-full opacity-20 blur-md"
+          ></div>
+          <div
+            class="relative w-16 h-16 bg-gradient-to-br from-pink-500 to-fuchsia-600 rounded-2xl flex items-center justify-center shadow-lg"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-8 w-8 text-white"
+              fill="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Título principal -->
+      <h1
+        class="text-5xl md:text-6xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r from-pink-600 to-fuchsia-700 drop-shadow-md"
+      >
         Mis Favoritos
       </h1>
-      <p class="text-gray-600 mt-2">Tus productos guardados en un solo lugar</p>
-    </div>
-    <div class="mt-4 md:mt-0">
-      <span
-        id="favorites-page-counter"
-        class="text-sm bg-pink-100 text-pink-800 px-3 py-1 rounded-full font-medium"
-      >
-        {{ productos|length }} {{ 'producto' if productos|length == 1 else
-        'productos' }}
-      </span>
-    </div>
-  </div>
 
-  {% if productos %}
-  <script>
-    // Define los datos de productos y el estado de autenticación para los scripts.
-    window.PRODUCTS_DATA = {{ productos|tojson|safe }};
-    window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
-  </script>
-  <!-- Carrusel de productos - VERSIÓN ULTRA PROFESIONAL CON CORRECCIONES -->
-  {% include 'cliente/ui/carrusel_favoritos.html' %} {% else %}
-  <div class="text-center py-16 bg-white rounded-xl shadow-sm">
-    <div class="max-w-md mx-auto">
-      <div class="w-20 h-20 mx-auto mb-4 text-gray-300">
+      <!-- Subtítulo -->
+      <p
+        class="text-xl md:text-2xl font-light text-gray-700 max-w-2xl mx-auto mb-6"
+      >
+        Tus productos
+        <span class="font-medium text-pink-600">preferidos</span> reunidos en un
+        mismo lugar
+      </p>
+
+      <!-- Contador y badge -->
+      <div
+        class="inline-flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-full px-6 py-3 shadow-sm border border-pink-100"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
+          class="h-5 w-5 text-pink-500 mr-2"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          stroke-width="1.5"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+        <span class="text-sm font-medium text-gray-700">
+          <span id="favorites-page-counter">0</span> producto(s) guardado(s)
+        </span>
+      </div>
+    </div>
+  </div>
+
+  {% if favoritos_por_categoria | default({}) %}
+  <!-- Favoritos organizados por categoría -->
+  <div class="space-y-10">
+    {% for categoria_nombre, productos_categoria in (favoritos_por_categoria |
+    default({})).items() %}
+    <div
+      class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
+    >
+      <!-- Encabezado de categoría -->
+      <div
+        class="bg-gradient-to-r from-pink-50 to-fuchsia-50 px-6 py-4 border-b border-gray-200"
+      >
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div
+              class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mr-3"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5 text-pink-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h2 class="text-xl font-bold text-gray-800">
+                {{ categoria_nombre }}
+              </h2>
+            </div>
+          </div>
+          <div class="hidden md:block">
+            <span
+              id="category-count-{{ categoria_nombre | slugify }}"
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-pink-100 text-pink-800"
+            >
+              {{ productos_categoria|length }} items
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Contenido de productos -->
+      <div class="p-6">
+        <script>
+          // Define los datos de productos y el estado de autenticación para los scripts.
+          // Cada carrusel tendrá su propio window.PRODUCTS_DATA temporal
+          window.PRODUCTS_DATA = {{ productos_categoria|tojson|safe }};
+          window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
+        </script>
+        {% include 'cliente/ui/carrusel_favoritos.html' %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- Estado vacío mejorado -->
+  <div
+    class="text-center py-16 bg-white rounded-2xl shadow-sm border border-gray-100"
+  >
+    <div class="max-w-md mx-auto">
+      <div class="w-24 h-24 mx-auto mb-6 text-gray-200">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-full w-full"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="1"
         >
           <path
             stroke-linecap="round"
@@ -46,33 +165,70 @@ Cosméticos {% endblock %} {% block content %}
           />
         </svg>
       </div>
-      <h3 class="text-lg font-medium text-gray-900 mb-2">
-        No tienes productos favoritos
+      <h3 class="text-2xl font-semibold text-gray-800 mb-3">
+        Aún no tienes favoritos
       </h3>
-      <p class="text-gray-500 mb-6">
-        Guarda tus productos favoritos para encontrarlos fácilmente más tarde
+      <p class="text-gray-500 mb-6 max-w-md mx-auto">
+        Guarda tus productos favoritos para encontrarlos fácilmente más tarde.
+        Los productos que marques con ❤️ aparecerán aquí.
       </p>
-      <a
-        href="{{ url_for('products.index') }}"
-        class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-pink-600 hover:bg-pink-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500"
-      >
-        <svg
-          class="-ml-1 mr-2 h-5 w-5"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
+      <div class="flex flex-col sm:flex-row gap-3 justify-center">
+        <a
+          href="{{ url_for('products.index') }}"
+          class="inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-xl shadow-sm text-white bg-gradient-to-r from-pink-500 to-fuchsia-600 hover:from-pink-600 hover:to-fuchsia-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-500 transition-all duration-300"
         >
-          <path
-            fill-rule="evenodd"
-            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        Seguir comprando
-      </a>
+          <svg
+            class="-ml-1 mr-2 h-5 w-5"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              fill-rule="evenodd"
+              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
+              clip-rule="evenodd"
+            />
+          </svg>
+          Explorar productos
+        </a>
+      </div>
     </div>
   </div>
   {% endif %}
 </div>
+
+<style>
+  /* Estilos adicionales para mejorar la estética */
+  .carousel-container {
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .product-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #f3f4f6;
+  }
+
+  .product-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border-color: #f9a8d4;
+  }
+
+  /* Mejora visual para los botones de navegación del carrusel */
+  .carousel-prev,
+  .carousel-next {
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  .carousel-prev:hover,
+  .carousel-next:hover {
+    background: white;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+  }
+</style>
 {% endblock %}

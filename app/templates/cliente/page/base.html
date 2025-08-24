@@ -226,11 +226,10 @@
             {% block content %}{% endblock %}
         </main>
 
+        {% block full_width_footer_content %}{% endblock %}
+
     <!-- WhatsApp Floating Button -->
     {% include 'cliente/ui/whatsapp_button.html' %}
-
-    <!-- seccion de confianza -->
-    {% include 'cliente/ui/seccion_confianza.html' %}
 
     <!-- Footer -->
     {% include 'cliente/ui/footer.html' %}

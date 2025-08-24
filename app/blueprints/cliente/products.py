@@ -105,22 +105,40 @@ def producto_detalle(producto_id):
         abort(404)
     
     # Obtener productos relacionados (misma categoría principal)
-    productos_relacionados = Productos.query.join(
-        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
-    ).join(
-        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
-    ).filter(
-        Productos.id != producto.id,
-        Productos.estado == 'activo',
-        Subcategorias.categoria_principal_id == producto.seudocategoria.subcategoria.categoria_principal_id
-    ).limit(4).all()
+    # Asegurarse de que producto.seudocategoria y producto.seudocategoria.subcategoria no sean None
+    categoria_principal_id = None
+    if producto.seudocategoria and producto.seudocategoria.subcategoria:
+        categoria_principal_id = producto.seudocategoria.subcategoria.categoria_principal.id
+
+    productos_relacionados = []
+    if categoria_principal_id:
+        print(f"DEBUG: Buscando productos relacionados para categoria_principal_id: {categoria_principal_id}")
+        productos_relacionados = Productos.query.join(
+            Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+        ).join(
+            Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+        ).filter(
+            Productos.id != producto.id,
+            Productos.estado == 'activo',
+            Subcategorias.categoria_principal_id == categoria_principal_id
+        ).all() # Eliminado .limit(4) temporalmente para depuración
+
+    print(f"DEBUG: Productos relacionados para {producto.nombre}: {len(productos_relacionados)} productos encontrados.")
+    for p in productos_relacionados:
+        print(f"  - {p.nombre} (ID: {p.id})")
     
+    # Convertir productos relacionados a diccionarios para JavaScript
+    productos_relacionados_data = [producto_to_dict(p) for p in productos_relacionados]
+    print(f"DEBUG: productos_relacionados_data (después de to_dict): {len(productos_relacionados_data)} elementos.")
+    if productos_relacionados_data:
+        print(f"DEBUG: Primer elemento de productos_relacionados_data: {productos_relacionados_data[0]}")
+
     # Obtener reseñas del producto
     reseñas = Reseñas.query.filter_by(
         producto_id=producto.id,
         estado='activo'
     ).order_by(Reseñas.created_at.desc()).all()
-    
+
     # Calcular calificación promedio
     calificacion_promedio = db.session.query(
         db.func.avg(Reseñas.calificacion)
@@ -128,7 +146,7 @@ def producto_detalle(producto_id):
         Reseñas.producto_id == producto.id,
         Reseñas.estado == 'activo'
     ).scalar() or 0
-    
+
     # Verificar si el usuario actual ha dado like al producto
     es_favorito = False
     if 'user' in session:
@@ -142,13 +160,12 @@ def producto_detalle(producto_id):
     return render_template(
         'cliente/componentes/producto_detalle.html',
         producto=producto,
-        productos_relacionados=productos_relacionados,
+        productos_relacionados=productos_relacionados_data,
         reseñas=reseñas,
         calificacion_promedio=round(float(calificacion_promedio), 1),
         es_favorito=es_favorito,
         title=f"{producto.nombre} - YE & CY Cosméticos"
     )
-
 
 @products_bp.route('/buscar')
 def buscar():

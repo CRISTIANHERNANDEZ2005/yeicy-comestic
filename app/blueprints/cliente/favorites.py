@@ -78,9 +78,16 @@ def manejar_favoritos(usuario):
             favoritos = pagination.items
 
             # Respuesta
-            response_data = {
-                'success': True,
-                'favoritos': [{
+            # Agrupar favoritos por categoría principal
+            favoritos_por_categoria = {}
+            for fav in favoritos:
+                categoria_principal_nombre = fav.producto.seudocategoria.subcategoria.categoria_principal.nombre \
+                    if fav.producto.seudocategoria and fav.producto.seudocategoria.subcategoria and fav.producto.seudocategoria.subcategoria.categoria_principal else 'Sin Categoría'
+                
+                if categoria_principal_nombre not in favoritos_por_categoria:
+                    favoritos_por_categoria[categoria_principal_nombre] = []
+                
+                favoritos_por_categoria[categoria_principal_nombre].append({
                     'id': fav.producto.id,
                     'fecha_agregado': fav.created_at.isoformat() if hasattr(fav, 'created_at') else None,
                     'producto': {
@@ -91,11 +98,15 @@ def manejar_favoritos(usuario):
                         'marca': fav.producto.marca,
                         'stock': fav.producto.stock,
                         'es_favorito': True,
-                        'categoria': fav.producto.seudocategoria.subcategoria.categoria_principal.nombre if fav.producto.seudocategoria and fav.producto.seudocategoria.subcategoria and fav.producto.seudocategoria.subcategoria.categoria_principal else None,
+                        'categoria': categoria_principal_nombre,
                         'subcategoria': fav.producto.seudocategoria.subcategoria.nombre if fav.producto.seudocategoria and fav.producto.seudocategoria.subcategoria else None,
                         'seudocategoria': fav.producto.seudocategoria.nombre if fav.producto.seudocategoria else None
                     }
-                } for fav in favoritos],
+                })
+
+            response_data = {
+                'success': True,
+                'favoritos_por_categoria': favoritos_por_categoria, # Nuevo campo
                 'pagination': {
                     'page': page,
                     'per_page': per_page,
@@ -517,23 +528,32 @@ def favoritos(usuario):
         likes = Likes.query.filter_by(usuario_id=user_id, estado='activo')\
             .join(Likes.producto)\
             .filter(Productos.estado == 'activo')\
-            .options(joinedload(Likes.producto).joinedload(Productos.seudocategoria))\
+            .options(\
+                joinedload(Likes.producto).joinedload(\
+                    Productos.seudocategoria)\
+                .joinedload(Seudocategorias.subcategoria)\
+                .joinedload(Subcategorias.categoria_principal)\
+            )\
             .all()
         app.logger.info(
             f"Se encontraron {len(likes)} registros de 'likes' activos.")
 
-        # Extraer los objetos 'Producto' de los 'Likes'
-        productos_obj = [like.producto for like in likes if like.producto]
-        app.logger.info(
-            f"Se extrajeron {len(productos_obj)} objetos de producto.")
+        # Agrupar los productos por categoría principal
+        favoritos_por_categoria = {}
+        for like in likes:
+            if like.producto:
+                producto_data = producto_to_dict(like.producto)
+                categoria_principal_nombre = producto_data.get('categoria', 'Sin Categoría')
+                
+                if categoria_principal_nombre not in favoritos_por_categoria:
+                    favoritos_por_categoria[categoria_principal_nombre] = []
+                favoritos_por_categoria[categoria_principal_nombre].append(producto_data)
 
-        # Serializar los productos para pasarlos al frontend
-        productos = [producto_to_dict(p) for p in productos_obj]
-        app.logger.info(f"Se serializaron {len(productos)} productos.")
-        if len(productos) > 0:
-            app.logger.debug(f"Primer producto serializado: {productos[0]}")
+        app.logger.info(f"Se agruparon {sum(len(v) for v in favoritos_por_categoria.values())} productos en {len(favoritos_por_categoria)} categorías.")
+        if favoritos_por_categoria:
+            app.logger.debug(f"Categorías agrupadas: {list(favoritos_por_categoria.keys())}")
 
-        if not productos:
+        if not favoritos_por_categoria:
             app.logger.info(
                 f"No se encontraron productos favoritos para el usuario con ID {user_id}")
 
@@ -548,8 +568,8 @@ def favoritos(usuario):
             app.logger.info("No se encontraron categorías activas")
 
         app.logger.info("Renderizando la plantilla de favoritos.html")
-        # Renderizar la plantilla, pasando la lista de productos con el nombre correcto
-        return render_template('cliente/componentes/favoritos.html', productos=productos, categorias=categorias), 200
+        # Renderizar la plantilla, pasando los favoritos agrupados por categoría
+        return render_template('cliente/componentes/favoritos.html', favoritos_por_categoria=favoritos_por_categoria, categorias=categorias), 200
 
     except Exception as e:
         app.logger.error(

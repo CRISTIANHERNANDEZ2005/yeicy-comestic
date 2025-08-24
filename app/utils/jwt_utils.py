@@ -19,8 +19,9 @@ def jwt_required(f: F) -> F:
         # Verificar token JWT en el encabezado de autorización
         auth_header = request.headers.get('Authorization', '')
         if not auth_header.startswith('Bearer '):
-            current_app.logger.warning('Intento de acceso no autorizado: No se proporcionó token')
-            return jsonify({'error': 'Token de autenticación requerido'}), 401
+            current_app.logger.warning('Intento de acceso no autorizado: No se proporcionó token. Redirigiendo al index.')
+            from flask import redirect, url_for
+            return redirect(url_for('products.index'))
         try:
             token = auth_header.split(' ')[1]
             if not token:

@@ -56,6 +56,10 @@ def seudocategoria_to_dict(seudo):
     }
 
 def producto_to_dict(prod):
+    categoria_principal_nombre = None
+    if prod.seudocategoria and prod.seudocategoria.subcategoria and prod.seudocategoria.subcategoria.categoria_principal:
+        categoria_principal_nombre = prod.seudocategoria.subcategoria.categoria_principal.nombre
+
     return {
         'id': prod.id,
         'nombre': prod.nombre,
@@ -67,7 +71,8 @@ def producto_to_dict(prod):
         'marca': prod.marca,
         'estado': prod.estado,
         'created_at': prod.created_at.isoformat() if prod.created_at else None,
-        'updated_at': prod.updated_at.isoformat() if prod.updated_at else None
+        'updated_at': prod.updated_at.isoformat() if prod.updated_at else None,
+        'categoria': categoria_principal_nombre # Add the main category name
     }
 
 def like_to_dict(like):

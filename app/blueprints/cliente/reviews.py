@@ -10,6 +10,7 @@ from app.extensions import db
 from app.utils.jwt_utils import jwt_required
 from sqlalchemy.orm import joinedload
 
+#Quiero que me crees un plan para la vista de los detalles de los productos, analiza los demas demas archivos para que puedas desarrollar un plan como todo un profesional, serializers.py , products.py , product_models.py , producto_detalle.html , carrusel_productos.html , review_models.py , reviews.py, me hablas en español y como todo un profesional
 # Crear el blueprint para reseñas
 reviews_bp = Blueprint('reviews', __name__)
 
@@ -39,7 +40,7 @@ def listar_resenas(producto_id):
     ).options(
         joinedload(Reseñas.usuario)
     ).order_by(
-        Reseñas.fecha.desc()
+        Reseñas.created_at.desc()
     ).all()
     
     # Formatear respuesta

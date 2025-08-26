@@ -4,6 +4,8 @@ from app.extensions import db
 from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, Optional, TYPE_CHECKING
+from slugify import slugify
+
 if TYPE_CHECKING:
     from app.models.domains.review_models import Likes, Reseñas
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
@@ -127,6 +129,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
 
     # id y timestamps heredados de los mixins
     nombre: Mapped[str] = mapped_column(db.String(100), nullable=False)
+    slug: Mapped[str] = mapped_column(db.String(255), nullable=False, unique=True)
     descripcion: Mapped[str] = mapped_column(db.String(1000), nullable=False)
     precio: Mapped[float] = mapped_column(db.Float, nullable=False)
     imagen_url: Mapped[str] = mapped_column(db.String(255), nullable=False)
@@ -138,15 +141,31 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='producto', lazy=True)
     seudocategoria: Mapped['Seudocategorias'] = relationship('Seudocategorias', back_populates='productos')
 
-    # Propiedad para calcular la calificación promedio
+    calificacion_promedio_almacenada: Mapped[float] = mapped_column(db.Float, default=0.0) # Nueva columna para almacenar el promedio
+
+    # Propiedad para calcular la calificación promedio (se mantiene para compatibilidad o acceso directo)
     @property
     def calificacion_promedio(self):
-        """Calcula el promedio de calificaciones de las reseñas activas"""
+        """Calcula el promedio de calificaciones de las reseñas activas (dinámico)."""
         reseñas_activas = [r for r in self.reseñas if r.estado == 'activo']
         if not reseñas_activas:
-            return 0
+            return 0.0
         total = sum(reseña.calificacion for reseña in reseñas_activas)
         return round(total / len(reseñas_activas), 1)
+
+    def actualizar_promedio_calificaciones(self):
+        """
+        Actualiza la calificación promedio almacenada del producto
+        basándose en las reseñas activas y guarda el cambio en la base de datos.
+        """
+        reseñas_activas = [r for r in self.reseñas if r.estado == 'activo']
+        if not reseñas_activas:
+            self.calificacion_promedio_almacenada = 0.0
+        else:
+            total = sum(reseña.calificacion for reseña in reseñas_activas)
+            self.calificacion_promedio_almacenada = round(total / len(reseñas_activas), 1)
+        db.session.add(self)
+        db.session.commit() # Guardar el cambio inmediatamente
 
     # Propiedad para verificar si es nuevo
     @property
@@ -160,6 +179,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         CheckConstraint("stock >= 0", name='check_stock_no_negativo'),
         db.Index('idx_producto_seudocategoria_id', 'seudocategoria_id'),
         db.Index('idx_producto_nombre', 'nombre'),
+        db.Index('idx_producto_slug', 'slug'),
         db.Index('idx_producto_estado', 'estado'),
         db.Index('idx_producto_marca', 'marca'),
         db.Index('idx_producto_nombre_lower', db.func.lower(nombre)),
@@ -167,6 +187,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
 
     def __init__(self, nombre, descripcion, precio, imagen_url, stock, seudocategoria_id, marca=None, estado='activo', id=None):
         self.nombre = str(NombreProducto(nombre))
+        self.slug = slugify(self.nombre)
         self.descripcion = str(DescripcionProducto(descripcion))
         if precio is None or precio <= 0:
             raise ValueError("El precio debe ser mayor que 0")
@@ -188,3 +209,4 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         self.estado = estado
         if id:
             self.id = id
+        self.calificacion_promedio_almacenada = 0.0 # Inicializar la nueva columna

@@ -15,9 +15,9 @@ def create_app(config_class=Config):
     # Solo log a consola en producción/serverless (Vercel no permite escribir archivos)
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)
     app.logger.addHandler(console_handler)
-    app.logger.setLevel(logging.INFO)
+    app.logger.setLevel(logging.DEBUG)
     app.logger.info('Logging profesional inicializado (solo consola)')
 
     # Configuración adicional para SQLAlchemy

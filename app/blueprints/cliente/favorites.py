@@ -543,7 +543,7 @@ def favoritos(usuario):
         for like in likes:
             if like.producto:
                 producto_data = producto_to_dict(like.producto)
-                categoria_principal_nombre = producto_data.get('categoria', 'Sin Categoría')
+                categoria_principal_nombre = producto_data.get('categoria_principal_nombre') or 'Sin Categoría'
                 
                 if categoria_principal_nombre not in favoritos_por_categoria:
                     favoritos_por_categoria[categoria_principal_nombre] = []

@@ -9,6 +9,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 from app.utils.jwt_utils import jwt_required
+from flask_login import current_user
 
 products_bp = Blueprint('products', __name__)
 
@@ -92,12 +93,16 @@ def index():
         categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados'
     )
 
-@products_bp.route('/producto/<producto_id>')
-def producto_detalle(producto_id):
+@products_bp.route('/<slug_del_producto>')
+def producto_detalle(slug_del_producto):
     """
     Muestra los detalles de un producto específico
     """
-    producto = Productos.query.get_or_404(producto_id)
+    producto = Productos.query.options(
+        joinedload(Productos.seudocategoria).joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal),
+        joinedload(Productos.reseñas)
+    ).filter_by(slug=slug_del_producto).first_or_404()
+    print(f"DEBUG: Accediendo a producto_detalle con slug: {slug_del_producto}")
     
     # Verificar si el producto está activo
     if producto.estado != 'activo':
@@ -121,7 +126,7 @@ def producto_detalle(producto_id):
             Productos.id != producto.id,
             Productos.estado == 'activo',
             Subcategorias.categoria_principal_id == categoria_principal_id
-        ).all() # Eliminado .limit(4) temporalmente para depuración
+        ).limit(8).all()
 
     print(f"DEBUG: Productos relacionados para {producto.nombre}: {len(productos_relacionados)} productos encontrados.")
     for p in productos_relacionados:
@@ -139,13 +144,11 @@ def producto_detalle(producto_id):
         estado='activo'
     ).order_by(Reseñas.created_at.desc()).all()
 
-    # Calcular calificación promedio
-    calificacion_promedio = db.session.query(
-        db.func.avg(Reseñas.calificacion)
-    ).filter(
-        Reseñas.producto_id == producto.id,
-        Reseñas.estado == 'activo'
-    ).scalar() or 0
+    # Usar la calificación promedio almacenada directamente del producto
+    calificacion_promedio = producto.calificacion_promedio_almacenada
+
+    # Obtener el conteo de reseñas activas
+    reseñas_count = len([r for r in reseñas if r.estado == 'activo'])
 
     # Verificar si el usuario actual ha dado like al producto
     es_favorito = False
@@ -157,14 +160,32 @@ def producto_detalle(producto_id):
         ).first()
         es_favorito = like is not None
     
+    # Obtener nombres de categoría, subcategoría y seudocategoría para el breadcrumb
+    main_category_name = None
+    subcategory_name = None
+    pseudocategory_name = None
+
+    if producto.seudocategoria:
+        pseudocategory_name = producto.seudocategoria.nombre
+        if producto.seudocategoria.subcategoria:
+            subcategory_name = producto.seudocategoria.subcategoria.nombre
+            if producto.seudocategoria.subcategoria.categoria_principal:
+                main_category_name = producto.seudocategoria.subcategoria.categoria_principal.nombre
+
     return render_template(
         'cliente/componentes/producto_detalle.html',
         producto=producto,
         productos_relacionados=productos_relacionados_data,
         reseñas=reseñas,
-        calificacion_promedio=round(float(calificacion_promedio), 1),
+        calificacion_promedio=calificacion_promedio,
         es_favorito=es_favorito,
-        title=f"{producto.nombre} - YE & CY Cosméticos"
+        title=f"{producto.nombre} - YE & Ci Cosméticos",
+        main_category_name=main_category_name,
+        subcategory_name=subcategory_name,
+        pseudocategory_name=pseudocategory_name,
+        current_user=current_user, # Pasar el usuario actual al template
+        es_nuevo=producto.es_nuevo, # Pasar el indicador de producto nuevo
+        reseñas_count=reseñas_count # Pasar el conteo de reseñas
     )
 
 @products_bp.route('/buscar')
@@ -191,15 +212,12 @@ def buscar():
         }), 400
 
     try:
-        # Registrar búsqueda
-        BusquedaTermino.registrar(query)
-
         # Búsqueda mejorada con prioridad
         productos = Productos.query.filter(
             db.or_(
-                Productos.nombre.ilike(f'%{query}%'),
-                Productos.marca.ilike(f'%{query}%'),
-                Productos.descripcion.ilike(f'%{query}%')
+                Productos.nombre.ilike(f'{query}%'),
+                Productos.marca.ilike(f'{query}%'),
+                Productos.descripcion.ilike(f'{query}%')
             ),
             Productos.estado == 'activo'
         ).order_by(
@@ -230,3 +248,66 @@ def buscar():
             'resultados': [],
             'sugerencias': [s.termino for s in sugerencias]
         }), 500
+
+@products_bp.route('/log_search_click', methods=['POST'])
+def log_search_click():
+    data = request.get_json()
+    product_id = data.get('product_id')
+    query = data.get('query', '').strip().lower()
+
+    if not product_id or not query:
+        return jsonify({'status': 'error', 'message': 'Datos incompletos'}), 400
+
+    terminos_a_registrar = _extraer_terminos_de_producto(product_id, query)
+    
+    if terminos_a_registrar:
+        BusquedaTermino.registrar_batch(list(terminos_a_registrar))
+
+    return jsonify({'status': 'success'}), 200
+
+@products_bp.route('/log_search_terms_batch', methods=['POST'])
+def log_search_terms_batch():
+    data = request.get_json()
+    if not data or 'terminos' not in data or not isinstance(data['terminos'], list):
+        return jsonify({'status': 'error', 'message': 'Datos inválidos'}), 400
+
+    terminos_a_registrar = set()
+    
+    for item in data['terminos']:
+        product_id = item.get('product_id')
+        query = item.get('query', '').strip().lower()
+        if product_id and query:
+            terminos_del_item = _extraer_terminos_de_producto(product_id, query)
+            terminos_a_registrar.update(terminos_del_item)
+
+    if terminos_a_registrar:
+        BusquedaTermino.registrar_batch(list(terminos_a_registrar))
+
+    return jsonify({'status': 'success'}), 200
+
+def _extraer_terminos_de_producto(product_id, query):
+    producto = Productos.query.get(product_id)
+    if not producto:
+        return set()
+
+    terminos = set()
+    # 1. Comparar con el nombre del producto
+    if query in producto.nombre.lower():
+        terminos.add(producto.nombre)
+
+    # 2. Comparar con la marca del producto
+    if producto.marca and query in producto.marca.lower():
+        terminos.add(producto.marca)
+
+    # 3. Comparar con las categorías
+    if producto.seudocategoria:
+        if query in producto.seudocategoria.nombre.lower():
+            terminos.add(producto.seudocategoria.nombre)
+        if producto.seudocategoria.subcategoria:
+            if query in producto.seudocategoria.subcategoria.nombre.lower():
+                terminos.add(producto.seudocategoria.subcategoria.nombre)
+            if producto.seudocategoria.subcategoria.categoria_principal and \
+               query in producto.seudocategoria.subcategoria.categoria_principal.nombre.lower():
+                terminos.add(producto.seudocategoria.subcategoria.categoria_principal.nombre)
+                
+    return terminos

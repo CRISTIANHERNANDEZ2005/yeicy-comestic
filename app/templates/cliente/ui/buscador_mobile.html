@@ -392,13 +392,27 @@
                         </svg>
                     </div>
                 `;
-                div.addEventListener('click', () => {
+                div.addEventListener('click', async () => {
                     console.log('Producto clickeado Mobile:', producto.id, producto.nombre);
-                    window.location.href = `/producto/${
-                        producto.id
-                    }`;
+                    await logSearchClick(producto, searchInputMobile.value.trim());
+                    window.location.href = `/${producto.slug}`;
                 });
                 resultadosListMobile.appendChild(div);
+            });
+        }
+
+        function logSearchClick(producto, query) {
+            const data = {
+                product_id: producto.id,
+                query: query
+            };
+            return fetch('/log_search_click', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                keepalive: true
             });
         }
 

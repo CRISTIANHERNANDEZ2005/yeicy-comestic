@@ -57,12 +57,20 @@ def seudocategoria_to_dict(seudo):
 
 def producto_to_dict(prod):
     categoria_principal_nombre = None
-    if prod.seudocategoria and prod.seudocategoria.subcategoria and prod.seudocategoria.subcategoria.categoria_principal:
-        categoria_principal_nombre = prod.seudocategoria.subcategoria.categoria_principal.nombre
+    subcategoria_nombre = None
+    seudocategoria_nombre = None
+
+    if (seudocategoria := getattr(prod, 'seudocategoria', None)):
+        seudocategoria_nombre = getattr(seudocategoria, 'nombre', None)
+        if (subcategoria := getattr(seudocategoria, 'subcategoria', None)):
+            subcategoria_nombre = getattr(subcategoria, 'nombre', None)
+            if (categoria_principal := getattr(subcategoria, 'categoria_principal', None)):
+                categoria_principal_nombre = getattr(categoria_principal, 'nombre', None)
 
     return {
         'id': prod.id,
         'nombre': prod.nombre,
+        'slug': prod.slug,
         'descripcion': prod.descripcion,
         'precio': prod.precio,
         'imagen_url': prod.imagen_url,
@@ -72,7 +80,12 @@ def producto_to_dict(prod):
         'estado': prod.estado,
         'created_at': prod.created_at.isoformat() if prod.created_at else None,
         'updated_at': prod.updated_at.isoformat() if prod.updated_at else None,
-        'categoria': categoria_principal_nombre # Add the main category name
+        'categoria_principal_nombre': categoria_principal_nombre,
+        'subcategoria_nombre': subcategoria_nombre,
+        'seudocategoria_nombre': seudocategoria_nombre,
+        'calificacion_promedio': prod.calificacion_promedio_almacenada,
+        'es_nuevo': prod.es_nuevo,
+        'reseñas_count': len([r for r in prod.reseñas if r.estado == 'activo'])
     }
 
 def like_to_dict(like):
@@ -94,7 +107,8 @@ def resena_to_dict(resena):
         'calificacion': resena.calificacion,
         'estado': resena.estado,
         'created_at': resena.created_at.isoformat() if resena.created_at else None,
-        'updated_at': resena.updated_at.isoformat() if resena.updated_at else None
+        'updated_at': resena.updated_at.isoformat() if resena.updated_at else None,
+        'usuario': usuario_to_dict(resena.usuario) if resena.usuario else None # Add user details
     }
 
 

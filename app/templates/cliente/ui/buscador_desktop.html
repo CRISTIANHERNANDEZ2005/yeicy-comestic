@@ -325,11 +325,27 @@
                         <p class="text-pink-600 font-bold text-lg">$${producto.precio.toLocaleString()}</p>
                     </div>
                 `;
-                div.addEventListener('click', () => {
+                div.addEventListener('click', async () => {
                     console.log('Producto clickeado Desktop:', producto.id, producto.nombre);
-                    window.location.href = `/producto/${producto.id}`;
+                    await logSearchClick(producto, searchInputDesktop.value.trim());
+                    window.location.href = `/${producto.slug}`;
                 });
                 resultadosListDesktop.appendChild(div);
+            });
+        }
+
+        function logSearchClick(producto, query) {
+            const data = {
+                product_id: producto.id,
+                query: query
+            };
+            return fetch('/log_search_click', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+                keepalive: true
             });
         }
 

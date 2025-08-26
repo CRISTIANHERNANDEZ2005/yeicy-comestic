@@ -342,28 +342,40 @@ if (typeof FavoritesManager === "undefined") {
       if (!button) return;
 
       const svg = button.querySelector("svg");
-      if (!svg) return;
+      const favoriteText = button.querySelector(".favorite-text");
 
       if (isFavorite) {
-        button.classList.add("text-red-500");
-        button.classList.remove("text-gray-400");
+        button.classList.add("border-pink-500", "text-pink-600");
+        button.classList.remove("border-gray-300", "text-gray-700");
         button.setAttribute("aria-label", "Eliminar de favoritos");
         button.setAttribute("title", "Eliminar de favoritos");
 
-        // Cambiar el ícono a corazón lleno
-        svg.innerHTML = `
-        <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" fill="currentColor"/>
-      `;
+        if (svg) {
+            // Cambiar el ícono a corazón lleno
+            svg.innerHTML =
+              `
+            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" fill="currentColor"/>
+          `;
+        }
+        if (favoriteText) {
+            favoriteText.textContent = "Añadido";
+        }
       } else {
-        button.classList.remove("text-red-500");
-        button.classList.add("text-gray-400");
+        button.classList.remove("border-pink-500", "text-pink-600");
+        button.classList.add("border-gray-300", "text-gray-700");
         button.setAttribute("aria-label", "Añadir a favoritos");
         button.setAttribute("title", "Añadir a favoritos");
 
-        // Cambiar el ícono a corazón vacío
-        svg.innerHTML = `
-        <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" fill="none" stroke="currentColor" stroke-width="1.5"/>
-      `;
+        if (svg) {
+            // Cambiar el ícono a corazón vacío
+            svg.innerHTML =
+              `
+            <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" fill="none" stroke="currentColor" stroke-width="1.5"/>
+          `;
+        }
+        if (favoriteText) {
+            favoriteText.textContent = "Guardar";
+        }
       }
     }
 
@@ -491,11 +503,15 @@ if (typeof FavoritesManager === "undefined") {
       // Si estamos en la página de favoritos, aplicamos un efecto visual a la tarjeta del producto.
       const isOnFavoritesPage = window.location.pathname.includes("favoritos");
       if (isOnFavoritesPage && buttonElement) {
-        const productCard = buttonElement.closest('.product-card');
+        const productCard = buttonElement.closest(".product-card");
         if (productCard) {
           // Si el producto se añade a favoritos, se quita el estado opaco.
           // Si se elimina, se añade el estado opaco.
-          productCard.classList.toggle('favorite-removed-state', !newState);
+          productCard.classList.toggle("favorite-removed-state", !newState);
+
+          // Update category counter
+          const categoryName = productCard.getAttribute("data-category-name");
+          this.updateCategoryCounter(categoryName, newState);
         }
       }
       // FIN: Cambio para opacidad en página de favoritos
@@ -532,62 +548,91 @@ if (typeof FavoritesManager === "undefined") {
     async _syncWithServerInBackground(buttonElement, productIdNum, newState) {
       this.syncQueue = this.syncQueue.then(async () => {
         try {
-          const token = window.auth?.getAuthToken?.() || this.getCookie("access_token");
-          if (!token) throw new Error("No se encontró el token de autenticación");
+          const token =
+            window.auth?.getAuthToken?.() || this.getCookie("access_token");
+          if (!token)
+            throw new Error("No se encontró el token de autenticación");
 
-          const response = await this.fetchWithTimeout(`/api/favoritos`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-              "X-Requested-With": "XMLHttpRequest",
+          const response = await this.fetchWithTimeout(
+            `/api/favoritos`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                "X-Requested-With": "XMLHttpRequest",
+              },
+              body: JSON.stringify({
+                producto_id: String(productIdNum),
+                accion: newState ? "agregar" : "eliminar",
+              }),
             },
-            body: JSON.stringify({
-              producto_id: String(productIdNum),
-              accion: newState ? "agregar" : "eliminar",
-            }),
-          }, 10000);
+            10000
+          );
 
           if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.error || `Error del servidor: ${response.status} ${response.statusText}`);
+            throw new Error(
+              errorData.error ||
+                `Error del servidor: ${response.status} ${response.statusText}`
+            );
           }
 
           const result = await response.json();
           if (!result.success) {
-            throw new Error(result.message || "Error al actualizar favoritos en el servidor");
+            throw new Error(
+              result.message || "Error al actualizar favoritos en el servidor"
+            );
           }
 
           console.log(`Sincronización exitosa para producto ${productIdNum}`);
-
         } catch (error) {
-          if (error.message.includes("autenticación") || error.message.includes("token") || error.message.includes("401")) {
-            console.group(`Fallo de autenticación para producto: ${productIdNum}`);
+          if (
+            error.message.includes("autenticación") ||
+            error.message.includes("token") ||
+            error.message.includes("401")
+          ) {
+            console.group(
+              `Fallo de autenticación para producto: ${productIdNum}`
+            );
             console.error("Error original:", error);
-            console.warn(`Revertiendo cambio para el producto ${productIdNum}.`);
+            console.warn(
+              `Revertiendo cambio para el producto ${productIdNum}.`
+            );
             console.groupEnd();
 
             if (newState) this.favoriteProducts.delete(productIdNum);
             else this.favoriteProducts.add(productIdNum);
-            
+
             this.updateFavoriteButton(buttonElement, !newState);
             this.updateFavoritesCounter();
             this.saveLocalFavorites();
 
             // Revertir el cambio visual si falla la autenticación
-            const isOnFavoritesPage = window.location.pathname.includes("favoritos");
+            const isOnFavoritesPage =
+              window.location.pathname.includes("favoritos");
             if (isOnFavoritesPage && buttonElement) {
-                const productCard = buttonElement.closest('.product-card');
-                if (productCard) {
-                    productCard.classList.toggle('favorite-removed-state', !newState);
-                }
+              const productCard = buttonElement.closest(".product-card");
+              if (productCard) {
+                productCard.classList.toggle(
+                  "favorite-removed-state",
+                  !newState
+                );
+              }
             }
 
-            this._showNotification("Sesión expirada. Por favor, inicia sesión de nuevo.", "error");
+            this._showNotification(
+              "Sesión expirada. Por favor, inicia sesión de nuevo.",
+              "error"
+            );
           } else {
-            console.group(`Fallo en sincronización de favorito: ${productIdNum}`);
+            console.group(
+              `Fallo en sincronización de favorito: ${productIdNum}`
+            );
             console.error("Error original:", error);
-            console.warn("El cambio se ha guardado localmente y se sincronizará automáticamente más tarde.");
+            console.warn(
+              "El cambio se ha guardado localmente y se sincronizará automáticamente más tarde."
+            );
             console.groupEnd();
           }
         } finally {
@@ -598,7 +643,10 @@ if (typeof FavoritesManager === "undefined") {
       try {
         await this.syncQueue;
       } catch (queueError) {
-        console.error("Error en la cola de sincronización de favoritos:", queueError);
+        console.error(
+          "Error en la cola de sincronización de favoritos:",
+          queueError
+        );
       }
     }
 
@@ -617,9 +665,7 @@ if (typeof FavoritesManager === "undefined") {
 
       // Si ya hay una sincronización en curso, no hacer nada
       if (this.syncInProgress) {
-        console.warn(
-          "⏳ Sincronización ya en curso, syncWithServer ignorado"
-        );
+        console.warn("⏳ Sincronización ya en curso, syncWithServer ignorado");
         return { success: false, synced: false, reason: "En curso" };
       }
       this.syncInProgress = true;
@@ -702,11 +748,13 @@ if (typeof FavoritesManager === "undefined") {
     }
 
     updateFavoritesCounter() {
-      const count = Array.from(this.favoriteProducts).filter(id => typeof id === 'string' && id.length > 0).length;
+      const count = Array.from(this.favoriteProducts).filter(
+        (id) => typeof id === "string" && id.length > 0
+      ).length;
 
       // Update general counter in navbar
       const counters = document.querySelectorAll("#favorites-counter");
-      counters.forEach(counter => {
+      counters.forEach((counter) => {
         if (counter) {
           counter.textContent = count;
           counter.classList.toggle("hidden", count === 0);
@@ -716,14 +764,47 @@ if (typeof FavoritesManager === "undefined") {
       // Update specific counter on favorites page
       const pageCounter = document.getElementById("favorites-page-counter");
       if (pageCounter) {
-        pageCounter.textContent = `${count} ${count === 1 ? 'producto' : 'productos'}`;
+        pageCounter.textContent = `${count} ${ 
+          count === 1 ? "producto guardado" : "productos guardados"
+        }`;
       }
 
-      document.dispatchEvent(new CustomEvent("favorites:countUpdated", {
-        detail: { count }
-      }));
+      document.dispatchEvent(
+        new CustomEvent("favorites:countUpdated", {
+          detail: { count },
+        })
+      );
 
       console.log(`Contador de favoritos actualizado: ${count} productos`);
+    }
+
+    slugify(text) {
+      if (!text) return '';
+      return text.toString().toLowerCase()
+        .replace(/\s+/g, '-')           // Replace spaces with -
+        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
+        .replace(/^-+/, '')             // Trim - from start of text
+        .replace(/-+$/, '');            // Trim - from end of text
+    }
+
+    updateCategoryCounter(categoryName, isFavorite) {
+        if (!categoryName) return;
+        const categorySlug = this.slugify(categoryName);
+        const counterElement = document.getElementById(`category-count-${categorySlug}`);
+
+        if (counterElement) {
+            try {
+                const currentCountMatch = counterElement.textContent.match(/\d+/);
+                if (currentCountMatch) {
+                    let currentCount = parseInt(currentCountMatch[0], 10);
+                    const newCount = isFavorite ? currentCount + 1 : Math.max(0, currentCount - 1);
+                    counterElement.textContent = `${newCount} ${newCount === 1 ? 'item' : 'items'}`;
+                }
+            } catch (e) {
+                console.error("Error updating category counter:", e);
+            }
+        }
     }
 
     async loadFavorites() {
@@ -903,7 +984,8 @@ if (typeof FavoritesManager === "undefined") {
       // Mostrar estado vacío en la página de favoritos
       const productsGrid = document.querySelector(".grid");
       if (productsGrid) {
-        productsGrid.innerHTML = `
+        productsGrid.innerHTML =
+          `
         <div class="col-span-full text-center py-16 bg-white rounded-xl shadow-sm">
           <div class="max-w-md mx-auto">
             <div class="w-20 h-20 mx-auto mb-4 text-gray-300">

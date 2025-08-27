@@ -71,24 +71,28 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         secret = current_app.config.get('SECRET_KEY', 'super-secret')
         return jwt.encode(payload, secret, algorithm='HS256')
 
-    @classmethod
-    def verificar_jwt(cls, token):
-        """Verifica un token JWT y devuelve el usuario si es válido"""
-        from flask import current_app
+    @staticmethod
+    def verificar_jwt(token):
         import jwt
-        from jwt import ExpiredSignatureError, InvalidTokenError
-        secret = current_app.config.get('SECRET_KEY', 'super-secret')
+        from flask import current_app
         try:
+            secret = current_app.config.get('SECRET_KEY', 'super-secret')
             payload = jwt.decode(token, secret, algorithms=['HS256'])
             user_id = payload.get('user_id')
-            if not user_id:
-                return None
-            usuario = cls.query.get(user_id)
-            return usuario
-        except ExpiredSignatureError:
+            if user_id:
+                return Usuarios.query.get(user_id)
             return None
-        except InvalidTokenError:
+        except jwt.ExpiredSignatureError:
+            current_app.logger.warning("Token JWT expirado.")
             return None
+        except jwt.InvalidTokenError:
+            current_app.logger.warning("Token JWT inválido.")
+            return None
+        except Exception as e:
+            current_app.logger.error(f"Error al verificar JWT: {e}")
+            return None
+
+    
 
     # id y timestamps heredados de los mixins
     numero: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)

@@ -514,13 +514,13 @@
                             </p>
                         </div>
                         <div class="flex items-center mb-2">
-                            <div class="flex space-x-0.5">
+                            <div class="flex space-x-0.5" data-rating-stars="${producto.id}">
                                 ${generateOptimizedStars(
                                   producto.calificacion_promedio || 0
                                 )}
                             </div>
-                            <span class="text-xs text-gray-500 ml-1">(${
-                              producto.reseñas || 0
+                            <span class="text-xs text-gray-500 ml-1" data-rating-count="${producto.id}">(${
+                              producto.reseñas_count || 0
                             } reseñas)</span>
                         </div>
                         <div class="flex items-center justify-between mt-auto pt-2">

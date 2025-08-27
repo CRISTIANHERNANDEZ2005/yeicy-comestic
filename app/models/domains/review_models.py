@@ -5,7 +5,7 @@ from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
 from app.models.enums import EstadoEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from app.models.domains.user_models import Usuarios
     from app.models.domains.product_models import Productos
@@ -61,7 +61,7 @@ class Likes(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.M
 
 
 
-class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, db.Model):
     __tablename__ = 'reseñas'
 
     # id y timestamps heredados de los mixins
@@ -69,6 +69,7 @@ class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, d
     producto_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('productos.id'), nullable=False)
     texto: Mapped[str] = mapped_column(db.String(1000), nullable=False)
     calificacion: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    titulo: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True) # Added this line
     # estado ya está en el mixin
     usuario: Mapped['Usuarios'] = relationship('Usuarios', back_populates='reseñas')
     producto: Mapped['Productos'] = relationship('Productos', back_populates='reseñas')
@@ -83,7 +84,7 @@ class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, d
         db.Index('idx_reseña_producto_id', 'producto_id'),
     )
 
-    def __init__(self, usuario_id, producto_id, texto, calificacion, estado='activo', id=None):
+    def __init__(self, usuario_id, producto_id, texto, calificacion, titulo=None, id=None): # Modified signature
         if not usuario_id:
             raise ValueError("Debe indicar el usuario")
         if not producto_id:
@@ -92,9 +93,7 @@ class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, d
         self.producto_id = producto_id
         self.texto = str(TextoResena(texto))
         self.calificacion = int(Calificacion(calificacion))
-        if estado not in EstadoEnum._value2member_map_:
-            raise ValueError("El estado debe ser 'activo' o 'inactivo'")
-        self.estado = estado
+        self.titulo = titulo # Added this line
         if id:
             self.id = id
 

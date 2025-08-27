@@ -131,7 +131,7 @@ if (typeof FavoritesManager === "undefined") {
               console.error("Error al cargar favoritos del servidor:", error);
               // Mostrar notificación solo si no hay datos locales
               if (this.favoriteProducts.size === 0) {
-                this.showNotification(
+                this._showNotification(
                   "No se pudieron cargar los favoritos. Verifica tu conexión e intenta recargar la página.",
                   "error"
                 );
@@ -1295,7 +1295,7 @@ if (typeof FavoritesManager === "undefined") {
         if (error.message.includes("Sesión expirada")) {
           this.showAuthModal(error.message);
         } else {
-          this.showNotification(
+          this._showNotification(
             "Error al cargar tus favoritos. Intenta recargar la página.",
             "error"
           );
@@ -1547,7 +1547,7 @@ if (typeof FavoritesManager === "undefined") {
         console.log("Nuevo estado guardado en localStorage:", cleanState);
 
         if (showNotification) {
-          this.showNotification(
+          this._showNotification(
             "✅ Se ha limpiado la caché local correctamente",
             "success",
             3000
@@ -1560,7 +1560,7 @@ if (typeof FavoritesManager === "undefined") {
         console.error("❌ Error al limpiar la caché local:", error);
 
         if (showNotification) {
-          this.showNotification(
+          this._showNotification(
             "❌ Error al limpiar la caché local",
             "error",
             5000
@@ -1605,7 +1605,7 @@ if (typeof FavoritesManager === "undefined") {
 
       // Notificar al usuario si se eliminaron elementos
       if (keysToRemove.length > 0) {
-        this.showNotification(
+        this._showNotification(
           `Se limpiaron ${keysToRemove.length} elementos antiguos de la caché`,
           "info"
         );

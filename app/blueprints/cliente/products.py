@@ -140,15 +140,14 @@ def producto_detalle(slug_del_producto):
 
     # Obtener reseñas del producto
     reseñas = Reseñas.query.filter_by(
-        producto_id=producto.id,
-        estado='activo'
+        producto_id=producto.id
     ).order_by(Reseñas.created_at.desc()).all()
 
     # Usar la calificación promedio almacenada directamente del producto
     calificacion_promedio = producto.calificacion_promedio_almacenada
 
-    # Obtener el conteo de reseñas activas
-    reseñas_count = len([r for r in reseñas if r.estado == 'activo'])
+    # Obtener el conteo de reseñas
+    reseñas_count = len(reseñas)
 
     # Verificar si el usuario actual ha dado like al producto
     es_favorito = False

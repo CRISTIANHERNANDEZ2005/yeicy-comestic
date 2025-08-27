@@ -143,6 +143,47 @@ function registerGlobalEventListeners() {
 }
 
 /**
+ * Genera el HTML para las estrellas de calificación.
+ * @param {number} rating - La calificación (de 1 a 5).
+ * @returns {string} El HTML de las estrellas.
+ */
+function generateStarsHTML(rating) {
+  let stars = '';
+  const roundedRating = Math.round(rating);
+  for (let i = 1; i <= 5; i++) {
+    stars += `<svg class="w-5 h-5 ${i <= roundedRating ? 'text-yellow-400' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+  }
+  return stars;
+}
+
+/**
+ * Actualiza la visualización de la calificación de un producto en toda la página.
+ * @param {string} productId - El ID del producto.
+ * @param {number} averageRating - La nueva calificación promedio.
+ * @param {number} totalReviewsCount - El nuevo número total de reseñas.
+ */
+function updateProductRatingDisplay(productId, averageRating, totalReviewsCount) {
+  // Actualizar estrellas
+  const starContainers = document.querySelectorAll(`[data-rating-stars="${productId}"]`);
+  starContainers.forEach(container => {
+    container.innerHTML = generateStarsHTML(averageRating);
+  });
+
+  // Actualizar el valor numérico del promedio
+  const ratingValueElements = document.querySelectorAll(`[data-rating-value="${productId}"]`);
+  ratingValueElements.forEach(el => {
+    el.textContent = (averageRating || 0).toFixed(1);
+  });
+
+  // Actualizar el contador de reseñas
+  const reviewCountElements = document.querySelectorAll(`[data-rating-count="${productId}"]`);
+  reviewCountElements.forEach(el => {
+    el.textContent = `${totalReviewsCount} reseña(s)`;
+  });
+}
+
+
+/**
  * Función principal de inicialización que se ejecuta cuando el DOM está listo.
  */
 function main() {

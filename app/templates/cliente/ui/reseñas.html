@@ -1,365 +1,1025 @@
-<!-- Contenedor Principal de Reseñas -->
-<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    
-    <!-- Header Superior con Estadísticas -->
-    <div class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-8 mb-8">
-        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-            <div>
-                <h2 class="text-4xl font-bold text-gray-900 mb-2">
-                    Reseñas de clientes
-                </h2>
-                <div class="flex items-center space-x-4">
-                    <div class="flex items-center">
-                        <div class="flex">
-                            {% for i in range(5) %}
-                            <svg class="w-6 h-6 {% if i < calificacion_promedio|int %}text-yellow-400 fill-current{% else %}text-gray-300{% endif %}" 
-                                 viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                            {% endfor %}
-                        </div>
-                        <span class="ml-2 text-lg font-semibold text-gray-700">
-                            {{ calificacion_promedio|float|round(1) }} de 5
-                        </span>
-                    </div>
-                    <span class="text-gray-600">
-                        · {{ reseñas|length }} reseñ{{ 'a' if reseñas|length == 1 else 'ñas' }}
-                    </span>
-                </div>
-            </div>
-            
-            <!-- Botón de Escribir Reseña - Posicionado elegantemente -->
-            <div class="mt-4 lg:mt-0">
-                <button type="button" 
-                        class="group flex items-center space-x-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-pink-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg">
-                    <svg class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300" 
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-                    </svg>
-                    <span>Escribir reseña</span>
-                </button>
-            </div>
-        </div>
-    </div>
+<!-- Contenedor Principal de Reseñas con Real-Time -->
+<div
+  class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
+  id="reviews-container"
+>
+  <!-- Header con Stats Animadas -->
+  <div class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-8 mb-8">
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h2 class="text-4xl font-bold text-gray-900 mb-2">
+          Experiencias de Clientes
+        </h2>
 
-    <!-- Filtros y Ordenamiento -->
-    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 space-y-4 sm:space-y-0">
+        <!-- Stats con Animación de Contador -->
         <div class="flex items-center space-x-4">
-            <label class="text-sm font-medium text-gray-700">Filtrar por:</label>
-            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent">
-                <option>Todas las calificaciones</option>
-                <option>5 estrellas</option>
-                <option>4 estrellas</option>
-                <option>3 estrellas</option>
-                <option>2 estrellas</option>
-                <option>1 estrella</option>
-            </select>
-        </div>
-        
-        <div class="flex items-center space-x-4">
-            <label class="text-sm font-medium text-gray-700">Ordenar por:</label>
-            <select class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 focus:border-transparent">
-                <option>Más recientes</option>
-                <option>Más antiguas</option>
-                <option>Mejor valoradas</option>
-                <option>Peor valoradas</option>
-            </select>
-        </div>
-    </div>
-
-    {% if reseñas %}
-    <!-- Grid de Reseñas con Diseño de Tarjetas Premium -->
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {% for reseña in reseñas %}
-        <!-- Tarjeta de Reseña Individual -->
-        <article class="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden">
-            <!-- Header de la Reseña -->
-            <div class="p-6 border-b border-gray-100">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center space-x-4">
-                        <!-- Avatar del Usuario -->
-                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-pink-400 to-purple-400 flex items-center justify-center">
-                            <span class="text-white font-bold text-lg">
-                                {{ reseña.usuario.nombre[0] if reseña.usuario else 'A' }}
-                            </span>
-                        </div>
-                        
-                        <!-- Info del Usuario -->
-                        <div>
-                            <h4 class="font-semibold text-gray-900">
-                                {{ reseña.usuario.nombre if reseña.usuario else 'Anónimo' }}
-                                {% if reseña.usuario and reseña.usuario.verificado %}
-                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                    Verificado
-                                </span>
-                                {% endif %}
-                            </h4>
-                            <div class="flex items-center mt-1">
-                                <!-- Estrellas con detalles -->
-                                <div class="flex items-center">
-                                    {% for i in range(1, 6) %}
-                                    <svg class="w-5 h-5 {% if i <= reseña.calificacion %}text-yellow-400 fill-current{% else %}text-gray-300{% endif %} transition-colors duration-200" 
-                                         viewBox="0 0 20 20">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                    </svg>
-                                    {% endfor %}
-                                </div>
-                                <span class="ml-2 text-sm text-gray-500">
-                                    {{ reseña.calificacion }}.0
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <!-- Fecha y Opciones -->
-                    <div class="text-right">
-                        <time class="text-sm text-gray-500">
-                            {{ reseña.fecha_creacion.strftime('%d %b, %Y') }}
-                        </time>
-                        <div class="mt-1">
-                            <button class="text-gray-400 hover:text-gray-600 transition-colors">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"/>
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </div>
+          <div class="flex items-center">
+            <div class="flex" data-rating-stars="{{ producto.id }}" id="average-rating">
+              <!-- Skeleton mientras carga -->
+              <div class="skeleton-rating"></div>
             </div>
-            
-            <!-- Contenido de la Reseña -->
-            <div class="p-6">
-                <!-- Título de la Reseña -->
-                <h5 class="font-semibold text-gray-900 mb-2">
-                    {% if reseña.titulo %}
-                        {{ reseña.titulo }}
-                    {% else %}
-                        Excelente producto
-                    {% endif %}
-                </h5>
-                
-                <!-- Texto de la Reseña -->
-                <p class="text-gray-600 leading-relaxed mb-4">
-                    {{ reseña.comentario }}
-                </p>
-                
-                <!-- Imágenes de la Reseña (si existen) -->
-                {% if reseña.imagenes %}
-                <div class="flex space-x-2 mb-4">
-                    {% for imagen in reseña.imagenes[:3] %}
-                    <div class="w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
-                        <img src="{{ imagen.url }}" alt="Imagen de reseña" class="w-full h-full object-cover">
-                    </div>
-                    {% endfor %}
-                    {% if reseña.imagenes|length > 3 %}
-                    <div class="w-20 h-20 rounded-lg bg-gray-100 flex items-center justify-center text-sm text-gray-500">
-                        +{{ reseña.imagenes|length - 3 }}
-                    </div>
-                    {% endif %}
-                </div>
-                {% endif %}
-                
-                <!-- Footer de la Reseña -->
-                <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div class="flex items-center space-x-4 text-sm">
-                        <button class="flex items-center space-x-1 text-gray-500 hover:text-pink-600 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/>
-                            </svg>
-                            <span>Útil ({{ reseña.utiles|default(0) }})</span>
-                        </button>
-                        <button class="flex items-center space-x-1 text-gray-500 hover:text-pink-600 transition-colors">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                            </svg>
-                            <span>Comentar</span>
-                        </button>
-                    </div>
-                    
-                    <!-- Etiquetas -->
-                    {% if reseña.etiquetas %}
-                    <div class="flex space-x-2">
-                        {% for etiqueta in reseña.etiquetas %}
-                        <span class="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                            {{ etiqueta }}
-                        </span>
-                        {% endfor %}
-                    </div>
-                    {% endif %}
-                </div>
-            </div>
-        </article>
-        {% endfor %}
+            <span class="ml-2 text-lg font-semibold text-gray-700">
+              <span data-rating-value="{{ producto.id }}" id="avg-rating-value" class="counter">0.0</span>/5
+            </span>
+          </div>
+          <span class="text-gray-600">
+            · <span data-rating-count="{{ producto.id }}" id="total-reviews" class="counter">0</span> reseñas
+          </span>
+        </div>
+      </div>
+
+      <!-- Botón Inteligente con Estado -->
+      <div class="mt-4 lg:mt-0">
+        <button
+          type="button"
+          id="write-review-btn"
+          data-action="write-review"
+          class="group flex items-center space-x-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-pink-700 hover:to-purple-700 transition-all duration-300 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled
+        >
+          <svg
+            class="w-5 h-5 group-hover:rotate-12 transition-transform duration-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+            />
+          </svg>
+          <span id="write-review-text">Cargando...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filtros Avanzados con Chips -->
+  <div
+    class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 space-y-4 sm:space-y-0"
+  >
+    <div class="flex items-center space-x-4">
+      <label class="text-sm font-medium text-gray-700">Filtrar:</label>
+      <div class="flex space-x-2" id="rating-filters">
+        <!-- Chips de filtrado dinámico -->
+      </div>
     </div>
 
-    <!-- Paginación -->
-    <div class="flex items-center justify-between mt-12">
-        <div class="text-sm text-gray-600">
-            Mostrando {{ reseñas|length }} de {{ reseñas|length }} reseñas
-        </div>
-        <div class="flex space-x-2">
-            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Anterior
-            </button>
-            <button class="px-4 py-2 border border-pink-500 bg-pink-50 text-pink-600 rounded-lg text-sm font-medium">
-                1
-            </button>
-            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                2
-            </button>
-            <button class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                Siguiente
-            </button>
-        </div>
-    </div>
-
-    {% else %}
-    <!-- Estado Vacío Mejorado -->
-    <div class="text-center py-20">
-        <div class="inline-flex items-center justify-center w-20 h-20 bg-pink-100 rounded-full mb-6">
-            <svg class="w-10 h-10 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" 
-                      d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
-            </svg>
-        </div>
-        <h3 class="text-2xl font-semibold text-gray-900 mb-2">Aún no hay reseñas</h3>
-        <p class="text-gray-600 mb-6 max-w-md mx-auto">
-            Sé el primero en compartir tu experiencia con este producto y ayuda a otros clientes a tomar la mejor decisión.
-        </p>
-        <button type="button" 
-                class="inline-flex items-center space-x-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:from-pink-700 hover:to-purple-700 transition-all duration-300">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
-            </svg>
-            <span>Escribir la primera reseña</span>
+    <div class="flex items-center space-x-4">
+      <label class="text-sm font-medium text-gray-700">Ordenar:</label>
+      <select
+        id="sort-order"
+        class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 bg-white"
+      >
+        <option value="newest">Más recientes</option>
+        <option value="oldest">Más antiguas</option>
+        <option value="rating_desc">Mejor valoradas</option>
+        <option value="rating_asc">Peor valoradas</option>
+      </select>
+        <!-- New clear filters button -->
+        <button
+          type="button"
+          id="clear-filters-btn"
+          data-action="clear-filters"
+          class="p-2 rounded-full bg-gray-100 text-gray-600 hover:bg-red-100 hover:text-red-600 transition-colors duration-200"
+          title="Limpiar filtros"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
         </button>
     </div>
-    {% endif %}
-</div>
+  </div>
 
-<!-- Modal de Escribir Reseña (oculto por defecto) -->
-<div id="reviewModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-    <div class="flex items-center justify-center min-h-screen p-4">
-        <div class="bg-white rounded-2xl max-w-2xl w-full p-8">
-            <div class="flex items-center justify-between mb-6">
-                <h3 class="text-2xl font-bold text-gray-900">Escribir una reseña</h3>
-                <button class="text-gray-400 hover:text-gray-600">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                    </svg>
-                </button>
-            </div>
-            
-            <!-- Formulario de reseña -->
-            <form class="space-y-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Calificación</label>
-                    <div class="flex space-x-2">
-                        {% for i in range(1, 6) %}
-                        <button type="button" class="star-rating text-gray-300 hover:text-yellow-400 transition-colors">
-                            <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                            </svg>
-                        </button>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Título de la reseña</label>
-                    <input type="text" 
-                           class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                           placeholder="Resume tu experiencia">
-                </div>
-                
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Tu reseña</label>
-                    <textarea rows="4" 
-                              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                              placeholder="Comparte tu experiencia con este producto..."></textarea>
-                </div>
-                
-                <div class="flex justify-end space-x-4">
-                    <button type="button" 
-                            class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                        Cancelar
-                    </button>
-                    <button type="submit" 
-                            class="px-6 py-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 transition-all duration-300">
-                        Publicar reseña
-                    </button>
-                </div>
-            </form>
+  <!-- Lista de Reseñas con Virtual Scrolling -->
+  <div id="reviews-list" class="space-y-6">
+    <!-- Skeleton Loading -->
+    <div class="animate-pulse">
+      <div class="bg-white rounded-xl shadow-sm p-6 space-y-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 bg-gray-300 rounded-full"></div>
+          <div class="flex-1 space-y-2">
+            <div class="h-4 bg-gray-300 rounded w-1/4"></div>
+            <div class="h-3 bg-gray-200 rounded w-1/6"></div>
+          </div>
         </div>
+        <div class="h-4 bg-gray-300 rounded w-3/4"></div>
+        <div class="h-4 bg-gray-200 rounded w-full"></div>
+        <div class="h-4 bg-gray-200 rounded w-5/6"></div>
+      </div>
     </div>
+  </div>
+
+  <!-- Paginación Inteligente -->
+  <div
+    id="pagination-container"
+    class="flex items-center justify-between mt-12"
+  >
+    <!-- Se llenará dinámicamente con infinite scroll -->
+  </div>
+
+  <!-- Estados Vacíos Animados -->
+  <div id="empty-state" class="text-center py-20 hidden">
+    <div
+      class="inline-flex items-center justify-center w-20 h-20 bg-pink-100 rounded-full mb-6 animate-bounce"
+    >
+      <svg
+        class="w-10 h-10 text-pink-600"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="1.5"
+          d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h11a2 2 0 002-2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+        />
+      </svg>
+    </div>
+    <h3 class="text-2xl font-semibold text-gray-900 mb-2">
+      Aún no hay reseñas
+    </h3>
+    <p class="text-gray-600 mb-6 max-w-md mx-auto">
+      Sé el primero en compartir tu experiencia con este producto.
+    </p>
+    <button
+      type="button"
+      id="write-first-review-btn"
+      data-action="write-review"
+      class="inline-flex items-center space-x-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:scale-105 transform transition-all duration-300"
+    >
+      <svg
+        class="w-5 h-5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+        />
+      </svg>
+      <span>Escribir la primera reseña</span>
+    </button>
+  </div>
 </div>
 
-<!-- JavaScript para interacciones -->
+<!-- Modal Moderno con Animaciones -->
+<div
+  id="reviewModal"
+  class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden"
+>
+  <div class="flex items-center justify-center min-h-screen p-4">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-8 animate-modal-appear">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-2xl font-bold text-gray-900" id="modal-title">
+          Escribir una reseña
+        </h3>
+        <button
+          id="close-modal"
+          data-action="close-modal"
+          class="text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        </button>
+      </div>
+
+      <form id="review-form" class="space-y-6" novalidate>
+        <input type="hidden" id="review-id" value="" />
+        <input type="hidden" id="review-rating" value="0" />
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Calificación</label
+          >
+          <div class="flex space-x-1" id="rating-stars">
+            <!-- Stars generadas dinámicamente -->
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Título de tu experiencia</label
+          >
+          <input
+            type="text"
+            id="review-title"
+            class="w-full border border-gray-300 rounded-lg px-3 py-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all"
+            placeholder="¿Qué destacarías de este producto?"
+            maxlength="100"
+            required
+          />
+        </div>
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2"
+            >Tu reseña detallada</label
+          >
+          <div class="relative">
+            <textarea
+              id="review-text"
+              rows="4"
+              class="w-full border border-gray-300 rounded-lg px-3 py-3 focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all resize-none"
+              placeholder="Comparte tu experiencia completa..."
+              maxlength="1000"
+              required
+            ></textarea>
+            <div class="absolute bottom-2 right-2 text-sm text-gray-500">
+              <span id="char-count">0</span>/1000
+            </div>
+          </div>
+        </div>
+
+        <div class="flex justify-end space-x-4">
+          <button
+            type="button"
+            id="cancel-review"
+            data-action="close-modal"
+            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            id="submit-review"
+            class="px-6 py-3 bg-gradient-to-r from-pink-600 to-purple-600 text-white rounded-lg hover:from-pink-700 hover:to-purple-700 transition-all transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled
+          >
+            <span class="submit-text">Publicar reseña</span>
+            <div class="loading-spinner hidden">
+              <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<style>
+  /* Animaciones Profesionales */
+  @keyframes modal-appear {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .animate-modal-appear {
+    animation: modal-appear 0.3s ease-out forwards;
+  }
+
+  /* Skeleton Loading */
+  .skeleton-rating {
+    display: flex;
+    gap: 2px;
+  }
+
+  .skeleton-rating::before {
+    content: "";
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 50%;
+  }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Counter Animation */
+  .counter {
+    transition: all 0.3s ease;
+  }
+
+  .counter.updating {
+    transform: scale(1.1);
+    color: #ec4899;
+  }
+
+  /* Rating Chips */
+  .rating-chip {
+    @apply px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 cursor-pointer; /* Increased duration for smoother transition */
+    @apply border border-transparent; /* Add a transparent border for consistency */
+  }
+
+  .rating-chip.active {
+    @apply bg-amber-400 text-gray-900 shadow-lg; /* Changed to yellow and dark text */
+    @apply ring-2 ring-amber-500 ring-offset-2; /* Add a subtle ring for emphasis */
+  }
+
+  .rating-chip:not(.active) {
+    @apply bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900; /* Enhanced hover text color */
+    @apply hover:shadow-md; /* Add subtle shadow on hover */
+  }
+
+  /* Toast Notifications */
+  #toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .toast {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 300px;
+    padding: 1rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    animation: slide-in 0.3s ease-out;
+  }
+  
+  .toast-icon {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-radius: 9999px;
+  }
+
+  @keyframes slide-in {
+    from {
+      transform: translateX(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  /* Rating Stars Interaction */
+  #rating-stars .star {
+    color: #d1d5db; /* gray-300 */
+    cursor: pointer;
+    transition: color 0.2s, transform 0.2s;
+  }
+  #rating-stars:hover .star {
+    color: #facc15; /* yellow-400 */
+  }
+  #rating-stars .star:hover ~ .star {
+    color: #d1d5db; /* gray-300 */
+  }
+  #rating-stars .star.selected,
+  #rating-stars .star.selected ~ .star {
+     color: #d1d5db;
+  }
+  #rating-stars .star.selected {
+    color: #facc15;
+    transform: scale(1.1);
+  }
+</style>
 <script>
-    // Abrir/cerrar modal
-    const modal = document.getElementById('reviewModal');
-    const writeButtons = document.querySelectorAll('button[type="button"]');
-    
-    writeButtons.forEach(button => {
-        if (button.textContent.includes('Escribir')) {
-            button.addEventListener('click', () => {
-                modal.classList.remove('hidden');
-            });
+  // Sistema de Reseñas 2.0 - Cliente API Profesional
+  class ReviewsManager {
+    constructor() {
+                  const wrapper = document.getElementById('reviews-section-wrapper');
+      this.productId = wrapper ? wrapper.dataset.productId : null;
+      this.user = null; // Se llenará después de verificar el token
+      this.userReview = null; // Almacenará la reseña del usuario si existe
+
+      this.currentPage = 1;
+      this.currentRatingFilter = null;
+      this.currentSort = "newest";
+      this.isLoading = false;
+      this.hasMore = true;
+      this.reviews = new Map(); // Usar Map para manejar reseñas por ID fácilmente
+      this.formRating = 0;
+
+      this.init();
+    }
+
+    async init() {
+      this.bindEvents();
+      await this.checkAuthentication();
+      this.loadReviews();
+      this.setupInfiniteScroll();
+      this.updateReviewButtonState();
+      this.renderFilterChips();
+    }
+
+    bindEvents() {
+      document.addEventListener("click", this.handleClick.bind(this));
+      document.addEventListener("change", this.handleChange.bind(this));
+      document.addEventListener("input", this.handleInput.bind(this));
+      document.addEventListener("submit", this.handleSubmit.bind(this));
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !document.getElementById("reviewModal").classList.contains("hidden")) {
+          this.closeModal();
         }
-    });
-    
-    // Cerrar modal
-    modal.querySelector('button').addEventListener('click', () => {
-        modal.classList.add('hidden');
-    });
-    
-    // Cerrar al hacer click fuera
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            modal.classList.add('hidden');
+      });
+      document.getElementById("reviewModal").addEventListener("click", (e) => {
+        if (e.target.id === "reviewModal") this.closeModal();
+      });
+    }
+
+    handleClick(e) {
+      const target = e.target.closest("[data-action]");
+      if (!target) return;
+
+      const action = target.dataset.action;
+      const actionMap = {
+        "write-review": () => this.handleWriteReview(),
+        "close-modal": () => this.closeModal(),
+        "set-rating": () => this.setRating(parseInt(target.dataset.rating, 10)),
+        "edit-review": () => this.editReview(target.dataset.reviewId),
+        "delete-review": () => this.deleteReview(target.dataset.reviewId),
+        "filter-rating": () => this.filterByRating(target.dataset.rating ? parseInt(target.dataset.rating, 10) : null),
+        "clear-filters": () => this.clearFilters(),
+      };
+
+      if (actionMap[action]) {
+        actionMap[action]();
+      }
+    }
+
+    handleChange(e) {
+      if (e.target.id === "sort-order") {
+        this.currentSort = e.target.value;
+        this.refreshReviews();
+      }
+    }
+
+    handleInput(e) {
+      const { id, value } = e.target;
+      if (id === "review-text") this.updateCharCount(value.length);
+      if (["review-title", "review-text"].includes(id)) this.validateForm();
+    }
+
+    handleSubmit(e) {
+      if (e.target.id === "review-form") {
+        e.preventDefault();
+        this.submitReview();
+      }
+    }
+
+    // --- Autenticación y API --- 
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('token');
+        return token ? { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' };
+    }
+
+    async checkAuthentication() {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                // Decodificar el token para obtener el ID de usuario (simulado en frontend)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                this.user = { id: payload.user_id };
+            } catch (e) {
+                console.error("Token inválido:", e);
+                this.user = null;
+                localStorage.removeItem('token');
+            }
         }
-    });
+    }
+
+    // --- Lógica de la Modal ---
     
-    // Sistema de rating
-    const stars = document.querySelectorAll('.star-rating');
-    stars.forEach((star, index) => {
-        star.addEventListener('click', () => {
-            stars.forEach((s, i) => {
-                if (i <= index) {
-                    s.classList.add('text-yellow-400');
-                    s.classList.remove('text-gray-300');
-                } else {
-                    s.classList.remove('text-yellow-400');
-                    s.classList.add('text-gray-300');
-                }
-            });
-        });
-    });
-    
-    // Hover en estrellas
-    stars.forEach((star, index) => {
-        star.addEventListener('mouseenter', () => {
-            stars.forEach((s, i) => {
-                if (i <= index) {
-                    s.classList.add('text-yellow-400');
-                }
-            });
-        });
+    openModal(isEdit = false, review = null) {
+      const modal = document.getElementById("reviewModal");
+      const form = document.getElementById("review-form");
+      form.reset();
+      this.updateCharCount(0);
+      
+      if (isEdit && review) {
+        document.getElementById("modal-title").textContent = "Editar tu reseña";
+        document.getElementById("review-id").value = review.id;
+        document.getElementById("review-title").value = review.titulo;
+        document.getElementById("review-text").value = review.texto;
+        this.setRating(review.calificacion);
+      } else {
+        document.getElementById("modal-title").textContent = "Escribir una reseña";
+        document.getElementById("review-id").value = "";
+        this.setRating(0);
+      }
+      
+      this.validateForm();
+      modal.classList.remove("hidden");
+      document.body.style.overflow = 'hidden';
+    }
+
+    closeModal() {
+      document.getElementById("reviewModal").classList.add("hidden");
+      document.body.style.overflow = '';
+    }
+
+    handleWriteReview() {
+      if (!this.user) {
+        this.showToast("Debes iniciar sesión para dejar una reseña.", "info");
+        // Aquí se podría redirigir al login o abrir un modal de autenticación.
+        return;
+      }
+      // Si ya tiene reseña, la abre en modo edición, si no, abre una nueva.
+      this.openModal(!!this.userReview, this.userReview);
+    }
+
+    editReview(reviewId) {
+        const review = this.reviews.get(reviewId);
+        if (review) {
+            this.openModal(true, review);
+        } else {
+            this.showToast("No se pudo encontrar la reseña para editar.", "error");
+        }
+    }
+
+    // --- Lógica del Formulario ---
+
+    setRating(rating) {
+        this.formRating = rating;
+        document.getElementById('review-rating').value = rating;
+        const starsContainer = document.getElementById("rating-stars");
+        starsContainer.innerHTML = '';
         
-        star.addEventListener('mouseleave', () => {
-            stars.forEach(s => {
-                if (!s.classList.contains('text-yellow-400')) {
-                    s.classList.add('text-gray-300');
+        for (let i = 1; i <= 5; i++) {
+            const star = document.createElement('div');
+            star.dataset.action = "set-rating";
+            star.dataset.rating = i;
+            star.classList.add('star');
+            if (i <= rating) star.classList.add('selected');
+            star.innerHTML = `<svg class="w-8 h-8" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+            starsContainer.appendChild(star);
+        }
+        this.validateForm();
+    }
+
+    updateCharCount(length) {
+      document.getElementById("char-count").textContent = length;
+    }
+
+    validateForm() {
+      const title = document.getElementById("review-title").value;
+      const text = document.getElementById("review-text").value;
+      const rating = this.formRating;
+      const submitBtn = document.getElementById("submit-review");
+      const isValid = title.trim().length >= 3 && text.trim().length >= 10 && rating > 0;
+      submitBtn.disabled = !isValid;
+    }
+
+    async submitReview() {
+        const submitBtn = document.getElementById("submit-review");
+        const reviewId = document.getElementById("review-id").value;
+        
+        const body = {
+            calificacion: this.formRating,
+            titulo: document.getElementById("review-title").value,
+            texto: document.getElementById("review-text").value,
+        };
+
+        this.setButtonLoading(submitBtn, true);
+
+        try {
+            const method = reviewId ? 'PUT' : 'POST';
+            const endpoint = reviewId 
+                ? `/api/productos/${this.productId}/reseñas/${reviewId}`
+                : `/api/productos/${this.productId}/reseñas`;
+
+            const response = await fetch(endpoint, { method, headers: this.getAuthHeaders(), body: JSON.stringify(body) });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showToast(result.mensaje, "success");
+                this.closeModal();
+
+                // --- INICIO DE LA NUEVA LÓGICA ---
+
+                // 1. Actualizar la UI con la nueva reseña sin recargar todo
+                if (method === 'POST') {
+                    // Asegurarse de que la reseña recién creada tenga los botones de edición/eliminación si el usuario es el autor
+                    if (this.user && result.reseña.usuario && this.user.id === result.reseña.usuario.id) {
+                        result.reseña.puede_editar = true;
+                    }
+                    const newReviewElement = this.createReviewElement(result.reseña);
+                    const container = document.getElementById("reviews-list");
+                    const emptyState = document.getElementById("empty-state");
+                    
+                    // Quitar el estado vacío si estaba presente
+                    if (!emptyState.classList.contains("hidden")) {
+                        emptyState.classList.add("hidden");
+                        container.innerHTML = ''; // Limpiar por si había un mensaje
+                    }
+
+                    container.prepend(newReviewElement);
+                    this.reviews.set(result.reseña.id, result.reseña);
+                    this.userReview = result.reseña; // Marcar que el usuario ya tiene una reseña
+                    this.updateReviewButtonState();
+                } else {
+                    // Si es una edición, actualizamos la reseña específica en la UI
+                    const existingReviewElement = document.querySelector(`[data-review-id="${result.reseña.id}"]`);
+                    if (existingReviewElement) {
+                        // Asegurarse de que la reseña editada tenga los botones de edición/eliminación si el usuario es el autor
+                        if (this.user && result.reseña.usuario && this.user.id === result.reseña.usuario.id) {
+                            result.reseña.puede_editar = true;
+                        }
+                        const updatedReviewElement = this.createReviewElement(result.reseña);
+                        existingReviewElement.replaceWith(updatedReviewElement);
+                        this.reviews.set(result.reseña.id, result.reseña); // Actualizar en el Map
+                        this.userReview = result.reseña; // Asegurar que userReview esté actualizado
+                        this.updateReviewButtonState();
+                    } else {
+                        // Si por alguna razón no se encuentra, recargar todas las reseñas
+                        this.refreshReviews();
+                    }
                 }
-            });
+
+                // 2. Obtener el nuevo rating y actualizar globalmente
+                const ratingResponse = await fetch(`/api/productos/${this.productId}/rating`);
+                const ratingData = await ratingResponse.json();
+
+                if (ratingData.success) {
+                    // 3. Llamar a la función global para actualizar toda la UI
+                    if (typeof updateProductRatingDisplay === 'function') {
+                        updateProductRatingDisplay(this.productId, ratingData.average_rating, ratingData.total_reviews_count);
+                    }
+                    // También actualizamos las stats locales de la sección de reseñas
+                    this.updateStats(ratingData);
+                }
+                // --- FIN DE LA NUEVA LÓGICA ---
+
+            } else {
+                this.showToast(result.error || "Ocurrió un error en el servidor", "error");
+            }
+        } catch (error) {
+            console.error("Error al enviar la reseña:", error);
+            this.showToast("Error de conexión al enviar la reseña.", "error");
+        } finally {
+            this.setButtonLoading(submitBtn, false);
+        }
+    }
+
+    // --- Lógica de Carga y Renderizado ---
+
+    showLoadingState(reset = true) {
+      const container = document.getElementById("reviews-list");
+      document.getElementById("empty-state").classList.add("hidden");
+      if (reset && container) {
+        const skeleton = `<div class="animate-pulse"><div class="bg-white rounded-xl shadow-sm p-6 space-y-4"><div class="flex items-center space-x-3"><div class="w-10 h-10 bg-gray-300 rounded-full"></div><div class="flex-1 space-y-2"><div class="h-4 bg-gray-300 rounded w-1/4"></div><div class="h-3 bg-gray-200 rounded w-1/6"></div></div></div><div class="h-4 bg-gray-300 rounded w-3/4"></div><div class="h-4 bg-gray-200 rounded w-full"></div><div class="h-4 bg-gray-200 rounded w-5/6"></div></div></div>`;
+        container.innerHTML = skeleton.repeat(3);
+      }
+    }
+
+    hideLoadingState() {
+        document.querySelectorAll("#reviews-list .animate-pulse").forEach(s => s.remove());
+    }
+
+    showErrorState(message = "Error al cargar las reseñas.") {
+      const container = document.getElementById("reviews-list");
+      container.innerHTML = `<div class="text-center py-10 bg-red-50 rounded-lg border border-red-200"><p class="font-semibold text-red-600">${message}</p><p class="text-sm text-gray-600 mt-1">Por favor, intenta de nuevo más tarde.</p></div>`;
+    }
+    
+    async loadReviews(reset = true) {
+      if (this.isLoading) return;
+      this.isLoading = true;
+      if(reset) {
+        this.currentPage = 1;
+        this.reviews.clear();
+        document.getElementById("reviews-list").innerHTML = '';
+      }
+
+      this.showLoadingState(reset);
+
+      try {
+        const params = new URLSearchParams({
+          page: this.currentPage,
+          per_page: 10,
+          sort: this.currentSort,
+          ...(this.currentRatingFilter && { rating: this.currentRatingFilter }),
         });
-    });
+
+        const response = await fetch(`/api/productos/${this.productId}/reseñas?${params}`, { headers: this.getAuthHeaders() });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null);
+          throw new Error(errorData?.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+
+        if (data.success) {
+            this.appendReviews(data);
+            this.hasMore = data.page < data.pages;
+            this.updateStats(data);
+        } else {
+          throw new Error(data.error || "La API devolvió un error.");
+        }
+      } catch (error) {
+        console.error("Error al cargar reseñas:", error);
+        this.showErrorState(error.message);
+      } finally {
+        this.isLoading = false;
+        this.hideLoadingState();
+      }
+    }
+
+    appendReviews(data) {
+        const container = document.getElementById("reviews-list");
+        const emptyState = document.getElementById("empty-state");
+        const emptyStateTitle = emptyState.querySelector('h3');
+        const emptyStateParagraph = emptyState.querySelector('p');
+        const writeFirstReviewBtn = document.getElementById("write-first-review-btn");
+
+        // Add reviews to the map
+        data.reseñas.forEach(review => this.reviews.set(review.id, review));
+
+        // Clear previous reviews from the container if it's a fresh load (e.g., due to filter/sort change)
+        if (this.currentPage === 1) {
+            container.innerHTML = "";
+        }
+
+        if (data.reseñas.length === 0) {
+            container.innerHTML = ""; // Ensure the list is empty
+            emptyState.classList.remove("hidden");
+
+            if (this.currentRatingFilter !== null) {
+                emptyStateTitle.textContent = "No hay reseñas que coincidan con este filtro.";
+                emptyStateParagraph.textContent = "Intenta ajustar tus criterios de búsqueda o elimina el filtro.";
+                writeFirstReviewBtn.classList.add("hidden"); // Hide "Write first review" button for filtered empty state
+            } else {
+                emptyStateTitle.textContent = "Aún no hay reseñas";
+                emptyStateParagraph.textContent = "Sé el primero en compartir tu experiencia con este producto.";
+                writeFirstReviewBtn.classList.remove("hidden"); // Show for truly empty state
+            }
+            return;
+        }
+
+        emptyState.classList.add("hidden"); // Hide empty state if reviews are present
+
+        const fragment = document.createDocumentFragment();
+        data.reseñas.forEach(review => {
+            const reviewElement = this.createReviewElement(review);
+            fragment.appendChild(reviewElement);
+        });
+        container.appendChild(fragment);
+        this.animateReviewsIn();
+    }
+
+    updateStats(data) {
+        document.getElementById("avg-rating-value").textContent = (data.average_rating || 0).toFixed(1);
+        document.getElementById("total-reviews").textContent = data.total_reviews_count || 0;
+        document.getElementById("average-rating").innerHTML = this.generateStarsHTML(Math.round(data.average_rating || 0));
+    }
+
+    createReviewElement(review) {
+      const div = document.createElement("div");
+      div.className = "bg-white rounded-xl shadow-sm p-6 border border-gray-100 review-item";
+      div.dataset.reviewId = review.id;
+      
+      div.innerHTML = `
+        <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+                <img class="h-10 w-10 rounded-full object-cover" src="${review.usuario.avatar_url || 'https://i.pravatar.cc/40?u=' + review.usuario.id}" alt="${review.usuario.nombre}">
+                <div>
+                    <p class="text-lg font-semibold text-gray-900">${review.usuario.nombre}</p>
+                    <p class="text-sm text-gray-500">${this.formatDate(review.created_at)}</p>
+                </div>
+            </div>
+            <div class="flex items-center">${this.generateStarsHTML(review.calificacion)}</div>
+        </div>
+        <h4 class="text-xl font-bold text-gray-800 mb-3">${review.titulo || ''}</h4>
+        <p class="text-gray-700 leading-relaxed mb-4 break-words">${review.texto}</p>
+        ${review.puede_editar ? `
+            <div class="flex justify-end space-x-3 border-t pt-3 mt-3">
+                <button data-action="edit-review" data-review-id="${review.id}" class="text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors">Editar</button>
+                <button data-action="delete-review" data-review-id="${review.id}" class="text-sm font-medium text-red-600 hover:text-red-700 transition-colors">Eliminar</button>
+            </div>` : ""}
+      `;
+      return div;
+    }
+    
+    async deleteReview(reviewId) {
+        if (!this.user) return;
+
+        if (!window.confirm("¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer.")) return;
+
+        try {
+            const response = await fetch(`/api/productos/${this.productId}/reseñas/${reviewId}`, { method: 'DELETE', headers: this.getAuthHeaders() });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                this.showToast(result.mensaje, "success");
+                const reviewElement = document.querySelector(`[data-review-id="${reviewId}"]`);
+                if (reviewElement) {
+                    reviewElement.style.transition = 'opacity 0.3s, transform 0.3s';
+                    reviewElement.style.opacity = "0";
+                    reviewElement.style.transform = "scale(0.95)";
+                    setTimeout(async () => {
+                        reviewElement.remove();
+                        // Actualizar el estado del frontend directamente
+                        this.reviews.delete(reviewId);
+                        if (this.userReview && this.userReview.id === reviewId) {
+                            this.userReview = null;
+                            this.updateReviewButtonState();
+                        }
+                        if (this.reviews.size === 0) {
+                            document.getElementById("empty-state").classList.remove("hidden");
+                        }
+
+                        // Fetch updated rating from backend
+                        const ratingResponse = await fetch(`/api/productos/${this.productId}/rating`);
+                        const ratingData = await ratingResponse.json();
+
+                        if (ratingData.success) {
+                            // Update global display
+                            if (typeof updateProductRatingDisplay === 'function') {
+                                updateProductRatingDisplay(this.productId, ratingData.average_rating, ratingData.total_reviews_count);
+                            }
+                            // Update local stats in reviews section
+                            this.updateStats(ratingData);
+                        }
+                    }, 300);
+                }
+            } else {
+                this.showToast(result.error || "Error al eliminar la reseña.", "error");
+            }
+        } catch (error) {
+            console.error("Error al eliminar la reseña:", error);
+            this.showToast("Error de conexión.", "error");
+        }
+    }
+
+    calculateAverageRating() {
+        if (this.reviews.size === 0) return 0.0;
+        let totalRating = 0;
+        this.reviews.forEach(review => {
+            totalRating += review.calificacion;
+        });
+        return totalRating / this.reviews.size;
+    }
+
+    // --- Filtros y Ordenamiento ---
+
+    renderFilterChips() {
+        const container = document.getElementById('rating-filters');
+        const ratings = [null, 5, 4, 3, 2, 1]; // null para "Todos"
+        container.innerHTML = ratings.map(rating => {
+            const isActive = this.currentRatingFilter === rating;
+            const text = rating ? `${rating} ★` : 'Todos';
+             return `<button data-action="filter-rating" data-rating="${rating || ''}" class="rating-chip ${isActive ? 'active' : ''}">${text}</button>`;
+        }).join('');
+    }
+
+    filterByRating(rating) {
+        this.currentRatingFilter = rating;
+        this.renderFilterChips();
+        this.refreshReviews();
+    }
+
+    clearFilters() {
+        this.currentRatingFilter = null;
+        this.currentSort = "newest";
+        document.getElementById("sort-order").value = "newest"; // Update select dropdown
+        this.renderFilterChips(); // Re-render chips to show "Todos" active
+        this.refreshReviews(); // Reload reviews with cleared filters
+    }
+
+    refreshReviews() {
+        this.loadReviews(true);
+        this.updateReviewButtonState();
+    }
+
+    // --- Helpers ---
+
+    setupInfiniteScroll() {
+      const sentinel = document.createElement("div");
+      sentinel.id = "scroll-sentinel";
+      document.getElementById("reviews-container").appendChild(sentinel);
+      const observer = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !this.isLoading && this.hasMore) {
+          this.currentPage++;
+          this.loadReviews(false);
+        }
+      }, { rootMargin: "200px" });
+      observer.observe(sentinel);
+    }
+
+    animateReviewsIn() {
+      document.querySelectorAll(".review-item:not(.animated-in)").forEach((review, index) => {
+        review.classList.add('animated-in');
+        review.style.opacity = "0";
+        review.style.transform = "translateY(20px)";
+        setTimeout(() => {
+          review.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+          review.style.opacity = "1";
+          review.style.transform = "translateY(0)";
+        }, index * 50);
+      });
+    }
+
+    formatDate(dateString) {
+      return new Date(dateString).toLocaleDateString("es-ES", { year: "numeric", month: "long", day: "numeric" });
+    }
+
+    generateStarsHTML(rating) {
+      let stars = '';
+      for(let i = 1; i <= 5; i++) {
+        stars += `<svg class="w-5 h-5 ${i <= rating ? "text-yellow-400" : "text-gray-300"}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
+      }
+      return stars;
+    }
+
+    async updateReviewButtonState() {
+      const button = document.getElementById("write-review-btn");
+      const text = document.getElementById("write-review-text");
+      button.disabled = true; // Deshabilitar mientras se comprueba
+
+      if (!this.user) {
+        text.textContent = "Escribir reseña";
+        button.disabled = false;
+        return;
+      }
+      
+      try {
+        const response = await fetch(`/api/productos/${this.productId}/mis-reseñas`, { headers: this.getAuthHeaders() });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            this.userReview = data.reseña;
+            text.textContent = "Editar mi reseña";
+        } else {
+            this.userReview = null;
+            text.textContent = "Escribir reseña";
+        }
+      } catch (error) {
+        console.error("Error al verificar la reseña del usuario:", error);
+        this.userReview = null;
+        text.textContent = "Escribir reseña";
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    setButtonLoading(button, isLoading) {
+        const text = button.querySelector('.submit-text');
+        const spinner = button.querySelector('.loading-spinner');
+        button.disabled = isLoading;
+        text.style.display = isLoading ? 'none' : 'inline-block';
+        spinner.style.display = isLoading ? 'inline-block' : 'none';
+    }
+
+    showToast(message, type = "info") {
+        const container = this.getOrCreateToastContainer();
+        const toast = document.createElement("div");
+        toast.className = `toast`;
+        const iconColor = type === "success" ? "bg-green-500" : type === "error" ? "bg-red-500" : "bg-blue-500";
+        toast.innerHTML = `<div class="toast-icon ${iconColor}"></div><span>${message}</span>`;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.transition = 'opacity 0.3s, transform 0.3s';
+            toast.style.opacity = "0";
+            toast.style.transform = "translateX(100%)";
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    getOrCreateToastContainer() {
+        let container = document.getElementById("toast-container");
+        if (!container) {
+            container = document.createElement("div");
+            container.id = "toast-container";
+            document.body.appendChild(container);
+        }
+        return container;
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // Asegúrate de que `window.PRODUCT_ID` o el data-attribute esté definido en tu página principal.
+    // Ejemplo: <div id="reviews-container" data-product-id="{{ producto.id }}"></div>
+    window.reviewsManager = new ReviewsManager();
+  });
 </script>

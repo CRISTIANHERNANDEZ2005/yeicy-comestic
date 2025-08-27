@@ -146,24 +146,22 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     # Propiedad para calcular la calificación promedio (se mantiene para compatibilidad o acceso directo)
     @property
     def calificacion_promedio(self):
-        """Calcula el promedio de calificaciones de las reseñas activas (dinámico)."""
-        reseñas_activas = [r for r in self.reseñas if r.estado == 'activo']
-        if not reseñas_activas:
+        """Calcula el promedio de calificaciones de las reseñas (dinámico)."""
+        if not self.reseñas:
             return 0.0
-        total = sum(reseña.calificacion for reseña in reseñas_activas)
-        return round(total / len(reseñas_activas), 1)
+        total = sum(reseña.calificacion for reseña in self.reseñas)
+        return round(total / len(self.reseñas), 1)
 
     def actualizar_promedio_calificaciones(self):
         """
         Actualiza la calificación promedio almacenada del producto
-        basándose en las reseñas activas y guarda el cambio en la base de datos.
+        basándose en las reseñas y guarda el cambio en la base de datos.
         """
-        reseñas_activas = [r for r in self.reseñas if r.estado == 'activo']
-        if not reseñas_activas:
+        if not self.reseñas:
             self.calificacion_promedio_almacenada = 0.0
         else:
-            total = sum(reseña.calificacion for reseña in reseñas_activas)
-            self.calificacion_promedio_almacenada = round(total / len(reseñas_activas), 1)
+            total = sum(reseña.calificacion for reseña in self.reseñas)
+            self.calificacion_promedio_almacenada = round(total / len(self.reseñas), 1)
         db.session.add(self)
         db.session.commit() # Guardar el cambio inmediatamente
 

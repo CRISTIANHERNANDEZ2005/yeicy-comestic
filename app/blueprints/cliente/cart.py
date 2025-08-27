@@ -130,9 +130,6 @@ def get_cart_data():
     })
 
 
-
-
-
 @cart_bp.route('/api/add_to_cart', methods=['POST'])
 def add_to_cart_optimized():
     """Endpoint optimizado para agregar productos al carrito"""

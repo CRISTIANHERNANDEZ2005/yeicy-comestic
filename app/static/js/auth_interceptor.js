@@ -56,7 +56,17 @@ window.fetch = async function (resource, options = {}) {
       ) {
         return response;
       }
-      // Para otras rutas protegidas, mostrar notificación y redirigir
+
+      // NUEVO: Si la petición es a una API (que no sea de auth), no redirigir la página completa.
+      // En su lugar, permite que el código que hizo la llamada maneje el 401.
+      if (typeof resource === "string" && resource.startsWith("/api/")) {
+        console.warn("API call returned 401. Allowing original fetch to resolve with 401 status.");
+        // No hacemos nada más aquí, simplemente devolvemos la respuesta 401
+        // para que el código que hizo la llamada (e.g., ReviewsManager) la maneje.
+        return response;
+      }
+
+      // Para otras rutas protegidas (navegación de página), mostrar notificación y redirigir
       console.error("Error de autenticación. Redirigiendo al login...");
       if (typeof showNotification === "function") {
         showNotification(

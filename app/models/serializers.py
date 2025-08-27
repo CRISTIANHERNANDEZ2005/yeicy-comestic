@@ -85,7 +85,7 @@ def producto_to_dict(prod):
         'seudocategoria_nombre': seudocategoria_nombre,
         'calificacion_promedio': prod.calificacion_promedio_almacenada,
         'es_nuevo': prod.es_nuevo,
-        'reseñas_count': len([r for r in prod.reseñas if r.estado == 'activo'])
+        'reseñas_count': len(prod.reseñas)
     }
 
 def like_to_dict(like):
@@ -99,16 +99,19 @@ def like_to_dict(like):
     }
 
 def resena_to_dict(resena):
+    """Convierte un objeto Reseñas a diccionario con información completa."""
     return {
         'id': resena.id,
-        'usuario_id': resena.usuario_id,
-        'producto_id': resena.producto_id,
+        'usuario': {
+            'id': resena.usuario.id,
+            'nombre': resena.usuario.nombre,
+            'apellido': resena.usuario.apellido,
+        },
         'texto': resena.texto,
+        'titulo': resena.titulo,
         'calificacion': resena.calificacion,
-        'estado': resena.estado,
-        'created_at': resena.created_at.isoformat() if resena.created_at else None,
-        'updated_at': resena.updated_at.isoformat() if resena.updated_at else None,
-        'usuario': usuario_to_dict(resena.usuario) if resena.usuario else None # Add user details
+        'created_at': resena.created_at.isoformat(),
+        'updated_at': resena.updated_at.isoformat() if resena.updated_at else None
     }
 
 

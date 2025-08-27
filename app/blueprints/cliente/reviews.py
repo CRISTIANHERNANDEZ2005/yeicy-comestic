@@ -1,156 +1,329 @@
 """
-Módulo para manejar las operaciones relacionadas con las reseñas de productos.
+Módulo mejorado para manejar las operaciones relacionadas con las reseñas de productos.
+Implementa autenticación y CRUD completo para usuarios autenticados.
 """
 from flask import Blueprint, request, jsonify, current_app
+from sqlalchemy.orm import joinedload
 from app.models.domains.product_models import Productos
 from app.models.domains.review_models import Reseñas
 from app.models.domains.user_models import Usuarios
-from app.models.serializers import producto_to_dict, resena_to_dict, usuario_to_dict
+from app.models.serializers import resena_to_dict
 from app.extensions import db
-from app.utils.jwt_utils import jwt_required
-from sqlalchemy.orm import joinedload
+from app.utils.jwt_utils import jwt_required, decode_jwt_token
+from datetime import datetime
 
-#Quiero que me crees un plan para la vista de los detalles de los productos, analiza los demas demas archivos para que puedas desarrollar un plan como todo un profesional, serializers.py , products.py , product_models.py , producto_detalle.html , carrusel_productos.html , review_models.py , reviews.py, me hablas en español y como todo un profesional
-# Crear el blueprint para reseñas
+
 reviews_bp = Blueprint('reviews', __name__)
 
-@reviews_bp.route('/api/productos/<int:producto_id>/reseñas', methods=['GET'])
+# --- Utilidades internas para validación y logging profesional ---
+def _validar_texto_resena(texto):
+    if not texto or len(texto.strip()) < 10:
+        raise ValueError('El texto de la reseña debe tener al menos 10 caracteres')
+    return texto.strip()
+
+def _validar_calificacion(calificacion):
+    if not isinstance(calificacion, int) or not (1 <= calificacion <= 5):
+        raise ValueError('La calificación debe ser un número entre 1 y 5')
+    return calificacion
+
+def _validar_titulo(titulo):
+    if titulo is None:
+        return None
+    titulo_stripped = titulo.strip()
+    if len(titulo_stripped) > 100:
+        raise ValueError('El título no puede exceder 100 caracteres')
+    return titulo_stripped
+
+def _log_request_info(endpoint, extra=None):
+    msg = f"[Reseñas] Endpoint: {endpoint} | Método: {request.method} | Usuario: {getattr(request, 'user', None)} | IP: {request.remote_addr}"
+    if extra:
+        msg += f" | {extra}"
+    current_app.logger.info(msg)
+
+# Endpoint público - Listar reseñas (sin autenticación)
+@reviews_bp.route('/api/productos/<string:producto_id>/reseñas', methods=['GET'])
 def listar_resenas(producto_id):
     """
-    Obtiene la lista de reseñas de un producto específico.
-    
-    Args:
-        producto_id (int): ID del producto del que se quieren obtener las reseñas
-        
-    Returns:
-        JSON: Lista de reseñas del producto
+    GET /api/productos/<producto_id>/reseñas
+    Lista reseñas públicas de un producto, con filtros y ordenamiento.
+    Query params:
+        - page: int (paginación)
+        - per_page: int (paginación)
+        - rating: int (filtrar por calificación)
+        - sort: str (newest, oldest, rating_desc, rating_asc)
     """
-    current_app.logger.info(f"Listando reseñas para producto {producto_id}")
-    
+    _log_request_info('listar_resenas', f'producto_id={producto_id}')
+
+    if not producto_id or producto_id == 'undefined':
+        current_app.logger.warning(f"ID de producto inválido: {producto_id}")
+        return jsonify({'success': False, 'error': 'ID de producto inválido'}), 400
+
     # Verificar si el producto existe y está activo
     producto = Productos.query.get(producto_id)
     if not producto or producto.estado != 'activo':
-        current_app.logger.warning(f"Producto {producto_id} no encontrado o inactivo al listar reseñas")
-        return jsonify({'error': 'Producto no encontrado'}), 404
-    
-    # Obtener reseñas activas con información del usuario
-    resenas = Reseñas.query.filter_by(
-        producto_id=producto_id, 
-        estado='activo'
+        current_app.logger.warning(f"Producto {producto_id} no encontrado o inactivo")
+        return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
+
+    # Parámetros de paginación y filtrado
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    rating_filter = request.args.get('rating', type=int)
+    sort = request.args.get('sort', 'newest')
+
+    # Query base
+    query = Reseñas.query.filter_by(
+        producto_id=producto_id
     ).options(
         joinedload(Reseñas.usuario)
-    ).order_by(
-        Reseñas.created_at.desc()
-    ).all()
-    
-    # Formatear respuesta
-    datos = [
-        {
-            'id': r.id,
-            'usuario': {
-                'id': r.usuario.id,
-                'nombre': r.usuario.nombre,
-                'apellido': r.usuario.apellido
-            },
-            'texto': r.texto,
-            'calificacion': r.calificacion,
-            'fecha': r.fecha.isoformat()
-        }
-        for r in resenas
-    ]
-    
-    current_app.logger.info(f"Producto {producto_id} tiene {len(datos)} reseñas activas")
+    )
+
+    # Filtrar por calificación si se especifica
+    if rating_filter and 1 <= rating_filter <= 5:
+        query = query.filter(Reseñas.calificacion == rating_filter)
+
+    # Ordenar
+    if sort == 'oldest':
+        query = query.order_by(Reseñas.created_at.asc())
+    elif sort == 'rating_desc':
+        query = query.order_by(Reseñas.calificacion.desc(), Reseñas.created_at.desc())
+    elif sort == 'rating_asc':
+        query = query.order_by(Reseñas.calificacion.asc(), Reseñas.created_at.desc())
+    else:
+        query = query.order_by(Reseñas.created_at.desc())
+
+    # Paginar resultados
+    paginated_resenas = query.paginate(
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )
+
+    # Formatear respuesta usando resena_to_dict
+    datos = [resena_to_dict(r) for r in paginated_resenas.items]
+
+    # Determinar usuario autenticado (si hay token)
+    user_id = None
+    auth_header = request.headers.get('Authorization')
+    if auth_header:
+        try:
+            token = auth_header.split(' ')[1]
+            payload = decode_jwt_token(token)
+            if payload:
+                user_id = payload.get('user_id')
+        except Exception:
+            current_app.logger.error("Error decoding token in listar_resenas", exc_info=True)
+            user_id = None
+
+    # Siempre incluir puede_editar
+    for resena in datos:
+        
+        resena['puede_editar'] = (user_id is not None and resena['usuario']['id'] == user_id)
+
+    # Obtener calificación promedio y conteo total de reseñas activas
+    # El producto ya se obtuvo al inicio de la función
+    average_rating = producto.calificacion_promedio_almacenada if producto else 0.0
+    total_active_reviews = Reseñas.query.filter_by(
+        producto_id=producto_id
+    ).count()
+
     return jsonify({
         'success': True,
-        'reseñas': datos, 
-        'total': len(datos)
+        'reseñas': datos,
+        'total': paginated_resenas.total,
+        'page': paginated_resenas.page,
+        'pages': paginated_resenas.pages,
+        'per_page': per_page,
+        'average_rating': average_rating,
+        'total_reviews_count': total_active_reviews
     })
 
-@reviews_bp.route('/api/productos/<int:producto_id>/reseñas', methods=['POST'])
+# Endpoint protegido - Crear reseña (requiere autenticación)
+@reviews_bp.route('/api/productos/<string:producto_id>/reseñas', methods=['POST'])
 @jwt_required
 def crear_resena(usuario, producto_id):
     """
-    Crea una nueva reseña para un producto.
-    
-    Args:
-        usuario (Usuario): Usuario autenticado (proporcionado por el decorador @jwt_required)
-        producto_id (int): ID del producto a reseñar
-        
-    Returns:
-        JSON: Resultado de la operación
+    POST /api/productos/<producto_id>/reseñas
+    Crea una reseña para un producto. Requiere autenticación.
+    Body: {"texto": str, "calificacion": int, "titulo": str (opcional)}
     """
-    from datetime import datetime
-    
-    # Obtener datos de la solicitud
+    _log_request_info('crear_resena', f'usuario={usuario.id}, producto_id={producto_id}')
     data = request.get_json()
     if not data:
         return jsonify({'success': False, 'error': 'No se proporcionaron datos'}), 400
-    
-    texto = data.get('texto', '').strip()
-    calificacion = data.get('calificacion')
-    
-    # Validaciones
-    if not texto:
-        return jsonify({'success': False, 'error': 'El texto de la reseña es requerido'}), 400
-    
-    if not isinstance(calificacion, int) or calificacion < 1 or calificacion > 5:
-        return jsonify({'success': False, 'error': 'La calificación debe ser un número entre 1 y 5'}), 400
-    
-    # Verificar si el producto existe y está activo
-    producto = Productos.query.get(producto_id)
+
+
+    try:
+        texto = _validar_texto_resena(data.get('texto', ''))
+        calificacion = _validar_calificacion(data.get('calificacion'))
+        titulo = _validar_titulo(data.get('titulo', ''))
+    except ValueError as ve:
+        return jsonify({'success': False, 'error': str(ve)}), 400
+
+    # Verificar producto
+    producto = Productos.query.filter_by(id=producto_id).first()
     if not producto or producto.estado != 'activo':
-        return jsonify({'success': False, 'error': 'Producto no encontrado o inactivo'}), 404
-    
-    # Verificar si el usuario ya ha dejado una reseña para este producto
+        return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
+
+    # Verificar si ya tiene reseña
     existe_resena = Reseñas.query.filter_by(
         usuario_id=usuario.id,
-        producto_id=producto_id,
-        estado='activo'
+        producto_id=producto_id
     ).first()
-    
     if existe_resena:
-        return jsonify({
-            'success': False, 
-            'error': 'Ya has dejado una reseña para este producto'
-        }), 400
-    
+        return jsonify({'success': False, 'error': 'Ya has dejado una reseña para este producto'}), 400
+
     try:
-        # Crear nueva reseña
         nueva_resena = Reseñas(
             usuario_id=usuario.id,
             producto_id=producto_id,
             texto=texto,
             calificacion=calificacion,
-            estado='activo'
+            titulo=titulo or None
         )
-        
         db.session.add(nueva_resena)
         db.session.commit()
-        
-        # Actualizar el promedio de calificaciones del producto
         producto.actualizar_promedio_calificaciones()
-        
         return jsonify({
             'success': True,
             'mensaje': 'Reseña creada exitosamente',
-            'reseña': {
-                'id': nueva_resena.id,
-                'texto': nueva_resena.texto,
-                'calificacion': nueva_resena.calificacion,
-                'fecha': nueva_resena.fecha.isoformat(),
-                'usuario': {
-                    'id': usuario.id,
-                    'nombre': usuario.nombre,
-                    'apellido': usuario.apellido
-                }
-            }
+            'reseña': resena_to_dict(nueva_resena)
         }), 201
-        
+    except ValueError as ve:
+        db.session.rollback()
+        current_app.logger.error(f'Error de validación al crear reseña: {str(ve)}')
+        return jsonify({'success': False, 'error': str(ve)}), 400
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error al crear reseña: {str(e)}')
+        return jsonify({'success': False, 'error': 'Error al procesar la reseña'}), 500
+
+# Endpoint protegido - Actualizar reseña propia
+@reviews_bp.route('/api/productos/<string:producto_id>/reseñas/<string:resena_id>', methods=['PUT'])
+@jwt_required
+def actualizar_resena(usuario, producto_id, resena_id):
+    """
+    PUT /api/productos/<producto_id>/reseñas/<resena_id>
+    Actualiza una reseña propia. Requiere autenticación.
+    Body: {"texto": str, "calificacion": int, "titulo": str (opcional)}
+    """
+    _log_request_info('actualizar_resena', f'usuario={usuario.id}, producto_id={producto_id}, resena_id={resena_id}')
+    data = request.get_json()
+    if not data:
+        return jsonify({'success': False, 'error': 'No se proporcionaron datos'}), 400
+
+    # Buscar reseña
+    resena = Reseñas.query.filter_by(
+        id=resena_id,
+        usuario_id=usuario.id,
+        producto_id=producto_id
+    ).first()
+    if not resena:
+        return jsonify({'success': False, 'error': 'Reseña no encontrada o no tienes permisos'}), 404
+
+    # Validar datos
+
+    try:
+        texto = _validar_texto_resena(data.get('texto', resena.texto))
+        calificacion = _validar_calificacion(data.get('calificacion', resena.calificacion))
+        titulo = _validar_titulo(data.get('titulo', resena.titulo or ''))
+    except ValueError as ve:
+        return jsonify({'success': False, 'error': str(ve)}), 400
+
+    try:
+        resena.texto = texto
+        resena.calificacion = calificacion
+        resena.titulo = titulo or None
+        resena.updated_at = datetime.utcnow()
+        db.session.commit()
+        producto = Productos.query.filter_by(id=producto_id).first()
+        if producto:
+            producto.actualizar_promedio_calificaciones()
         return jsonify({
-            'success': False,
-            'error': 'Error al procesar la reseña',
-            'details': str(e) if current_app.debug else None
-        }), 500
+            'success': True,
+            'mensaje': 'Reseña actualizada exitosamente',
+            'reseña': resena_to_dict(resena)
+        })
+    except ValueError as ve:
+        db.session.rollback()
+        current_app.logger.error(f'Error de validación al actualizar reseña: {str(ve)}')
+        return jsonify({'success': False, 'error': str(ve)}), 400
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error al actualizar reseña: {str(e)}')
+        return jsonify({'success': False, 'error': 'Error al actualizar la reseña'}), 500
+
+
+# Endpoint protegido - Eliminar reseña propia
+@reviews_bp.route('/api/productos/<string:producto_id>/reseñas/<string:resena_id>', methods=['DELETE'])
+@jwt_required
+def eliminar_resena(usuario, producto_id, resena_id):
+    """
+    DELETE /api/productos/<producto_id>/reseñas/<resena_id>
+    Elimina (soft delete) una reseña propia. Requiere autenticación.
+    """
+    _log_request_info('eliminar_resena', f'usuario={usuario.id}, producto_id={producto_id}, resena_id={resena_id}')
+    resena = Reseñas.query.filter_by(
+        id=resena_id,
+        usuario_id=usuario.id,
+        producto_id=producto_id
+    ).first()
+    if not resena:
+        return jsonify({'success': False, 'error': 'Reseña no encontrada o no tienes permisos'}), 404
+    try:
+        # Guardar el producto antes de eliminar la reseña para poder acceder a él después
+        producto = resena.producto # Get the product object before deleting the review
+        db.session.delete(resena)
+        db.session.commit()
+
+        # Refresh the product object to ensure its 'reseñas' relationship is up-to-date
+        db.session.refresh(producto)
+
+        # Recalcular y actualizar el promedio de calificaciones del producto
+        if producto:
+            producto.actualizar_promedio_calificaciones() # Call the method to update the stored average
+
+        return jsonify({'success': True, 'mensaje': 'Reseña eliminada permanentemente.'})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Error al eliminar reseña: {str(e)}')
+        return jsonify({'success': False, 'error': 'Error al eliminar la reseña'}), 500
+
+# Endpoint protegido - Obtener reseña propia para edición
+@reviews_bp.route('/api/productos/<string:producto_id>/mis-reseñas', methods=['GET'])
+@jwt_required
+def obtener_mi_resena(usuario, producto_id):
+    """
+    GET /api/productos/<producto_id>/mis-reseñas
+    Obtiene la reseña propia para un producto. Requiere autenticación.
+    """
+    _log_request_info('obtener_mi_resena', f'usuario={usuario.id}, producto_id={producto_id}')
+    resena = Reseñas.query.filter_by(
+        usuario_id=usuario.id,
+        producto_id=producto_id
+    ).first()
+    if not resena:
+        return jsonify({'success': False, 'error': 'No tienes una reseña para este producto'}), 404
+    data = resena_to_dict(resena)
+    data['puede_editar'] = True
+    return jsonify({'success': True, 'reseña': data})
+
+
+@reviews_bp.route('/api/productos/<string:producto_id>/rating', methods=['GET'])
+def obtener_rating_producto(producto_id):
+    """
+    GET /api/productos/<producto_id>/rating
+    Obtiene la calificación promedio y el conteo de reseñas de un producto.
+    """
+    producto = Productos.query.get(producto_id)
+    if not producto:
+        return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
+
+    # Usar la calificación promedio almacenada y contar las reseñas
+    average_rating = producto.calificacion_promedio_almacenada
+    total_reviews_count = Reseñas.query.filter_by(producto_id=producto_id).count()
+
+    return jsonify({
+        'success': True,
+        'average_rating': average_rating,
+        'total_reviews_count': total_reviews_count
+    })

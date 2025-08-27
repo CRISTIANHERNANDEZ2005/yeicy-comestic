@@ -377,6 +377,7 @@
             if (window.auth && typeof window.auth.setAuthToken === 'function') {
               window.auth.setAuthToken(result.token);
             }
+            localStorage.setItem('token', result.token); // Guardar token para uso en toda la app
             // Set global userId for cart synchronization
             window.userId = result.usuario.id;
             // Trigger cart synchronization immediately after login/registration

@@ -10,7 +10,7 @@ from app.models.domains.user_models import Usuarios
 from app.models.serializers import resena_to_dict
 from app.extensions import db
 from app.utils.jwt_utils import jwt_required, decode_jwt_token
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 reviews_bp = Blueprint('reviews', __name__)
@@ -81,14 +81,32 @@ def listar_resenas(producto_id):
     if rating_filter and 1 <= rating_filter <= 5:
         query = query.filter(Reseñas.calificacion == rating_filter)
 
-    # Ordenar
-    if sort == 'oldest':
-        query = query.order_by(Reseñas.created_at.asc())
+    # Ordenar y filtrar por rangos de fechas o calificaciones extremas si se especifica
+    if sort == 'newest':
+        # Reseñas de los últimos 2 días
+        two_days_ago = datetime.utcnow() - timedelta(days=2)
+        query = query.filter(Reseñas.created_at >= two_days_ago).order_by(Reseñas.created_at.desc())
+    elif sort == 'oldest':
+        # Reseñas de hace 5 días o más
+        five_days_ago = datetime.utcnow() - timedelta(days=5)
+        query = query.filter(Reseñas.created_at <= five_days_ago).order_by(Reseñas.created_at.asc())
     elif sort == 'rating_desc':
-        query = query.order_by(Reseñas.calificacion.desc(), Reseñas.created_at.desc())
+        # Obtener la calificación máxima para este producto
+        max_rating = db.session.query(db.func.max(Reseñas.calificacion)).filter_by(producto_id=producto_id).scalar()
+        if max_rating is not None:
+            query = query.filter(Reseñas.calificacion == max_rating).order_by(Reseñas.created_at.desc())
+        else:
+            # Si no hay reseñas, la consulta debe devolver vacía
+            query = query.filter(False) # Filtro que siempre es falso para no devolver nada
     elif sort == 'rating_asc':
-        query = query.order_by(Reseñas.calificacion.asc(), Reseñas.created_at.desc())
-    else:
+        # Obtener la calificación mínima para este producto
+        min_rating = db.session.query(db.func.min(Reseñas.calificacion)).filter_by(producto_id=producto_id).scalar()
+        if min_rating is not None:
+            query = query.filter(Reseñas.calificacion == min_rating).order_by(Reseñas.created_at.desc())
+        else:
+            # Si no hay reseñas, la consulta debe devolver vacía
+            query = query.filter(False) # Filtro que siempre es falso para no devolver nada
+    else: # Fallback para cualquier otro valor de sort
         query = query.order_by(Reseñas.created_at.desc())
 
     # Paginar resultados

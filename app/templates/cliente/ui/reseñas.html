@@ -630,6 +630,7 @@
     openModal(isEdit = false, review = null) {
       const modal = document.getElementById("reviewModal");
       const form = document.getElementById("review-form");
+      const submitButtonText = document.querySelector("#submit-review .submit-text");
       form.reset();
       this.updateCharCount(0);
 
@@ -639,11 +640,17 @@
         document.getElementById("review-title").value = review.titulo;
         document.getElementById("review-text").value = review.texto;
         this.setRating(review.calificacion);
+        if (submitButtonText) {
+          submitButtonText.textContent = "Editar reseña";
+        }
       } else {
         document.getElementById("modal-title").textContent =
           "Escribir una reseña";
         document.getElementById("review-id").value = "";
         this.setRating(0);
+        if (submitButtonText) {
+          submitButtonText.textContent = "Publicar reseña";
+        }
       }
 
       this.validateForm();
@@ -696,18 +703,19 @@
       }
 
       try {
+        this.setDeleteButtonLoading(true);
         const response = await fetch(
-          `/api/productos/${this.productId}/reviews/${reviewIdToDelete}`, // Use local variable
+          `/api/productos/${this.productId}/reviews/${reviewIdToDelete}`,
           { method: "DELETE", headers: this.getAuthHeaders() }
         );
         const result = await response.json();
 
         if (response.ok && result.success) {
           this.showToast(result.mensaje, "success");
-          this.closeDeleteModal(); // This will set this.reviewToDelete to null, but reviewIdToDelete is safe
+          this.closeDeleteModal();
 
           const reviewElement = document.querySelector(
-            `[data-review-id="${reviewIdToDelete}"]` // Use local variable
+            `[data-review-id="${reviewIdToDelete}"]`
           );
           if (reviewElement) {
             reviewElement.style.transition = "opacity 0.3s, transform 0.3s";
@@ -715,19 +723,15 @@
             reviewElement.style.transform = "scale(0.95)";
             setTimeout(async () => {
               reviewElement.remove();
-              this.reviews.delete(reviewIdToDelete); // Use local variable
+              this.reviews.delete(reviewIdToDelete);
               if (
                 this.userReview &&
-                this.userReview.id === reviewIdToDelete // Use local variable
+                this.userReview.id === reviewIdToDelete
               ) {
                 this.userReview = null;
                 this.updateReviewButtonState();
               }
-              if (this.reviews.size === 0) {
-                document
-                  .getElementById("empty-state")
-                  .classList.remove("hidden");
-              }
+              this.updateContainerVisibility();
 
               const ratingResponse = await fetch(
                 `/api/productos/${this.productId}/rating`
@@ -755,6 +759,8 @@
       } catch (error) {
         console.error("Error al eliminar la reseña:", error);
         this.showToast("Error de conexión.", "error");
+      } finally {
+        this.setDeleteButtonLoading(false);
       }
     }
 
@@ -830,17 +836,12 @@
             }
             const newReviewElement = this.createReviewElement(result.review);
             const container = document.getElementById("reviews-list");
-            const emptyState = document.getElementById("empty-state");
-
-            if (!emptyState.classList.contains("hidden")) {
-              emptyState.classList.add("hidden");
-              container.innerHTML = "";
-            }
 
             container.prepend(newReviewElement);
             this.reviews.set(result.review.id, result.review);
             this.userReview = result.review;
             this.updateReviewButtonState();
+            this.updateContainerVisibility();
           } else {
             const existingReviewElement = document.querySelector(
               `[data-review-id="${result.review.id}"]`
@@ -860,6 +861,7 @@
               this.reviews.set(result.review.id, result.review);
               this.userReview = result.review;
               this.updateReviewButtonState();
+              this.updateContainerVisibility();
             } else {
               this.refreshReviews();
             }
@@ -997,8 +999,6 @@
 
       if (data.reviews.length === 0 && this.currentPage === 1) {
         container.innerHTML = ""; // Ensure the list is empty
-        emptyState.classList.remove("hidden");
-        if (scrollContainer) scrollContainer.classList.add("hidden");
 
         if (this.currentRatingFilter !== null) {
           emptyStateTitle.textContent =
@@ -1023,11 +1023,9 @@
             writeFirstReviewBtn.classList.remove("hidden"); // Show for authenticated users
           }
         }
+        this.updateContainerVisibility(); // Update visibility after setting empty state text
         return;
       }
-
-      emptyState.classList.add("hidden"); // Hide empty state if reviews are present
-      if (scrollContainer) scrollContainer.classList.remove("hidden");
 
       const fragment = document.createDocumentFragment();
       data.reviews.forEach((review) => {
@@ -1036,6 +1034,7 @@
       });
       container.appendChild(fragment);
       this.animateReviewsIn();
+      this.updateContainerVisibility(); // Update visibility after reviews are appended
     }
 
     updateStats(data) {
@@ -1401,6 +1400,34 @@
         document.body.appendChild(container);
       }
       return container;
+    }
+
+    updateContainerVisibility() {
+        const emptyState = document.getElementById("empty-state");
+        const scrollContainer = document.getElementById("reviews-scroll-container");
+
+        if (this.reviews.size > 0) {
+            emptyState.classList.add("hidden");
+            if (scrollContainer) scrollContainer.classList.remove("hidden");
+        } else {
+            emptyState.classList.remove("hidden");
+            if (scrollContainer) scrollContainer.classList.add("hidden");
+        }
+    }
+
+    setDeleteButtonLoading(isLoading) {
+      const button = document.getElementById("confirm-delete");
+      if (!button) return;
+
+      if (isLoading) {
+        button.textContent = "Eliminando...";
+        button.disabled = true;
+        button.classList.add("opacity-50", "cursor-not-allowed");
+      } else {
+        button.textContent = "Eliminar";
+        button.disabled = false;
+        button.classList.remove("opacity-50", "cursor-not-allowed");
+      }
     }
   }
 

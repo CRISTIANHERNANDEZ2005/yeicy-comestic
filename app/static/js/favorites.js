@@ -345,8 +345,8 @@ if (typeof FavoritesManager === "undefined") {
       const favoriteText = button.querySelector(".favorite-text");
 
       if (isFavorite) {
-        button.classList.add("border-pink-500", "text-pink-600");
-        button.classList.remove("border-gray-300", "text-gray-700");
+                button.classList.remove("text-gray-300", "text-gray-400"); // Ensure all gray shades are removed
+        button.classList.add("text-red-500");
         button.setAttribute("aria-label", "Eliminar de favoritos");
         button.setAttribute("title", "Eliminar de favoritos");
 
@@ -361,8 +361,8 @@ if (typeof FavoritesManager === "undefined") {
             favoriteText.textContent = "Añadido";
         }
       } else {
-        button.classList.remove("border-pink-500", "text-pink-600");
-        button.classList.add("border-gray-300", "text-gray-700");
+        button.classList.remove("text-red-500", "text-gray-300"); // Ensure red and other gray shades are removed
+        button.classList.add("text-gray-400");
         button.setAttribute("aria-label", "Añadir a favoritos");
         button.setAttribute("title", "Añadir a favoritos");
 

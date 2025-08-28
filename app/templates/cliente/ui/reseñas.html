@@ -146,26 +146,32 @@
     </div>
   </div>
 
-  <!-- Lista de Reseñas con Grid Compacto -->
-  <div
-    id="reviews-list"
-    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
-  >
-    <div class="animate-pulse">
+  <!-- Lista de Reseñas con Grid Compacto y Scroll -->
+  <div class="p-1 shadow-2xl rounded-xl" id="reviews-scroll-container">
+    <div
+      class="h-[480px] lg:h-[320px] overflow-y-auto pr-2 relative custom-scrollbar rounded-lg bg-white"
+    >
       <div
-        class="bg-white rounded-xl shadow-sm p-4 space-y-3 border border-gray-100"
+        id="reviews-list"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4"
       >
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
-          <div class="flex-1 space-y-1">
-            <div class="h-3 bg-gray-300 rounded w-3/4"></div>
-            <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+        <div class="animate-pulse">
+          <div
+            class="bg-white rounded-xl shadow-sm p-4 space-y-3 border border-gray-100"
+          >
+            <div class="flex items-center space-x-3">
+              <div class="w-8 h-8 bg-gray-300 rounded-full"></div>
+              <div class="flex-1 space-y-1">
+                <div class="h-3 bg-gray-300 rounded w-3/4"></div>
+                <div class="h-2 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            </div>
+            <div class="space-y-2">
+              <div class="h-3 bg-gray-300 rounded w-full"></div>
+              <div class="h-3 bg-gray-200 rounded w-5/6"></div>
+              <div class="h-3 bg-gray-200 rounded w-4/6"></div>
+            </div>
           </div>
-        </div>
-        <div class="space-y-2">
-          <div class="h-3 bg-gray-300 rounded w-full"></div>
-          <div class="h-3 bg-gray-200 rounded w-5/6"></div>
-          <div class="h-3 bg-gray-200 rounded w-4/6"></div>
         </div>
       </div>
     </div>
@@ -229,6 +235,25 @@
 </div>
 
 <style>
+  /* Estilos para el scrollbar personalizado */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
   /* Animaciones Profesionales */
   @keyframes modal-appear {
     from {
@@ -872,7 +897,12 @@
 
     showLoadingState(reset = true) {
       const container = document.getElementById("reviews-list");
-      document.getElementById("empty-state").classList.add("hidden");
+      const scrollContainer = document.getElementById("reviews-scroll-container");
+      const emptyState = document.getElementById("empty-state");
+
+      emptyState.classList.add("hidden");
+      if (scrollContainer) scrollContainer.classList.remove("hidden");
+
       if (reset && container) {
         const skeleton = `<div class="animate-pulse"><div class="bg-white rounded-xl shadow-sm p-4 space-y-3 border border-gray-100"><div class="flex items-center space-x-3"><div class="w-8 h-8 bg-gray-300 rounded-full"></div><div class="flex-1 space-y-1"><div class="h-3 bg-gray-300 rounded w-3/4"></div><div class="h-2 bg-gray-200 rounded w-1/2"></div></div></div><div class="space-y-2"><div class="h-3 bg-gray-300 rounded w-full"></div><div class="h-3 bg-gray-200 rounded w-5/6"></div><div class="h-3 bg-gray-200 rounded w-4/6"></div></div></div></div>`;
         container.innerHTML = skeleton.repeat(6);
@@ -942,6 +972,7 @@
     appendReviews(data) {
       const container = document.getElementById("reviews-list");
       const emptyState = document.getElementById("empty-state");
+      const scrollContainer = document.getElementById("reviews-scroll-container");
       const emptyStateTitle = emptyState.querySelector("h3");
       const emptyStateParagraph = emptyState.querySelector("p");
       const writeFirstReviewBtn = document.getElementById(
@@ -964,9 +995,10 @@
         container.innerHTML = "";
       }
 
-      if (data.reviews.length === 0) {
+      if (data.reviews.length === 0 && this.currentPage === 1) {
         container.innerHTML = ""; // Ensure the list is empty
         emptyState.classList.remove("hidden");
+        if (scrollContainer) scrollContainer.classList.add("hidden");
 
         if (this.currentRatingFilter !== null) {
           emptyStateTitle.textContent =
@@ -995,6 +1027,7 @@
       }
 
       emptyState.classList.add("hidden"); // Hide empty state if reviews are present
+      if (scrollContainer) scrollContainer.classList.remove("hidden");
 
       const fragment = document.createDocumentFragment();
       data.reviews.forEach((review) => {

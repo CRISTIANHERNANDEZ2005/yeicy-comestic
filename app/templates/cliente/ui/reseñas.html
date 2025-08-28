@@ -483,8 +483,6 @@
       this.reviews = new Map();
       this.formRating = 0;
 
-      console.log("ReviewsManager constructor. Product ID:", this.productId);
-
       this.init();
     }
 
@@ -587,15 +585,11 @@
     }
 
     async checkAuthentication() {
-      console.log("checkAuthentication called.");
       const token = localStorage.getItem("token");
-      console.log("Token from localStorage:", token);
       if (token) {
         try {
           const payload = JSON.parse(atob(token.split(".")[1]));
           this.user = { id: payload.user_id };
-          console.log("Token payload:", payload);
-          console.log("User set to:", this.user);
         } catch (e) {
           console.error("Token inválido o error al decodificar:", e);
           this.user = null;
@@ -657,6 +651,7 @@
     // Modal de eliminación
     openDeleteModal(reviewId) {
       this.reviewToDelete = reviewId;
+
       document.getElementById("deleteReviewModal").classList.remove("hidden");
       document.body.style.overflow = "hidden";
     }
@@ -668,38 +663,37 @@
     }
 
     async confirmDeleteReview() {
-      if (!this.reviewToDelete) return;
+      const reviewIdToDelete = this.reviewToDelete; // Store the ID in a local variable
+      if (!reviewIdToDelete) {
+        // Use the local variable for the check
+
+        return;
+      }
 
       try {
         const response = await fetch(
-          `/api/productos/${this.productId}/reseñas/${this.reviewToDelete}`,
+          `/api/productos/${this.productId}/reseñas/${reviewIdToDelete}`, // Use local variable
           { method: "DELETE", headers: this.getAuthHeaders() }
         );
         const result = await response.json();
 
         if (response.ok && result.success) {
           this.showToast(result.mensaje, "success");
-          this.closeDeleteModal();
+          this.closeDeleteModal(); // This will set this.reviewToDelete to null, but reviewIdToDelete is safe
 
-          console.log(
-            "Intentando eliminar reseña con ID:",
-            this.reviewToDelete
-          );
           const reviewElement = document.querySelector(
-            `[data-review-id="${this.reviewToDelete}"]`
+            `[data-review-id="${reviewIdToDelete}"]` // Use local variable
           );
           if (reviewElement) {
-            console.log("Elemento de reseña encontrado:", reviewElement);
             reviewElement.style.transition = "opacity 0.3s, transform 0.3s";
             reviewElement.style.opacity = "0";
             reviewElement.style.transform = "scale(0.95)";
             setTimeout(async () => {
-              console.log("Removiendo elemento de reseña del DOM.");
               reviewElement.remove();
-              this.reviews.delete(this.reviewToDelete);
+              this.reviews.delete(reviewIdToDelete); // Use local variable
               if (
                 this.userReview &&
-                this.userReview.id === this.reviewToDelete
+                this.userReview.id === reviewIdToDelete // Use local variable
               ) {
                 this.userReview = null;
                 this.updateReviewButtonState();
@@ -726,10 +720,6 @@
               }
             }, 300);
           } else {
-            console.warn(
-              "Elemento de reseña no encontrado para el ID:",
-              this.reviewToDelete
-            );
           }
         } else {
           this.showToast(

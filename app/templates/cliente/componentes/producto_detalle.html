@@ -105,11 +105,24 @@
           <!-- Imagen Principal con Hover Zoom -->
           <div class="relative group">
             <div class="aspect-[4/3] overflow-hidden">
+            {% set placeholder_svg = "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb29rZT0iI2Q4ZGFkYiIgc3Ryb2tlLXdpZHRoPSIxLjUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CjxwYXRoIGQ9Ik0zLjE2IDE4Ljg4TDE1LjEyIDYuOTNhLjE2LjE2IDAgMCAxIC4yMiAwbDMuMDYgMy4wNmEuMTYuMTYgMCAwIDEgMCAuMjJMNi40NCAyMmExIDEgMCAwIDEtMS4zOS4wNmwtNi4xNS01Ljc5YTEuMjUgMS4yNSAwIDAgMSAuMjYtMS4zOXoiLz4KPHBhdGggZD0iTTE5IDE5YTIgMiAwIDEgMCAwLTQgMiAyIDAgMCAwIDAgNHoiLz4KPHBhdGggZD0iTTIyIDEwdjhhMiAyIDAgMCAxLTIgMmgtMTNsLTMuMi0yLjcxIDEgMSAwIDAgMC0xLjYtLjRsLTMuMzUgNCIvPgo8cGF0aCBkPSJNMjAxMHYtNGEyIDIgMCAwIDEgMi0yaDZhMSAxIDAgMCAwIC44LS40bDIuNi0zLjQ1YTEgMSAwIDAgMSAuOC0uMzVIMThhMiAyIDAgMCAxIDIgMlYxMCIvPgo8L3N2Zz4=" %}
+            {% if producto.imagen_url %}
               <img
-                src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}"
+                src="{{ producto.imagen_url }}"
                 alt="{{ producto.nombre }}"
                 class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                onerror="this.onerror=null; this.src='{{ placeholder_svg }}'; this.classList.add('p-4', 'object-contain')"
               />
+            {% else %}
+              <div class="w-full h-full flex flex-col items-center justify-center p-4 bg-gray-50">
+                <div class="w-24 h-24 mb-4 text-gray-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <span class="text-sm text-center text-gray-600 font-medium">Imagen no disponible</span>
+              </div>
+            {% endif %}
             </div>
 
             <!-- Badge de Nuevo con Animación -->
@@ -160,29 +173,65 @@
               <div
                 class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden ring-2 ring-pink-500 ring-offset-2 cursor-pointer"
               >
+                {% if producto.imagen_url %}
                 <img
-                  src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}"
+                  src="{{ producto.imagen_url }}"
                   alt="{{ producto.nombre }}"
                   class="w-full h-full object-cover"
+                  onerror="this.onerror=null; this.src='{{ placeholder_svg }}'; this.classList.add('p-2', 'object-contain')"
                 />
+                {% else %}
+                <div class="w-full h-full flex flex-col items-center justify-center p-2 bg-gray-50">
+                  <div class="w-10 h-10 text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span class="text-[8px] text-center text-gray-600 font-medium">Sin imagen</span>
+                </div>
+                {% endif %}
               </div>
               <div
                 class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
               >
+                {% if producto.imagen_url %}
                 <img
-                  src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}"
+                  src="{{ producto.imagen_url }}"
                   alt="{{ producto.nombre }} - Vista 2"
                   class="w-full h-full object-cover"
+                  onerror="this.onerror=null; this.src='{{ placeholder_svg }}'; this.classList.add('p-2', 'object-contain')"
                 />
+                {% else %}
+                <div class="w-full h-full flex flex-col items-center justify-center p-2 bg-gray-50">
+                  <div class="w-10 h-10 text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span class="text-[8px] text-center text-gray-600 font-medium">Sin imagen</span>
+                </div>
+                {% endif %}
               </div>
               <div
                 class="flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden cursor-pointer opacity-70 hover:opacity-100 transition-opacity"
               >
+                {% if producto.imagen_url %}
                 <img
-                  src="{{ producto.imagen_url or url_for('static', filename='img/placeholder-product.jpg') }}"
+                  src="{{ producto.imagen_url }}"
                   alt="{{ producto.nombre }} - Vista 3"
                   class="w-full h-full object-cover"
+                  onerror="this.onerror=null; this.src='{{ placeholder_svg }}'; this.classList.add('p-2', 'object-contain')"
                 />
+                {% else %}
+                <div class="w-full h-full flex flex-col items-center justify-center p-2 bg-gray-600">
+                  <div class="w-10 h-10 text-gray-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span class="text-[8px] text-center text-gray-600 font-medium">Sin imagen</span>
+                </div>
+                {% endif %}
               </div>
             </div>
           </div>

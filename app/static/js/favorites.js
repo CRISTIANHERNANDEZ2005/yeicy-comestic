@@ -344,37 +344,54 @@ if (typeof FavoritesManager === "undefined") {
       const svg = button.querySelector("svg");
       const favoriteText = button.querySelector(".favorite-text");
 
+      // Remove all potential color classes from both button and SVG
+      const colorClassesToRemove = [
+        "text-red-500",
+        "text-gray-300",
+        "text-gray-400",
+        "text-gray-700",
+        "border-red-500",
+        "border-gray-300",
+        "border-pink-500",
+      ];
+      button.classList.remove(...colorClassesToRemove);
+      if (svg) {
+        svg.classList.remove(...colorClassesToRemove);
+      }
+
       if (isFavorite) {
-                button.classList.remove("text-gray-300", "text-gray-400"); // Ensure all gray shades are removed
-        button.classList.add("text-red-500");
+        button.classList.add("text-red-500", "border-red-500");
+        if (svg) {
+          svg.classList.add("text-red-500");
+        }
         button.setAttribute("aria-label", "Eliminar de favoritos");
         button.setAttribute("title", "Eliminar de favoritos");
 
         if (svg) {
-            // Cambiar el ícono a corazón lleno
-            svg.innerHTML =
-              `
+          // Cambiar el ícono a corazón lleno
+          svg.innerHTML = `
             <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" fill="currentColor"/>
           `;
         }
         if (favoriteText) {
-            favoriteText.textContent = "Añadido";
+          favoriteText.textContent = "Añadido";
         }
       } else {
-        button.classList.remove("text-red-500", "text-gray-300"); // Ensure red and other gray shades are removed
-        button.classList.add("text-gray-400");
+        button.classList.add("text-gray-400", "border-gray-300");
+        if (svg) {
+          svg.classList.add("text-gray-400");
+        }
         button.setAttribute("aria-label", "Añadir a favoritos");
         button.setAttribute("title", "Añadir a favoritos");
 
         if (svg) {
-            // Cambiar el ícono a corazón vacío
-            svg.innerHTML =
-              `
+          // Cambiar el ícono a corazón vacío
+          svg.innerHTML = `
             <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" fill="none" stroke="currentColor" stroke-width="1.5"/>
           `;
         }
         if (favoriteText) {
-            favoriteText.textContent = "Guardar";
+          favoriteText.textContent = "Guardar";
         }
       }
     }

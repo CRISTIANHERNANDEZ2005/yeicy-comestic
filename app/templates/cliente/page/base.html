@@ -109,6 +109,7 @@
 
     <body class="bg-gray-100 font-sans flex flex-col min-h-screen" {% if 'user' in session %} data-user-id="{{ session.user.id }}" {% endif %}>
         {% include 'cliente/ui/auth_modals.html' %}
+
         <!-- Navbar principal -->
         <div class="w-full">
             <div class="bg-white border-b-2 border-pink-200 shadow-xl sticky top-0 z-50">
@@ -240,8 +241,10 @@
     <!-- Incluir el carrito -->
     {% include 'cliente/ui/carrito.html' %}
 
-    <!-- Scripts -->
     {% include 'cliente/ui/notifications.html' %}
+    
+    {% include 'cliente/ui/reseña_modals.html' %}
+    <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>

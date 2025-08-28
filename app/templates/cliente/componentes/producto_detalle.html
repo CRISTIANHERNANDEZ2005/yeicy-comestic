@@ -573,6 +573,25 @@
 <!-- Script para funcionalidad -->
 <script>
   window.PRODUCTS_DATA = {{ productos_relacionados | tojson }};
+
+  // Función global para actualizar la calificación del producto en la sección de detalles
+  function updateProductRatingDisplay(productId, averageRating, totalReviewsCount) {
+      const avgRatingValueSpan = document.querySelector(`[data-rating-value="${productId}"]`);
+      const totalReviewsSpan = document.querySelector(`[data-rating-count="${productId}"]`);
+      const starsContainer = document.querySelector(`[data-rating-stars="${productId}"]`);
+
+      if (avgRatingValueSpan) {
+          avgRatingValueSpan.textContent = averageRating.toFixed(1);
+      }
+      if (totalReviewsSpan) {
+          totalReviewsSpan.textContent = `(${totalReviewsCount} reseñas)`;
+      }
+      if (starsContainer && window.reviewsManager) {
+          // Reutilizar la función de generación de estrellas del ReviewsManager
+          starsContainer.innerHTML = window.reviewsManager.generateStarsHTML(Math.round(averageRating));
+      }
+  }
+
   document.addEventListener("DOMContentLoaded", function() {
       if (typeof initializeProductCarousel === 'function') {
           initializeProductCarousel();

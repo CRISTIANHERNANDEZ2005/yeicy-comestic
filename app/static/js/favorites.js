@@ -510,8 +510,8 @@ if (typeof FavoritesManager === "undefined") {
           productCard.classList.toggle("favorite-removed-state", !newState);
 
           // Update category counter
-          const categoryName = productCard.getAttribute("data-category-name");
-          this.updateCategoryCounter(categoryName, newState);
+          // const categoryName = productCard.getAttribute("data-category-name");
+          // this.updateCategoryCounter(categoryName, newState);
         }
       }
       // FIN: Cambio para opacidad en página de favoritos
@@ -786,25 +786,6 @@ if (typeof FavoritesManager === "undefined") {
         .replace(/\-\-+/g, '-')         // Replace multiple - with single -
         .replace(/^-+/, '')             // Trim - from start of text
         .replace(/-+$/, '');            // Trim - from end of text
-    }
-
-    updateCategoryCounter(categoryName, isFavorite) {
-        if (!categoryName) return;
-        const categorySlug = this.slugify(categoryName);
-        const counterElement = document.getElementById(`category-count-${categorySlug}`);
-
-        if (counterElement) {
-            try {
-                const currentCountMatch = counterElement.textContent.match(/\d+/);
-                if (currentCountMatch) {
-                    let currentCount = parseInt(currentCountMatch[0], 10);
-                    const newCount = isFavorite ? currentCount + 1 : Math.max(0, currentCount - 1);
-                    counterElement.textContent = `${newCount} ${newCount === 1 ? 'item' : 'items'}`;
-                }
-            } catch (e) {
-                console.error("Error updating category counter:", e);
-            }
-        }
     }
 
     async loadFavorites() {

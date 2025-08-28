@@ -538,26 +538,11 @@ def favoritos(usuario):
         app.logger.info(
             f"Se encontraron {len(likes)} registros de 'likes' activos.")
 
-        # Agrupar los productos por categoría principal
-        favoritos_por_categoria = {}
-        for like in likes:
-            if like.producto:
-                producto_data = producto_to_dict(like.producto)
-                categoria_principal_nombre = producto_data.get('categoria_principal_nombre') or 'Sin Categoría'
-                
-                if categoria_principal_nombre not in favoritos_por_categoria:
-                    favoritos_por_categoria[categoria_principal_nombre] = []
-                favoritos_por_categoria[categoria_principal_nombre].append(producto_data)
+        # Crear una lista plana de productos favoritos
+        favoritos = [producto_to_dict(like.producto) for like in likes if like.producto]
+        app.logger.info(f"Se encontraron {len(favoritos)} productos favoritos para el usuario con ID {user_id}")
 
-        app.logger.info(f"Se agruparon {sum(len(v) for v in favoritos_por_categoria.values())} productos en {len(favoritos_por_categoria)} categorías.")
-        if favoritos_por_categoria:
-            app.logger.debug(f"Categorías agrupadas: {list(favoritos_por_categoria.keys())}")
-
-        if not favoritos_por_categoria:
-            app.logger.info(
-                f"No se encontraron productos favoritos para el usuario con ID {user_id}")
-
-        # Obtener categorías para el menú
+        # Obtener categorías para el menú (se mantiene por si se usa en la base.html)
         categorias = CategoriasPrincipales.query.filter_by(estado='activo')\
             .options(
                 joinedload(CategoriasPrincipales.subcategorias).joinedload(
@@ -567,9 +552,9 @@ def favoritos(usuario):
         if not categorias:
             app.logger.info("No se encontraron categorías activas")
 
-        app.logger.info("Renderizando la plantilla de favoritos.html")
-        # Renderizar la plantilla, pasando los favoritos agrupados por categoría
-        return render_template('cliente/componentes/favoritos.html', favoritos_por_categoria=favoritos_por_categoria, categorias=categorias), 200
+        app.logger.info("Renderizando la plantilla de favoritos.html con una lista única de favoritos.")
+        # Renderizar la plantilla, pasando la lista única de favoritos
+        return render_template('cliente/componentes/favoritos.html', favoritos=favoritos, categorias=categorias), 200
 
     except Exception as e:
         app.logger.error(

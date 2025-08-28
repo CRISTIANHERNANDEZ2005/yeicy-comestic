@@ -81,67 +81,17 @@ Cosméticos {% endblock %} {% block content %}
     </div>
   </div>
 
-  {% if favoritos_por_categoria | default({}) %}
-  <!-- Favoritos organizados por categoría -->
-  <div class="space-y-10">
-    {% for categoria_nombre, productos_categoria in (favoritos_por_categoria |
-    default({})).items() %}
-    <div
-      class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden"
-    >
-      <!-- Encabezado de categoría -->
-      <div
-        class="bg-gradient-to-r from-pink-50 to-fuchsia-50 px-6 py-4 border-b border-gray-200"
-      >
-        <div class="flex items-center justify-between">
-          <div class="flex items-center">
-            <div
-              class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center mr-3"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5 text-pink-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-                />
-              </svg>
-            </div>
-            <div>
-              <h2 class="text-xl font-bold text-gray-800">
-                {{ categoria_nombre }}
-              </h2>
-            </div>
-          </div>
-          <div class="hidden md:block">
-            <span
-              id="category-count-{{ categoria_nombre | slugify }}"
-              class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-pink-100 text-pink-800"
-            >
-              {{ productos_categoria|length }} items
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Contenido de productos -->
-      <div class="p-6">
-        <script>
-          // Define los datos de productos y el estado de autenticación para los scripts.
-          // Cada carrusel tendrá su propio window.PRODUCTS_DATA temporal
-          window.PRODUCTS_DATA = {{ productos_categoria|tojson|safe }};
-          window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
-        </script>
-        {% include 'cliente/ui/carrusel_favoritos.html' %}
-      </div>
+  {% if favoritos %}
+  <!-- Contenedor para el carrusel único de favoritos -->
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+    <div class="p-6">
+      <script>
+        // Define los datos de productos para el carrusel único.
+        window.PRODUCTS_DATA = {{ favoritos|tojson|safe }};
+        window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
+      </script>
+      {% include 'cliente/ui/carrusel_favoritos.html' %}
     </div>
-    {% endfor %}
   </div>
   {% else %}
   <!-- Estado vacío mejorado -->

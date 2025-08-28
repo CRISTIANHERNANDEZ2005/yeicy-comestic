@@ -300,7 +300,7 @@ def eliminar_review(usuario, producto_id, review_id):
         if producto:
             producto.actualizar_promedio_calificaciones() # Call the method to update the stored average
 
-        return jsonify({'success': True, 'mensaje': 'Reseña eliminada permanentemente.'})
+        return jsonify({'success': True, 'mensaje': 'Reseña eliminada exitosamente'})
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f'Error al eliminar reseña: {str(e)}')

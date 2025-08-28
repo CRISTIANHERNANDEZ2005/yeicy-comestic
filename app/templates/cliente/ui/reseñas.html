@@ -1376,33 +1376,15 @@
     }
 
     showToast(message, type = "info") {
-      const container = this.getOrCreateToastContainer();
-      const toast = document.createElement("div");
-      toast.className = `toast`;
-      const iconColor =
-        type === "success"
-          ? "bg-green-500"
-          : type === "error"
-          ? "bg-red-500"
-          : "bg-blue-500";
-      toast.innerHTML = `<div class="toast-icon ${iconColor}"></div><span>${message}</span>`;
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.style.transition = "opacity 0.3s, transform 0.3s";
-        toast.style.opacity = "0";
-        toast.style.transform = "translateX(100%)";
-        setTimeout(() => toast.remove(), 300);
-      }, 4000);
-    }
-
-    getOrCreateToastContainer() {
-      let container = document.getElementById("toast-container");
-      if (!container) {
-        container = document.createElement("div");
-        container.id = "toast-container";
-        document.body.appendChild(container);
+      if (type === "success") {
+        if (window.toast && typeof window.toast.success === "function") {
+          window.toast.success(message);
+        } else {
+          console.log("Éxito (sin toast):", message);
+        }
+      } else {
+        console.error(`Mensaje (${type}):`, message);
       }
-      return container;
     }
 
     updateContainerVisibility() {

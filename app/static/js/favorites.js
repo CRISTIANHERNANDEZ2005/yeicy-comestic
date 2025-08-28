@@ -498,6 +498,7 @@ if (typeof FavoritesManager === "undefined") {
       this.updateFavoriteButton(buttonElement, newState);
       this.updateFavoritesCounter();
       this.saveLocalFavorites();
+      this.updateAllFavoriteButtons();
 
       // INICIO: Cambio para opacidad en página de favoritos
       // Si estamos en la página de favoritos, aplicamos un efecto visual a la tarjeta del producto.

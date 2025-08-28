@@ -672,7 +672,7 @@
 
       try {
         const response = await fetch(
-          `/api/productos/${this.productId}/reseñas/${reviewIdToDelete}`, // Use local variable
+          `/api/productos/${this.productId}/reviews/${reviewIdToDelete}`, // Use local variable
           { method: "DELETE", headers: this.getAuthHeaders() }
         );
         const result = await response.json();
@@ -781,8 +781,8 @@
       try {
         const method = reviewId ? "PUT" : "POST";
         const endpoint = reviewId
-          ? `/api/productos/${this.productId}/reseñas/${reviewId}`
-          : `/api/productos/${this.productId}/reseñas`;
+          ? `/api/productos/${this.productId}/reviews/${reviewId}`
+          : `/api/productos/${this.productId}/reviews`;
 
         const response = await fetch(endpoint, {
           method,
@@ -798,12 +798,12 @@
           if (method === "POST") {
             if (
               this.user &&
-              result.reseña.usuario &&
-              this.user.id === result.reseña.usuario.id
+              result.review.usuario &&
+              this.user.id === result.review.usuario.id
             ) {
-              result.reseña.puede_editar = true;
+              result.review.puede_editar = true;
             }
-            const newReviewElement = this.createReviewElement(result.reseña);
+            const newReviewElement = this.createReviewElement(result.review);
             const container = document.getElementById("reviews-list");
             const emptyState = document.getElementById("empty-state");
 
@@ -813,27 +813,27 @@
             }
 
             container.prepend(newReviewElement);
-            this.reviews.set(result.reseña.id, result.reseña);
-            this.userReview = result.reseña;
+            this.reviews.set(result.review.id, result.review);
+            this.userReview = result.review;
             this.updateReviewButtonState();
           } else {
             const existingReviewElement = document.querySelector(
-              `[data-review-id="${result.reseña.id}"]`
+              `[data-review-id="${result.review.id}"]`
             );
             if (existingReviewElement) {
               if (
                 this.user &&
-                result.reseña.usuario &&
-                this.user.id === result.reseña.usuario.id
+                result.review.usuario &&
+                this.user.id === result.review.usuario.id
               ) {
-                result.reseña.puede_editar = true;
+                result.review.puede_editar = true;
               }
               const updatedReviewElement = this.createReviewElement(
-                result.reseña
+                result.review
               );
               existingReviewElement.replaceWith(updatedReviewElement);
-              this.reviews.set(result.reseña.id, result.reseña);
-              this.userReview = result.reseña;
+              this.reviews.set(result.review.id, result.review);
+              this.userReview = result.review;
               this.updateReviewButtonState();
             } else {
               this.refreshReviews();
@@ -910,7 +910,7 @@
         });
 
         const response = await fetch(
-          `/api/productos/${this.productId}/reseñas?${params}`,
+          `/api/productos/${this.productId}/reviews?${params}`,
           { headers: this.getAuthHeaders() }
         );
 
@@ -949,7 +949,7 @@
       );
 
       // Add reviews to the map
-      data.reseñas.forEach((review) => {
+      data.reviews.forEach((review) => {
         // Check if the current user is the author of the review
         if (this.user && review.usuario && this.user.id === review.usuario.id) {
           review.puede_editar = true;
@@ -964,7 +964,7 @@
         container.innerHTML = "";
       }
 
-      if (data.reseñas.length === 0) {
+      if (data.reviews.length === 0) {
         container.innerHTML = ""; // Ensure the list is empty
         emptyState.classList.remove("hidden");
 
@@ -997,7 +997,7 @@
       emptyState.classList.add("hidden"); // Hide empty state if reviews are present
 
       const fragment = document.createDocumentFragment();
-      data.reseñas.forEach((review) => {
+      data.reviews.forEach((review) => {
         const reviewElement = this.createReviewElement(review);
         fragment.appendChild(reviewElement);
       });
@@ -1076,7 +1076,7 @@
 
       try {
         const response = await fetch(
-          `/api/productos/${this.productId}/reseñas/${reviewId}`,
+          `/api/productos/${this.productId}/reviews/${reviewId}`,
           { method: "DELETE", headers: this.getAuthHeaders() }
         );
         const result = await response.json();
@@ -1312,12 +1312,12 @@
 
       try {
         const response = await fetch(
-          `/api/productos/${this.productId}/mis-reseñas`,
+          `/api/productos/${this.productId}/my-reviews`,
           { headers: this.getAuthHeaders() }
         );
         const data = await response.json();
         if (response.ok && data.success) {
-          this.userReview = data.reseña;
+          this.userReview = data.review;
           text.textContent = "Editar mi reseña";
         } else {
           this.userReview = null;

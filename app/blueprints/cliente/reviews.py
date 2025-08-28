@@ -7,7 +7,7 @@ from sqlalchemy.orm import joinedload
 from app.models.domains.product_models import Productos
 from app.models.domains.review_models import Reseñas
 from app.models.domains.user_models import Usuarios
-from app.models.serializers import review_to_dict
+from app.models.serializers import resena_to_dict
 from app.extensions import db
 from app.utils.jwt_utils import jwt_required, decode_jwt_token
 from datetime import datetime, timedelta
@@ -117,7 +117,7 @@ def listar_reviews(producto_id):
     )
 
     # Formatear respuesta usando review_to_dict
-    datos = [review_to_dict(r) for r in paginated_reviews.items]
+    datos = [resena_to_dict(r) for r in paginated_reviews.items]
 
     # Determinar usuario autenticado (si hay token)
     user_id = None
@@ -204,7 +204,7 @@ def crear_review(usuario, producto_id):
         return jsonify({
             'success': True,
             'mensaje': 'Reseña creada exitosamente',
-            'review': review_to_dict(nueva_review)
+            'review': resena_to_dict(nueva_review)
         }), 201
     except ValueError as ve:
         db.session.rollback()
@@ -259,7 +259,7 @@ def actualizar_review(usuario, producto_id, review_id):
         return jsonify({
             'success': True,
             'mensaje': 'Reseña actualizada exitosamente',
-            'review': review_to_dict(review)
+            'review': resena_to_dict(review)
         })
     except ValueError as ve:
         db.session.rollback()
@@ -321,10 +321,9 @@ def obtener_mi_review(usuario, producto_id):
     ).first()
     if not review:
         return jsonify({'success': False, 'error': 'No tienes una reseña para este producto'}), 404
-    data = review_to_dict(review)
+    data = resena_to_dict(review)
     data['puede_editar'] = True
     return jsonify({'success': True, 'review': data})
-
 
 @reviews_bp.route('/api/productos/<string:producto_id>/rating', methods=['GET'])
 def obtener_rating_producto(producto_id):

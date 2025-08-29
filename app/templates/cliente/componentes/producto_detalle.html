@@ -318,7 +318,7 @@
 
           <!-- Indicador de Stock con Iconos -->
           <div class="mb-8">
-            {% if producto.stock > 0 %}
+            {% if producto.existencia >= producto.stock_minimo %}
             <div class="flex items-center space-x-2 text-green-600">
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -328,7 +328,7 @@
                 />
               </svg>
               <span class="font-semibold text-lg">
-                En stock: {{ producto.stock }} unidades disponibles
+                En stock: {{ producto.existencia }} unidades disponibles
               </span>
             </div>
             {% else %}
@@ -389,12 +389,11 @@
                     id="quantity-input"
                     value="1"
                     min="1"
-                    max="{{ producto.stock }}"
+                    max="{{ producto.existencia }}"
                     class="w-20 text-center text-lg font-bold border-x-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                     {%
                     if
-                    producto.stock|int
-                    <= 0
+                    producto.existencia|int < producto.stock_minimo
                     %}disabled{%
                     endif
                     %}
@@ -420,7 +419,7 @@
                   </button>
                 </div>
                 <span class="text-sm text-gray-500">
-                  Máx: {{ producto.stock }} unidades
+                  Máx: {{ producto.existencia }} unidades
                 </span>
               </div>
             </div>
@@ -434,8 +433,7 @@
                 data-quantity="1"
                 {%
                 if
-                producto.stock|int
-                <=0
+                producto.existencia|int < producto.stock_minimo
                 %}disabled{%
                 endif
                 %}
@@ -582,9 +580,9 @@
             <div>
               <h3 class="font-semibold text-gray-900 mb-2">Disponibilidad</h3>
               <p
-                class="{% if producto.stock > 0 %}text-green-600{% else %}text-red-600{% endif %} font-semibold"
+                class="{% if producto.existencia >= producto.stock_minimo %}text-green-600{% else %}text-red-600{% endif %} font-semibold"
               >
-                {{ 'En stock' if producto.stock > 0 else 'Agotado' }}
+                {{ 'En stock' if producto.existencia >= producto.stock_minimo else 'Agotado' }}
               </p>
             </div>
           </div>

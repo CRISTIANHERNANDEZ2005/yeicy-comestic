@@ -96,7 +96,7 @@ def manejar_favoritos(usuario):
                         'precio': float(fav.producto.precio),
                         'imagen_url': fav.producto.imagen_url,
                         'marca': fav.producto.marca,
-                        'stock': fav.producto.stock,
+                        'existencia': fav.producto.existencia,
                         'es_favorito': True,
                         'categoria': categoria_principal_nombre,
                         'subcategoria': fav.producto.seudocategoria.subcategoria.nombre if fav.producto.seudocategoria and fav.producto.seudocategoria.subcategoria else None,
@@ -482,7 +482,7 @@ def sincronizar_favoritos(usuario):
             'precio': float(fav.producto.precio),
             'imagen_url': fav.producto.imagen_url,
             'marca': fav.producto.marca,
-            'stock': fav.producto.stock,
+            'existencia': fav.producto.existencia,
             'es_favorito': True
         } for fav in favoritos_actuales if fav.producto and fav.producto.estado == 'activo']
 

@@ -344,9 +344,9 @@ if (typeof ShoppingCart === "undefined") {
         const productResponse = await fetch(`/api/product/${productId}`);
         const product = await productResponse.json();
 
-        if (!product || product.stock < quantity) {
+        if (!product || product.existencia < quantity) {
           this.showToast(
-            `Stock insuficiente - Solo quedan ${product.stock || 0} unidades`,
+            `Stock insuficiente - Solo quedan ${product.existencia || 0} unidades`,
             "warning"
           );
           this.restoreButton(button);
@@ -363,12 +363,12 @@ if (typeof ShoppingCart === "undefined") {
 
         if (existingItem) {
           const oldQuantity = existingItem.quantity;
-          const newQuantity = Math.min(oldQuantity + quantity, product.stock);
+          const newQuantity = Math.min(oldQuantity + quantity, product.existencia);
 
           if (oldQuantity === newQuantity) {
             // Quantity did not change, likely already at max stock
             this.showToast(
-              `El producto "${product.nombre}" ya está en la cantidad máxima disponible (${product.stock} unidades).`,
+              `El producto "${product.nombre}" ya está en la cantidad máxima disponible (${product.existencia} unidades).`,
               "warning"
             );
           } else {
@@ -388,17 +388,17 @@ if (typeof ShoppingCart === "undefined") {
           this.cartItems.push({
             id: `temp_${Date.now()}`,
             product_id: productId,
-            quantity: Math.min(quantity, product.stock),
+            quantity: Math.min(quantity, product.existencia),
             product: {
               id: product.id,
               nombre: product.nombre,
               precio: parseFloat(product.precio),
               imagen_url: product.imagen_url,
               marca: product.marca || "",
-              stock: product.stock,
+              existencia: product.existencia,
             },
             subtotal:
-              parseFloat(product.precio) * Math.min(quantity, product.stock),
+              parseFloat(product.precio) * Math.min(quantity, product.existencia),
           });
           this.showToast("Producto agregado al carrito", "success");
         }
@@ -616,9 +616,8 @@ if (typeof ShoppingCart === "undefined") {
       const totalQuantity = this.cache.totalQuantity;
       const totalPrice = this.cache.totalPrice;
 
-      itemCount.textContent = `${totalQuantity} ${
-        totalQuantity === 1 ? "producto" : "productos"
-      }`;
+      itemCount.textContent = `${totalQuantity} ` +
+        (totalQuantity === 1 ? "producto" : "productos");
       subtotalElement.textContent = `$${totalPrice.toFixed(2)}`;
       totalElement.textContent = `$${totalPrice.toFixed(2)}`;
 
@@ -626,11 +625,11 @@ if (typeof ShoppingCart === "undefined") {
         .map(
           (item) => `
       <div class="group p-4 hover:bg-gray-50 transition-colors" data-item-id="${
-        item.id
-      }">
+            item.id
+          }">
         <div class="flex gap-4">
           <div class="relative">
-            ${
+            ${ 
               item.product.imagen_url &&
               item.product.imagen_url.trim() !== "" &&
               !item.product.imagen_url.includes("default")
@@ -646,19 +645,19 @@ if (typeof ShoppingCart === "undefined") {
                      </svg>
                    </div>`
             }
-            ${
-              item.product.stock < 10
+            ${ 
+              item.product.existencia < 10
                 ? `<span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-1">¡Últimos!</span>`
                 : ""
             }
           </div>
           
           <div class="flex-1">
-            <h4 class="font-semibold text-gray-900 line-clamp-1">${
+            <h4 class="font-semibold text-gray-900 line-clamp-1">${ 
               item.product.nombre
             }</h4>
             <p class="text-sm text-gray-500">${item.product.marca || ""}</p>
-            <p class="text-pink-600 font-bold text-lg">$${
+            <p class="text-pink-600 font-bold text-lg">$${ 
               item.product.precio != null
                 ? Number(item.product.precio).toFixed(2)
                 : "0.00"
@@ -684,7 +683,7 @@ if (typeof ShoppingCart === "undefined") {
                 </svg>
               </button>
               
-              <span class="px-3 py-1 text-center font-semibold min-w-[3rem]">${
+              <span class="px-3 py-1 text-center font-semibold min-w-[3rem]">${ 
                 item.quantity
               }</span>
               
@@ -697,7 +696,7 @@ if (typeof ShoppingCart === "undefined") {
               </button>
             </div>
             
-            <p class="text-sm font-bold text-gray-900">$${
+            <p class="text-sm font-bold text-gray-900">$${ 
               item.subtotal != null ? Number(item.subtotal).toFixed(2) : "0.00"
             }</p>
           </div>
@@ -726,7 +725,7 @@ if (typeof ShoppingCart === "undefined") {
       const newQuantity = item.quantity + change;
 
       if (newQuantity < 1) return;
-      if (newQuantity > item.product.stock) {
+      if (newQuantity > item.product.existencia) {
         this.showToast("Stock máximo alcanzado", "warning");
         return;
       }
@@ -797,7 +796,8 @@ if (typeof ShoppingCart === "undefined") {
       button.dataset.originalHTML = button.innerHTML;
       button.dataset.originalDisabled = button.disabled;
 
-      button.innerHTML = `
+      button.innerHTML =
+        `
       <span class="flex items-center">
         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -822,7 +822,8 @@ if (typeof ShoppingCart === "undefined") {
     showSuccessAnimation(button) {
       if (!button) return;
 
-      const successHTML = `
+      const successHTML =
+        `
       <span class="flex items-center">
         <svg class="w-4 h-4 mr-1 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>

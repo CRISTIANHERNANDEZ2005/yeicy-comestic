@@ -55,8 +55,6 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
         if id:
             self.id = id
 
-
-
 class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
     __tablename__ = 'subcategorias'
 
@@ -133,7 +131,9 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     descripcion: Mapped[str] = mapped_column(db.String(1000), nullable=False)
     precio: Mapped[float] = mapped_column(db.Float, nullable=False)
     imagen_url: Mapped[str] = mapped_column(db.String(255), nullable=False)
-    stock: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    existencia: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    stock_minimo: Mapped[int] = mapped_column(db.Integer, default=10, nullable=False)
+    stock_maximo: Mapped[int] = mapped_column(db.Integer, default=100, nullable=False)
     seudocategoria_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('seudocategorias.id'), nullable=False)
     marca: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True)
     # estado ya está en el mixin
@@ -142,7 +142,6 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     seudocategoria: Mapped['Seudocategorias'] = relationship('Seudocategorias', back_populates='productos')
 
     calificacion_promedio_almacenada: Mapped[float] = mapped_column(db.Float, default=0.0) # Nueva columna para almacenar el promedio
-
     # Propiedad para calcular la calificación promedio (se mantiene para compatibilidad o acceso directo)
     @property
     def calificacion_promedio(self):
@@ -174,23 +173,26 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     # Restricciones e índices
     __table_args__ = (
         CheckConstraint("precio > 0", name='check_precio_positivo'),
-        CheckConstraint("stock >= 0", name='check_stock_no_negativo'),
+        CheckConstraint("existencia >= 0", name='check_existencia_no_negativo'),
+        CheckConstraint("existencia BETWEEN stock_minimo AND stock_maximo", name='check_existencia_rango'),
         db.Index('idx_producto_seudocategoria_id', 'seudocategoria_id'),
         db.Index('idx_producto_nombre', 'nombre'),
         db.Index('idx_producto_slug', 'slug'),
         db.Index('idx_producto_estado', 'estado'),
         db.Index('idx_producto_marca', 'marca'),
         db.Index('idx_producto_nombre_lower', db.func.lower(nombre)),
+        db.Index('idx_producto_stock_minimo', 'stock_minimo'),
+        db.Index('idx_producto_stock_maximo', 'stock_maximo'),
     )
 
-    def __init__(self, nombre, descripcion, precio, imagen_url, stock, seudocategoria_id, marca=None, estado='activo', id=None):
+    def __init__(self, nombre, descripcion, precio, imagen_url, existencia, seudocategoria_id, stock_minimo=10, stock_maximo=100, marca=None, estado='activo', id=None):
         self.nombre = str(NombreProducto(nombre))
         self.slug = slugify(self.nombre)
         self.descripcion = str(DescripcionProducto(descripcion))
         if precio is None or precio <= 0:
             raise ValueError("El precio debe ser mayor que 0")
-        if stock is None or stock < 0:
-            raise ValueError("El stock no puede ser negativo")
+        if existencia is None or existencia < 0:
+            raise ValueError("La existencia no puede ser negativa")
         if not imagen_url or not imagen_url.strip():
             raise ValueError("La URL de la imagen no puede estar vacía")
         if not seudocategoria_id:
@@ -199,9 +201,12 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
             raise ValueError("El estado debe ser 'activo' o 'inactivo'")
         if marca is not None and not marca.strip():
             raise ValueError("La marca no puede estar vacía si se proporciona")
+        
         self.precio = precio
         self.imagen_url = imagen_url.strip()
-        self.stock = stock
+        self.existencia = existencia
+        self.stock_minimo = stock_minimo
+        self.stock_maximo = stock_maximo
         self.seudocategoria_id = seudocategoria_id
         self.marca = marca.strip() if marca else None
         self.estado = estado

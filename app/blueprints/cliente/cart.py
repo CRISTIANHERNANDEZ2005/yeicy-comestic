@@ -143,8 +143,8 @@ def add_to_cart_optimized():
     if not product or product.estado != 'activo':
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
-    if quantity > product.stock:
-        return jsonify({'success': False, 'message': f'Stock insuficiente para {product.nombre}. Solo hay {product.stock} unidades disponibles.', 'type': 'stock_error'})
+    if quantity > product.existencia:
+        return jsonify({'success': False, 'message': f'Stock insuficiente para {product.nombre}. Solo hay {product.existencia} unidades disponibles.', 'type': 'stock_error'})
 
     cart_info = get_or_create_cart()
 
@@ -172,8 +172,8 @@ def add_to_cart_optimized():
 
         # If the requested quantity was more than available stock, but not a full error
         # (e.g., if frontend already adjusted, or if we want to warn for non-authenticated)
-        if quantity > product.stock:
-            warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.stock} debido a la disponibilidad.')
+        if quantity > product.existencia:
+            warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.existencia} debido a la disponibilidad.')
             response_type = 'warning' # Change type if there's a warning
 
         return jsonify({
@@ -222,9 +222,9 @@ def sync_cart(usuario):
                 continue
 
             original_quantity = quantity # Store original quantity for comparison
-            quantity = min(quantity, product.stock)
-            if original_quantity > product.stock:
-                warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.stock} debido a la disponibilidad.')
+            quantity = min(quantity, product.existencia)
+            if original_quantity > product.existencia:
+                warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.existencia} debido a la disponibilidad.')
 
 
             db_item = None
@@ -249,9 +249,9 @@ def sync_cart(usuario):
                         current_db_item.quantity = quantity
                     
                     # Check if quantity was adjusted due to stock during merge/update
-                    if current_db_item.quantity > product.stock:
-                        current_db_item.quantity = product.stock
-                        warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.stock} debido a la disponibilidad.')
+                    if current_db_item.quantity > product.existencia:
+                        current_db_item.quantity = product.existencia
+                        warnings.append(f'La cantidad de {product.nombre} se ajustó a {product.existencia} debido a la disponibilidad.')
 
                     current_db_item.updated_at = datetime.utcnow()
                     items_to_keep_in_db.add(current_db_item.id) # Mark as kept
@@ -341,6 +341,6 @@ def get_product_details(product_id):
         'precio': float(product.precio),
         'imagen_url': product.imagen_url,
         'marca': product.marca or '',
-        'stock': product.stock,
+        'existencia': product.existencia,
         'estado': product.estado
     })

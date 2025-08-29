@@ -549,41 +549,79 @@
     <div class="mb-12">
       <div class="bg-white rounded-2xl shadow-xl overflow-hidden">
         <div class="border-b border-gray-200">
-          <nav class="flex space-x-8 px-8" aria-label="Tabs">
-            <button
-              class="tab-button py-4 px-1 border-b-2 border-pink-500 text-pink-600 font-semibold"
-            >
-              Detalles del producto
+          <nav class="flex space-x-1 sm:space-x-4 px-4 sm:px-8" aria-label="Tabs">
+            <button data-tab="detalles" class="tab-button flex items-center space-x-2 py-4 px-2 sm:px-4 border-b-2 border-pink-500 text-pink-600 font-semibold">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span class="hidden sm:inline">Detalles</span>
             </button>
-            <button
-              class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-            >
-              Especificaciones
+            {% if producto.especificaciones %}
+            <button data-tab="especificaciones" class="tab-button flex items-center space-x-2 py-4 px-2 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors duration-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M12 8h.01M15 8h.01M9 5h.01M12 5h.01M15 5h.01M5 5a2 2 0 012-2h10a2 2 0 012 2v14a2 2 0 01-2 2H7a2 2 0 01-2-2V5z"></path></svg>
+              <span class="hidden sm:inline">Especificaciones</span>
             </button>
-            <button
-              class="tab-button py-4 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700"
-            >
-              Envíos y devoluciones
+            {% endif %}
+            <button data-tab="envios" class="tab-button flex items-center space-x-2 py-4 px-2 sm:px-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 transition-colors duration-300">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <span class="hidden sm:inline">Envíos y Devoluciones</span>
             </button>
           </nav>
         </div>
 
-        <div class="p-8">
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 class="font-semibold text-gray-900 mb-2">Categorías:</h3>
-              <p class="text-gray-600">
-                {{ producto.seudocategoria.subcategoria.categoria_principal.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria and producto.seudocategoria.subcategoria.categoria_principal else '' }}-{{ producto.seudocategoria.subcategoria.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria else '' }}-{{ producto.seudocategoria.nombre if producto.seudocategoria else '' }}-{{ producto.nombre }}
-              </p>
+        <div class="p-6 sm:p-8">
+          <!-- Contenido de la Pestaña: Detalles -->
+          <div id="detalles" class="tab-content">
+            <div class="prose max-w-none">
+              <h3 class="text-xl font-bold text-gray-800 mb-4">Detalles del Producto</h3>
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 class="font-semibold text-gray-700">Categorías</h4>
+                  <p class="text-gray-600 flex items-center space-x-2">
+                    <span>{{ producto.seudocategoria.subcategoria.categoria_principal.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria and producto.seudocategoria.subcategoria.categoria_principal else '' }}</span>
+                    <span class="text-gray-400">&rsaquo;</span>
+                    <span>{{ producto.seudocategoria.subcategoria.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria else '' }}</span>
+                    <span class="text-gray-400">&rsaquo;</span>
+                    <span>{{ producto.seudocategoria.nombre if producto.seudocategoria else '' }}</span>
+                    <span class="text-gray-400">&rsaquo;</span>
+                    <span class="font-semibold">{{ producto.nombre }}</span>
+                  </p>
+                </div>
+                <div>
+                  <h4 class="font-semibold text-gray-700">Disponibilidad</h4>
+                  <p class="font-bold {% if producto.existencia >= producto.stock_minimo %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ 'En stock' if producto.existencia >= producto.stock_minimo else 'Agotado' }}
+                  </p>
+                </div>
+              </div>
             </div>
-            
-            <div>
-              <h3 class="font-semibold text-gray-900 mb-2">Disponibilidad</h3>
-              <p
-                class="{% if producto.existencia >= producto.stock_minimo %}text-green-600{% else %}text-red-600{% endif %} font-semibold"
-              >
-                {{ 'En stock' if producto.existencia >= producto.stock_minimo else 'Agotado' }}
-              </p>
+          </div>
+
+          <!-- Contenido de la Pestaña: Especificaciones -->
+          {% if producto.especificaciones %}
+          <div id="especificaciones" class="tab-content hidden">
+            <div class="prose max-w-none">
+              <h3 class="text-xl font-bold text-gray-800 mb-4">Especificaciones Técnicas</h3>
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <ul class="space-y-3">
+                  {% for key, value in producto.especificaciones.items() %}
+                  <li class="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                    <span class="font-medium text-gray-600">{{ key }}</span>
+                    <span class="text-gray-800 font-semibold text-right">{{ value }}</span>
+                  </li>
+                  {% endfor %}
+                </ul>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Contenido de la Pestaña: Envíos y Devoluciones -->
+          <div id="envios" class="tab-content hidden">
+            <div class="prose max-w-none">
+              <h3 class="text-xl font-bold text-gray-800 mb-4">Información de Envíos y Devoluciones</h3>
+              <div class="space-y-4 text-gray-600">
+                <p><strong>Envíos:</strong> Ofrecemos envío estándar gratuito en todos los pedidos. El tiempo de entrega estimado es de 3 a 5 días hábiles. También disponemos de envío express por un costo adicional.</p>
+                <p><strong>Devoluciones:</strong> Aceptamos devoluciones dentro de los 30 días posteriores a la compra. El producto debe estar en su empaque original y sin usar. Para iniciar una devolución, por favor contacta a nuestro servicio al cliente.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -627,7 +665,6 @@
           totalReviewsSpan.textContent = `(${totalReviewsCount} reseñas)`;
       }
       if (starsContainer && window.reviewsManager) {
-          // Reutilizar la función de generación de estrellas del ReviewsManager
           starsContainer.innerHTML = window.reviewsManager.generateStarsHTML(Math.round(averageRating));
       }
   }
@@ -637,6 +674,55 @@
           initializeProductCarousel();
       }
 
+      // Lógica de Pestañas (Tabs) A PRUEBA DE ERRORES
+      const tabsContainer = document.querySelector('[aria-label="Tabs"]');
+      if (tabsContainer) {
+          const tabButtons = Array.from(tabsContainer.querySelectorAll('.tab-button'));
+          const contentContainer = tabsContainer.closest('.bg-white').querySelector('.p-6, .p-8');
+
+          if (contentContainer) {
+              const tabContents = Array.from(contentContainer.querySelectorAll('.tab-content'));
+              
+              const tabMap = {};
+              tabContents.forEach(content => {
+                  if (content && content.id) {
+                      tabMap[content.id] = content;
+                  }
+              });
+
+              tabButtons.forEach(button => {
+                  button.addEventListener('click', () => {
+                      const tabId = button.dataset.tab;
+
+                      // Ocultar todo el contenido
+                      for (const id in tabMap) {
+                          if (tabMap[id]) {
+                              tabMap[id].classList.add('hidden');
+                          }
+                      }
+
+                      // Desactivar todos los botones
+                      tabButtons.forEach(btn => {
+                          if (btn) {
+                            btn.classList.remove('border-pink-500', 'text-pink-600', 'font-semibold');
+                            btn.classList.add('border-transparent', 'text-gray-500');
+                          }
+                      });
+
+                      // Activar el botón clickeado
+                      button.classList.add('border-pink-500', 'text-pink-600', 'font-semibold');
+                      button.classList.remove('border-transparent', 'text-gray-500');
+
+                      // Mostrar contenido activo
+                      if (tabMap[tabId]) {
+                          tabMap[tabId].classList.remove('hidden');
+                      }
+                  });
+              });
+          }
+      }
+
+      // Lógica del selector de cantidad
       const quantityInput = document.getElementById('quantity-input');
       const decreaseBtn = document.getElementById('decrease-quantity');
       const increaseBtn = document.getElementById('increase-quantity');
@@ -707,12 +793,10 @@
                   }
               }
 
-              // Inicializar estado del botón
               if (window.favoritesManager && window.favoritesManager.favoriteProducts.has(productId)) {
                   updateButtonState(true);
               }
 
-              // Escuchar cambios en los favoritos
               document.addEventListener('favorites:updated', function(e) {
                   if (e.detail.productId === productId) {
                       updateButtonState(e.detail.isFavorite);
@@ -721,7 +805,6 @@
           });
       }
 
-      // Esperar a que el gestor de favoritos esté listo
       document.addEventListener('favorites:loadComplete', setupFavoriteButtons, { once: true });
 
       // Animación suave al hacer scroll

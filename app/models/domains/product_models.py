@@ -120,8 +120,6 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
         if id:
             self.id = id
 
-
-
 class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
     __tablename__ = 'productos'
 
@@ -136,6 +134,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     stock_maximo: Mapped[int] = mapped_column(db.Integer, default=100, nullable=False)
     seudocategoria_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('seudocategorias.id'), nullable=False)
     marca: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True)
+    especificaciones: Mapped[Optional[dict]] = mapped_column(db.JSON, nullable=True) # Nuevo campo para especificaciones
     # estado ya está en el mixin
     likes: Mapped[List['Likes']] = relationship('Likes', back_populates='producto', lazy=True)
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='producto', lazy=True)
@@ -185,7 +184,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         db.Index('idx_producto_stock_maximo', 'stock_maximo'),
     )
 
-    def __init__(self, nombre, descripcion, precio, imagen_url, existencia, seudocategoria_id, stock_minimo=10, stock_maximo=100, marca=None, estado='activo', id=None):
+    def __init__(self, nombre, descripcion, precio, imagen_url, existencia, seudocategoria_id, especificaciones=None, stock_minimo=10, stock_maximo=100, marca=None, estado='activo', id=None):
         self.nombre = str(NombreProducto(nombre))
         self.slug = slugify(self.nombre)
         self.descripcion = str(DescripcionProducto(descripcion))
@@ -210,6 +209,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         self.seudocategoria_id = seudocategoria_id
         self.marca = marca.strip() if marca else None
         self.estado = estado
+        self.especificaciones = especificaciones
         if id:
             self.id = id
         self.calificacion_promedio_almacenada = 0.0 # Inicializar la nueva columna

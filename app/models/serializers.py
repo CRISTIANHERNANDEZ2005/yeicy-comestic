@@ -116,7 +116,8 @@ def producto_to_dict(prod):
         'seudocategoria_nombre': seudocategoria_nombre,
         'calificacion_promedio': prod.calificacion_promedio_almacenada,
         'es_nuevo': prod.es_nuevo,
-        'reseñas_count': len(prod.reseñas) if hasattr(prod, 'reseñas') else 0
+        'reseñas_count': len(prod.reseñas) if hasattr(prod, 'reseñas') else 0,
+        'especificaciones': prod.especificaciones or {}
     }
 
 def like_to_dict(like):

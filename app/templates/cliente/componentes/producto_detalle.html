@@ -1,4 +1,4 @@
-{% extends 'cliente/page/base.html' %} {% block title %}{{ title }}{% endblock
+{% extends 'cliente/page/base.html' %} {% block title %}{{ producto.nombre }} - YE&CI COMESTIC{% endblock
 %} {% block content %}
 
 <!-- Contenedor Principal con Fondo Gradiente -->
@@ -573,19 +573,12 @@
         <div class="p-8">
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 class="font-semibold text-gray-900 mb-2">Categoría</h3>
+              <h3 class="font-semibold text-gray-900 mb-2">Categorías:</h3>
               <p class="text-gray-600">
-                {{ producto.categoria_principal.nombre if
-                producto.categoria_principal else 'No especificada' }}
+                {{ producto.seudocategoria.subcategoria.categoria_principal.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria and producto.seudocategoria.subcategoria.categoria_principal else '' }}-{{ producto.seudocategoria.subcategoria.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria else '' }}-{{ producto.seudocategoria.nombre if producto.seudocategoria else '' }}-{{ producto.nombre }}
               </p>
             </div>
-            <div>
-              <h3 class="font-semibold text-gray-900 mb-2">Subcategoría</h3>
-              <p class="text-gray-600">
-                {{ producto.subcategoria.nombre if producto.subcategoria else
-                'No especificada' }}
-              </p>
-            </div>
+            
             <div>
               <h3 class="font-semibold text-gray-900 mb-2">Disponibilidad</h3>
               <p

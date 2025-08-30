@@ -9,6 +9,7 @@
     <!-- Modal Card -->
     <div
       class="bg-gradient-to-br from-white via-rose-50/30 to-white rounded-3xl shadow-[0_20px_50px_rgba(232,180,184,0.4)] w-full max-w-lg transform transition-all duration-300 scale-100"
+      id="editModalCard"
     >
       <!-- Header con gradiente -->
       <div class="relative overflow-hidden p-6 rounded-t-3xl">
@@ -31,6 +32,9 @@
 
       <!-- Formulario compacto -->
       <form id="modalForm" class="p-6 space-y-5">
+        <!-- General Message Display -->
+        <div id="modal-message" class="text-center text-sm font-semibold hidden"></div>
+
         <!-- Campo Nombre -->
         <div class="group">
           <label
@@ -45,6 +49,7 @@
             value="{{ current_user.nombre }}"
             class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all text-gray-800"
           />
+          <p id="error-modalNombre" class="error-message text-xs text-red-500 mt-1 hidden"></p>
         </div>
 
         <!-- Campo Apellido -->
@@ -61,6 +66,7 @@
             value="{{ current_user.apellido }}"
             class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all text-gray-800"
           />
+          <p id="error-modalApellido" class="error-message text-xs text-red-500 mt-1 hidden"></p>
         </div>
 
         <!-- Campo Teléfono -->
@@ -77,6 +83,7 @@
             value="{{ current_user.numero }}"
             class="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-400 focus:border-transparent transition-all text-gray-800"
           />
+          <p id="error-modalTelefono" class="error-message text-xs text-red-500 mt-1 hidden"></p>
         </div>
 
         <!-- Campo Contraseña con toggle -->
@@ -102,6 +109,7 @@
               <i id="passwordIcon" class="fas fa-eye text-sm"></i>
             </button>
           </div>
+          <p id="error-modalPassword" class="error-message text-xs text-red-500 mt-1 hidden"></p>
         </div>
 
         <!-- Botones de acción -->
@@ -109,10 +117,11 @@
           <button
             type="button"
             onclick="saveModal()"
+            id="saveModalButton"
             class="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-2.5 rounded-xl font-semibold hover:shadow-lg hover:shadow-green-500/25 transform hover:scale-[1.02] transition-all duration-300"
           >
-            <i class="fas fa-check mr-2"></i>
-            Guardar
+            <span id="saveButtonText"><i class="fas fa-check mr-2"></i>Guardar</span>
+            <span id="saveButtonSpinner" class="hidden"><i class="fas fa-spinner fa-spin mr-2"></i>Guardando...</span>
           </button>
           <button
             type="button"
@@ -130,22 +139,171 @@
 
 <!-- JavaScript optimizado -->
 <script>
-  // Funciones mejoradas del Modal
+  // Helper function to convert string to Title Case
+  function toTitleCase(str) {
+      if (!str) return '';
+      return str.replace(/\w\S*/g, function(txt) {
+          return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      });
+  }
+
+  // Constantes y elementos del DOM
+  const modalForm = document.getElementById("modalForm");
+  const modalMessage = document.getElementById("modal-message");
+  const saveModalButton = document.getElementById("saveModalButton");
+  const saveButtonText = document.getElementById("saveButtonText");
+  const saveButtonSpinner = document.getElementById("saveButtonSpinner");
+
+  // Expresiones regulares para validación
+  const patterns = {
+    phone: /^[0-9]{10}$/,
+    password: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$/,
+    name: /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s']+$/,
+  };
+
+  // Mensajes de error
+  const errorMessages = {
+    required: 'Este campo es obligatorio',
+    phone: 'El número debe tener 10 dígitos',
+    password: 'Mínimo 8 caracteres, una mayúscula, una minúscula y un número',
+    name: 'Solo se permiten letras y espacios',
+  };
+
+  // Función para establecer estado de error en un campo
+  function setFieldError(field, message, errorElement) {
+    field.classList.remove('border-green-500');
+    field.classList.add('border-red-500');
+    
+    if (errorElement) {
+      errorElement.textContent = message;
+      errorElement.classList.remove('hidden');
+    }
+  }
+
+  // Función para establecer estado de éxito en un campo
+  function setFieldSuccess(field, errorElement) {
+    field.classList.remove('border-red-500');
+    field.classList.add('border-green-500');
+    
+    if (errorElement) {
+      errorElement.classList.add('hidden');
+    }
+  }
+
+  // Función para validar un campo según su tipo
+  function validateField(field) {
+    const value = field.value.trim();
+    const fieldId = field.id;
+    const errorElement = document.getElementById(`error-${fieldId}`);
+
+    // Si el campo está vacío y es requerido
+    if (field.required && !value) {
+      setFieldError(field, errorMessages.required, errorElement);
+      return false;
+    }
+
+    // Validaciones específicas por tipo de campo
+    let isValid = true;
+    switch(fieldId) {
+      case 'modalTelefono':
+        isValid = patterns.phone.test(value);
+        if (!isValid) setFieldError(field, errorMessages.phone, errorElement);
+        break;
+      case 'modalPassword':
+        // Only validate password if it's not empty
+        if (value) {
+          isValid = patterns.password.test(value);
+          if (!isValid) setFieldError(field, errorMessages.password, errorElement);
+        }
+        break;
+      case 'modalNombre':
+      case 'modalApellido':
+        isValid = patterns.name.test(value);
+        if (!isValid) setFieldError(field, errorMessages.name, errorElement);
+        break;
+    }
+
+    if (isValid) {
+      setFieldSuccess(field, errorElement);
+    }
+
+    return isValid;
+  }
+
+  // Función para verificar la fortaleza de la contraseña (no usada visualmente en este modal, pero útil para validación)
+  function checkPasswordStrength(password) {
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    return strength;
+  }
+
+  // Configuración de validación en tiempo real
+  function setupRealTimeValidation(form) {
+    const inputs = form.querySelectorAll('input'); // Get all inputs, not just required ones
+
+    inputs.forEach(input => {
+      // Validar al perder el foco
+      input.addEventListener('blur', () => validateField(input));
+      
+      // Validar al escribir (con debounce para mejor rendimiento)
+      let timeout;
+      input.addEventListener('input', (e) => {
+        clearTimeout(timeout);
+        
+        // Validación en tiempo real para la contraseña
+        if (input.id === 'modalPassword') {
+          // No visual feedback for strength, just validation
+          validateField(input); 
+        }
+        
+        timeout = setTimeout(() => validateField(input), 500);
+      });
+    });
+  }
+
+  // Funciones del Modal
   function openModal() {
     const modal = document.getElementById("editModal");
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
 
+    // Populate fields with current user data
+    document.getElementById("modalNombre").value = "{{ current_user.nombre | default('') }}";
+    document.getElementById("modalApellido").value = "{{ current_user.apellido | default('') }}";
+    document.getElementById("modalTelefono").value = "{{ current_user.numero | default('') }}";
+    document.getElementById("modalPassword").value = ""; // Always clear password field for security
+
     // Animación suave
     setTimeout(() => {
-      modal.querySelector("> div > div").classList.add("scale-100");
+      document.getElementById("editModalCard").classList.add("scale-100");
     }, 10);
+
+    // Setup real-time validation when modal opens
+    setupRealTimeValidation(modalForm);
+    // Clear any previous messages
+    modalMessage.classList.add("hidden");
+    modalMessage.textContent = "";
   }
 
   function closeModal() {
     const modal = document.getElementById("editModal");
     modal.classList.add("hidden");
     document.body.style.overflow = "auto";
+    // Clear validation states when closing, but do not reset form fields
+    modalForm.querySelectorAll('input').forEach(input => {
+      input.classList.remove('border-red-500', 'border-green-500');
+      const errorElement = document.getElementById(`error-${input.id}`);
+      if (errorElement) {
+        errorElement.classList.add('hidden');
+        errorElement.textContent = '';
+      }
+    });
+    modalMessage.classList.add("hidden");
+    modalMessage.textContent = "";
   }
 
   function toggleModalPassword() {
@@ -159,25 +317,141 @@
       : "fas fa-eye text-sm";
   }
 
-  function saveModal() {
-    // Actualizar display
-    ["Nombre", "Apellido", "Telefono", "Email"].forEach((field) => {
-      const value = document.getElementById("modal" + field).value;
-      document.getElementById("display" + field).textContent = value;
+  async function saveModal() {
+    // Validate all fields before submission
+    let isValidForm = true;
+    const inputs = modalForm.querySelectorAll('input');
+    inputs.forEach(input => {
+      // Only validate if the field has a value or is the password field (which can be empty)
+      if (input.value.trim() !== '' || input.id === 'modalPassword') {
+        if (!validateField(input)) {
+          isValidForm = false;
+        }
+      }
     });
 
-    closeModal();
+    if (!isValidForm) {
+      modalMessage.textContent = 'Por favor, corrige los errores en el formulario.';
+      modalMessage.classList.remove('hidden');
+      modalMessage.classList.add('text-red-500');
+      return;
+    }
 
-    // Notificación elegante
-    const notification = document.createElement("div");
-    notification.className =
-      "fixed top-4 right-4 bg-gradient-to-r from-green-500 to-green-600 text-white px-6 py-3 rounded-xl shadow-lg z-50";
-    notification.innerHTML =
-      '<i class="fas fa-check mr-2"></i>¡Perfil actualizado!';
-    document.body.appendChild(notification);
+    const nombre = document.getElementById("modalNombre").value;
+    const apellido = document.getElementById("modalApellido").value;
+    const numero = document.getElementById("modalTelefono").value;
+    const contraseña = document.getElementById("modalPassword").value;
 
-    setTimeout(() => notification.remove(), 3000);
+    const data = {
+      nombre: nombre,
+      apellido: apellido,
+      numero: numero,
+    };
+
+    if (contraseña) { // Only send password if it's not empty
+      data.contraseña = contraseña;
+    }
+
+    // Show loading state
+    saveButtonText.classList.add("hidden");
+    saveButtonSpinner.classList.remove("hidden");
+    saveModalButton.disabled = true;
+
+    try {
+      const token = getCookie('token'); // Assuming token is stored in a cookie
+      if (!token) {
+        window.toast.error("Error: No se encontró el token de autenticación.");
+        return;
+      }
+
+      const response = await fetch("/auth/update_profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(data),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        // Update display elements with data from the backend response
+        document.getElementById("displayNombre").textContent = result.usuario.nombre;
+        document.getElementById("displayApellido").textContent = result.usuario.apellido;
+        document.getElementById("displayTelefono").textContent = result.usuario.numero;
+
+        // Update avatar section
+        const avatarInitialsElement = document.getElementById("avatarInitials");
+        const avatarFullNameElement = document.getElementById("avatarFullName");
+
+        if (avatarInitialsElement) {
+          const initials = (result.usuario.nombre ? result.usuario.nombre[0].toUpperCase() : '') +
+                           (result.usuario.apellido ? result.usuario.apellido[0].toUpperCase() : '');
+          avatarInitialsElement.textContent = initials;
+        }
+        if (avatarFullNameElement) {
+          const fullName = toTitleCase(result.usuario.nombre) + ' ' + toTitleCase(result.usuario.apellido);
+          avatarFullNameElement.textContent = fullName.trim();
+        }
+
+        // Update navbar elements
+        const navbarUserNameElement = document.getElementById("navbarUserName");
+        const userAvatarElement = document.getElementById("user-avatar");
+
+        if (navbarUserNameElement) {
+            navbarUserNameElement.textContent = "Hola, " + toTitleCase(result.usuario.nombre.split(' ')[0]);
+        }
+
+        if (userAvatarElement) {
+            userAvatarElement.textContent = (result.usuario.nombre ? result.usuario.nombre[0].toUpperCase() : '');
+        }
+
+        // Dispatch a custom event to notify other parts of the UI
+        const event = new CustomEvent('profileUpdated', { detail: { user: result.usuario } });
+        window.dispatchEvent(event);
+
+
+        // Clear password field after successful update
+        document.getElementById("modalPassword").value = "";
+
+        window.toast.success("¡Perfil actualizado correctamente!");
+        closeModal();
+      } else {
+        // Handle specific field errors from backend
+        if (result.field && result.error) {
+          const input = document.getElementById(result.field);
+          if (input) {
+            setFieldError(input, result.error, document.getElementById(`error-${result.field}`));
+            modalMessage.textContent = 'Por favor, corrige los errores en el formulario.';
+            modalMessage.classList.remove('hidden');
+            modalMessage.classList.add('text-red-500');
+          } else {
+            window.toast.error(`Error al actualizar: ${result.error || "Error desconocido"}`);
+          }
+        } else {
+          window.toast.error(`Error al actualizar: ${result.error || "Error desconocido"}`);
+        }
+      }
+    } catch (error) {
+      console.error("Error al enviar la solicitud:", error);
+      window.toast.error("Error de conexión. Inténtalo de nuevo.");
+    } finally {
+      // Hide loading state
+      saveButtonText.classList.remove("hidden");
+      saveButtonSpinner.classList.add("hidden");
+      saveModalButton.disabled = false;
+    }
   }
+
+  // Helper function to get cookie value
+  function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+  }
+
+  
 
   // Event listeners mejorados
   document.getElementById("editModal").addEventListener("click", (e) => {

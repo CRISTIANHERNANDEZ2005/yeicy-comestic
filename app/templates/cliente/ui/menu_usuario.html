@@ -128,7 +128,7 @@
 </div>
 
 <!-- JavaScript -->
-<script>
+    <script>
     // Toggle del menú de usuario
     document.getElementById('user-menu-button').addEventListener('click', function (e) {
         e.stopPropagation();
@@ -143,6 +143,21 @@
         
         if (userMenu && userButton && !userMenu.contains(event.target) && !userButton.contains(event.target)) {
             userMenu.classList.add('hidden');
+        }
+    });
+
+    // Listen for profileUpdated event and update user-avatar
+    window.addEventListener('profileUpdated', function(event) {
+        const updatedUser = event.detail.user;
+        const userAvatarElement = document.getElementById("user-avatar");
+        if (userAvatarElement) {
+            userAvatarElement.textContent = updatedUser.nombre[0].toUpperCase();
+        }
+
+        // Also update the name in the dropdown menu header if it exists
+        const dropdownUserNameElement = userAvatarElement.closest('#user-menu-container').querySelector('.px-6.py-3.border-b p.font-bold');
+        if (dropdownUserNameElement) {
+            dropdownUserNameElement.textContent = "Hola, " + updatedUser.nombre;
         }
     });
 </script>

@@ -6,7 +6,8 @@
         <title>{% block title %}YE&CI COMESTIC{% endblock %}</title>
         <!-- Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
-
+        <!-- imagen de la pagina -->
+        <link rel="icon" type="image/png" href="{{ url_for('static', filename='imagenes/yc-logo.svg') }}">
         <!-- Font Awesome CDN -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
@@ -15,10 +16,6 @@
 
         <!-- importar el archivo de estilos -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-        <!-- Estilos personalizados -->
-        <style>
-           
-        </style>
     </head>
 
     <body class="bg-gray-100 font-sans flex flex-col min-h-screen" {% if 'user' in session %} data-user-id="{{ session.user.id }}" {% endif %}>

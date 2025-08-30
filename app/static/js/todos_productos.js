@@ -57,11 +57,20 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   const filterModalOverlay = document.getElementById("filter-modal-overlay");
 
+  const sortSelect = document.getElementById("sort-select");
+
   let allProducts = [];
+  const productsPerPage = 12;
+  let currentDisplayedProducts = 0;
+
+  const loadMoreBtn = document.getElementById("load-more-btn");
+  const showLessBtn = document.getElementById("show-less-btn");
 
   function showLoader() {
     productGrid.style.display = "none";
     productGridLoader.style.display = "grid";
+    if (loadMoreBtn) loadMoreBtn.style.display = "none";
+    if (showLessBtn) showLessBtn.style.display = "none";
   }
 
   function hideLoader() {
@@ -247,15 +256,26 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Función para renderizar productos
-  function renderProducts(products) {
+  function renderProducts(productsToRender) {
     productGrid.innerHTML = "";
-    products.forEach((product, index) => {
-      const productCard = renderProductCard(product, index);
+    productsToRender.forEach((product) => {
+      const productCard = renderProductCard(product);
       productGrid.appendChild(productCard);
     });
-    productCount.textContent = products.length;
-    if (allProducts.length > 0) {
-      totalProductCount.textContent = allProducts.length;
+    productCount.textContent = productsToRender.length;
+    totalProductCount.textContent = allProducts.length;
+
+    // Show/hide buttons based on product count
+    if (allProducts.length > productsPerPage && currentDisplayedProducts < allProducts.length) {
+      loadMoreBtn.style.display = "block";
+    } else {
+      loadMoreBtn.style.display = "none";
+    }
+
+    if (currentDisplayedProducts > productsPerPage) {
+      showLessBtn.style.display = "block";
+    } else {
+      showLessBtn.style.display = "none";
     }
   }
 
@@ -271,6 +291,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const selectedPseudocategory = pseudocategoryFilters.querySelector(
       'input[name="pseudocategory"]:checked'
     ).value;
+    const selectedSort = sortSelect.value;
 
     const params = new URLSearchParams();
     if (selectedCategory && selectedCategory !== "all") {
@@ -281,6 +302,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     if (selectedPseudocategory && selectedPseudocategory !== "all") {
       params.append("seudocategoria", selectedPseudocategory);
+    }
+    if (selectedSort && selectedSort !== "az") {
+      params.append("ordenar_por", selectedSort);
     }
 
     const url = `/api/productos/filtrar?${params.toString()}`;
@@ -293,8 +317,8 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       const products = await response.json();
       allProducts = products;
-      totalProductCount.textContent = allProducts.length;
-      renderProducts(products);
+      currentDisplayedProducts = Math.min(productsPerPage, allProducts.length); // Display initial 12 or fewer if less than 12
+      renderProducts(allProducts.slice(0, currentDisplayedProducts));
       updateCategoryInfo(
         selectedCategory,
         selectedSubcategory,
@@ -306,6 +330,11 @@ document.addEventListener("DOMContentLoaded", function () {
     } finally {
       hideLoader();
     }
+  }
+
+  // Event listener for sort select
+  if (sortSelect) {
+    sortSelect.addEventListener("change", fetchProductsWithFilters);
   }
 
   // Función para actualizar el título y breadcrumbs
@@ -420,10 +449,32 @@ document.addEventListener("DOMContentLoaded", function () {
         'input[value="all"]'
       ).checked = true;
 
+      // Also reset sort select
+      sortSelect.value = "az";
+
       // Update cascading filters after clearing
       updateSubcategoryFilters("all");
       updatePseudocategoryFilters("all");
       fetchProductsWithFilters();
+    });
+  }
+
+  // Load More / Show Less functionality
+  if (loadMoreBtn) {
+    loadMoreBtn.addEventListener("click", () => {
+      currentDisplayedProducts = Math.min(
+        currentDisplayedProducts + productsPerPage,
+        allProducts.length
+      );
+      renderProducts(allProducts.slice(0, currentDisplayedProducts));
+    });
+  }
+
+  if (showLessBtn) {
+    showLessBtn.addEventListener("click", () => {
+      currentDisplayedProducts = productsPerPage;
+      renderProducts(allProducts.slice(0, currentDisplayedProducts));
+      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
     });
   }
 

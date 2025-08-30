@@ -31,7 +31,7 @@ function generateOptimizedStars(rating) {
   return html;
 }
 
-function renderProductCard(producto, delayIndex) {
+function renderProductCard(producto) {
   const card = document.createElement("a");
   card.href = `/${producto.slug}`; // Enlace a la página de detalles del producto
   card.className =
@@ -43,8 +43,6 @@ function renderProductCard(producto, delayIndex) {
   const isFavorite = window.favoritesManager
     ? window.favoritesManager.favoriteProducts.has(String(producto.id))
     : false;
-
-  card.style.animationDelay = `${delayIndex * 0.08}s`;
 
   // Prevenir la navegación cuando se hace clic en elementos interactivos
   card.addEventListener("click", function (e) {

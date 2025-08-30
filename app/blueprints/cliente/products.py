@@ -339,6 +339,7 @@ def filter_products():
     main_category_name = request.args.get('categoria_principal')
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('seudocategoria')
+    sort_by = request.args.get('ordenar_por', 'featured') # Default to 'featured'
 
     query = Productos.query.filter_by(estado='activo')
 
@@ -364,8 +365,23 @@ def filter_products():
             query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)
         query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
 
+    # Apply sorting
+    if sort_by == 'price_asc':
+        query = query.order_by(Productos.precio.asc())
+    elif sort_by == 'price_desc':
+        query = query.order_by(Productos.precio.desc())
+    elif sort_by == 'top_rated':
+        query = query.order_by(Productos.calificacion_promedio_almacenada.desc())
+    elif sort_by == 'az':
+        query = query.order_by(Productos.nombre.asc())
+    elif sort_by == 'za':
+        query = query.order_by(Productos.nombre.desc())
+    else: # 'az' or any other default
+        query = query.order_by(Productos.nombre.asc()) # Default to A-Z sorting
+
     productos = query.all()
     return jsonify([producto_to_dict(p) for p in productos])
+
 
 @products_bp.route('/api/productos')
 def get_all_products():

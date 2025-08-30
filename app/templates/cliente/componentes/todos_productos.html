@@ -1,5 +1,5 @@
-{% extends 'cliente/page/base.html' %} {% block content %}
-<!-- Contenido principal -->
+{% extends 'cliente/page/base.html' %} {% block title %} Productos - YE&CI COMESTIC{% endblock %} 
+{% block content %}
 <main class="container mx-auto px-4 py-8">
   <!-- Header mejorado -->
   <div class="mb-8">
@@ -55,13 +55,14 @@
     <div class="flex flex-wrap gap-3">
       <div class="relative">
         <select
+          id="sort-select"
           class="appearance-none bg-white border border-gray-200 rounded-xl py-2.5 pl-4 pr-10 text-gray-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent shadow-sm transition-all duration-200 hover:border-gray-300"
         >
-          <option>Ordenar por: Destacados</option>
-          <option>Precio: Menor a Mayor</option>
-          <option>Precio: Mayor a Menor</option>
-          <option>Mejor Valorados</option>
-          <option>Novedades</option>
+          <option value="az">De la A a la Z</option>
+          <option value="za">De la Z a la A</option>
+          <option value="price_asc">Precio: Menor a Mayor</option>
+          <option value="price_desc">Precio: Mayor a Menor</option>
+          <option value="top_rated">Mejor Valorados</option>
         </select>
         <div
           class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-gray-500"
@@ -292,38 +293,22 @@
         <!-- Los productos se cargarán aquí dinámicamente -->
       </div>
 
-      <!-- Paginación mejorada -->
-      <div class="mt-12 flex justify-center">
-        <nav class="inline-flex rounded-xl shadow-sm">
-          <a
-            href="#"
-            class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-xl hover:bg-gray-50 transition-colors duration-200"
-          >
-            <i class="fas fa-chevron-left"></i>
-          </a>
-          <a
-            href="#"
-            class="px-4 py-2.5 text-sm font-medium text-white bg-pink-600 border border-pink-600 hover:bg-pink-700 transition-colors duration-200"
-            >1</a
-          >
-          <a
-            href="#"
-            class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border-t border-b border-gray-300 hover:bg-gray-50 transition-colors duration-200"
-            >2</a
-          >
-          <a
-            href="#"
-            class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 transition-colors duration-200"
-            >3</a
-          >
-          <span class="px-4 py-2.5 text-sm font-medium text-gray-500 bg-white border-t border-b border-gray-300">...</span>
-          <a
-            href="#"
-            class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-xl hover:bg-gray-50 transition-colors duration-200"
-          >
-            <i class="fas fa-chevron-right"></i>
-          </a>
-        </nav>
+      <!-- Botones de paginación "Ver más" / "Ver menos" -->
+      <div id="pagination-buttons" class="mt-12 flex flex-col items-center space-y-4">
+        <button
+          id="load-more-btn"
+          class="bg-pink-600 text-white px-6 py-3 rounded-xl flex items-center justify-center hover:bg-pink-700 transition-colors duration-300 shadow-md hover:shadow-lg text-lg font-semibold w-full md:w-auto"
+          style="display: none;"
+        >
+          <i class="fas fa-arrow-down mr-2"></i> Ver más productos
+        </button>
+        <button
+          id="show-less-btn"
+          class="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center hover:bg-gray-300 transition-colors duration-300 shadow-md hover:shadow-lg text-lg font-semibold w-full md:w-auto"
+          style="display: none;"
+        >
+          <i class="fas fa-arrow-up mr-2"></i> Ver menos productos
+        </button>
       </div>
     </div>
   </div>

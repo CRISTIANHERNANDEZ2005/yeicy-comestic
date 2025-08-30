@@ -1,0 +1,440 @@
+document.addEventListener("DOMContentLoaded", function () {
+  document.querySelectorAll(".filter-toggle").forEach((header) => {
+    header.addEventListener("click", () => {
+      const targetId = header.dataset.target;
+      const content = document.getElementById(targetId);
+      const icon = header.querySelector("i");
+
+      if (content.classList.contains("hidden")) {
+        content.classList.remove("hidden");
+        icon.classList.remove("rotate-0");
+        icon.classList.add("rotate-180");
+      } else {
+        content.classList.add("hidden");
+        icon.classList.remove("rotate-180");
+        icon.classList.add("rotate-0");
+      }
+    });
+  });
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+  const allCategorias = window.appData.categorias;
+  const allSubcategorias = window.appData.subcategorias;
+  const allSeudocategorias = window.appData.seudocategorias;
+  const productGrid = document.getElementById("product-grid");
+  const productGridLoader = document.getElementById("product-grid-loader");
+  const categoryTitle = document.getElementById("category-title");
+  const categoryDescription = document.getElementById("category-description");
+  const breadcrumbs = document.getElementById("breadcrumbs");
+  const productCount = document.getElementById("product-count");
+  const totalProductCount = document.getElementById("total-product-count");
+  const categoryFilters = document.getElementById("category-filters-content");
+  const subcategoryFilters = document.getElementById(
+    "subcategory-filters-content"
+  );
+  const pseudocategoryFilters = document.getElementById(
+    "pseudocategory-filters-content"
+  );
+  const clearFiltersBtn = document.getElementById("clear-filters");
+
+  // Mobile filter elements
+  const mobileFilterDrawer = document.getElementById("mobile-filter-drawer");
+  const mobileFilterBtn = document.getElementById("mobile-filter-btn");
+  const closeFilterBtn = document.getElementById("close-filter-btn");
+  const applyMobileFiltersBtn = document.getElementById("apply-mobile-filters");
+  const closeFilterBtnResults = document.getElementById(
+    "close-filter-btn-results"
+  );
+  const mobileCategoryFilters = document.getElementById(
+    "mobile-category-filters"
+  );
+  const mobileSubcategoryFilters = document.getElementById(
+    "mobile-subcategory-filters"
+  );
+  const mobilePseudocategoryFilters = document.getElementById(
+    "mobile-pseudocategory-filters"
+  );
+  const filterModalOverlay = document.getElementById("filter-modal-overlay");
+
+  let allProducts = [];
+
+  function showLoader() {
+    productGrid.style.display = "none";
+    productGridLoader.style.display = "grid";
+  }
+
+  function hideLoader() {
+    productGridLoader.style.display = "none";
+    productGrid.style.display = "grid";
+  }
+
+  // Función para abrir/cerrar el drawer de filtros móvil
+  function toggleFilterDrawer() {
+    mobileFilterDrawer.classList.toggle("open");
+    filterModalOverlay.classList.toggle("hidden");
+  }
+
+  // Event listeners para el drawer móvil
+  if (mobileFilterBtn) {
+    mobileFilterBtn.addEventListener("click", toggleFilterDrawer);
+  }
+  if (closeFilterBtn) {
+    closeFilterBtn.addEventListener("click", toggleFilterDrawer);
+  }
+  if (closeFilterBtnResults) {
+    closeFilterBtnResults.addEventListener("click", toggleFilterDrawer);
+  }
+
+  // Close drawer when clicking outside (on the overlay)
+  if (filterModalOverlay) {
+    filterModalOverlay.addEventListener("click", toggleFilterDrawer);
+  }
+
+  // Prevent clicks inside the drawer from closing it
+  if (mobileFilterDrawer) {
+    mobileFilterDrawer.addEventListener("click", function (event) {
+      event.stopPropagation();
+    });
+  }
+
+  // Función para popular los filtros de subcategoría
+  function updateSubcategoryFilters(selectedCategoryName) {
+    const targetElement = subcategoryFilters;
+    const mobileTargetElement = mobileSubcategoryFilters;
+    targetElement.innerHTML = "";
+    mobileTargetElement.innerHTML = "";
+
+    // Add "Todas" option
+    const allOptionHtml = `
+        <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+          <input
+            type="radio"
+            name="subcategory"
+            value="all"
+            class="rounded-full text-pink-600 focus:ring-pink-500"
+            checked
+          />
+          <span class="ml-2 text-gray-700">Todas</span>
+        </label>
+      `;
+    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
+    mobileTargetElement.insertAdjacentHTML(
+      "beforeend",
+      allOptionHtml.replace(/name="subcategory"/g, 'name="mobile-subcategory"')
+    );
+
+    if (selectedCategoryName !== "all") {
+      const categoryId = allCategorias.find(
+        (cat) => cat.nombre === selectedCategoryName
+      )?.id;
+      if (categoryId) {
+        const filteredSubcategories = allSubcategorias.filter(
+          (sub) => sub.categoria_principal_id === categoryId
+        );
+        filteredSubcategories.forEach((sub) => {
+          const subcategoryHtml = `
+              <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                <input
+                  type="radio"
+                  name="subcategory"
+                  value="${sub.nombre}"
+                  class="rounded-full text-pink-600 focus:ring-pink-500"
+                />
+                <span class="ml-2 text-gray-700">${sub.nombre}</span>
+              </label>
+            `;
+          targetElement.insertAdjacentHTML("beforeend", subcategoryHtml);
+          mobileTargetElement.insertAdjacentHTML(
+            "beforeend",
+            subcategoryHtml.replace(
+              /name="subcategory"/g,
+              'name="mobile-subcategory"'
+            )
+          );
+        });
+      }
+    }
+  }
+
+  // Función para popular los filtros de pseudocategoría
+  function updatePseudocategoryFilters(selectedSubcategoryName) {
+    const targetElement = pseudocategoryFilters;
+    const mobileTargetElement = mobilePseudocategoryFilters;
+    targetElement.innerHTML = "";
+    mobileTargetElement.innerHTML = "";
+
+    // Add "Todas" option
+    const allOptionHtml = `
+        <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+          <input
+            type="radio"
+            name="pseudocategory"
+            value="all"
+            class="rounded-full text-pink-600 focus:ring-pink-500"
+            checked
+          />
+          <span class="ml-2 text-gray-700">Todas</span>
+        </label>
+      `;
+    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
+    mobileTargetElement.insertAdjacentHTML(
+      "beforeend",
+      allOptionHtml.replace(
+        /name="pseudocategory"/g,
+        'name="mobile-pseudocategory"'
+      )
+    );
+
+    if (selectedSubcategoryName !== "all") {
+      const subcategoryId = allSubcategorias.find(
+        (sub) => sub.nombre === selectedSubcategoryName
+      )?.id;
+      if (subcategoryId) {
+        const filteredPseudocategories = allSeudocategorias.filter(
+          (pseudo) => pseudo.subcategoria_id === subcategoryId
+        );
+        filteredPseudocategories.forEach((pseudo) => {
+          const pseudocategoryHtml = `
+              <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+                <input
+                  type="radio"
+                  name="pseudocategory"
+                  value="${pseudo.nombre}"
+                  class="rounded-full text-pink-600 focus:ring-pink-500"
+                />
+                <span class="ml-2 text-gray-700">${pseudo.nombre}</span>
+              </label>
+            `;
+          targetElement.insertAdjacentHTML("beforeend", pseudocategoryHtml);
+          mobileTargetElement.insertAdjacentHTML(
+            "beforeend",
+            pseudocategoryHtml.replace(
+              /name="pseudocategory"/g,
+              'name="mobile-pseudocategory"'
+            )
+          );
+        });
+      }
+    }
+  }
+
+  // Función para popular los filtros de categoría en el drawer móvil
+  function populateMobileFilters() {
+    // Categories are static, just clone them
+    if (categoryFilters && mobileCategoryFilters) {
+      mobileCategoryFilters.innerHTML = "";
+      const desktopCategoryFilters = categoryFilters.querySelectorAll("label");
+      desktopCategoryFilters.forEach((label) => {
+        const newLabel = label.cloneNode(true);
+        const input = newLabel.querySelector("input");
+        if (input) {
+          input.name = "mobile-category";
+        }
+        mobileCategoryFilters.appendChild(newLabel);
+      });
+    }
+
+    // Subcategories and Pseudocategories are dynamic based on selection
+    const selectedCategory = categoryFilters.querySelector(
+      'input[name="category"]:checked'
+    ).value;
+    updateSubcategoryFilters(selectedCategory);
+    const selectedSubcategory = subcategoryFilters.querySelector(
+      'input[name="subcategory"]:checked'
+    ).value;
+    updatePseudocategoryFilters(selectedSubcategory);
+  }
+
+  // Función para renderizar productos
+  function renderProducts(products) {
+    productGrid.innerHTML = "";
+    products.forEach((product, index) => {
+      const productCard = renderProductCard(product, index);
+      productGrid.appendChild(productCard);
+    });
+    productCount.textContent = products.length;
+    if (allProducts.length > 0) {
+      totalProductCount.textContent = allProducts.length;
+    }
+  }
+
+  // Función para cargar productos con filtros
+  async function fetchProductsWithFilters() {
+    showLoader();
+    const selectedCategory = categoryFilters.querySelector(
+      'input[name="category"]:checked'
+    ).value;
+    const selectedSubcategory = subcategoryFilters.querySelector(
+      'input[name="subcategory"]:checked'
+    ).value;
+    const selectedPseudocategory = pseudocategoryFilters.querySelector(
+      'input[name="pseudocategory"]:checked'
+    ).value;
+
+    const params = new URLSearchParams();
+    if (selectedCategory && selectedCategory !== "all") {
+      params.append("categoria_principal", selectedCategory);
+    }
+    if (selectedSubcategory && selectedSubcategory !== "all") {
+      params.append("subcategoria", selectedSubcategory);
+    }
+    if (selectedPseudocategory && selectedPseudocategory !== "all") {
+      params.append("seudocategoria", selectedPseudocategory);
+    }
+
+    const url = `/api/productos/filtrar?${params.toString()}`;
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Error al cargar los productos");
+      }
+      const products = await response.json();
+      allProducts = products;
+      totalProductCount.textContent = allProducts.length;
+      renderProducts(products);
+      updateCategoryInfo(
+        selectedCategory,
+        selectedSubcategory,
+        selectedPseudocategory
+      );
+    } catch (error) {
+      console.error(error);
+      productGrid.innerHTML = `<p class="text-red-500">Error al cargar productos. Intente de nuevo más tarde.</p>`;
+    } finally {
+      hideLoader();
+    }
+  }
+
+  // Función para actualizar el título y breadcrumbs
+  function updateCategoryInfo(category, subcategory, pseudocategory) {
+    let title = "Todos los Productos";
+    let description = "Descubre nuestra selección de productos.";
+    let breadcrumbsHtml = `
+          <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors">Inicio</a>
+          <span class="text-gray-400">|</span>
+          <span class="text-gray-700 font-medium">Productos</span>
+        `;
+
+    if (category && category !== "all") {
+      title = category;
+      description = `Productos de la categoría ${category}`;
+      breadcrumbsHtml = `
+              <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors">Inicio</a>
+              <span class="text-gray-400">|</span>
+              <a href="/productos" class="text-pink-600 hover:text-pink-800 transition-colors">Productos</a>
+              <span class="text-gray-400">|</span>
+              <span class="text-gray-700 font-medium">${category}</span>
+          `;
+    }
+
+    if (subcategory && subcategory !== "all") {
+      title = subcategory;
+      description = `Productos de la subcategoría ${subcategory}`;
+      breadcrumbsHtml += `
+              <span class="text-gray-400">|</span>
+              <span class="text-gray-700 font-medium">${subcategory}</span>
+          `;
+    }
+
+    if (pseudocategory && pseudocategory !== "all") {
+      title = pseudocategory;
+      description = `Productos de la pseudocategoría ${pseudocategory}`;
+      breadcrumbsHtml += `
+              <span class="text-gray-400">|</span>
+              <span class="text-gray-700 font-medium">${pseudocategory}</span>
+          `;
+    }
+
+    categoryTitle.textContent = title;
+    categoryDescription.textContent = description;
+    breadcrumbs.innerHTML = breadcrumbsHtml;
+  }
+
+  // Event listener para los filtros de escritorio
+  if (categoryFilters) {
+    categoryFilters.addEventListener("change", (event) => {
+      const selectedCategory = event.target.value;
+      updateSubcategoryFilters(selectedCategory);
+      updatePseudocategoryFilters("all");
+      fetchProductsWithFilters();
+    });
+  }
+
+  if (subcategoryFilters) {
+    subcategoryFilters.addEventListener("change", (event) => {
+      const selectedSubcategory = event.target.value;
+      updatePseudocategoryFilters(selectedSubcategory);
+      fetchProductsWithFilters();
+    });
+  }
+
+  if (pseudocategoryFilters) {
+    pseudocategoryFilters.addEventListener("change", fetchProductsWithFilters);
+  }
+
+  // Event listener para el botón de aplicar filtros en móvil
+  if (applyMobileFiltersBtn) {
+    applyMobileFiltersBtn.addEventListener("click", () => {
+      const selectedCategory = mobileCategoryFilters.querySelector(
+        'input[name="mobile-category"]:checked'
+      ).value;
+      const selectedSubcategory = mobileSubcategoryFilters.querySelector(
+        'input[name="mobile-subcategory"]:checked'
+      ).value;
+      const selectedPseudocategory = mobilePseudocategoryFilters.querySelector(
+        'input[name="mobile-pseudocategory"]:checked'
+      ).value;
+
+      // Set desktop filters to match mobile selection
+      categoryFilters.querySelector(
+        `input[value="${selectedCategory}"]`
+      ).checked = true;
+      subcategoryFilters.querySelector(
+        `input[value="${selectedSubcategory}"]`
+      ).checked = true;
+      pseudocategoryFilters.querySelector(
+        `input[value="${selectedPseudocategory}"]`
+      ).checked = true;
+
+      fetchProductsWithFilters();
+      toggleFilterDrawer();
+    });
+  }
+
+  // Event listener para limpiar filtros
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", () => {
+      categoryFilters.querySelector('input[value="all"]').checked = true;
+      subcategoryFilters.querySelector('input[value="all"]').checked = true;
+      pseudocategoryFilters.querySelector('input[value="all"]').checked = true;
+
+      // Also reset mobile filters
+      mobileCategoryFilters.querySelector('input[value="all"]').checked = true;
+      mobileSubcategoryFilters.querySelector(
+        'input[value="all"]'
+      ).checked = true;
+      mobilePseudocategoryFilters.querySelector(
+        'input[value="all"]'
+      ).checked = true;
+
+      // Update cascading filters after clearing
+      updateSubcategoryFilters("all");
+      updatePseudocategoryFilters("all");
+      fetchProductsWithFilters();
+    });
+  }
+
+  // Carga inicial
+  async function init() {
+    // Initialize filters before fetching products
+    updateSubcategoryFilters("all");
+    updatePseudocategoryFilters("all");
+    await fetchProductsWithFilters();
+    populateMobileFilters();
+  }
+
+  init();
+});

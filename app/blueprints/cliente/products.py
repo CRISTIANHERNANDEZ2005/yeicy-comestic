@@ -11,6 +11,8 @@ from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 from app.utils.jwt_utils import jwt_required
 from flask_login import current_user
 
+
+
 products_bp = Blueprint('products', __name__)
 
 @products_bp.route('/')
@@ -20,8 +22,8 @@ def index():
     o todos los productos si no existe la categoría
     """
     # Obtener categorías principales (sin cambios - ya está perfecto)
-    categorias = CategoriasPrincipales.query\
-        .filter_by(estado='activo')\
+    categorias = CategoriasPrincipales.query \
+        .filter_by(estado='activo') \
         .options(
             joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
         )\
@@ -309,3 +311,89 @@ def _extraer_terminos_de_producto(product_id, query):
                 terminos.add(producto.seudocategoria.subcategoria.categoria_principal.nombre)
                 
     return terminos
+
+@products_bp.route('/productos')
+def productos_page():
+    """
+    Renderiza la página de productos, pasando las categorías, subcategorías y pseudocategorías para los filtros.
+    """
+    categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
+    subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
+    seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
+
+    categorias = [categoria_principal_to_dict(c) for c in categorias_obj]
+    subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
+    seudocategorias = [seudocategoria_to_dict(s) for s in seudocategorias_obj]
+    return render_template(
+        'cliente/componentes/todos_productos.html',
+        categorias=categorias,
+        subcategorias=subcategorias,
+        seudocategorias=seudocategorias
+    )
+
+@products_bp.route('/api/productos/filtrar')
+def filter_products():
+    """
+    Devuelve productos filtrados por categoría principal, subcategoría y/o pseudocategoría en formato JSON.
+    """
+    main_category_name = request.args.get('categoria_principal')
+    subcategory_name = request.args.get('subcategoria')
+    pseudocategory_name = request.args.get('seudocategoria')
+
+    query = Productos.query.filter_by(estado='activo')
+
+    if main_category_name and main_category_name != 'all':
+        query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)\
+            .join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)\
+            .join(CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id)\
+            .filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
+    
+    if subcategory_name and subcategory_name != 'all':
+        # Si ya se unió a Seudocategorias y Subcategorias por main_category_name, no es necesario volver a unirse
+        # Pero si no, necesitamos las uniones explícitas
+        if not main_category_name or main_category_name == 'all':
+            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)\
+                .join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)
+        query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategory_name))
+
+    if pseudocategory_name and pseudocategory_name != 'all':
+        # Si ya se unió a Seudocategorias por main_category_name o subcategory_name, no es necesario volver a unirse
+        # Pero si no, necesitamos la unión explícita
+        if (not main_category_name or main_category_name == 'all') and \
+           (not subcategory_name or subcategory_name == 'all'):
+            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)
+        query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
+
+    productos = query.all()
+    return jsonify([producto_to_dict(p) for p in productos])
+
+@products_bp.route('/api/productos')
+def get_all_products():
+    """
+    Devuelve todos los productos activos en formato JSON.
+    """
+    productos = Productos.query.filter_by(estado='activo').all()
+    return jsonify([producto_to_dict(p) for p in productos])
+
+
+@products_bp.route('/api/productos/categoria/<nombre_categoria>')
+def get_products_by_category(nombre_categoria):
+    """
+    Devuelve productos de una categoría principal específica en formato JSON.
+    """
+    categoria = CategoriasPrincipales.query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(nombre_categoria), CategoriasPrincipales.estado == 'activo').first()
+    
+    if not categoria:
+        return jsonify({'error': 'Categoría no encontrada'}), 404
+
+    seudocategoria_ids = db.session.query(Seudocategorias.id)\
+        .join(Subcategorias)\
+        .filter(Subcategorias.categoria_principal_id == categoria.id, Seudocategorias.estado == 'activo').all()
+    
+    seudocategoria_ids = [id[0] for id in seudocategoria_ids]
+    
+    productos = Productos.query\
+        .filter(Productos.seudocategoria_id.in_(seudocategoria_ids), Productos.estado == 'activo')\
+        .all()
+        
+    return jsonify([producto_to_dict(p) for p in productos])

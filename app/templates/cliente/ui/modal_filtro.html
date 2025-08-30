@@ -1,0 +1,212 @@
+<!-- Drawer de filtros para móvil -->
+<div
+  id="mobile-filter-drawer"
+  class="drawer fixed inset-y-0 right-0 z-[999] w-80 bg-white shadow-xl overflow-y-auto"
+>
+  <div class="p-6">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-xl font-bold text-gray-800">Filtros</h3>
+      <button id="close-filter-btn" class="text-gray-500 hover:text-gray-700">
+        <i class="fas fa-times text-xl"></i>
+      </button>
+    </div>
+
+    <!-- Contenido del drawer (igual que el sidebar de escritorio) -->
+    <div class="space-y-6">
+      <!-- Filtro por Categoría -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-700 mb-3 flex items-center justify-between cursor-pointer"
+          data-target="mobile-category-filters"
+        >
+          <span>Categoría</span>
+          <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
+        </h4>
+        <div id="mobile-category-filters" class="space-y-2 custom-scrollbar max-h-40 overflow-y-auto pr-2 hidden">
+          <!-- Las categorías se cargarán aquí dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Filtro por Subcategoría -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-700 mb-3 flex items-center justify-between cursor-pointer"
+          data-target="mobile-subcategory-filters"
+        >
+          <span>Subcategoría</span>
+          <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
+        </h4>
+        <div id="mobile-subcategory-filters" class="space-y-2 custom-scrollbar max-h-40 overflow-y-auto pr-2 hidden">
+          <!-- Las subcategorías se cargarán aquí dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Filtro por Pseudocategoría -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-700 mb-3 flex items-center justify-between cursor-pointer"
+          data-target="mobile-pseudocategory-filters"
+        >
+          <span>Pseudocategoría</span>
+          <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
+        </h4>
+        <div id="mobile-pseudocategory-filters" class="space-y-2 custom-scrollbar max-h-40 overflow-y-auto pr-2 hidden">
+          <!-- Las pseudocategorías se cargarán aquí dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Filtro por Función -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-700 mb-3 flex items-center justify-between cursor-pointer"
+          data-target="mobile-function-filters"
+        >
+          <span>Función</span>
+          <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
+        </h4>
+        <div id="mobile-function-filters" class="space-y-2 hidden">
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Hidratación</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Anti-edad</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Luminosidad</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Anti-acné</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Calmante</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Exfoliante</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Filtro por Marca -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-700 mb-3 flex items-center justify-between cursor-pointer"
+          data-target="mobile-brand-filters"
+        >
+          <span>Marca</span>
+          <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
+        </h4>
+        <div id="mobile-brand-filters" class="space-y-2 hidden">
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">L'Oréal</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Maybelline</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Neutrogena</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">CeraVe</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">La Roche-Posay</span>
+          </label>
+          <label class="flex items-center">
+            <input
+              type="checkbox"
+              class="rounded text-pink-600 focus:ring-pink-500"
+            />
+            <span class="ml-2 text-gray-700">Vichy</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Filtro por Precio -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-700 mb-3 flex items-center justify-between cursor-pointer"
+          data-target="mobile-price-filters"
+        >
+          <span>Rango de Precio</span>
+          <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
+        </h4>
+        <div id="mobile-price-filters" class="space-y-4 hidden">
+          <div>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value="50"
+              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-600"
+            />
+          </div>
+          <div class="flex justify-between text-sm text-gray-600">
+            <span>$0</span>
+            <span class="font-medium text-pink-600">$50 - $100</span>
+            <span>$100+</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex flex-col gap-3 pt-4">
+        <button
+          id="apply-mobile-filters"
+          class="bg-pink-600 hover:bg-pink-700 text-white font-medium py-2.5 rounded-lg transition duration-300"
+        >
+          Aplicar Filtros
+        </button>
+        <button
+          id="close-filter-btn-results"
+          class="border border-gray-300 text-gray-700 font-medium py-2.5 rounded-lg hover:bg-gray-50 transition duration-300"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

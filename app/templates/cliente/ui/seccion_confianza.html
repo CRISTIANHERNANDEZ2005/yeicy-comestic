@@ -1,43 +1,332 @@
-<section class="py-12 bg-gray-50 w-full">
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-        <div>
-            <div class="bg-pink-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4 2 2 0 010 4zm0 0v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-            </div>
-            <h3 class="font-bold text-lg mb-2">Envíos Gratis</h3>
-            <p class="text-gray-600">A partir de $100.000</p>
-        </div>
+<!-- Sección Hero Y&C Cosmétic -->
+<section
+  class="relative py-20 md:py-32 bg-gradient-to-br from-pink-50 via-white to-rose-50 overflow-hidden"
+>
+  <div class="absolute inset-0 opacity-10">
+    <svg class="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+      <defs>
+        <radialGradient id="paint0" cx="0" cy="0" r="1">
+          <stop stop-color="#EC4899" />
+          <stop offset="1" stop-color="#F43F5E" />
+        </radialGradient>
+      </defs>
+      <path
+        d="M0 0L100 100M20 0L100 80M40 0L100 60"
+        stroke="url(#paint0)"
+        stroke-width="0.5"
+      />
+    </svg>
+  </div>
+
+  <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+    <!-- Heading -->
+    <h1
+      class="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight"
+    >
+      <span
+        class="italic text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-rose-600"
+      >
+        Y&C Cosmétic
+      </span>
+      <br />
+      <span class="text-2xl md:text-3xl lg:text-4xl font-light">
+        Tu belleza, tu poder
+      </span>
+    </h1>
+
+    <!-- Descripción principal -->
+    <p
+      class="text-lg md:text-xl text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto"
+    >
+      En <strong class="text-pink-600">Y&C Cosmétic</strong> creemos que el
+      maquillaje es una forma de
+      <em class="text-rose-600 font-medium">expresión y confianza</em>. Somos
+      una tienda especializada que ofrece productos de alta calidad para que
+      luzcas y te sientas como la mejor versión de ti.
+    </p>
+
+    <!-- Pregunta destacada -->
+    <div
+      class="bg-white/50 backdrop-blur-sm rounded-2xl p-6 mb-8 border border-pink-100"
+    >
+      <p class="text-xl md:text-2xl font-semibold text-gray-800">
+        ¿Buscas un look natural o uno impactante?
+      </p>
+    </div>
+
+    <!-- Beneficios -->
+    <div class="grid md:grid-cols-2 gap-6 mb-8">
+      <div
+        class="bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-xl p-6 text-left"
+      >
+        <h3 class="font-bold text-lg mb-2 flex items-center">
+          <span class="w-2 h-2 bg-white rounded-full mr-3"></span>
+          Productos seleccionados con calidad garantizada
+        </h3>
+      </div>
+      <div
+        class="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-xl p-6 text-left"
+      >
+        <h3 class="font-bold text-lg mb-2 flex items-center">
+          <span class="w-2 h-2 bg-white rounded-full mr-3"></span>
+          Asesoría personalizada para tu tipo de piel y estilo
+        </h3>
+      </div>
+    </div>
+
+    <!-- Mensaje final -->
+    <div class="space-y-4">
+      <p class="text-lg md:text-xl text-gray-600 italic">
+        En Y&C, no solo vendemos cosméticos:
+      </p>
+      <p
+        class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600"
+      >
+        empoderamos tu belleza.
+      </p>
+      <p class="text-lg md:text-xl text-gray-700 font-light">
+        Descúbrela. Vívela.
+        <span class="text-pink-600 font-semibold">Brilla.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- Sección de Confianza - Responsive Inteligente -->
+<section class="py-12 md:py-16 bg-gradient-to-br from-gray-50 to-pink-50/30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        <div>
-            <div class="bg-pink-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                </svg>
-            </div>
-            <h3 class="font-bold text-lg mb-2">Pago Contra Entrega</h3>
-            <p class="text-gray-600">Paga al recibir tu pedido</p>
+        <!-- Título -->
+        <div class="text-center mb-8 md:mb-12">
+            <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-3">
+                Por qué elegirnos
+            </h2>
+            <div class="w-16 h-1 bg-gradient-to-r from-pink-500 to-rose-500 mx-auto rounded-full"></div>
         </div>
-        
-        <div>
-            <div class="bg-pink-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.403 3.055c-.388 1.544-.39 3.019.01 4.436a11.952 11.952 0 002.171 4.252 11.96 11.96 0 01-1.699 4.678c.021.42.059.835.11.246a12.082 12.082 0 0010.074 0c.051-.411.089-.826.11-1.246a11.96 11.96 0 01-1.699-4.678 11.952 11.952 0 002.171-4.252c1.282-2.867 1.11-6.493-.403-9.48zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z" />
-                </svg>
+
+        <!-- Contenedor adaptable -->
+        <div class="benefits-container">
+            <div class="benefits-grid">
+                
+                <!-- Envíos Gratis -->
+                <div class="benefit-card">
+                    <div class="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1">Envíos Gratis</h3>
+                        <p class="text-xs text-gray-600">Desde $100.000</p>
+                    </div>
+                </div>
+
+                <!-- Pago Contra Entrega -->
+                <div class="benefit-card">
+                    <div class="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1">Pago Contra Entrega</h3>
+                        <p class="text-xs text-gray-600">Al recibir tu pedido</p>
+                    </div>
+                </div>
+
+                <!-- Calidad Garantizada -->
+                <div class="benefit-card">
+                    <div class="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1">Calidad Garantizada</h3>
+                        <p class="text-xs text-gray-600">100% originales</p>
+                    </div>
+                </div>
+
+                <!-- Atención 24/7 -->
+                <div class="benefit-card">
+                    <div class="bg-white rounded-xl p-4 shadow-md hover:shadow-lg transition-all duration-300">
+                        <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-semibold text-sm mb-1">Atención 24/7</h3>
+                        <p class="text-xs text-gray-600">WhatsApp y soporte</p>
+                    </div>
+                </div>
+
             </div>
-            <h3 class="font-bold text-lg mb-2">Calidad Garantizada</h3>
-            <p class="text-gray-600">Productos 100% originales</p>
         </div>
-        
-        <div>
-            <div class="bg-pink-100 p-4 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-            </div>
-            <h3 class="font-bold text-lg mb-2">Atención Personalizada</h3>
-            <p class="text-gray-600">WhatsApp y soporte 24/7</p>
+
+        <!-- Indicadores del carrusel (solo móvil) -->
+        <div class="carousel-indicators hidden justify-center space-x-1.5 mt-6">
+            <button class="carousel-dot w-2 h-2 bg-gray-300 rounded-full transition-all" data-slide="0"></button>
+            <button class="carousel-dot w-2 h-2 bg-gray-300 rounded-full transition-all" data-slide="1"></button>
         </div>
     </div>
 </section>
+
+<style>
+.benefits-container {
+    position: relative;
+}
+
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+}
+
+.benefit-card {
+    min-height: 0;
+}
+
+/* Responsive breakpoints */
+@media (max-width: 1024px) {
+    .benefits-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .benefits-container {
+        overflow: hidden;
+    }
+    
+    .benefits-grid {
+        display: flex;
+        transition: transform 0.3s ease;
+        gap: 0.75rem;
+    }
+    
+    .benefit-card {
+        flex: 0 0 calc(50% - 0.375rem);
+        scroll-snap-align: start;
+    }
+    
+    .carousel-indicators {
+        display: flex;
+    }
+    
+    .carousel-dot.active {
+        background-color: #ec4899;
+        transform: scale(1.2);
+    }
+}
+
+/* Hover effects */
+.benefit-card:hover {
+    transform: translateY(-2px);
+}
+
+/* Ajustes de tamaño */
+@media (max-width: 390px) {
+    .benefit-card {
+        flex: 0 0 calc(50% - 0.25rem);
+    }
+}
+</style>
+
+<script>
+class BenefitsSection {
+    constructor() {
+        this.container = document.querySelector('.benefits-container');
+        this.grid = document.querySelector('.benefits-grid');
+        this.cards = document.querySelectorAll('.benefit-card');
+        this.indicators = document.querySelectorAll('.carousel-dot');
+        this.currentPage = 0;
+        this.isCarousel = false;
+        
+        this.init();
+    }
+
+    init() {
+        this.checkLayout();
+        window.addEventListener('resize', () => this.checkLayout());
+        this.bindEvents();
+    }
+
+    checkLayout() {
+        const width = window.innerWidth;
+        const shouldBeCarousel = width <= 640;
+        
+        if (shouldBeCarousel !== this.isCarousel) {
+            this.isCarousel = shouldBeCarousel;
+            this.toggleCarousel();
+        }
+    }
+
+    toggleCarousel() {
+        if (this.isCarousel) {
+            this.enableCarousel();
+        } else {
+            this.disableCarousel();
+        }
+    }
+
+    enableCarousel() {
+        this.container.classList.add('carousel-active');
+        this.updateIndicators();
+    }
+
+    disableCarousel() {
+        this.container.classList.remove('carousel-active');
+        this.grid.style.transform = 'translateX(0)';
+        this.currentPage = 0;
+    }
+
+    goToPage(page) {
+        if (!this.isCarousel) return;
+        
+        const cardWidth = this.cards[0].offsetWidth + 12; // gap
+        const offset = -(page * cardWidth * 2);
+        
+        this.grid.style.transform = `translateX(${offset}px)`;
+        this.currentPage = page;
+        this.updateIndicators();
+    }
+
+    updateIndicators() {
+        this.indicators.forEach((dot, index) => {
+            dot.classList.toggle('active', index === this.currentPage);
+        });
+    }
+
+    bindEvents() {
+        this.indicators.forEach((dot, index) => {
+            dot.addEventListener('click', () => this.goToPage(index));
+        });
+
+        // Touch/swipe support
+        let startX = 0;
+        let currentX = 0;
+
+        this.container.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+        });
+
+        this.container.addEventListener('touchmove', (e) => {
+            currentX = e.touches[0].clientX;
+        });
+
+        this.container.addEventListener('touchend', () => {
+            const diff = startX - currentX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0 && this.currentPage < 1) {
+                    this.goToPage(1);
+                } else if (diff < 0 && this.currentPage > 0) {
+                    this.goToPage(0);
+                }
+            }
+        });
+    }
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', () => new BenefitsSection());
+</script>

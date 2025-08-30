@@ -3,6 +3,8 @@ from flask import Flask, render_template
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager
 from .models.domains.user_models import Usuarios
+from app.blueprints.cliente.auth import perfil
+from app.utils.jwt_utils import jwt_required
 
 
 def create_app(config_class=Config):
@@ -58,6 +60,12 @@ def create_app(config_class=Config):
     app.register_blueprint(products_bp)
     app.register_blueprint(favorites_bp)
     app.register_blueprint(reviews_bp)
+
+    # Register the /perfil route directly with the app
+    @app.route('/perfil')
+    @jwt_required
+    def root_perfil(usuario):
+        return perfil(usuario)
 
     # Verificar conexión a la base de datos al iniciar
     with app.app_context():

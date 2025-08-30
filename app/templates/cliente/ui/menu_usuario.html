@@ -51,7 +51,7 @@
 
         {% if 'user' in session %}
         <!-- Menú de usuario autenticado -->
-        <a href="#" onclick="window.location.href='/perfil'; return false;" class="flex items-center gap-4 px-6 py-3 text-gray-800 hover:bg-gradient-to-r from-pink-50 to-white hover:text-pink-700 font-medium transition-all duration-200 text-base group" role="menuitem" tabindex="0" aria-label="Ver perfil">
+        <a href="{{ url_for('root_perfil') }}" class="flex items-center gap-4 px-6 py-3 text-gray-800 hover:bg-gradient-to-r from-pink-50 to-white hover:text-pink-700 font-medium transition-all duration-200 text-base group" role="menuitem" tabindex="0" aria-label="Ver perfil">
             <div class="p-1.5 bg-pink-100 rounded-lg group-hover:bg-pink-200 transition-colors">
                 <svg class="w-5 h-5 text-pink-600 group-hover:text-pink-800 transition-colors" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M12 12a5 5 0 100-10 5 5 0 000 10z"/>

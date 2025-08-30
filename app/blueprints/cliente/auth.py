@@ -3,7 +3,8 @@ from flask import Blueprint, request, jsonify, session, g, render_template, redi
 from app.models.domains.user_models import Usuarios
 from app.models.serializers import usuario_to_dict
 from app.extensions import db, bcrypt, login_manager
-from flask_login import login_user, logout_user, login_required, current_user
+from flask_login import login_user, logout_user, current_user
+from app.utils.jwt_utils import jwt_required
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -193,3 +194,15 @@ def logout():
     except Exception as e:
         app.logger.error(f"Error al cerrar sesión: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error al cerrar sesión'}), 500
+
+# Perfil de usuario
+def perfil(usuario):
+    # Detectar si es un dispositivo móvil
+    user_agent = request.headers.get('User-Agent', '').lower()
+    es_movil = 'mobile' in user_agent or 'android' in user_agent or 'iphone' in user_agent
+
+    if es_movil:
+        return render_template('cliente/componentes/perfil_usuario.html', usuario=usuario)
+    else:
+        # TODO: Crear una plantilla de perfil para escritorio
+        return render_template('cliente/componentes/perfil_usuario.html', usuario=usuario)

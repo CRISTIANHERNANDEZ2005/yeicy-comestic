@@ -14,7 +14,6 @@ from flask_login import current_user
 products_bp = Blueprint('products', __name__)
 
 @products_bp.route('/')
-@products_bp.route('/products')
 def index():
     """
     Endpoint principal que muestra productos de la categoría 'Maquillaje'

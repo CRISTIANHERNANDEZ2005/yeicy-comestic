@@ -7,6 +7,9 @@
         <!-- Tailwind CSS CDN -->
         <script src="https://cdn.tailwindcss.com"></script>
 
+        <!-- Font Awesome CDN -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
         <!-- Interceptor de autenticación -->
         <script src="{{ url_for('static', filename='js/auth_interceptor.js') }}"></script>
         <!-- Estilos personalizados -->
@@ -224,6 +227,25 @@
         </div>
 
         <main class="container mx-auto pt-20 pb-8 px-4 flex-1">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            {% for category, message in messages %}
+                                let toastType = 'info'; // Default
+                                if ({{ category|tojson }} === 'error' || {{ category|tojson }} === 'danger') {
+                                    toastType = 'error';
+                                } else if ({{ category|tojson }} === 'warning') {
+                                    toastType = 'warning';
+                                } else if ({{ category|tojson }} === 'success') {
+                                    toastType = 'success';
+                                }
+                                window.toast.show({{ message|tojson }}, toastType);
+                            {% endfor %}
+                        });
+                    </script>
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </main>
 
@@ -244,6 +266,11 @@
     {% include 'cliente/ui/notifications.html' %}
     
     {% include 'cliente/ui/reseña_modals.html' %}
+    
+    {% if 'user' in session %}
+    {% include 'cliente/ui/modal_edicion_usuario.html' %}
+    {% endif %}
+    
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cart.js') }}"></script>

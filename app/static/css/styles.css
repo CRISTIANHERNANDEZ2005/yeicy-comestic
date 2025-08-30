@@ -108,3 +108,8 @@
 .animate-fade-out-down {
   animation: fadeOutDown 0.3s ease-out forwards;
 }
+
+.floating-stars {
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.5), transparent);
+  opacity: 1;
+}

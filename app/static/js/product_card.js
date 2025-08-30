@@ -20,9 +20,11 @@ function generateOptimizedStars(rating) {
   const stars = Math.round(rating);
   let html = "";
   for (let i = 0; i < 5; i++) {
-    const color = i < stars ? "text-yellow-400" : "text-gray-300";
-    const size = "w-3 h-3";
-    html += `<svg class="${size} ${color}" fill="currentColor" viewBox="0 0 20 20">
+    const isFilled = i < stars;
+    const color = isFilled ? "text-yellow-300" : "text-gray-300";
+    const size = "w-5 h-5";
+    const glow = isFilled ? "drop-shadow-md" : "";
+    html += `<svg class="${size} ${color} ${glow}" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>`;
   }
@@ -120,6 +122,12 @@ function renderProductCard(producto, delayIndex) {
                         ? `<div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded text-xs">${tiempoTranscurrido}</div>`
                         : ""
                     }
+                    <!-- Stars moved here -->
+                    <div class="floating-stars absolute bottom-0 left-0 right-0 p-2 flex items-center justify-center space-x-1 z-10">
+                        ${generateOptimizedStars(
+                          producto.calificacion_promedio || 0
+                        )}
+                    </div>
                 </div>
                 <div class="p-3 md:p-4 flex flex-col flex-grow">
                     <div class="flex items-center justify-between mb-1">
@@ -185,20 +193,8 @@ function renderProductCard(producto, delayIndex) {
   }
                         </p>
                     </div>
-                    <div class="flex items-center mb-2">
-                        <div class="flex space-x-0.5" data-rating-stars="${
-                          producto.id
-                        }">
-                            ${generateOptimizedStars(
-                              producto.calificacion_promedio || 0
-                            )}
-                        </div>
-                        <span class="text-xs text-gray-500 ml-1" data-rating-count="${
-                          producto.id
-                        }">(${producto.reseñas_count || 0} reseñas)</span>
-                    </div>
                     <div class="flex items-center justify-between mt-auto pt-2">
-                        <p class="text-base md:text-lg font-bold text-pink-600">$${parseFloat(
+                        <p class="text-base md:text-lg font-bold text-pink-600">${parseFloat(
                           producto.precio
                         ).toFixed(2)}</p>
                          <button class="add-to-cart bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-3 py-2 md:px-4 rounded-full hover:from-pink-600 hover:to-fuchsia-600 transition-all duration-300 flex items-center text-xs md:text-sm hover:shadow-lg hover:scale-105 active:scale-95 z-20 relative"

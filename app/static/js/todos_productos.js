@@ -596,5 +596,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   init();
+
+  const clearSearchBtn = document.getElementById("clear-search-btn");
+  if (clearSearchBtn) {
+    clearSearchBtn.addEventListener("click", () => {
+      if (clearFiltersBtn) {
+        clearFiltersBtn.click();
+      }
+    });
+  }
 });
 

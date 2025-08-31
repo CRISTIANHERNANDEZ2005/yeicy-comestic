@@ -260,14 +260,14 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (selectedSubcategoryName !== "all") {
-      const subcategoryId = allSubcategories.find(
+      const subcategoryId = allSubcategorias.find(
         (sub) => sub.nombre === selectedSubcategoryName
       )?.id;
       if (subcategoryId) {
-        const filteredPseudocategories = allSeudocategorias.filter(
-          (pseudo) => pseudo.subcategoria_id === subcategoryId
+        const filteredPseudocategorias = allSeudocategorias.filter(
+          (pseudo) => pseudo.subcategoria_id == subcategoryId
         );
-        filteredPseudocategories.forEach((pseudo) => {
+        filteredPseudocategorias.forEach((pseudo) => {
           const pseudocategoryHtml = `
               <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
                 <input
@@ -478,6 +478,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (pseudocategoryFilters) {
     pseudocategoryFilters.addEventListener("change", fetchProductsWithFilters);
+  }
+
+  // Event listener para el drawer de filtros móvil usando delegación de eventos
+  if (mobileFilterDrawer) {
+    mobileFilterDrawer.addEventListener("click", (event) => {
+      const target = event.target;
+
+      // Asegurarse de que el objetivo sea un input de radio antes de continuar
+      if (target.tagName === "INPUT" && target.type === "radio") {
+        // Actualización dinámica de subcategorías
+        if (target.name === "mobile-category") {
+          const selectedCategory = target.value;
+          updateSubcategoryFilters(selectedCategory);
+          updatePseudocategoryFilters("all"); // Resetea el siguiente nivel
+        }
+
+        // Actualización dinámica de pseudocategorías
+        if (target.name === "mobile-subcategory") {
+          const selectedSubcategory = target.value;
+          updatePseudocategoryFilters(selectedSubcategory);
+        }
+      }
+    });
   }
 
   // Event listener para el botón de aplicar filtros en móvil

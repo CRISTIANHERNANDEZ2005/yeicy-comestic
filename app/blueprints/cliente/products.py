@@ -323,7 +323,11 @@ def productos_page():
 
     categorias = [categoria_principal_to_dict(c) for c in categorias_obj]
     subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
-    seudocategorias = [seudocategoria_to_dict(s) for s in seudocategorias_obj]
+    seudocategorias = []
+    for s in seudocategorias_obj:
+        s_dict = seudocategoria_to_dict(s)
+        s_dict['subcategoria_id'] = s.subcategoria_id
+        seudocategorias.append(s_dict)
     return render_template(
         'cliente/componentes/todos_productos.html',
         categorias=categorias,
@@ -339,57 +343,31 @@ def filter_products():
     main_category_name = request.args.get('categoria_principal')
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('seudocategoria')
-    sort_by = request.args.get('ordenar_por', 'featured') # Default to 'featured'
-
-    query = Productos.query.filter_by(estado='activo')
-
-    if main_category_name and main_category_name != 'all':
-        query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)\
-            .join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)\
-            .join(CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id)\
-            .filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
-    
-    if subcategory_name and subcategory_name != 'all':
-        # Si ya se unió a Seudocategorias y Subcategorias por main_category_name, no es necesario volver a unirse
-        # Pero si no, necesitamos las uniones explícitas
-        if not main_category_name or main_category_name == 'all':
-            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)\
-                .join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)
-        query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategory_name))
-
-    if pseudocategory_name and pseudocategory_name != 'all':
-        # Si ya se unió a Seudocategorias por main_category_name o subcategory_name, no es necesario volver a unirse
-        # Pero si no, necesitamos la unión explícita
-        if (not main_category_name or main_category_name == 'all') and \
-           (not subcategory_name or subcategory_name == 'all'):
-            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)
-        query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
-
+    sort_by = request.args.get('ordenar_por', 'featured')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
 
-    query = Productos.query.filter_by(estado='activo')
+    # Start with the base query, joining all tables needed for any filter.
+    # This is slightly less efficient if no filters are applied, but much more robust.
+    query = db.session.query(Productos).select_from(Productos).join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+    ).join(
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+    ).join(
+        CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
+    )
 
+    # Always filter by product status
+    query = query.filter(Productos.estado == 'activo')
+
+    # Apply filters based on provided names
     if main_category_name and main_category_name != 'all':
-        query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)\
-            .join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)\
-            .join(CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id)\
-            .filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
+        query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
     
     if subcategory_name and subcategory_name != 'all':
-        # Si ya se unió a Seudocategorias y Subcategorias por main_category_name, no es necesario volver a unirse
-        # Pero si no, necesitamos las uniones explícitas
-        if not main_category_name or main_category_name == 'all':
-            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)\
-                .join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)
         query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategory_name))
 
     if pseudocategory_name and pseudocategory_name != 'all':
-        # Si ya se unió a Seudocategorias por main_category_name o subcategory_name, no es necesario volver a unirse
-        # Pero si no, necesitamos la unión explícita
-        if (not main_category_name or main_category_name == 'all') and \
-           (not subcategory_name or subcategory_name == 'all'):
-            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)
         query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
 
     # Apply price filters
@@ -398,14 +376,14 @@ def filter_products():
             min_price = float(min_price_str)
             query = query.filter(Productos.precio >= min_price)
         except ValueError:
-            pass # Ignore invalid price values
+            pass  # Ignore invalid price values
 
     if max_price_str:
         try:
             max_price = float(max_price_str)
             query = query.filter(Productos.precio <= max_price)
         except ValueError:
-            pass # Ignore invalid price values
+            pass  # Ignore invalid price values
 
     # Apply sorting
     if sort_by == 'price_asc':
@@ -418,8 +396,8 @@ def filter_products():
         query = query.order_by(Productos.nombre.asc())
     elif sort_by == 'za':
         query = query.order_by(Productos.nombre.desc())
-    else: # 'az' or any other default
-        query = query.order_by(Productos.nombre.asc()) # Default to A-Z sorting
+    else:  # 'az' or any other default
+        query = query.order_by(Productos.nombre.asc())
 
     productos = query.all()
     return jsonify([producto_to_dict(p) for p in productos])

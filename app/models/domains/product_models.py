@@ -35,12 +35,15 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
 
     # id y timestamps heredados de los mixins
     nombre: Mapped[str] = mapped_column(db.String(100), nullable=False, unique=True)
+    slug: Mapped[str] = mapped_column(db.String(120), nullable=False, unique=True) # Nuevo campo slug
     descripcion: Mapped[str] = mapped_column(db.String(500), nullable=False)
     # estado ya está en el mixin
     subcategorias: Mapped[List['Subcategorias']] = relationship('Subcategorias', back_populates='categoria_principal', lazy=True)
 
     # Restricciones
-    # __table_args__ y constraint de estado ya están en el mixin
+    __table_args__ = (
+        db.Index('idx_categoria_principal_slug', 'slug'), # Índice para el slug
+    )
 
     def __init__(self, nombre, descripcion, estado='activo', id=None):
         if not nombre or not nombre.strip():
@@ -50,6 +53,7 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
         if estado not in EstadoEnum._value2member_map_:
             raise ValueError("El estado debe ser 'activo' o 'inactivo'")
         self.nombre = nombre
+        self.slug = slugify(nombre) # Generar slug automáticamente
         self.descripcion = descripcion
         self.estado = estado
         if id:

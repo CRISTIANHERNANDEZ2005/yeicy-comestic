@@ -240,19 +240,40 @@
         <!-- Filtro de precio (nuevo) -->
         <div class="mb-6">
           <h4
-            class="font-medium text-gray-800 mb-3 flex items-center justify-between cursor-pointer bg-gray-50 p-3.5 rounded-xl border border-gray-100"
+            class="filter-toggle font-medium text-gray-800 mb-3 flex items-center justify-between cursor-pointer bg-gray-50 p-3.5 rounded-xl hover:bg-gray-100 transition-colors duration-200 border border-gray-100"
+            data-target="price-filters-content"
           >
             <span class="flex items-center">
               <i class="fas fa-dollar-sign text-pink-600 mr-3 text-sm"></i> 
               <span class="font-semibold">Rango de Precio</span>
             </span>
+            <i
+              class="fas fa-chevron-down text-xs text-gray-500 transform transition-transform duration-200"
+            ></i>
           </h4>
-          <div class="mt-4 px-1">
-            <input type="range" min="0" max="1000" value="500" class="w-full h-1.5 bg-pink-100 rounded-lg appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-pink-600">
-            <div class="flex justify-between text-sm text-gray-500 mt-2">
-              <span>$0</span>
-              <span>$500</span>
-              <span>$1000+</span>
+          <div id="price-filters-content" class="mt-4 px-1 space-y-4 hidden">
+            <div class="flex items-center justify-between gap-3">
+              <div class="relative w-1/2">
+                <input
+                  type="number"
+                  id="min-price"
+                  name="min_price"
+                  placeholder="Mín."
+                  min="0"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
+              <div class="text-gray-500">-</div>
+              <div class="relative w-1/2">
+                <input
+                  type="number"
+                  id="max-price"
+                  name="max_price"
+                  placeholder="Máx."
+                  min="0"
+                  class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -261,55 +282,59 @@
 
     <!-- Contenido principal de productos mejorado -->
     <div class="flex-1">
-      <!-- Estado de Carga (Skeleton) mejorado -->
-      <div
-        id="product-grid-loader"
-        class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full"
-      >
-        {% for i in range(6) %}
+      <div id="product-listing-container">
+        <!-- Estado de Carga (Skeleton) mejorado -->
         <div
-          class="product-skeleton bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse border border-gray-100"
+          id="product-grid-loader"
+          class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full"
         >
-          <div class="relative overflow-hidden aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl"></div>
-          <div class="p-5 space-y-3">
-            <div class="h-4 w-1/3 bg-gray-200 rounded-full"></div>
-            <div class="h-5 w-3/4 bg-gray-200 rounded"></div>
-            <div class="h-4 w-full bg-gray-200 rounded"></div>
-            <div class="flex justify-between items-center pt-3">
-              <div class="h-6 w-1/4 bg-gray-200 rounded"></div>
-              <div class="h-9 w-1/3 bg-gray-200 rounded-xl"></div>
+          {% for i in range(6) %}
+          <div
+            class="product-skeleton bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse border border-gray-100"
+          >
+            <div class="relative overflow-hidden aspect-square bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-2xl"></div>
+            <div class="p-5 space-y-3">
+              <div class="h-4 w-1/3 bg-gray-200 rounded-full"></div>
+              <div class="h-5 w-3/4 bg-gray-200 rounded"></div>
+              <div class="h-4 w-full bg-gray-200 rounded"></div>
+              <div class="flex justify-between items-center pt-3">
+                <div class="h-6 w-1/4 bg-gray-200 rounded"></div>
+                <div class="h-9 w-1/3 bg-gray-200 rounded-xl"></div>
+              </div>
             </div>
           </div>
+          {% endfor %}
         </div>
-        {% endfor %}
+
+        <!-- Grid de productos (inicialmente oculto) -->
+        <div
+          id="product-grid"
+          class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
+          style="display: none"
+        >
+          <!-- Los productos se cargarán aquí dinámicamente -->
+        </div>
+
+        <!-- Botones de paginación "Ver más" / "Ver menos" -->
+        <div id="pagination-buttons" class="mt-12 flex flex-col items-center space-y-4">
+          <button
+            id="load-more-btn"
+            class="bg-pink-600 text-white px-6 py-3 rounded-xl flex items-center justify-center hover:bg-pink-700 transition-colors duration-300 shadow-md hover:shadow-lg text-lg font-semibold w-full md:w-auto"
+            style="display: none;"
+          >
+            <i class="fas fa-arrow-down mr-2"></i> Ver más productos
+          </button>
+          <button
+            id="show-less-btn"
+            class="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center hover:bg-gray-300 transition-colors duration-300 shadow-md hover:shadow-lg text-lg font-semibold w-full md:w-auto"
+            style="display: none;"
+          >
+            <i class="fas fa-arrow-up mr-2"></i> Ver menos productos
+          </button>
+        </div>
       </div>
 
-      <!-- Grid de productos (inicialmente oculto) -->
-      <div
-        id="product-grid"
-        class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
-        style="display: none"
-      >
-        <!-- Los productos se cargarán aquí dinámicamente -->
-      </div>
-
-      <!-- Botones de paginación "Ver más" / "Ver menos" -->
-      <div id="pagination-buttons" class="mt-12 flex flex-col items-center space-y-4">
-        <button
-          id="load-more-btn"
-          class="bg-pink-600 text-white px-6 py-3 rounded-xl flex items-center justify-center hover:bg-pink-700 transition-colors duration-300 shadow-md hover:shadow-lg text-lg font-semibold w-full md:w-auto"
-          style="display: none;"
-        >
-          <i class="fas fa-arrow-down mr-2"></i> Ver más productos
-        </button>
-        <button
-          id="show-less-btn"
-          class="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl flex items-center justify-center hover:bg-gray-300 transition-colors duration-300 shadow-md hover:shadow-lg text-lg font-semibold w-full md:w-auto"
-          style="display: none;"
-        >
-          <i class="fas fa-arrow-up mr-2"></i> Ver menos productos
-        </button>
-      </div>
+      {% include 'cliente/componentes/no_results.html' %}
     </div>
   </div>
 </main>
@@ -424,6 +449,36 @@
     transition-duration: 200ms;
     transition-timing-function: ease;
   }
+
+  /* --- Estilos para la animación profesional --- */
+
+  /* Clases para desvanecer elementos */
+  .fade-out {
+    opacity: 0;
+    transition: opacity 0.3s ease-out;
+  }
+
+  .fade-in {
+    opacity: 1;
+    transition: opacity 0.3s ease-in;
+  }
+
+  /* Animación para la entrada de las tarjetas */
+  @keyframes card-enter {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .card-enter {
+    animation: card-enter 0.4s ease-out forwards;
+  }
+
 </style>
 
 {% include 'cliente/ui/modal_filtro.html' %} {% endblock %}

@@ -65,19 +65,28 @@
           <i class="fas fa-chevron-down text-xs text-gray-500 transform rotate-0 transition-transform duration-200"></i>
         </h4>
         <div id="mobile-price-filters" class="space-y-4 hidden">
-          <div>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value="50"
-              class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-pink-600"
-            />
-          </div>
-          <div class="flex justify-between text-sm text-gray-600">
-            <span>$0</span>
-            <span class="font-medium text-pink-600">$50 - $100</span>
-            <span>$100+</span>
+          <div class="flex items-center justify-between gap-3">
+            <div class="relative w-1/2">
+              <input
+                type="number"
+                id="mobile-min-price"
+                name="min_price"
+                placeholder="Mín."
+                min="0"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+            </div>
+            <div class="text-gray-500">-</div>
+            <div class="relative w-1/2">
+              <input
+                type="number"
+                id="mobile-max-price"
+                name="max_price"
+                placeholder="Máx."
+                min="0"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500"
+              />
+            </div>
           </div>
         </div>
       </div>

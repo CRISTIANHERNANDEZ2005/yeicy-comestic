@@ -24,6 +24,10 @@ document.addEventListener("DOMContentLoaded", function () {
   const allSeudocategorias = window.appData.seudocategorias;
   const productGrid = document.getElementById("product-grid");
   const productGridLoader = document.getElementById("product-grid-loader");
+  const productListingContainer = document.getElementById(
+    "product-listing-container"
+  );
+  const noResultsMessage = document.getElementById("no-results-message");
   const categoryTitle = document.getElementById("category-title");
   const categoryDescription = document.getElementById("category-description");
   const breadcrumbs = document.getElementById("breadcrumbs");
@@ -58,25 +62,85 @@ document.addEventListener("DOMContentLoaded", function () {
   const filterModalOverlay = document.getElementById("filter-modal-overlay");
 
   const sortSelect = document.getElementById("sort-select");
+  const minPriceInput = document.getElementById("min-price");
+  const maxPriceInput = document.getElementById("max-price");
+  const mobileMinPriceInput = document.getElementById("mobile-min-price");
+  const mobileMaxPriceInput = document.getElementById("mobile-max-price");
 
   let allProducts = [];
   const productsPerPage = 12;
   let currentDisplayedProducts = 0;
+  let isFetching = false; // Flag to prevent multiple simultaneous fetches
 
   const loadMoreBtn = document.getElementById("load-more-btn");
   const showLessBtn = document.getElementById("show-less-btn");
 
+  // --- Start of Corrected Animation Code ---
+
   function showLoader() {
+    // Ensure the main container is visible so the loader can be seen
+    productListingContainer.classList.remove("hidden");
+
+    // Hide product grid and "no results" message
     productGrid.style.display = "none";
+    noResultsMessage.classList.add("hidden");
+
+    // Show loader
     productGridLoader.style.display = "grid";
+    
+    // Hide pagination buttons
     if (loadMoreBtn) loadMoreBtn.style.display = "none";
     if (showLessBtn) showLessBtn.style.display = "none";
   }
 
   function hideLoader() {
     productGridLoader.style.display = "none";
-    productGrid.style.display = "grid";
   }
+
+  function renderProducts(productsToRender, animate = false) {
+    // Clear previous products if we are doing a full animated render
+    if (animate) {
+        productGrid.innerHTML = "";
+    }
+
+    if (productsToRender.length === 0 && animate) { // Only show no-results if it's a fresh render
+      productListingContainer.classList.add("hidden");
+      noResultsMessage.classList.remove("hidden");
+    } else {
+      productListingContainer.classList.remove("hidden");
+      noResultsMessage.classList.add("hidden");
+      productGrid.style.display = "grid";
+
+      productsToRender.forEach((product, index) => {
+        const productCard = renderProductCard(product);
+        if (animate) {
+            productCard.classList.add("card-enter");
+            productCard.style.animationDelay = `${index * 50}ms`;
+        }
+        productGrid.appendChild(productCard);
+      });
+
+      // Update counts
+      currentDisplayedProducts = productGrid.children.length;
+      productCount.textContent = currentDisplayedProducts;
+      totalProductCount.textContent = allProducts.length;
+
+      // Update pagination buttons visibility
+      if (currentDisplayedProducts < allProducts.length) {
+        loadMoreBtn.style.display = "block";
+      } else {
+        loadMoreBtn.style.display = "none";
+      }
+
+      if (currentDisplayedProducts > productsPerPage) {
+        showLessBtn.style.display = "block";
+      } else {
+        showLessBtn.style.display = "none";
+      }
+    }
+  }
+
+  // --- End of Corrected Animation Code ---
 
   // Función para abrir/cerrar el drawer de filtros móvil
   function toggleFilterDrawer() {
@@ -130,7 +194,7 @@ document.addEventListener("DOMContentLoaded", function () {
     targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
     mobileTargetElement.insertAdjacentHTML(
       "beforeend",
-      allOptionHtml.replace(/name="subcategory"/g, 'name="mobile-subcategory"')
+      allOptionHtml.replace(/name=\"subcategory\"/g, 'name="mobile-subcategory"')
     );
 
     if (selectedCategoryName !== "all") {
@@ -157,7 +221,7 @@ document.addEventListener("DOMContentLoaded", function () {
           mobileTargetElement.insertAdjacentHTML(
             "beforeend",
             subcategoryHtml.replace(
-              /name="subcategory"/g,
+              /name=\"subcategory\"/g,
               'name="mobile-subcategory"'
             )
           );
@@ -190,13 +254,13 @@ document.addEventListener("DOMContentLoaded", function () {
     mobileTargetElement.insertAdjacentHTML(
       "beforeend",
       allOptionHtml.replace(
-        /name="pseudocategory"/g,
+        /name=\"pseudocategory\"/g,
         'name="mobile-pseudocategory"'
       )
     );
 
     if (selectedSubcategoryName !== "all") {
-      const subcategoryId = allSubcategorias.find(
+      const subcategoryId = allSubcategories.find(
         (sub) => sub.nombre === selectedSubcategoryName
       )?.id;
       if (subcategoryId) {
@@ -219,7 +283,7 @@ document.addEventListener("DOMContentLoaded", function () {
           mobileTargetElement.insertAdjacentHTML(
             "beforeend",
             pseudocategoryHtml.replace(
-              /name="pseudocategory"/g,
+              /name=\"pseudocategory\"/g,
               'name="mobile-pseudocategory"'
             )
           );
@@ -253,35 +317,26 @@ document.addEventListener("DOMContentLoaded", function () {
       'input[name="subcategory"]:checked'
     ).value;
     updatePseudocategoryFilters(selectedSubcategory);
-  }
 
-  // Función para renderizar productos
-  function renderProducts(productsToRender) {
-    productGrid.innerHTML = "";
-    productsToRender.forEach((product) => {
-      const productCard = renderProductCard(product);
-      productGrid.appendChild(productCard);
-    });
-    productCount.textContent = productsToRender.length;
-    totalProductCount.textContent = allProducts.length;
-
-    // Show/hide buttons based on product count
-    if (allProducts.length > productsPerPage && currentDisplayedProducts < allProducts.length) {
-      loadMoreBtn.style.display = "block";
-    } else {
-      loadMoreBtn.style.display = "none";
+    // Set mobile price inputs to match desktop price inputs
+    if (minPriceInput && mobileMinPriceInput) {
+      mobileMinPriceInput.value = minPriceInput.value;
     }
-
-    if (currentDisplayedProducts > productsPerPage) {
-      showLessBtn.style.display = "block";
-    } else {
-      showLessBtn.style.display = "none";
+    if (maxPriceInput && mobileMaxPriceInput) {
+      mobileMaxPriceInput.value = maxPriceInput.value;
     }
   }
 
-  // Función para cargar productos con filtros
+  // Función para cargar productos con filters
   async function fetchProductsWithFilters() {
+    if (isFetching) return;
+    isFetching = true;
+
     showLoader();
+
+    // Artificial delay to ensure loader is visible
+    await new Promise(resolve => setTimeout(resolve, 300));
+
     const selectedCategory = categoryFilters.querySelector(
       'input[name="category"]:checked'
     ).value;
@@ -307,18 +362,29 @@ document.addEventListener("DOMContentLoaded", function () {
       params.append("ordenar_por", selectedSort);
     }
 
+    // Add price filters
+    const minPrice = minPriceInput.value;
+    const maxPrice = maxPriceInput.value;
+
+    if (minPrice) {
+      params.append("min_price", minPrice);
+    }
+    if (maxPrice) {
+      params.append("max_price", maxPrice);
+    }
+
     const url = `/api/productos/filtrar?${params.toString()}`;
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error("Error al cargar los productos");
       }
       const products = await response.json();
       allProducts = products;
-      currentDisplayedProducts = Math.min(productsPerPage, allProducts.length); // Display initial 12 or fewer if less than 12
-      renderProducts(allProducts.slice(0, currentDisplayedProducts));
+      
+      hideLoader();
+      renderProducts(allProducts.slice(0, productsPerPage), true);
       updateCategoryInfo(
         selectedCategory,
         selectedSubcategory,
@@ -326,15 +392,25 @@ document.addEventListener("DOMContentLoaded", function () {
       );
     } catch (error) {
       console.error(error);
-      productGrid.innerHTML = `<p class="text-red-500">Error al cargar productos. Intente de nuevo más tarde.</p>`;
-    } finally {
       hideLoader();
+      productListingContainer.classList.add("hidden");
+      noResultsMessage.classList.remove("hidden");
+    } finally {
+        isFetching = false;
     }
   }
 
   // Event listener for sort select
   if (sortSelect) {
     sortSelect.addEventListener("change", fetchProductsWithFilters);
+  }
+
+  // Event listeners for price inputs
+  if (minPriceInput) {
+    minPriceInput.addEventListener("input", fetchProductsWithFilters);
+  }
+  if (maxPriceInput) {
+    maxPriceInput.addEventListener("input", fetchProductsWithFilters);
   }
 
   // Función para actualizar el título y breadcrumbs
@@ -416,6 +492,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const selectedPseudocategory = mobilePseudocategoryFilters.querySelector(
         'input[name="mobile-pseudocategory"]:checked'
       ).value;
+      const mobileMinPrice = mobileMinPriceInput.value;
+      const mobileMaxPrice = mobileMaxPriceInput.value;
 
       // Set desktop filters to match mobile selection
       categoryFilters.querySelector(
@@ -427,6 +505,8 @@ document.addEventListener("DOMContentLoaded", function () {
       pseudocategoryFilters.querySelector(
         `input[value="${selectedPseudocategory}"]`
       ).checked = true;
+      minPriceInput.value = mobileMinPrice;
+      maxPriceInput.value = mobileMaxPrice;
 
       fetchProductsWithFilters();
       toggleFilterDrawer();
@@ -449,6 +529,12 @@ document.addEventListener("DOMContentLoaded", function () {
         'input[value="all"]'
       ).checked = true;
 
+      // Also reset price inputs
+      if (minPriceInput) minPriceInput.value = '';
+      if (maxPriceInput) maxPriceInput.value = '';
+      if (mobileMinPriceInput) mobileMinPriceInput.value = '';
+      if (mobileMaxPriceInput) mobileMaxPriceInput.value = '';
+
       // Also reset sort select
       sortSelect.value = "az";
 
@@ -462,19 +548,18 @@ document.addEventListener("DOMContentLoaded", function () {
   // Load More / Show Less functionality
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", () => {
-      currentDisplayedProducts = Math.min(
-        currentDisplayedProducts + productsPerPage,
-        allProducts.length
+      const nextBatch = allProducts.slice(
+        currentDisplayedProducts,
+        currentDisplayedProducts + productsPerPage
       );
-      renderProducts(allProducts.slice(0, currentDisplayedProducts));
+      renderProducts(nextBatch, false); // `false` to not re-animate all cards
     });
   }
 
   if (showLessBtn) {
     showLessBtn.addEventListener("click", () => {
-      currentDisplayedProducts = productsPerPage;
-      renderProducts(allProducts.slice(0, currentDisplayedProducts));
-      window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to top
+      renderProducts(allProducts.slice(0, productsPerPage), true);
+      window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to top
     });
   }
 
@@ -489,3 +574,4 @@ document.addEventListener("DOMContentLoaded", function () {
 
   init();
 });
+

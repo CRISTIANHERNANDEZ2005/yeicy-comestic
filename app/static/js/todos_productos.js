@@ -586,11 +586,38 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Función para obtener y establecer el rango de precios
+  async function fetchAndSetPriceRange() {
+    try {
+      const response = await fetch('/api/productos/precios_rango');
+      if (!response.ok) {
+        throw new Error('Error al obtener el rango de precios');
+      }
+      const data = await response.json();
+      
+      if (minPriceInput) {
+        minPriceInput.value = data.min_price;
+      }
+      if (maxPriceInput) {
+        maxPriceInput.value = data.max_price;
+      }
+      if (mobileMinPriceInput) {
+        mobileMinPriceInput.value = data.min_price;
+      }
+      if (mobileMaxPriceInput) {
+        mobileMaxPriceInput.value = data.max_price;
+      }
+    } catch (error) {
+      console.error('Error al cargar el rango de precios:', error);
+    }
+  }
+
   // Carga inicial
   async function init() {
     // Initialize filters before fetching products
     updateSubcategoryFilters("all");
     updatePseudocategoryFilters("all");
+    await fetchAndSetPriceRange(); // Fetch and set price range before filtering products
     await fetchProductsWithFilters();
     populateMobileFilters();
   }

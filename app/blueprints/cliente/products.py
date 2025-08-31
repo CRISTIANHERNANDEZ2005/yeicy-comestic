@@ -326,8 +326,9 @@ def productos_page():
     seudocategorias = []
     for s in seudocategorias_obj:
         s_dict = seudocategoria_to_dict(s)
-        s_dict['subcategoria_id'] = s.subcategoria_id
-        seudocategorias.append(s_dict)
+        if s_dict is not None:  # Add this check
+            s_dict['subcategoria_id'] = s.subcategoria_id
+            seudocategorias.append(s_dict)
     return render_template(
         'cliente/componentes/todos_productos.html',
         categorias=categorias,
@@ -433,3 +434,16 @@ def get_products_by_category(nombre_categoria):
         .all()
         
     return jsonify([producto_to_dict(p) for p in productos])
+
+@products_bp.route('/api/productos/precios_rango')
+def get_price_range():
+    """
+    Devuelve el precio mínimo y máximo de todos los productos activos.
+    """
+    min_price = db.session.query(func.min(Productos.precio)).filter_by(estado='activo').scalar()
+    max_price = db.session.query(func.max(Productos.precio)).filter_by(estado='activo').scalar()
+
+    return jsonify({
+        'min_price': min_price if min_price is not None else 0,
+        'max_price': max_price if max_price is not None else 0
+    })

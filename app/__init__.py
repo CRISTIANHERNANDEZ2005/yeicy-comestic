@@ -3,6 +3,7 @@ from flask import Flask, render_template
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager
 from .models.domains.user_models import Usuarios
+from app.models.serializers import categoria_principal_to_dict
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
 
@@ -89,7 +90,7 @@ def create_app(config_class=Config):
         total_price = sum(item['subtotal'] for item in items)
         
         # Obtener categorías activas
-        categorias = CategoriasPrincipales.query\
+        categorias_obj = CategoriasPrincipales.query\
             .filter_by(estado='activo')\
             .options(
                 joinedload(CategoriasPrincipales.subcategorias)
@@ -98,13 +99,16 @@ def create_app(config_class=Config):
             .all()
 
         # Filtrar subcategorías y seudocategorías activas
-        for categoria in categorias:
+        for categoria in categorias_obj:
             categoria.subcategorias = [
                 sub for sub in categoria.subcategorias if sub.estado == 'activo']
             for subcategoria in categoria.subcategorias:
                 subcategoria.seudocategorias = [
                     seudo for seudo in subcategoria.seudocategorias if seudo.estado == 'activo']
         
+        # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
+        categorias_data = [categoria_principal_to_dict(c) for c in categorias_obj]
+
         # Exponer favoritos y autenticación global
         from flask import session
         from app.models.domains.review_models import Likes
@@ -115,7 +119,7 @@ def create_app(config_class=Config):
         return {
             'cart_items': items,
             'total_price': total_price,
-            'categorias': categorias,
+            'categorias': categorias_data, # Usar la lista de diccionarios
             'total_favoritos': total_favoritos,
             'usuario_autenticado': usuario_autenticado
         }

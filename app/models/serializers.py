@@ -46,10 +46,12 @@ def categoria_principal_to_dict(cat):
     return {
         'id': cat.id,
         'nombre': cat.nombre,
+        'slug': cat.slug, # Added slug
         'descripcion': cat.descripcion,
         'estado': cat.estado,
         'created_at': cat.created_at.isoformat() if cat.created_at else None,
-        'updated_at': cat.updated_at.isoformat() if cat.updated_at else None
+        'updated_at': cat.updated_at.isoformat() if cat.updated_at else None,
+        'subcategorias': [subcategoria_to_dict(s) for s in cat.subcategorias] if hasattr(cat, 'subcategorias') else [] # Added subcategories
     }
 
 def subcategoria_to_dict(sub):
@@ -63,7 +65,8 @@ def subcategoria_to_dict(sub):
         'categoria_principal_id': sub.categoria_principal_id,
         'estado': sub.estado,
         'created_at': sub.created_at.isoformat() if sub.created_at else None,
-        'updated_at': sub.updated_at.isoformat() if sub.updated_at else None
+        'updated_at': sub.updated_at.isoformat() if sub.updated_at else None,
+        'seudocategorias': [seudocategoria_to_dict(s) for s in sub.seudocategorias] if hasattr(sub, 'seudocategorias') else [] # Added seudocategorias
     }
 
 def seudocategoria_to_dict(seudo):

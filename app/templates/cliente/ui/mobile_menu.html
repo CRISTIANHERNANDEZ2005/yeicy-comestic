@@ -1,0 +1,76 @@
+<!-- ui/mobile_menu.html -->
+<div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-50 z-60 hidden md:hidden">
+    <div class="fixed left-0 top-0 bottom-0 w-4/5 max-w-sm bg-white shadow-lg overflow-y-auto">
+        <div class="p-4 border-b">
+            <div class="flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-800">Categorías</h2>
+                <button id="close-mobile-menu" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4">
+            {% for categoria in categorias_principales %}
+                <div class="mb-4">
+                    <button class="w-full flex justify-between items-center text-left py-2 px-3 rounded-lg hover:bg-gray-100 transition-colors" onclick="toggleDropdown('categoria-{{ categoria.id }}')">
+                        <span class="font-medium text-gray-800">{{ categoria.nombre }}</span>
+                        <svg class="w-5 h-5 text-gray-500 transform transition-transform" id="icon-categoria-{{ categoria.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+
+                    <div id="categoria-{{ categoria.id }}" class="hidden mt-2 ml-4">
+                        {% for subcategoria in categoria.subcategorias %}
+                            <div class="mb-3">
+                                <button class="w-full flex justify-between items-center text-left py-2 px-3 rounded-lg hover:bg-gray-100 transition-colors" onclick="toggleDropdown('subcategoria-{{ subcategoria.id }}')">
+                                    <span class="text-gray-700">{{ subcategoria.nombre }}</span>
+                                    <svg class="w-4 h-4 text-gray-500 transform transition-transform" id="icon-subcategoria-{{ subcategoria.id }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                    </svg>
+                                </button>
+
+                                <div id="subcategoria-{{ subcategoria.id }}" class="hidden mt-2 ml-4">
+                                    {% for seudocategoria in subcategoria.seudocategorias %}
+                                        <a href="{{ url_for('products.productos_page', seudocategoria_id=seudocategoria.id) }}" class="block py-2 px-3 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">
+                                            {{ seudocategoria.nombre }}
+                                        </a>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleDropdown(id) {
+        const element = document.getElementById(id);
+        const icon = document.getElementById('icon-' + id);
+
+        if (element.classList.contains('hidden')) {
+            element.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+        } else {
+            element.classList.add('hidden');
+            icon.classList.remove('rotate-180');
+        }
+    }
+
+    // Cerrar menú al hacer clic fuera
+    document.getElementById('mobile-menu').addEventListener('click', function (e) {
+        if (e.target === this) {
+            this.classList.add('hidden');
+        }
+    });
+
+    // Botón cerrar
+    document.getElementById('close-mobile-menu').addEventListener('click', function () {
+        document.getElementById('mobile-menu').classList.add('hidden');
+    });
+</script>

@@ -119,7 +119,8 @@ def create_app(config_class=Config):
         return {
             'cart_items': items,
             'total_price': total_price,
-            'categorias': categorias_data, # Usar la lista de diccionarios
+            'categorias': categorias_data,
+            'categorias_principales': categorias_obj,
             'total_favoritos': total_favoritos,
             'usuario_autenticado': usuario_autenticado
         }

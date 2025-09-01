@@ -17,6 +17,10 @@
   background: linear-gradient(135deg, #d4afb9 0%, #c4a4b8 100%);
 }
 
+.z-60 {
+  z-index: 60;
+}
+
 @keyframes fadeInDown {
   from {
     opacity: 0;

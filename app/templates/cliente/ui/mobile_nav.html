@@ -22,7 +22,7 @@
       <span class="text-xs mt-0.5 font-medium">Inicio</span>
     </a>
 
-    <button class="flex flex-col items-center text-gray-600 group">
+    <a href="{{ url_for('products.productos_page') }}" class="flex flex-col items-center text-gray-600 group">
       <div class="p-2 rounded-full group-active:bg-gray-50 transition-colors">
         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <!-- Caja principal -->
@@ -37,9 +37,9 @@
         </svg>
       </div>
       <span class="text-xs mt-0.5 font-medium">Productos</span>
-    </button>
+    </a>
 
-    <button class="flex flex-col items-center text-gray-600 group">
+    <button id="mobile-menu-button" class="flex flex-col items-center text-gray-600 group">
       <div class="p-2 rounded-full group-active:bg-gray-50 transition-colors">
         <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
           <!-- Pan superior -->
@@ -94,7 +94,12 @@
     </a>
   </div>
 </nav>
-
+<script>
+  // Abrir menú desde mobile_nav.html
+  document.getElementById('mobile-menu-button').addEventListener('click', function() {
+    document.getElementById('mobile-menu').classList.remove('hidden');
+  });
+</script>
 <script>
     // Función para alternar el menú móvil
     document.querySelector('nav button:nth-of-type(2)').addEventListener('click', function () {
@@ -117,3 +122,4 @@
         }
     });
 </script>
+{% include 'cliente/ui/mobile_menu.html' %}

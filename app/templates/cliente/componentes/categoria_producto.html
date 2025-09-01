@@ -1,4 +1,4 @@
-{% extends 'cliente/page/base.html' %} {% block title %} Productos - YE&CI COMESTIC{% endblock %} 
+{% extends 'cliente/page/base.html' %} {% block title %} {{ categoria_principal.nombre }} - YE&CI COMESTIC{% endblock %} 
 {% block content %}
 <main class="container mx-auto px-4 py-8">
   <!-- Header mejorado -->
@@ -6,10 +6,10 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between mb-6">
       <div class="mb-4 md:mb-0">
         <h1 id="category-title" class="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-          Todos los Productos
+          {{ categoria_principal.nombre }}
         </h1>
         <p id="category-description" class="text-gray-600 text-base md:text-lg max-w-2xl">
-          Descubre nuestra exclusiva selección de productos de alta calidad
+          {{ categoria_principal.descripcion }}
         </p>
       </div>
       <div>
@@ -24,7 +24,7 @@
             <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
           </a>
           <span class="text-gray-300">/</span>
-          <span class="text-gray-700 font-medium">Productos</span>
+          <span class="text-gray-700 font-medium">{{ categoria_principal.nombre }}</span>
         </div>
       </div>
     </div>
@@ -92,53 +92,6 @@
             <i class="fas fa-sliders-h text-pink-600 mr-2"></i> Filtros
           </h3>
           <div class="w-10 h-1 bg-gradient-to-r from-pink-500 to-pink-600 rounded-full"></div>
-        </div>
-
-        <!-- Filtro por Categoría mejorado -->
-        <div class="mb-6">
-          <h4
-            id="category-filters-header"
-            class="filter-toggle font-medium text-gray-800 mb-3 flex items-center justify-between cursor-pointer bg-gray-50 p-3.5 rounded-xl hover:bg-gray-100 transition-colors duration-200 border border-gray-100"
-            data-target="category-filters-content"
-          >
-            <span class="flex items-center">
-              <i class="fas fa-folder-open text-pink-600 mr-3 text-sm"></i> 
-              <span class="font-semibold">Categoría</span>
-            </span>
-            <i
-              class="fas fa-chevron-down text-xs text-gray-500 transform transition-transform duration-200"
-            ></i>
-          </h4>
-          <div
-            id="category-filters-content"
-            class="space-y-2 custom-scrollbar max-h-52 overflow-y-auto pr-2 mt-3 pl-1 hidden"
-          >
-            <label
-              class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200"
-            >
-              <input
-                type="radio"
-                name="category"
-                value="all"
-                class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-                checked
-              />
-              <span class="ml-3 text-gray-700 font-medium">Todas las categorías</span>
-            </label>
-            {% for categoria in categorias %}
-            <label
-              class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200"
-            >
-              <input
-                type="radio"
-                name="category"
-                value="{{ categoria.nombre }}"
-                class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-              />
-              <span class="ml-3 text-gray-700">{{ categoria.nombre }}</span>
-            </label>
-            {% endfor %}
-          </div>
         </div>
 
         <!-- Filtro por Subcategoría mejorado -->
@@ -237,7 +190,7 @@
           </div>
         </div>
         
-        <!-- Filtro de precio (nuevo) -->
+        <!-- Filtro de precio (sin cambios) -->
         <div class="mb-6">
           <h4
             class="filter-toggle font-medium text-gray-800 mb-3 flex items-center justify-between cursor-pointer bg-gray-50 p-3.5 rounded-xl hover:bg-gray-100 transition-colors duration-200 border border-gray-100"
@@ -280,10 +233,9 @@
       </div>
     </aside>
 
-    <!-- Contenido principal de productos mejorado -->
+    <!-- Contenido principal de productos mejorado (sin cambios) -->
     <div class="flex-1">
       <div id="product-listing-container">
-        <!-- Estado de Carga (Skeleton) mejorado -->
         <div
           id="product-grid-loader"
           class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6 w-full"
@@ -306,7 +258,6 @@
           {% endfor %}
         </div>
 
-        <!-- Grid de productos (inicialmente oculto) -->
         <div
           id="product-grid"
           class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-6"
@@ -315,7 +266,6 @@
           <!-- Los productos se cargarán aquí dinámicamente -->
         </div>
 
-        <!-- Botones de paginación "Ver más" / "Ver menos" -->
         <div id="pagination-buttons" class="mt-12 flex flex-col items-center space-y-4">
           <button
             id="load-more-btn"
@@ -346,10 +296,12 @@
 ></div>
 
 <script>
+  // Actualización: Ya no se envían todas las categorías principales
   window.appData = {
-    categorias: {{ categorias | tojson }},
-    subcategorias: {{ subcategorias | tojson }},
-    seudocategorias: {{ seudocategorias | tojson }}
+    categoriaPrincipal: {{ categoria_principal | tojson }},
+    categorias: [], // Vacío porque ya estamos en una categoría específica
+    subcategorias: {{ subcategorias | tojson }}, // Solo las relacionadas
+    seudocategorias: {{ seudocategorias | tojson }} // Solo las relacionadas
   };
 </script>
 
@@ -480,5 +432,6 @@
   }
 
 </style>
+<script src="{{ url_for('static', filename='js/categoria_producto.js') }}"></script>
 
 {% include 'cliente/ui/filtro_categoria_producto.html' %} {% endblock %}

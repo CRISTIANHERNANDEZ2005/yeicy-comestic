@@ -11,8 +11,6 @@ from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 from app.utils.jwt_utils import jwt_required
 from flask_login import current_user
 
-
-
 products_bp = Blueprint('products', __name__)
 
 @products_bp.route('/')
@@ -92,6 +90,115 @@ def index():
         cart_items=cart_items,
         total_price=total_price,
         categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados'
+    )
+
+@products_bp.route('/productos')
+def productos_page():
+    """
+    Renderiza la página de productos, pasando las categorías, subcategorías y pseudocategorías para los filtros.
+    """
+    categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
+    subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
+    seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
+
+    categorias = [categoria_principal_to_dict(c) for c in categorias_obj]
+    subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
+    seudocategorias = []
+    for s in seudocategorias_obj:
+        s_dict = seudocategoria_to_dict(s)
+        if s_dict is not None:  # Add this check
+            s_dict['subcategoria_id'] = s.subcategoria_id
+            seudocategorias.append(s_dict)
+    return render_template(
+        'cliente/componentes/todos_productos.html',
+        categorias=categorias,
+        subcategorias=subcategorias,
+        seudocategorias=seudocategorias
+    )
+
+@products_bp.route('/<slug_categoria>')
+def productos_por_categoria(slug_categoria):
+    """
+    Muestra la página de productos para una categoría principal específica, usando su slug.
+    Filtra y muestra solo subcategorías, seudocategorías y productos relacionados con esta categoría.
+    """
+    from flask import abort # Importar abort aquí para evitar circular imports si se usa en otro lugar
+    categoria_principal = CategoriasPrincipales.query.filter_by(slug=slug_categoria, estado='activo').first_or_404()
+
+    # Obtener IDs de todas las seudocategorías bajo esta categoría principal
+    seudocategoria_ids = db.session.query(Seudocategorias.id)\
+        .join(Subcategorias)\
+        .filter(
+            Subcategorias.categoria_principal_id == categoria_principal.id,
+            Seudocategorias.estado == 'activo'
+        ).all()
+    seudocategoria_ids = [id[0] for id in seudocategoria_ids]
+
+    # Obtener productos de esta categoría principal
+    productos = Productos.query\
+        .filter(
+            Productos.seudocategoria_id.in_(seudocategoria_ids),
+            Productos.estado == 'activo'
+        )\
+        .order_by(Productos.nombre.asc())\
+        .all()
+    
+    # Preparar datos para JavaScript
+    productos_data = [producto_to_dict(p) for p in productos]
+    print(f"DEBUG: productos_por_categoria - Cantidad de productos encontrados: {len(productos_data)}")
+
+    # --- MEJORA: Filtrar subcategorías y pseudocategorías relacionadas ---
+    # Obtener subcategorías activas que pertenecen a la categoría principal actual
+    subcategorias_obj = Subcategorias.query.filter_by(
+        categoria_principal_id=categoria_principal.id,
+        estado='activo'
+    ).all()
+
+    # Obtener pseudocategorías activas que pertenecen a las subcategorías de esta categoría principal
+    seudocategorias_obj = Seudocategorias.query.join(Subcategorias).filter(
+        Subcategorias.categoria_principal_id == categoria_principal.id,
+        Seudocategorias.estado == 'activo'
+    ).all()
+
+    # Obtener todas las categorías principales para el navbar (siempre necesarias)
+    categorias_obj_all = CategoriasPrincipales.query \
+        .filter_by(estado='activo') \
+        .options(
+            joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
+        )\
+        .all()
+
+    # Filtrar subcategorías y seudocategorías activas para el navbar
+    categorias = []
+    for cat in categorias_obj_all:
+        cat_dict = categoria_principal_to_dict(cat)
+        cat_dict['subcategorias'] = []
+        for sub in getattr(cat, 'subcategorias', []):
+            if sub.estado == 'activo':
+                sub_dict = subcategoria_to_dict(sub)
+                sub_dict['seudocategorias'] = []
+                for seudo in getattr(sub, 'seudocategorias', []):
+                    if seudo.estado == 'activo':
+                        sub_dict['seudocategorias'].append(seudocategoria_to_dict(seudo))
+                cat_dict['subcategorias'].append(sub_dict)
+        categorias.append(cat_dict)
+    subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
+    seudocategorias = []
+    for s in seudocategorias_obj:
+        s_dict = seudocategoria_to_dict(s)
+        if s_dict is not None:
+            s_dict['subcategoria_id'] = s.subcategoria_id
+            seudocategorias.append(s_dict)
+
+    return render_template(
+        'cliente/componentes/categoria_producto.html',
+        categoria_principal=categoria_principal_to_dict(categoria_principal),
+        productos=productos,
+        productos_data=productos_data,
+        categorias=categorias, # Ahora está vacío, ya que no se necesita el filtro de categoría
+        subcategorias=subcategorias, # Ahora solo incluye las de esta categoría principal
+        seudocategorias=seudocategorias, # Ahora solo incluye las de esta categoría principal
+        title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
     )
 
 @products_bp.route('/<slug_del_producto>')
@@ -187,6 +294,7 @@ def producto_detalle(slug_del_producto):
         es_nuevo=producto.es_nuevo, # Pasar el indicador de producto nuevo
         reseñas_count=reseñas_count # Pasar el conteo de reseñas
     )
+
 
 @products_bp.route('/buscar')
 def buscar():
@@ -312,29 +420,7 @@ def _extraer_terminos_de_producto(product_id, query):
                 
     return terminos
 
-@products_bp.route('/productos')
-def productos_page():
-    """
-    Renderiza la página de productos, pasando las categorías, subcategorías y pseudocategorías para los filtros.
-    """
-    categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
-    subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
-    seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
 
-    categorias = [categoria_principal_to_dict(c) for c in categorias_obj]
-    subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
-    seudocategorias = []
-    for s in seudocategorias_obj:
-        s_dict = seudocategoria_to_dict(s)
-        if s_dict is not None:  # Add this check
-            s_dict['subcategoria_id'] = s.subcategoria_id
-            seudocategorias.append(s_dict)
-    return render_template(
-        'cliente/componentes/todos_productos.html',
-        categorias=categorias,
-        subcategorias=subcategorias,
-        seudocategorias=seudocategorias
-    )
 
 @products_bp.route('/api/productos/filtrar')
 def filter_products():
@@ -435,67 +521,35 @@ def get_products_by_category(nombre_categoria):
         
     return jsonify([producto_to_dict(p) for p in productos])
 
-@products_bp.route('/<slug_categoria>')
-def productos_por_categoria(slug_categoria):
-    """
-    Muestra la página de productos para una categoría principal específica, usando su slug.
-    """
-    from flask import abort # Importar abort aquí para evitar circular imports si se usa en otro lugar
-    categoria_principal = CategoriasPrincipales.query.filter_by(slug=slug_categoria, estado='activo').first_or_404()
-
-    # Obtener IDs de todas las seudocategorías bajo esta categoría principal
-    seudocategoria_ids = db.session.query(Seudocategorias.id)\
-        .join(Subcategorias)\
-        .filter(
-            Subcategorias.categoria_principal_id == categoria_principal.id,
-            Seudocategorias.estado == 'activo'
-        ).all()
-    seudocategoria_ids = [id[0] for id in seudocategoria_ids]
-
-    # Obtener productos de esta categoría principal
-    productos = Productos.query\
-        .filter(
-            Productos.seudocategoria_id.in_(seudocategoria_ids),
-            Productos.estado == 'activo'
-        )\
-        .order_by(Productos.nombre.asc())\
-        .all()
-    
-    # Preparar datos para JavaScript
-    productos_data = [producto_to_dict(p) for p in productos]
-
-    # Obtener todas las categorías, subcategorías y pseudocategorías para los filtros
-    categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
-    subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
-    seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
-
-    categorias = [categoria_principal_to_dict(c) for c in categorias_obj]
-    subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
-    seudocategorias = []
-    for s in seudocategorias_obj:
-        s_dict = seudocategoria_to_dict(s)
-        if s_dict is not None:
-            s_dict['subcategoria_id'] = s.subcategoria_id
-            seudocategorias.append(s_dict)
-
-    return render_template(
-        'cliente/componentes/categoria_producto.html',
-        categoria_principal=categoria_principal,
-        productos=productos,
-        productos_data=productos_data,
-        categorias=categorias,
-        subcategorias=subcategorias,
-        seudocategorias=seudocategorias,
-        title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
-    )
 
 @products_bp.route('/api/productos/precios_rango')
 def get_price_range():
     """
-    Devuelve el precio mínimo y máximo de todos los productos activos.
+    Devuelve el precio mínimo y máximo de los productos activos, opcionalmente filtrados por categoría.
     """
-    min_price = db.session.query(func.min(Productos.precio)).filter_by(estado='activo').scalar()
-    max_price = db.session.query(func.max(Productos.precio)).filter_by(estado='activo').scalar()
+    main_category_name = request.args.get('categoria_principal')
+    subcategory_name = request.args.get('subcategoria')
+    pseudocategory_name = request.args.get('seudocategoria')
+
+    query = db.session.query(Productos).filter(Productos.estado == 'activo')
+
+    if main_category_name:
+        query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales).filter(
+            func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name)
+        )
+    
+    if subcategory_name:
+        query = query.join(Seudocategorias).join(Subcategorias).filter(
+            func.lower(Subcategorias.nombre) == func.lower(subcategory_name)
+        )
+
+    if pseudocategory_name:
+        query = query.join(Seudocategorias).filter(
+            func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name)
+        )
+
+    min_price = query.with_entities(func.min(Productos.precio)).scalar()
+    max_price = query.with_entities(func.max(Productos.precio)).scalar()
 
     return jsonify({
         'min_price': min_price if min_price is not None else 0,

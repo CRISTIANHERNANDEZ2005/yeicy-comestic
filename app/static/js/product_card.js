@@ -33,7 +33,7 @@ function generateOptimizedStars(rating) {
 
 function renderProductCard(producto) {
   const card = document.createElement("a");
-  card.href = `/${producto.slug}`; // Enlace a la página de detalles del producto
+  card.href = `/${producto.categoria_principal_slug}/${producto.subcategoria_slug}/${producto.seudocategoria_slug}/${producto.slug}`; // Enlace a la página de detalles del producto
   card.className =
     "product-card bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative flex flex-col h-full";
   card.setAttribute("data-product-id", producto.id);

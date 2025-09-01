@@ -64,6 +64,7 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
 
     # id y timestamps heredados de los mixins
     nombre: Mapped[str] = mapped_column(db.String(100), nullable=False, unique=True)
+    slug: Mapped[str] = mapped_column(db.String(120), nullable=False, unique=True) # Nuevo campo slug
     descripcion: Mapped[str] = mapped_column(db.String(500), nullable=False)
     categoria_principal_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('categorias_principales.id'), nullable=False)
     # estado ya está en el mixin
@@ -74,6 +75,7 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
     __table_args__ = (
         db.Index('idx_subcategoria_categoria_principal_id',
                  'categoria_principal_id'),
+        db.Index('idx_subcategoria_slug', 'slug'), # Índice para el slug
     )
 
     def __init__(self, nombre, descripcion, categoria_principal_id, estado='activo', id=None):
@@ -86,6 +88,7 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
         if estado not in EstadoEnum._value2member_map_:
             raise ValueError("El estado debe ser 'activo' o 'inactivo'")
         self.nombre = nombre
+        self.slug = slugify(nombre) # Generar slug automáticamente
         self.descripcion = descripcion
         self.categoria_principal_id = categoria_principal_id
         self.estado = estado
@@ -97,6 +100,7 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
 
     # id y timestamps heredados de los mixins
     nombre: Mapped[str] = mapped_column(db.String(100), nullable=False, unique=True)
+    slug: Mapped[str] = mapped_column(db.String(120), nullable=False, unique=True) # Nuevo campo slug
     descripcion: Mapped[str] = mapped_column(db.String(500), nullable=False)
     subcategoria_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('subcategorias.id'), nullable=False)
     # estado ya está en el mixin
@@ -106,6 +110,7 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
     # Restricciones e índices
     __table_args__ = (
         db.Index('idx_seudocategoria_subcategoria_id', 'subcategoria_id'),
+        db.Index('idx_seudocategoria_slug', 'slug'), # Índice para el slug
     )
 
     def __init__(self, nombre, descripcion, subcategoria_id, estado='activo', id=None):
@@ -118,6 +123,7 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
         if estado not in EstadoEnum._value2member_map_:
             raise ValueError("El estado debe ser 'activo' o 'inactivo'")
         self.nombre = nombre
+        self.slug = slugify(nombre) # Generar slug automáticamente
         self.descripcion = descripcion
         self.subcategoria_id = subcategoria_id
         self.estado = estado

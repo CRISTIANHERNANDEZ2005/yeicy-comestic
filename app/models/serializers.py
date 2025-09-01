@@ -91,13 +91,19 @@ def producto_to_dict(prod):
     categoria_principal_nombre = None
     subcategoria_nombre = None
     seudocategoria_nombre = None
+    categoria_principal_slug = None
+    subcategoria_slug = None
+    seudocategoria_slug = None
 
     if (seudocategoria := getattr(prod, 'seudocategoria', None)):
         seudocategoria_nombre = getattr(seudocategoria, 'nombre', None)
+        seudocategoria_slug = getattr(seudocategoria, 'slug', None)
         if (subcategoria := getattr(seudocategoria, 'subcategoria', None)):
             subcategoria_nombre = getattr(subcategoria, 'nombre', None)
+            subcategoria_slug = getattr(subcategoria, 'slug', None)
             if (categoria_principal := getattr(subcategoria, 'categoria_principal', None)):
                 categoria_principal_nombre = getattr(categoria_principal, 'nombre', None)
+                categoria_principal_slug = getattr(categoria_principal, 'slug', None)
 
     return {
         'id': prod.id,
@@ -117,6 +123,9 @@ def producto_to_dict(prod):
         'categoria_principal_nombre': categoria_principal_nombre,
         'subcategoria_nombre': subcategoria_nombre,
         'seudocategoria_nombre': seudocategoria_nombre,
+        'categoria_principal_slug': categoria_principal_slug,
+        'subcategoria_slug': subcategoria_slug,
+        'seudocategoria_slug': seudocategoria_slug,
         'calificacion_promedio': prod.calificacion_promedio_almacenada,
         'es_nuevo': prod.es_nuevo,
         'reseñas_count': len(prod.reseñas) if hasattr(prod, 'reseñas') else 0,

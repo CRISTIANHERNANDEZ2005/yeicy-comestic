@@ -201,16 +201,28 @@ def productos_por_categoria(slug_categoria):
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
     )
 
-@products_bp.route('/<slug_del_producto>')
-def producto_detalle(slug_del_producto):
+@products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>/<slug_seudocategoria>/<slug_producto>')
+def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocategoria, slug_producto):
     """
-    Muestra los detalles de un producto específico
+    Muestra los detalles de un producto específico utilizando los slugs de categoría, subcategoría, pseudocategoría y producto.
     """
+    print(f"DEBUG: Accediendo a producto_detalle con slugs: {slug_categoria_principal}/{slug_subcategoria}/{slug_seudocategoria}/{slug_producto}")
+
     producto = Productos.query.options(
         joinedload(Productos.seudocategoria).joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal),
         joinedload(Productos.reseñas)
-    ).filter_by(slug=slug_del_producto).first_or_404()
-    print(f"DEBUG: Accediendo a producto_detalle con slug: {slug_del_producto}")
+    ).join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+    ).join(
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+    ).join(
+        CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
+    ).filter(
+        Productos.slug == slug_producto,
+        Seudocategorias.slug == slug_seudocategoria,
+        Subcategorias.slug == slug_subcategoria,
+        CategoriasPrincipales.slug == slug_categoria_principal
+    ).first_or_404()
     
     # Verificar si el producto está activo
     if producto.estado != 'activo':

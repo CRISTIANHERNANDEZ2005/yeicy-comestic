@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Inventario</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Transiciones suaves */
+        .sidebar-transition {
+            transition: transform 0.3s ease-in-out;
+        }
+        
+        /* Animación para el mensaje principal */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        /* Efecto hover para enlaces del sidebar */
+        .sidebar-link {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .sidebar-link::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background-color: #3b82f6;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .sidebar-link:hover::before,
+        .sidebar-link.active::before {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans h-full overflow-hidden">
+    <!-- Header para móvil -->
+    <header class="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
+        <div class="flex items-center">
+            <button id="mobile-menu-button" class="text-gray-600 focus:outline-none">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
+            <h1 class="ml-3 text-xl font-bold text-blue-600">InventarioPro</h1>
+        </div>
+        <div class="flex items-center space-x-3">
+            <button class="text-gray-600 relative">
+                <i class="fas fa-bell text-xl"></i>
+                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+            </button>
+            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                {{ current_user.nombre[0]|upper }}{{ current_user.apellido[0]|upper }}
+            </div>
+        </div>
+    </header>
+
+    <!-- Sidebar para móvil (oculto por defecto) -->
+    <div id="mobile-sidebar" class="fixed inset-0 z-40 bg-gray-900 bg-opacity-50 hidden lg:hidden">
+        <div class="sidebar-transition fixed left-0 top-0 h-full w-64 bg-blue-900 text-white shadow-lg z-50 transform -translate-x-full">
+            <div class="p-4 border-b border-blue-800 flex justify-between items-center">
+                <h2 class="text-xl font-bold">InventarioPro</h2>
+                <button id="close-mobile-sidebar" class="text-blue-200 hover:text-white">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <nav class="mt-5 px-2">
+                <a href="#" class="sidebar-link active group flex items-center px-4 py-3 text-base font-medium rounded-md bg-blue-800 text-white">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-boxes mr-3"></i>
+                    Productos
+                </a>
+                <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-warehouse mr-3"></i>
+                    Almacenes
+                </a>
+                <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-truck mr-3"></i>
+                    Proveedores
+                </a>
+                <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    Pedidos
+                </a>
+                <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    Reportes
+                </a>
+                <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-cog mr-3"></i>
+                    Configuración
+                </a>
+            </nav>
+            <div class="flex-shrink-0 flex border-t border-blue-800 p-4 mt-auto">
+                <div class="flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold">
+                        {{ current_user.nombre[0]|upper }}{{ current_user.apellido[0]|upper }}
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-white">{{ current_user.nombre | title }} {{ current_user.apellido | title }}</p>
+                        <p class="text-xs text-blue-300">Administrador</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex h-full">
+        <!-- Sidebar para desktop (siempre visible) -->
+        <div class="hidden lg:flex lg:flex-shrink-0">
+            <div class="flex flex-col w-64 bg-blue-900 text-white">
+                <div class="h-16 flex items-center px-6 border-b border-blue-800">
+                    <h1 class="text-xl font-bold">InventarioPro</h1>
+                </div>
+                <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+                    <nav class="mt-5 flex-1 px-2 space-y-1">
+                        <a href="#" class="sidebar-link active group flex items-center px-4 py-3 text-sm font-medium rounded-md bg-blue-800 text-white">
+                            <i class="fas fa-tachometer-alt mr-3"></i>
+                            Dashboard
+                        </a>
+                        <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                            <i class="fas fa-boxes mr-3"></i>
+                            Productos
+                        </a>
+                        <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                            <i class="fas fa-warehouse mr-3"></i>
+                            Almacenes
+                        </a>
+                        <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                            <i class="fas fa-truck mr-3"></i>
+                            Proveedores
+                        </a>
+                        <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                            <i class="fas fa-file-invoice mr-3"></i>
+                            Pedidos
+                        </a>
+                        <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                            <i class="fas fa-chart-bar mr-3"></i>
+                            Reportes
+                        </a>
+                        <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                            <i class="fas fa-cog mr-3"></i>
+                            Configuración
+                        </a>
+                    </nav>
+                </div>
+                <div class="flex-shrink-0 flex border-t border-blue-800 p-4">
+                    <div class="flex items-center">
+                        <div class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold">
+                            {{ current_user.nombre[0]|upper }}{{ current_user.apellido[0]|upper }}
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-white">{{ current_user.nombre | title }} {{ current_user.apellido | title }}</p>
+                            <p class="text-xs text-blue-300">Administrador</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div class="flex flex-col w-0 flex-1 overflow-hidden">
+            <!-- Header para desktop -->
+            <header class="bg-white shadow-sm hidden lg:block">
+                <div class="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center">
+                        <h2 class="text-lg font-medium text-gray-900">Panel de Control</h2>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="text-gray-500 hover:text-gray-700 relative">
+                            <i class="fas fa-bell"></i>
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
+                        </button>
+                        <div class="flex items-center">
+                            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
+                                {{ current_user.nombre[0]|upper }}{{ current_user.apellido[0]|upper }}
+                            </div>
+                            <span class="ml-2 text-sm font-medium text-gray-700">{{ current_user.nombre | title }} {{ current_user.apellido | title }}</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Contenido de la página -->
+            <main class="flex-1 relative overflow-y-auto focus:outline-none">
+                {% block content %}
+                {% endblock %}
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Funcionalidad para el sidebar móvil
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileSidebar = document.getElementById('mobile-sidebar');
+        const closeMobileSidebar = document.getElementById('close-mobile-sidebar');
+        const mobileSidebarContent = mobileSidebar.querySelector('.sidebar-transition');
+        
+        mobileMenuButton.addEventListener('click', function() {
+            mobileSidebar.classList.remove('hidden');
+            setTimeout(() => {
+                mobileSidebarContent.classList.remove('-translate-x-full');
+            }, 10);
+        });
+        
+        closeMobileSidebar.addEventListener('click', function() {
+            mobileSidebarContent.classList.add('-translate-x-full');
+            setTimeout(() => {
+                mobileSidebar.classList.add('hidden');
+            }, 300);
+        });
+        
+        // Cerrar sidebar móvil al hacer clic fuera
+        mobileSidebar.addEventListener('click', function(e) {
+            if (e.target === mobileSidebar) {
+                mobileSidebarContent.classList.add('-translate-x-full');
+                setTimeout(() => {
+                    mobileSidebar.classList.add('hidden');
+                }, 300);
+            }
+        });
+    </script>
+</body>
+</html>

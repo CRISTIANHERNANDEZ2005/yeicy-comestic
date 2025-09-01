@@ -130,7 +130,24 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         return bcrypt.check_password_hash(self.contraseña, contraseña)
 
 
-class Admins(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    __tablename__ = 'admins'
+
+    # Propiedades requeridas por Flask-Login
+    @property
+    def is_active(self):
+        return self.estado == 'activo'
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+    def get_id(self):
+        return str(self.id)
     __tablename__ = 'admins'
 
     # id y timestamps heredados de los mixins

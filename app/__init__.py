@@ -1,8 +1,8 @@
 # app/__init__.py
-from flask import Flask, render_template
+from flask import Flask, render_template, session
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager
-from .models.domains.user_models import Usuarios
+from .models.domains.user_models import Usuarios, Admins
 from app.models.serializers import categoria_principal_to_dict
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
@@ -47,6 +47,8 @@ def create_app(config_class=Config):
 
     @login_manager.user_loader
     def load_user(id):
+        if session.get('user_type') == 'admin':
+            return Admins.query.get(id)
         return Usuarios.query.get(id)
 
     # Registrar blueprints
@@ -55,12 +57,14 @@ def create_app(config_class=Config):
     from app.blueprints.cliente.cart import cart_bp
     from app.blueprints.cliente.favorites import favorites_bp
     from app.blueprints.cliente.reviews import reviews_bp
+    from app.blueprints.admin.auth import admin_auth_bp
     
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(products_bp)
     app.register_blueprint(favorites_bp)
     app.register_blueprint(reviews_bp)
+    app.register_blueprint(admin_auth_bp)
 
     # Register the /perfil route directly with the app
     @app.route('/perfil')

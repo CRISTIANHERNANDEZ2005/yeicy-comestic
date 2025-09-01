@@ -1,3 +1,19 @@
+// Función para formatear el precio como moneda colombiana (COP)
+function formatPrice(price) {
+  const number = parseFloat(price);
+  if (isNaN(number)) {
+    // Si no es un número, devuelve el valor original o un placeholder
+    return price;
+  }
+  // Formato para pesos colombianos, sin decimales
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(number);
+}
+
 // Función mejorada para verificar si es nuevo
 function verificarEsNuevo(producto) {
   if (producto.es_nuevo === undefined || producto.es_nuevo === null) {
@@ -192,9 +208,7 @@ function renderProductCard(producto) {
                         </p>
                     </div>
                     <div class="flex items-center justify-between mt-auto pt-2">
-                        <p class="text-base md:text-lg font-bold text-pink-600">${parseFloat(
-                          producto.precio
-                        ).toFixed(2)}</p>
+                        <p class="text-base md:text-lg font-bold text-pink-600">${formatPrice(producto.precio)}</p>
                          <button class="add-to-cart bg-gradient-to-r from-pink-500 to-fuchsia-500 text-white px-3 py-2 md:px-4 rounded-full hover:from-pink-600 hover:to-fuchsia-600 transition-all duration-300 flex items-center text-xs md:text-sm hover:shadow-lg hover:scale-105 active:scale-95 z-20 relative"
                                data-product-id="${producto.id}"
                                data-quantity="1"

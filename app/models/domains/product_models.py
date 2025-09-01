@@ -138,6 +138,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     slug: Mapped[str] = mapped_column(db.String(255), nullable=False, unique=True)
     descripcion: Mapped[str] = mapped_column(db.String(1000), nullable=False)
     precio: Mapped[float] = mapped_column(db.Float, nullable=False)
+    costo: Mapped[float] = mapped_column(db.Float, nullable=False)
     imagen_url: Mapped[str] = mapped_column(db.String(255), nullable=False)
     existencia: Mapped[int] = mapped_column(db.Integer, nullable=False)
     stock_minimo: Mapped[int] = mapped_column(db.Integer, default=10, nullable=False)
@@ -182,6 +183,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     # Restricciones e índices
     __table_args__ = (
         CheckConstraint("precio > 0", name='check_precio_positivo'),
+        CheckConstraint("precio > costo", name='check_precio_mayor_costo'),
         CheckConstraint("existencia >= 0", name='check_existencia_no_negativo'),
         CheckConstraint("existencia BETWEEN stock_minimo AND stock_maximo", name='check_existencia_rango'),
         db.Index('idx_producto_seudocategoria_id', 'seudocategoria_id'),
@@ -194,12 +196,16 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         db.Index('idx_producto_stock_maximo', 'stock_maximo'),
     )
 
-    def __init__(self, nombre, descripcion, precio, imagen_url, existencia, seudocategoria_id, especificaciones=None, stock_minimo=10, stock_maximo=100, marca=None, estado='activo', id=None):
+    def __init__(self, nombre, descripcion, precio, costo, imagen_url, existencia, seudocategoria_id, especificaciones=None, stock_minimo=10, stock_maximo=100, marca=None, estado='activo', id=None):
         self.nombre = str(NombreProducto(nombre))
         self.slug = slugify(self.nombre)
         self.descripcion = str(DescripcionProducto(descripcion))
         if precio is None or precio <= 0:
             raise ValueError("El precio debe ser mayor que 0")
+        if costo is None or costo <= 0:
+            raise ValueError("El costo debe ser mayor que 0")
+        if precio <= costo:
+            raise ValueError("El precio debe ser mayor que el costo")
         if existencia is None or existencia < 0:
             raise ValueError("La existencia no puede ser negativa")
         if not imagen_url or not imagen_url.strip():
@@ -212,6 +218,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
             raise ValueError("La marca no puede estar vacía si se proporciona")
         
         self.precio = precio
+        self.costo = costo
         self.imagen_url = imagen_url.strip()
         self.existencia = existencia
         self.stock_minimo = stock_minimo

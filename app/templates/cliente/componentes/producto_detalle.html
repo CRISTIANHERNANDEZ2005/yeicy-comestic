@@ -309,9 +309,11 @@
           <div class="mb-8">
             <div class="flex items-baseline space-x-2">
               <span
+                id="product-price"
                 class="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-600"
+                data-price="{{ producto.precio }}"
               >
-                ${{ "%.2f"|format(producto.precio) }}
+                ${{ "%.0f"|format(producto.precio) }}
               </span>
             </div>
           </div>
@@ -672,6 +674,20 @@
   document.addEventListener("DOMContentLoaded", function() {
       if (typeof initializeProductCarousel === 'function') {
           initializeProductCarousel();
+      }
+
+      // Formatear el precio del producto
+      const priceElement = document.getElementById('product-price');
+      if (priceElement) {
+          const price = parseFloat(priceElement.dataset.price);
+          if (!isNaN(price)) {
+              priceElement.textContent = new Intl.NumberFormat('es-CO', {
+                  style: 'currency',
+                  currency: 'COP',
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+              }).format(price);
+          }
       }
 
       // Lógica de Pestañas (Tabs) A PRUEBA DE ERRORES

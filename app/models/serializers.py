@@ -111,6 +111,7 @@ def producto_to_dict(prod):
         'slug': prod.slug,
         'descripcion': prod.descripcion,
         'precio': float(prod.precio) if prod.precio is not None else 0.0,
+        'costo': float(prod.costo) if prod.costo is not None else 0.0,
         'imagen_url': prod.imagen_url,
         'existencia': prod.existencia,
         'stock_minimo': prod.stock_minimo,

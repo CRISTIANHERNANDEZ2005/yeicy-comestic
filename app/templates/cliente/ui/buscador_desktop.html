@@ -328,7 +328,7 @@
                 div.addEventListener('click', async () => {
                     console.log('Producto clickeado Desktop:', producto.id, producto.nombre);
                     await logSearchClick(producto, searchInputDesktop.value.trim());
-                    window.location.href = `/${producto.slug}`;
+                    window.location.href = `/${producto.categoria_principal_slug}/${producto.subcategoria_slug}/${producto.seudocategoria_slug}/${producto.slug}`;
                 });
                 resultadosListDesktop.appendChild(div);
             });

@@ -395,7 +395,7 @@
                 div.addEventListener('click', async () => {
                     console.log('Producto clickeado Mobile:', producto.id, producto.nombre);
                     await logSearchClick(producto, searchInputMobile.value.trim());
-                    window.location.href = `/${producto.slug}`;
+                    window.location.href = `/${producto.categoria_principal_slug}/${producto.subcategoria_slug}/${producto.seudocategoria_slug}/${producto.slug}`;
                 });
                 resultadosListMobile.appendChild(div);
             });

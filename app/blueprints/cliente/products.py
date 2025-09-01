@@ -172,16 +172,18 @@ def productos_por_categoria(slug_categoria):
     categorias = []
     for cat in categorias_obj_all:
         cat_dict = categoria_principal_to_dict(cat)
-        cat_dict['subcategorias'] = []
-        for sub in getattr(cat, 'subcategorias', []):
-            if sub.estado == 'activo':
-                sub_dict = subcategoria_to_dict(sub)
-                sub_dict['seudocategorias'] = []
-                for seudo in getattr(sub, 'seudocategorias', []):
-                    if seudo.estado == 'activo':
-                        sub_dict['seudocategorias'].append(seudocategoria_to_dict(seudo))
-                cat_dict['subcategorias'].append(sub_dict)
-        categorias.append(cat_dict)
+        if cat_dict is not None:
+            cat_dict['subcategorias'] = []
+            for sub in getattr(cat, 'subcategorias', []):
+                if sub.estado == 'activo':
+                    sub_dict = subcategoria_to_dict(sub)
+                    if sub_dict is not None:
+                        sub_dict['seudocategorias'] = []
+                        for seudo in getattr(sub, 'seudocategorias', []):
+                            if seudo.estado == 'activo':
+                                sub_dict['seudocategorias'].append(seudocategoria_to_dict(seudo))
+                        cat_dict['subcategorias'].append(sub_dict)
+            categorias.append(cat_dict)
     subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
     seudocategorias = []
     for s in seudocategorias_obj:

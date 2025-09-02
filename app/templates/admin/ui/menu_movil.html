@@ -1,0 +1,52 @@
+<div class="sidebar-transition fixed left-0 top-0 h-full w-64 bg-blue-900 text-white shadow-lg z-50 transform -translate-x-full">
+    <div class="p-4 border-b border-blue-800 flex justify-between items-center">
+        <h2 class="text-xl font-bold">InventarioPro</h2>
+        <button id="close-mobile-sidebar" class="text-blue-200 hover:text-white">
+            <i class="fas fa-times text-xl"></i>
+        </button>
+    </div>
+    <nav class="mt-5 px-2">
+        <a href="#" class="sidebar-link active group flex items-center px-4 py-3 text-base font-medium rounded-md bg-blue-800 text-white">
+            <i class="fas fa-tachometer-alt mr-3"></i>
+            Dashboard
+        </a>
+        <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+            <i class="fas fa-boxes mr-3"></i>
+            Productos
+        </a>
+        <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+            <i class="fas fa-warehouse mr-3"></i>
+            Almacenes
+        </a>
+        <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+            <i class="fas fa-file-invoice mr-3"></i>
+            Pedidos
+        </a>
+        <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+            <i class="fas fa-chart-bar mr-3"></i>
+            Reportes
+        </a>
+        <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+            <i class="fas fa-cog mr-3"></i>
+            Configuración
+        </a>
+    </nav>
+    <div class="flex-shrink-0 flex border-t border-blue-800 p-4 mt-auto">
+        <div class="flex items-center">
+            <div class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold">
+                {% if admin_user %}
+                    {{ admin_user.nombre[0]|upper }}{{ admin_user.apellido[0]|upper }}
+                {% endif %}
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-medium text-white">
+                    {% if admin_user %}
+                        {{ admin_user.nombre | title }}
+                        {{ admin_user.apellido | title }}
+                    {% endif %}
+                </p>
+                <p class="text-xs text-blue-300">Administrador</p>
+            </div>
+        </div>
+    </div>
+</div>

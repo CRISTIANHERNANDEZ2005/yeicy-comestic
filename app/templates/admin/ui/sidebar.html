@@ -1,0 +1,53 @@
+<div class="hidden lg:flex lg:flex-shrink-0">
+    <div class="flex flex-col w-64 bg-blue-900 text-white">
+        <div class="h-16 flex items-center px-6 border-b border-blue-800">
+            <h1 class="text-xl font-bold">InventarioPro</h1>
+        </div>
+        <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
+            <nav class="mt-5 flex-1 px-2 space-y-1">
+                <a href="#" class="sidebar-link active group flex items-center px-4 py-3 text-sm font-medium rounded-md bg-blue-800 text-white">
+                    <i class="fas fa-tachometer-alt mr-3"></i>
+                    Dashboard
+                </a>
+                <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-boxes mr-3"></i>
+                    Productos
+                </a>
+                <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-warehouse mr-3"></i>
+                    Almacenes
+                </a>
+                <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-file-invoice mr-3"></i>
+                    Pedidos
+                </a>
+                <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-chart-bar mr-3"></i>
+                    Reportes
+                </a>
+                <a href="#" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+                    <i class="fas fa-cog mr-3"></i>
+                    Configuración
+                </a>
+            </nav>
+        </div>
+        <div class="flex-shrink-0 flex border-t border-blue-800 p-4">
+            <div class="flex items-center">
+                <div class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold">
+                    {% if admin_user %}
+                        {{ admin_user.nombre[0]|upper }}{{ admin_user.apellido[0]|upper }}
+                    {% endif %}
+                </div>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-white">
+                        {% if admin_user %}
+                            {{ admin_user.nombre | title }}
+                            {{ admin_user.apellido | title }}
+                        {% endif %}
+                    </p>
+                    <p class="text-xs text-blue-300">Administrador</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

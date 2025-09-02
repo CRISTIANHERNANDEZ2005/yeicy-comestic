@@ -542,22 +542,7 @@
         const passwordToggle = document.getElementById('passwordToggle');
         const passwordToggleIcon = passwordToggle.querySelector('i');
         const loginButton = document.getElementById('loginButton');
-        // const errorMessage = document.getElementById('errorMessage'); // Removed as messages are now handled by toasts
-        
-        // Estado de validación
-        let identificacionValid = false;
-        let contraseñaValid = false;
-        let validationTimeout;
 
-        // Función debounce
-        function debounce(func, delay) {
-            return function(...args) {
-                const context = this;
-                clearTimeout(validationTimeout);
-                validationTimeout = setTimeout(() => func.apply(context, args), delay);
-            };
-        }
-        
         // Función para alternar la visibilidad de la contraseña
         function togglePasswordVisibility() {
             const type = contraseñaInput.type === 'password' ? 'text' : 'password';
@@ -572,83 +557,13 @@
                 passwordToggleIcon.classList.add('fa-eye-slash');
             }
         }
-        
-        // Función para aplicar estilos de validación
-        function applyValidationStyles(inputElement, isValid) {
-            const iconElement = inputElement.nextElementSibling; // Asumiendo que el icono es el siguiente hermano
-            if (isValid) {
-                inputElement.classList.remove('error');
-                inputElement.classList.add('success');
-                if (iconElement) {
-                    iconElement.classList.remove('error');
-                    iconElement.classList.add('success');
-                }
-            } else {
-                inputElement.classList.add('error');
-                inputElement.classList.remove('success');
-                if (iconElement) {
-                    iconElement.classList.add('error');
-                    iconElement.classList.remove('success');
-                }
-            }
-        }
 
-        // Validación en tiempo real
-        async function realTimeValidate() {
+        // Función para actualizar el estado del botón de login
+        function updateLoginButtonState() {
             const identificacion = identificacionInput.value.trim();
-            const contraseña = contraseñaInput.value;
+            const contraseña = contraseñaInput.value.trim();
 
-            // No validar si ambos campos están vacíos
-            if (identificacion === '' && contraseña === '') {
-                applyValidationStyles(identificacionInput, false);
-                applyValidationStyles(contraseñaInput, false);
-                identificacionValid = false;
-                contraseñaValid = false;
-                updateLoginButton();
-                return;
-            }
-
-            try {
-                const response = await fetch("{{ url_for('admin_auth.validate_credentials') }}", {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ identificacion, contraseña }),
-                });
-
-                const data = await response.json();
-
-                if (data.valid) {
-                    applyValidationStyles(identificacionInput, true);
-                    applyValidationStyles(contraseñaInput, true);
-                    identificacionValid = true;
-                    contraseñaValid = true;
-                    
-                } else {
-                    applyValidationStyles(identificacionInput, false);
-                    applyValidationStyles(contraseñaInput, false);
-                    identificacionValid = false;
-                    contraseñaValid = false;
-                    window.toast.error(data.message);
-                }
-            } catch (error) {
-                console.error('Error de red durante la validación en tiempo real:', error);
-                applyValidationStyles(identificacionInput, false);
-                applyValidationStyles(contraseñaInput, false);
-                identificacionValid = false;
-                contraseñaValid = false;
-                window.toast.error('Error de conexión. Por favor, verifique su conexión.');
-            } finally {
-                updateLoginButton();
-            }
-        }
-        
-        // Actualizar estado del botón de login
-        function updateLoginButton() {
-            // El botón de login solo se habilita si ambos campos tienen contenido
-            // y la validación en tiempo real ha indicado que son válidos.
-            if (identificacionInput.value.trim() !== '' && contraseñaInput.value !== '' && identificacionValid && contraseñaValid) {
+            if (identificacion !== '' && contraseña !== '') {
                 loginButton.disabled = false;
                 loginButton.classList.remove('opacity-50', 'cursor-not-allowed');
             } else {
@@ -656,24 +571,16 @@
                 loginButton.classList.add('opacity-50', 'cursor-not-allowed');
             }
         }
-        
+
         // Event listeners
-        identificacionInput.addEventListener('input', debounce(realTimeValidate, 500));
-        contraseñaInput.addEventListener('input', debounce(realTimeValidate, 500));
+        identificacionInput.addEventListener('input', updateLoginButtonState);
+        contraseñaInput.addEventListener('input', updateLoginButtonState);
         passwordToggle.addEventListener('click', togglePasswordVisibility);
         
         // Envío del formulario
         loginForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Realizar una última validación antes de enviar
-            await realTimeValidate();
-
-            if (!identificacionValid || !contraseñaValid) {
-                window.toast.error('Por favor, corrija las credenciales antes de iniciar sesión.');
-                return;
-            }
-
             const formData = {
                 identificacion: identificacionInput.value,
                 contraseña: contraseñaInput.value
@@ -691,10 +598,20 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    // Limpiar campos y estilos en caso de éxito antes de redirigir
+                    identificacionInput.value = '';
+                    contraseñaInput.value = '';
+                    identificacionInput.classList.remove('success', 'error');
+                    contraseñaInput.classList.remove('success', 'error');
                     window.location.href = data.redirect;
                 } else {
                     const errorMessageText = data.error || 'Credenciales incorrectas. Intente nuevamente.';
                     window.toast.error(errorMessageText);
+                    // Aplicar estilos de error a los campos
+                    identificacionInput.classList.add('error');
+                    contraseñaInput.classList.add('error');
+                    identificacionInput.classList.remove('success');
+                    contraseñaInput.classList.remove('success');
                 }
             } catch (error) {
                 console.error('Error de red:', error);
@@ -703,8 +620,18 @@
             }
         });
         
-        // Inicializar estado del botón
-        updateLoginButton();
+        // Inicializar estado del botón al cargar la página
+        updateLoginButtonState();
+
+        // Limpiar estilos de error cuando el usuario empieza a corregir
+        identificacionInput.addEventListener('input', () => {
+            identificacionInput.classList.remove('error');
+            contraseñaInput.classList.remove('error');
+        });
+        contraseñaInput.addEventListener('input', () => {
+            identificacionInput.classList.remove('error');
+            contraseñaInput.classList.remove('error');
+        });
     </script>
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
 </body>

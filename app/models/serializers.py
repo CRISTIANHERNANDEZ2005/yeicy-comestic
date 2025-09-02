@@ -130,7 +130,8 @@ def producto_to_dict(prod):
         'calificacion_promedio': prod.calificacion_promedio_almacenada,
         'es_nuevo': prod.es_nuevo,
         'reseñas_count': len(prod.reseñas) if hasattr(prod, 'reseñas') else 0,
-        'especificaciones': prod.especificaciones or {}
+        'especificaciones': prod.especificaciones or {},
+        'agotado': prod.agotado
     }
 
 def like_to_dict(like):

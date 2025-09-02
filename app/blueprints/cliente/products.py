@@ -57,7 +57,8 @@ def index():
         productos = Productos.query\
             .filter(
                 Productos.seudocategoria_id.in_(seudocategoria_ids),
-                Productos.estado == 'activo'
+                Productos.estado == 'activo',
+                Productos.existencia > 0
             )\
             .order_by(func.random())\
             .limit(12)\
@@ -65,7 +66,10 @@ def index():
     else:
         # Fallback: productos destacados si no existe "Maquillaje"
         productos = Productos.query\
-            .filter_by(estado='activo')\
+            .filter(
+                Productos.estado == 'activo',
+                Productos.existencia > 0
+            )\
             .order_by(func.random())\
             .limit(12)\
             .all()
@@ -138,7 +142,8 @@ def productos_por_categoria(slug_categoria):
     productos = Productos.query\
         .filter(
             Productos.seudocategoria_id.in_(seudocategoria_ids),
-            Productos.estado == 'activo'
+            Productos.estado == 'activo',
+            Productos.existencia > 0
         )\
         .order_by(Productos.nombre.asc())\
         .all()
@@ -226,8 +231,8 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         CategoriasPrincipales.slug == slug_categoria_principal
     ).first_or_404()
     
-    # Verificar si el producto está activo
-    if producto.estado != 'activo':
+    # Verificar si el producto está activo y tiene existencias
+    if producto.estado != 'activo' or producto.existencia <= 0:
         from flask import abort
         abort(404)
     
@@ -247,6 +252,7 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         ).filter(
             Productos.id != producto.id,
             Productos.estado == 'activo',
+            Productos.existencia > 0,
             Subcategorias.categoria_principal_id == categoria_principal_id
         ).limit(8).all()
 
@@ -341,7 +347,8 @@ def buscar():
                 Productos.marca.ilike(f'{query}%'),
                 Productos.descripcion.ilike(f'{query}%')
             ),
-            Productos.estado == 'activo'
+            Productos.estado == 'activo',
+            Productos.existencia > 0
         ).order_by(
             # Priorizar coincidencias exactas al inicio
             db.case(
@@ -458,8 +465,8 @@ def filter_products():
         CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
     )
 
-    # Always filter by product status
-    query = query.filter(Productos.estado == 'activo')
+    # Always filter by product status and availability
+    query = query.filter(Productos.estado == 'activo', Productos.existencia > 0)
 
     # Apply filters based on provided names
     if main_category_name and main_category_name != 'all':
@@ -509,7 +516,7 @@ def get_all_products():
     """
     Devuelve todos los productos activos en formato JSON.
     """
-    productos = Productos.query.filter_by(estado='activo').all()
+    productos = Productos.query.filter_by(estado='activo').filter(Productos.existencia > 0).all()
     return jsonify([producto_to_dict(p) for p in productos])
 
 
@@ -530,7 +537,7 @@ def get_products_by_category(nombre_categoria):
     seudocategoria_ids = [id[0] for id in seudocategoria_ids]
     
     productos = Productos.query\
-        .filter(Productos.seudocategoria_id.in_(seudocategoria_ids), Productos.estado == 'activo')\
+        .filter(Productos.seudocategoria_id.in_(seudocategoria_ids), Productos.estado == 'activo', Productos.existencia > 0)\
         .all()
         
     return jsonify([producto_to_dict(p) for p in productos])
@@ -545,7 +552,7 @@ def get_price_range():
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('seudocategoria')
 
-    query = db.session.query(Productos).filter(Productos.estado == 'activo')
+    query = db.session.query(Productos).filter(Productos.estado == 'activo', Productos.existencia > 0)
 
     if main_category_name:
         query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales).filter(

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos
 from app.extensions import db
-from sqlalchemy import func
+from sqlalchemy import func, or_
 
 admin_dashboard_bp = Blueprint('admin_dashboard_bp', __name__)
 
@@ -13,7 +13,7 @@ def dashboard(admin_user): # admin_user will be passed by the decorator
     total_productos = Productos.query.count()
     total_unidades_en_stock = db.session.query(func.sum(Productos.existencia)).scalar() or 0
     sin_stock = Productos.query.filter(Productos.existencia == 0).count()
-    stock_bajo = Productos.query.filter(Productos.existencia > 0, Productos.existencia <= Productos.stock_minimo).count()
+    stock_bajo = Productos.query.filter(Productos.existencia > 0, Productos.existencia < Productos.stock_minimo).count()
 
     # Crear un diccionario con las estadísticas
     stats = {
@@ -22,4 +22,25 @@ def dashboard(admin_user): # admin_user will be passed by the decorator
         'sin_stock': sin_stock,
         'stock_bajo': stock_bajo
     }
-    return render_template('admin/componentes/dashboard.html', admin_user=admin_user, stats=stats)
+
+    # --- Lógica para Tareas Pendientes ---
+    productos_para_revisar = Productos.query.filter(
+        or_(
+            Productos.existencia == 0,
+            Productos.existencia < Productos.stock_minimo
+        )
+    ).order_by(Productos.existencia.asc()).all()
+
+    tasks = []
+    for producto in productos_para_revisar:
+        reason = "Agotado" if producto.existencia == 0 else "Bajo Stock"
+        tasks.append({
+            'id': producto.id,
+            'nombre': producto.nombre,
+            'existencia': producto.existencia,
+            'stock_minimo': producto.stock_minimo,
+            'reason': reason
+        })
+    # ------------------------------------
+
+    return render_template('admin/componentes/dashboard.html', admin_user=admin_user, stats=stats, tasks=tasks)

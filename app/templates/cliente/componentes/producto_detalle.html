@@ -320,7 +320,7 @@
 
           <!-- Indicador de Stock con Iconos -->
           <div class="mb-8">
-            {% if producto.existencia >= producto.stock_minimo %}
+            {% if not producto.agotado %}
             <div class="flex items-center space-x-2 text-green-600">
               <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                 <path
@@ -395,7 +395,7 @@
                     class="w-20 text-center text-lg font-bold border-x-2 border-gray-200 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                     {%
                     if
-                    producto.existencia|int < producto.stock_minimo
+                    producto.agotado
                     %}disabled{%
                     endif
                     %}
@@ -435,7 +435,7 @@
                 data-quantity="1"
                 {%
                 if
-                producto.existencia|int < producto.stock_minimo
+                producto.agotado
                 %}disabled{%
                 endif
                 %}
@@ -589,8 +589,8 @@
                 </div>
                 <div>
                   <h4 class="font-semibold text-gray-700">Disponibilidad</h4>
-                  <p class="font-bold {% if producto.existencia >= producto.stock_minimo %}text-green-600{% else %}text-red-600{% endif %}">
-                    {{ 'En stock' if producto.existencia >= producto.stock_minimo else 'Agotado' }}
+                  <p class="font-bold {% if not producto.agotado %}text-green-600{% else %}text-red-600{% endif %}">
+                    {{ 'En stock' if not producto.agotado else 'Agotado' }}
                   </p>
                 </div>
               </div>

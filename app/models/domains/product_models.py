@@ -180,12 +180,15 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         from datetime import datetime, timedelta
         return datetime.utcnow() - self.created_at <= timedelta(days=5)
 
+    @property
+    def agotado(self):
+        return self.existencia < self.stock_minimo
+
     # Restricciones e índices
     __table_args__ = (
         CheckConstraint("precio > 0", name='check_precio_positivo'),
         CheckConstraint("precio > costo", name='check_precio_mayor_costo'),
         CheckConstraint("existencia >= 0", name='check_existencia_no_negativo'),
-        CheckConstraint("existencia BETWEEN stock_minimo AND stock_maximo", name='check_existencia_rango'),
         db.Index('idx_producto_seudocategoria_id', 'seudocategoria_id'),
         db.Index('idx_producto_nombre', 'nombre'),
         db.Index('idx_producto_slug', 'slug'),

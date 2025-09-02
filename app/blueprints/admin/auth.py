@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, make_response, current_app
 from app.models.domains.user_models import Admins
 from app.extensions import db, bcrypt
 from flask_login import login_user, logout_user, login_required
@@ -24,6 +24,8 @@ def validate_credentials():
     
     return jsonify({'valid': True, 'message': 'Credenciales válidas.'}), 200
 
+from app.utils.admin_jwt_utils import generate_admin_jwt_token, admin_jwt_required
+
 @admin_auth_bp.route('/administracion', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -39,21 +41,18 @@ def login():
         if not admin or not admin.verificar_contraseña(contraseña):
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
-        session['user_type'] = 'admin'
-        login_user(admin, remember=True)
+        # Generar JWT
+        token = generate_admin_jwt_token(admin)
 
-        return jsonify({'success': True, 'redirect': url_for('admin_auth.dashboard')})
+        response = make_response(jsonify({'success': True, 'redirect': url_for('admin_dashboard_bp.dashboard')}))
+        response.set_cookie('admin_jwt', token, httponly=True, secure=current_app.config.get('SESSION_COOKIE_SECURE', False), samesite='Lax')
+        return response
 
     return render_template('admin/page/login_admin.html')
 
-@admin_auth_bp.route('/admin/dashboard')
-@login_required
-def dashboard():
-    return render_template('admin/page/dashboard.html')
-
 @admin_auth_bp.route('/admin/logout')
-@login_required
-def logout():
-    logout_user()
-    session.pop('user_type', None)
-    return redirect(url_for('admin_auth.login'))
+@admin_jwt_required
+def logout(admin_user): # admin_user is passed by the decorator
+    # Client-side will handle token deletion.
+    # We just return a success message.
+    return jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'})

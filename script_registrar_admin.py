@@ -1,6 +1,5 @@
 # script_registrar_admin.py
 from app import create_app, db
-from app.models.models import Admin
 
 app = create_app()
 

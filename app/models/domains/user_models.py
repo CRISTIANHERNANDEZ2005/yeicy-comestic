@@ -189,3 +189,17 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
 
     def verificar_contraseña(self, contraseña):
         return bcrypt.check_password_hash(self.contraseña, contraseña)
+
+    def generar_jwt(self):
+        import jwt
+        from datetime import datetime, timedelta
+        from flask import current_app
+        payload = {
+            'user_id': self.id,
+            'cedula': self.cedula,
+            'nombre': self.nombre,
+            'is_admin': True,
+            'exp': datetime.utcnow() + timedelta(days=7)
+        }
+        secret = current_app.config.get('SECRET_KEY', 'super-secret')
+        return jwt.encode(payload, secret, algorithm='HS256')

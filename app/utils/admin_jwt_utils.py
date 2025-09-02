@@ -52,9 +52,6 @@ def admin_jwt_required(f: F) -> F:
             return redirect(url_for('admin_auth.login')) # Redirect to admin login
 
         try:
-            # The 'token' variable should already contain the correct value at this point
-            # if it was found in cookies or Authorization header.
-            # No need to re-extract from auth_header here.
 
             payload = decode_admin_jwt_token(token)
             if not payload:
@@ -62,13 +59,13 @@ def admin_jwt_required(f: F) -> F:
                 return redirect(url_for('admin_auth.login'))
 
             user_id = payload.get('user_id')
-            is_admin = payload.get('is_admin', False) # Check for admin claim
+            is_admin = payload.get('is_admin', False)
             if not user_id or not is_admin:
                 current_app.logger.warning('Payload de token de administrador no contiene user_id o no es administrador.')
                 flash('Acceso denegado. Credenciales de administrador inválidas.', 'danger')
                 return redirect(url_for('admin_auth.login'))
 
-            admin_user = Admins.query.get(user_id) # Use Admins model
+            admin_user = Admins.query.get(user_id) 
             if not admin_user:
                 current_app.logger.error(f'Usuario administrador no encontrado para el ID: {user_id}')
                 flash('Acceso denegado. Usuario no autorizado.', 'danger')

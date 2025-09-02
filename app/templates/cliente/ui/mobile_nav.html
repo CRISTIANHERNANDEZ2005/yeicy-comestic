@@ -94,32 +94,37 @@
     </a>
   </div>
 </nav>
+
 <script>
-  // Abrir menú desde mobile_nav.html
-  document.getElementById('mobile-menu-button').addEventListener('click', function() {
-    document.getElementById('mobile-menu').classList.remove('hidden');
+  document.addEventListener('DOMContentLoaded', function () {
+    // Manejador para abrir el menú lateral
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    if (mobileMenuButton) {
+      mobileMenuButton.addEventListener('click', function () {
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenu) {
+          mobileMenu.classList.toggle('hidden');
+        }
+      });
+    }
+
+    // Manejador para el enlace de "Cuenta"
+    const mobileAccountLink = document.getElementById('mobile-account-link');
+    if (mobileAccountLink) {
+      mobileAccountLink.addEventListener('click', function (event) {
+        event.preventDefault(); // Prevenir la navegación por defecto del enlace
+        if (window.isAuthenticated) {
+          // Si el usuario está autenticado, redirigir a la página de perfil
+          window.location.href = "{{ url_for('root_perfil') }}";
+        } else {
+          // Si no está autenticado, mostrar el modal de inicio de sesión
+          if (typeof showAuthModal === 'function') {
+            showAuthModal('login');
+          }
+        }
+      });
+    }
   });
 </script>
-<script>
-    // Función para alternar el menú móvil
-    document.querySelector('nav button:nth-of-type(2)').addEventListener('click', function () {
-      const mobileMenu = document.getElementById('mobile-menu');
-      mobileMenu.classList.toggle('hidden');
-    });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const mobileAccountLink = document.getElementById('mobile-account-link');
-        if (mobileAccountLink) {
-            if (window.isAuthenticated) {
-                mobileAccountLink.href = "{{ url_for('root_perfil') }}";
-                mobileAccountLink.removeAttribute('onclick');
-            } else {
-                mobileAccountLink.onclick = function() {
-                    showAuthModal('login');
-                    return false;
-                };
-            }
-        }
-    });
-</script>
 {% include 'cliente/ui/mobile_menu.html' %}

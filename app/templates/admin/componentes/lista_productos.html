@@ -15,13 +15,13 @@
             </div>
             <div class="flex flex-wrap gap-2">
                 <!-- Botón para agregar nuevo producto -->
-                <a href="#" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 flex items-center transition-all duration-300 transform hover:scale-105 shadow-md">
+                <a href="#" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 flex items-center transition-all duration-300 transform hover:scale-105 shadow-md" title="Agregar nuevo producto">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     Nuevo Producto
                 </a>
-                <button type="button" onclick="resetFilters()" class="px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-800 rounded-xl hover:from-gray-300 hover:to-gray-400 flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold">
+                <button type="button" onclick="resetFilters()" class="px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-800 rounded-xl hover:from-gray-300 hover:to-gray-400 flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold" title="Limpiar todos los filtros de búsqueda">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
@@ -114,7 +114,7 @@
                                     <div class="flex items-center">
                                         <div class="relative inline-block w-14 h-7 mr-2 align-middle select-none">
                                             <input type="checkbox" id="toggle-{{ product.id }}" class="sr-only" {% if product.estado == 'activo' %}checked{% endif %} onchange="toggleProductStatus('{{ product.id }}', this.checked)">
-                                            <label for="toggle-{{ product.id }}" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out {% if product.estado == 'activo' %}bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg{% else %}bg-gray-300{% endif %}">
+                                            <label for="toggle-{{ product.id }}" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out {% if product.estado == 'activo' %}bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg{% else %}bg-gray-300{% endif %}" title="Cambiar estado del producto">
                                                 <span class="absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ease-in-out {% if product.estado == 'activo' %}transform translate-x-7{% else %}transform translate-x-0{% endif %} flex items-center justify-center">
                                                     <!-- Icono para estado activo -->
                                                     {% if product.estado == 'activo' %}
@@ -141,6 +141,13 @@
                                     <a href="#" class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </a>
+                                    <!-- Nuevo botón para ver detalles -->
+                                    <a href="#" class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-800 transition-all duration-300 transform hover:scale-110 shadow-md ml-2" title="Ver detalles del producto">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                         </svg>
                                     </a>
                                 </td>
@@ -176,7 +183,7 @@
             {% if pagination.pages > 1 %}
                 <div class="flex flex-wrap justify-center gap-2">
                     <!-- Botón anterior -->
-                    <a href="#" onclick="goToPage({{ pagination.prev_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
+                    <a href="#" onclick="goToPage({{ pagination.prev_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center" title="Ir a la página anterior">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -187,11 +194,11 @@
                     {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
                         {% if page_num %}
                             {% if page_num == pagination.page %}
-                                <span class="px-3 py-2 rounded-lg border border-blue-500 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-sm font-medium">
+                                <span class="px-3 py-2 rounded-lg border border-blue-500 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-sm font-medium" title="Página actual {{ page_num }}">
                                     {{ page_num }}
                                 </span>
                             {% else %}
-                                <a href="#" onclick="goToPage({{ page_num }})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                                <a href="#" onclick="goToPage({{ page_num }})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200" title="Ir a la página {{ page_num }}">
                                     {{ page_num }}
                                 </a>
                             {% endif %}
@@ -201,7 +208,7 @@
                     {% endfor %}
 
                     <!-- Botón siguiente -->
-                    <a href="#" onclick="goToPage({{ pagination.next_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
+                    <a href="#" onclick="goToPage({{ pagination.next_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center" title="Ir a la página siguiente">
                         Siguiente
                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

@@ -356,7 +356,7 @@ function updateProductsTable(products, pagination) {
         product.estado === "activo"
           ? "bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg"
           : "bg-gray-300"
-      }">
+      }" title="Cambiar estado del producto">
                                <span class="absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ease-in-out ${
                                  product.estado === "activo"
                                    ? "transform translate-x-7"
@@ -390,6 +390,12 @@ function updateProductsTable(products, pagination) {
                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                        </svg>
                    </a>
+                   <a href="#" class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 hover:text-blue-800 transition-all duration-300 transform hover:scale-110 shadow-md ml-2" title="Ver detalles del producto">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                        </svg>
+                                    </a>
                </td>
            </tr>
        `
@@ -426,7 +432,7 @@ function updatePagination(pagination) {
     !pagination.has_prev
       ? "text-gray-400 cursor-not-allowed"
       : "text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-  } inline-flex items-center">
+  } inline-flex items-center" title="Ir a la página anterior">
                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                </svg>
@@ -446,9 +452,9 @@ function updatePagination(pagination) {
 
     for (let i = startPage; i <= endPage; i++) {
       if (i === pagination.page) {
-        paginationHTML += `<span class="px-3 py-2 rounded-lg border border-blue-500 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-sm font-medium">${i}</span>`;
+        paginationHTML += `<span class="px-3 py-2 rounded-lg border border-blue-500 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-sm font-medium" title="Página actual ${i}">${i}</span>`;
       } else {
-        paginationHTML += `<a href="#" onclick="goToPage(${i})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">${i}</a>`;
+        paginationHTML += `<a href="#" onclick="goToPage(${i})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200" title="Ir a la página ${i}">${i}</a>`;
       }
     }
 
@@ -466,7 +472,7 @@ function updatePagination(pagination) {
     !pagination.has_next
       ? "text-gray-400 cursor-not-allowed"
       : "text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-  } inline-flex items-center">
+  } inline-flex items-center" title="Ir a la página siguiente">
                Siguiente
                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>

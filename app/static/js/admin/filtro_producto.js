@@ -1,6 +1,23 @@
 // Variable para almacenar el timeout del debounce
 let debounceTimeout;
 
+function formatCurrency(value) {
+    if (value === null || value === undefined || isNaN(value)) {
+        return "$ 0";
+    }
+    const numValue = parseFloat(value);
+    if (isNaN(numValue)) {
+        return "$ 0";
+    }
+    return numValue.toLocaleString('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+    });
+}
+
+
 function showTableSpinner() {
   const tableContainer = document.querySelector('.bg-white.shadow-lg.rounded-xl');
   if (tableContainer) {
@@ -311,12 +328,8 @@ function updateProductsTable(products, pagination) {
                    } / ${product.seudocategoria_nombre}</div>
                </td>
                <td class="px-6 py-4 whitespace-nowrap">
-                   <div class="text-sm font-semibold text-gray-900">$${parseFloat(
-                     product.precio
-                   ).toFixed(2)}</div>
-                   <div class="text-sm text-gray-500">Costo: $${parseFloat(
-                     product.costo
-                   ).toFixed(2)}</div>
+                   <div class="text-sm font-semibold text-gray-900">${formatCurrency(product.precio)}</div>
+                   <div class="text-sm text-gray-500">Costo: ${formatCurrency(product.costo)}</div>
                </td>
                <td class="px-6 py-4 whitespace-nowrap">
                    <div class="text-sm font-medium text-gray-900">${

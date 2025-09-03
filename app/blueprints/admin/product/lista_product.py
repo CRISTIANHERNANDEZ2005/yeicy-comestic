@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
-from app.models.serializers import producto_list_to_dict, seudocategoria_to_dict, subcategoria_to_dict, categoria_principal_to_dict
+from app.models.serializers import producto_list_to_dict, seudocategoria_to_dict, subcategoria_to_dict, categoria_principal_to_dict, format_currency_cop
 from app.extensions import db
 from sqlalchemy import or_, and_
 from datetime import datetime, timedelta
@@ -101,6 +101,11 @@ def get_all_products(admin_user):
         
         # Serializar datos
         products_data = [producto_list_to_dict(product) for product in productos_paginados.items]
+
+        # Apply currency formatting for initial render
+        for product_dict in products_data:
+            product_dict['precio'] = format_currency_cop(product_dict['precio'])
+            product_dict['costo'] = format_currency_cop(product_dict['costo'])
         categorias_data = [categoria_principal_to_dict(cat) for cat in categorias]
         subcategorias_data = [subcategoria_to_dict(sub) for sub in subcategorias]
         seudocategorias_data = [seudocategoria_to_dict(seudo) for seudo in seudocategorias]

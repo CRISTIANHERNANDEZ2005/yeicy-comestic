@@ -253,9 +253,7 @@ function applyFilters(fromPagination = false) {
         updatePagination(data.pagination);
         updateResultsCounter(data.pagination, data.products);
 
-        if (window.innerWidth < 768) {
-          toggleFilters();
-        }
+        
       } else {
         console.error("Error al filtrar productos:", data.message);
         showNotification(

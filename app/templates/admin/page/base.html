@@ -47,7 +47,7 @@
         }
     </style>
 </head>
-<body class="bg-gray-50 font-sans h-full overflow-hidden">
+<body class="bg-gray-50 font-sans">
     <!-- Header para móvil -->
     <header class="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
         <div class="flex items-center">
@@ -72,12 +72,12 @@
         {% include 'admin/ui/menu_movil.html' %}
     </div>
 
-    <div class="flex h-full">
+    <div class="flex h-screen">
         <!-- Sidebar para desktop (siempre visible) -->
         {% include 'admin/ui/sidebar.html' %}
 
         <!-- Contenido principal -->
-        <div class="flex flex-col w-0 flex-1 overflow-hidden">
+        <div class="flex flex-col w-0 flex-1">
             <!-- Header para desktop -->
             <header class="bg-white shadow-sm hidden lg:block">
                 <div class="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
@@ -100,7 +100,7 @@
             </header>
 
             <!-- Contenido de la página -->
-            <main class="flex-1 relative overflow-y-auto focus:outline-none">
+            <main class="flex-1 relative focus:outline-none">
                 {% block content %}
                 {% endblock %}
             </main>
@@ -139,5 +139,6 @@
         });
     </script>
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/filtro_producto.js') }}"></script>
 </body>
 </html>

@@ -21,12 +21,12 @@
                     </svg>
                     Nuevo Producto
                 </a>
-                <a href="{{ url_for('admin_products.get_all_products') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center transition-all duration-300 transform hover:scale-105 shadow-sm border border-gray-200">
+                <button type="button" onclick="resetFilters()" class="px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-800 rounded-xl hover:from-gray-300 hover:to-gray-400 flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
                     </svg>
-                    Limpiar
-                </a>
+                    Limpiar Filtros
+                </button>
             </div>
         </div>
         
@@ -56,7 +56,7 @@
         </div>
         
         <!-- Tabla de productos -->
-        <div class="bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl border border-gray-200">
+        <div class="relative bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl border border-gray-200">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
@@ -81,7 +81,7 @@
                             </th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tbody id="products-tbody" class="bg-white divide-y divide-gray-200">
                         {% for product in products %}
                             <tr class="hover:bg-blue-50 transition-colors duration-200" data-product-id="{{ product.id }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
@@ -176,7 +176,7 @@
             {% if pagination.pages > 1 %}
                 <div class="flex flex-wrap justify-center gap-2">
                     <!-- Botón anterior -->
-                    <a href="{{ url_for('admin_products.get_all_products', page=pagination.prev_num, **filter_params) if pagination.has_prev else '#' }}" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
+                    <a href="#" onclick="goToPage({{ pagination.prev_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -191,7 +191,7 @@
                                     {{ page_num }}
                                 </span>
                             {% else %}
-                                <a href="{{ url_for('admin_products.get_all_products', page=page_num, **filter_params) }}" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                                <a href="#" onclick="goToPage({{ page_num }})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
                                     {{ page_num }}
                                 </a>
                             {% endif %}
@@ -199,9 +199,9 @@
                             <span class="px-3 py-2 text-gray-500">...</span>
                         {% endif %}
                     {% endfor %}
-                    
+
                     <!-- Botón siguiente -->
-                    <a href="{{ url_for('admin_products.get_all_products', page=pagination.next_num, **filter_params) if pagination.has_next else '#' }}" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
+                    <a href="#" onclick="goToPage({{ pagination.next_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
                         Siguiente
                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -251,12 +251,67 @@
     </style>
     
     <script>
+        // Función para obtener el token CSRF
+        function getCsrfToken() {
+            const tokenElement = document.querySelector('meta[name="csrf-token"]');
+            return tokenElement ? tokenElement.getAttribute('content') : '';
+        }
+        
+        // Función para ir a una página específica
+        function goToPage(page) {
+            // Actualizar el campo de página en el formulario
+            let pageInput = document.querySelector('input[name="page"]');
+            if (!pageInput) {
+                pageInput = document.createElement('input');
+                pageInput.type = 'hidden';
+                pageInput.name = 'page';
+                document.getElementById('filterForm').appendChild(pageInput);
+            }
+            pageInput.value = page;
+            
+            // Aplicar filtros
+            applyFilters();
+        }
+        
+        // Función para resetear los filtros
+        function resetFilters() {
+            // Llamar a la función del archivo de filtros
+            if (typeof window.resetFilters === 'function') {
+                window.resetFilters();
+            }
+        }
+        
+        // Actualizar el formulario cuando cambie el número de elementos por página
+        document.getElementById('perPageSelect').addEventListener('change', function () {
+            // Actualizar el campo per_page en el formulario
+            let perPageInput = document.querySelector('input[name="per_page"]');
+            if (!perPageInput) {
+                perPageInput = document.createElement('input');
+                perPageInput.type = 'hidden';
+                perPageInput.name = 'per_page';
+                document.getElementById('filterForm').appendChild(perPageInput);
+            }
+            perPageInput.value = this.value;
+
+            // **RESET a la página 1**
+            let pageInput = document.querySelector('input[name="page"]');
+            if (pageInput) {
+                pageInput.value = '1';
+            }
+            
+            // Aplicar filtros
+            applyFilters();
+        });
+        
         // Función mejorada para cambiar el estado de un producto
         function toggleProductStatus(productId, isActive) {
-            console.log('Product ID:', productId); // Debugging line
-            console.log('Is Active:', isActive); // Debugging line
             // Mostrar indicador de carga
             const toggle = document.getElementById(`toggle-${productId}`);
+            if (!toggle) {
+                console.error(`No se encontró el toggle para el producto ${productId}`);
+                return;
+            }
+            
             const label = toggle.nextElementSibling;
             const span = label.querySelector('span');
             const row = document.querySelector(`tr[data-product-id="${productId}"]`);
@@ -273,7 +328,9 @@
             `;
             
             // Resaltar la fila durante la operación
-            row.classList.add('bg-blue-100');
+            if (row) {
+                row.classList.add('bg-blue-100');
+            }
             
             // Realizar la petición AJAX
             fetch(`/admin/api/products/${productId}/status`, {
@@ -317,8 +374,6 @@
                                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
                             </svg>
                         `;
-                        
-                        // Actualizar la celda de existencia si se activó el producto
                     } else {
                         label.classList.add('bg-gray-300');
                         label.classList.remove('bg-gradient-to-r', 'from-green-400', 'to-emerald-500', 'shadow-lg');
@@ -329,8 +384,6 @@
                                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                             </svg>
                         `;
-                        
-                        // Actualizar la celda de existencia si se desactivó el producto
                     }
                     
                     // Mostrar notificación de éxito
@@ -396,7 +449,9 @@
             })
             .finally(() => {
                 // Restaurar el estado original de la fila
-                row.classList.remove('bg-blue-100');
+                if (row) {
+                    row.classList.remove('bg-blue-100');
+                }
                 
                 // Habilitar el toggle nuevamente
                 toggle.disabled = false;
@@ -449,22 +504,5 @@
                 notification.classList.add('translate-x-full');
             }, 5000);
         }
-        
-        // Función para obtener el token CSRF
-        function getCsrfToken() {
-            const tokenElement = document.querySelector('meta[name="csrf-token"]');
-            return tokenElement ? tokenElement.getAttribute('content') : '';
-        }
-        
-        // Actualizar el formulario cuando cambie el número de elementos por página
-        document.getElementById('perPageSelect').addEventListener('change', function () {
-            const form = document.getElementById('filterForm');
-            const perPageInput = document.createElement('input');
-            perPageInput.type = 'hidden';
-            perPageInput.name = 'per_page';
-            perPageInput.value = this.value;
-            form.appendChild(perPageInput);
-            form.submit();
-        });
     </script>
 {% endblock %}

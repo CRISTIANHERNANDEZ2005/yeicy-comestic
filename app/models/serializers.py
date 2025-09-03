@@ -1,5 +1,13 @@
 # app/models/serializers.py
 
+def format_currency_cop(value):
+    if value is None:
+        return "$ 0"
+    # Convert to integer to remove decimals
+    int_value = int(value)
+    # Format with thousands separator and replace comma with dot
+    return f"$ {int_value:,}".replace(",", ".")
+
 def usuario_to_dict(usuario):
     """Convierte un objeto Usuario a un diccionario."""
     if not usuario:
@@ -110,8 +118,8 @@ def producto_to_dict(prod):
         'nombre': prod.nombre,
         'slug': prod.slug,
         'descripcion': prod.descripcion,
-        'precio': float(prod.precio) if prod.precio is not None else 0.0,
-        'costo': float(prod.costo) if prod.costo is not None else 0.0,
+        'precio': format_currency_cop(prod.precio),
+        'costo': format_currency_cop(prod.costo),
         'imagen_url': prod.imagen_url,
         'existencia': prod.existencia,
         'stock_minimo': prod.stock_minimo,
@@ -161,8 +169,8 @@ def producto_list_to_dict(prod):
         'nombre': prod.nombre,
         'slug': prod.slug,
         'descripcion': prod.descripcion,
-        'precio': float(prod.precio) if prod.precio is not None else 0.0,
-        'costo': float(prod.costo) if prod.costo is not None else 0.0,
+        'precio': format_currency_cop(prod.precio),
+        'costo': format_currency_cop(prod.costo),
         'imagen_url': prod.imagen_url,
         'existencia': prod.existencia,
         'stock_minimo': prod.stock_minimo,
@@ -223,7 +231,7 @@ def cart_item_to_dict(item):
         product_info = {
             'id': item.product.id,
             'nombre': item.product.nombre,
-            'precio': float(item.product.precio) if item.product.precio is not None else 0.0,
+            'precio': item.product.precio,
             'imagen_url': item.product.imagen_url,
             'marca': item.product.marca,
             'existencia': item.product.existencia
@@ -238,7 +246,7 @@ def cart_item_to_dict(item):
         'created_at': item.created_at.isoformat() if item.created_at else None,
         'updated_at': item.updated_at.isoformat() if item.updated_at else None,
         'product': product_info,
-        'subtotal': float(item.subtotal) if item.subtotal is not None else 0.0
+        'subtotal': item.subtotal
     }
 
 def busqueda_termino_to_dict(busq):

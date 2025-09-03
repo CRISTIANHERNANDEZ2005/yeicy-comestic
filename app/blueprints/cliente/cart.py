@@ -153,6 +153,10 @@ def add_to_cart_optimized():
         response_type = 'success'
         warnings = []
 
+        # Ajustar la cantidad a la existencia disponible
+        original_quantity = quantity
+        quantity = min(original_quantity, product._existencia)
+
         if 'user_id' in cart_info:
             # Usuario autenticado - guardar en BD
             cart_item = CartItem.query.filter_by(
@@ -160,27 +164,34 @@ def add_to_cart_optimized():
                 product_id=product_id
             ).first()
 
-            # Para usuarios autenticados, el frontend debe manejar el localStorage
-            # y luego llamar a /api/sync_cart para sincronizar con la BD.
-            # Este endpoint solo confirma la disponibilidad del producto.
-            # If the quantity was adjusted in the frontend, we should reflect that here.
-            # However, this endpoint is primarily for initial add/check.
-            # The actual quantity adjustment for authenticated users happens in sync_cart.
-            pass
-        # No se hace nada para usuarios no autenticados en el backend,
-        # el frontend maneja el localStorage.
+            if cart_item:
+                cart_item.quantity += quantity
+                cart_item.updated_at = datetime.utcnow()
+            else:
+                cart_item = CartItem(
+                    user_id=cart_info['user_id'],
+                    product_id=product_id,
+                    quantity=quantity
+                )
+                db.session.add(cart_item)
+        else:
+            # Usuario no autenticado
+            # Redirigir a la página de inicio de sesión o mostrar un mensaje
+            return jsonify({'success': False, 'message': 'Debes iniciar sesión para agregar productos al carrito'})
 
-        # If the requested quantity was more than available stock, but not a full error
-        # (e.g., if frontend already adjusted, or if we want to warn for non-authenticated)
-        if quantity > product._existencia :
-            warnings.append(f'La cantidad de {product.nombre} se ajustó a {product._existencia } debido a la disponibilidad.')
+        db.session.commit()
+
+        if original_quantity > product._existencia:
+            warnings.append(f'La cantidad de {product.nombre} se ajustó a {product._existencia} debido a la disponibilidad.')
             response_type = 'warning' # Change type if there's a warning
 
         return jsonify({
             'success': True,
             'message': response_message,
             'type': response_type,
-            'warnings': warnings
+            'warnings': warnings,
+            'total_items': sum(item['quantity'] for item in get_cart_items(cart_info)),
+            'items': get_cart_items(cart_info)
         })
 
     except Exception as e:
@@ -222,7 +233,7 @@ def sync_cart(usuario):
                 continue
 
             original_quantity = quantity # Store original quantity for comparison
-            quantity = min(quantity, product._existencia )
+            quantity = min(original_quantity, product._existencia )
             if original_quantity > product._existencia :
                 warnings.append(f'La cantidad de {product.nombre} se ajustó a {product._existencia } debido a la disponibilidad.')
 

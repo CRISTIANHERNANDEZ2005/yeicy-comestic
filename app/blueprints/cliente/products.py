@@ -231,8 +231,8 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         CategoriasPrincipales.slug == slug_categoria_principal
     ).first_or_404()
     
-    # Verificar si el producto está activo y tiene existencias
-    if producto.estado != 'activo' or producto._existencia  <= 0:
+    # Verificar si el producto está activo
+    if producto.estado != 'activo':
         from flask import abort
         abort(404)
     

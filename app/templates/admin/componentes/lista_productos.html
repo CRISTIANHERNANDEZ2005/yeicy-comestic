@@ -100,8 +100,8 @@
                                     <div class="text-sm text-gray-500">{{ product.subcategoria_nombre }} / {{ product.seudocategoria_nombre }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm font-semibold text-gray-900">${{ "%.2f"|format(product.precio) }}</div>
-                                    <div class="text-sm text-gray-500">Costo: ${{ "%.2f"|format(product.costo) }}</div>
+                                    <div class="text-sm font-semibold text-gray-900">{{ product.precio }}</div>
+                                    <div class="text-sm text-gray-500">Costo: {{ product.costo }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">{{ product.existencia }} unidades</div>
@@ -209,15 +209,6 @@
                     </a>
                 </div>
             {% endif %}
-        </div>
-    </div>
-    
-    <!-- Notificación de estado -->
-    <div id="notification" class="fixed top-4 right-4 bg-white rounded-lg shadow-lg p-4 transform transition-transform duration-300 translate-x-full flex items-center z-50">
-        <div id="notificationIcon" class="mr-3"></div>
-        <div>
-            <h4 id="notificationTitle" class="font-semibold text-gray-800"></h4>
-            <p id="notificationMessage" class="text-sm text-gray-600"></p>
         </div>
     </div>
     
@@ -355,11 +346,7 @@
                 if (data.success) {
                     // Si el estado no cambió, mostrar mensaje informativo
                     if (data.status_unchanged) {
-                        showNotification(
-                            'Información',
-                            data.message,
-                            'info'
-                        );
+                        window.toast.info(data.message);
                         return;
                     }
                     
@@ -387,11 +374,7 @@
                     }
                     
                     // Mostrar notificación de éxito
-                    showNotification(
-                        'Éxito',
-                        data.message,
-                        'success'
-                    );
+                    window.toast.success(data.message);
                 } else {
                     // Revertir el toggle visualmente
                     toggle.checked = !isActive;
@@ -412,11 +395,7 @@
                     }
                     
                     // Mostrar notificación de error
-                    showNotification(
-                        'Error',
-                        data.message,
-                        'error'
-                    );
+                    window.toast.error(data.message);
                 }
             })
             .catch(error => {
@@ -438,12 +417,7 @@
                     `;
                 }
                 
-                // Mostrar notificación de error
-                showNotification(
-                    'Error',
-                    'No se pudo cambiar el estado del producto. Inténtalo de nuevo.',
-                    'error'
-                );
+                window.toast.error('No se pudo cambiar el estado del producto. Inténtalo de nuevo.');
                 
                 console.error('Error al cambiar estado del producto:', error);
             })
@@ -457,52 +431,12 @@
                 toggle.disabled = false;
             });
         }
-        
-        // Función mejorada para mostrar notificaciones
-        function showNotification(title, message, type) {
-            const notification = document.getElementById('notification');
-            const notificationTitle = document.getElementById('notificationTitle');
-            const notificationMessage = document.getElementById('notificationMessage');
-            const notificationIcon = document.getElementById('notificationIcon');
-            
-            // Configurar el contenido de la notificación
-            notificationTitle.textContent = title;
-            notificationMessage.textContent = message;
-            
-            // Configurar el icono según el tipo
-            if (type === 'success') {
-                notificationIcon.innerHTML = `
-                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                    </div>
-                `;
-            } else if (type === 'error') {
-                notificationIcon.innerHTML = `
-                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                    </div>
-                `;
-            } else if (type === 'info') {
-                notificationIcon.innerHTML = `
-                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                `;
-            }
-            
-            // Mostrar la notificación
-            notification.classList.remove('translate-x-full');
-            
-            // Ocultar la notificación después de 5 segundos
-            setTimeout(() => {
-                notification.classList.add('translate-x-full');
-            }, 5000);
-        }
     </script>
+    {% if error_message %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            window.toast.error('{{ error_message }}');
+        });
+    </script>
+    {% endif %}
 {% endblock %}

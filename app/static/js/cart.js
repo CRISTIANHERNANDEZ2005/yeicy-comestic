@@ -79,6 +79,24 @@ if (typeof ShoppingCart === "undefined") {
       );
     }
 
+    // 🔢 NUEVO: Función para formatear moneda COP
+    formatCurrencyCOP(value) {
+      if (value === null || value === undefined) {
+        return "$ 0";
+      }
+      // Ensure value is a number
+      const numValue = Number(value);
+      if (isNaN(numValue)) {
+        return "$ 0";
+      }
+      return new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0
+      }).format(numValue);
+    }
+
     async syncLocalChanges() {
       if (window.userId) {
         const previousCartItems = JSON.parse(JSON.stringify(this.cartItems)); // Deep copy
@@ -618,8 +636,8 @@ if (typeof ShoppingCart === "undefined") {
 
       itemCount.textContent = `${totalQuantity} ` +
         (totalQuantity === 1 ? "producto" : "productos");
-      subtotalElement.textContent = `$${totalPrice.toFixed(2)}`;
-      totalElement.textContent = `$${totalPrice.toFixed(2)}`;
+      subtotalElement.textContent = this.formatCurrencyCOP(totalPrice);
+      totalElement.textContent = this.formatCurrencyCOP(totalPrice);
 
       container.innerHTML = this.cartItems
         .map(
@@ -657,10 +675,8 @@ if (typeof ShoppingCart === "undefined") {
               item.product.nombre
             }</h4>
             <p class="text-sm text-gray-500">${item.product.marca || ""}</p>
-            <p class="text-pink-600 font-bold text-lg">$${ 
-              item.product.precio != null
-                ? Number(item.product.precio).toFixed(2)
-                : "0.00"
+            <p class="text-pink-600 font-bold text-lg">${ 
+              this.formatCurrencyCOP(item.product.precio)
             }</p>
           </div>
           
@@ -696,9 +712,9 @@ if (typeof ShoppingCart === "undefined") {
               </button>
             </div>
             
-            <p class="text-sm font-bold text-gray-900">$${ 
-              item.subtotal != null ? Number(item.subtotal).toFixed(2) : "0.00"
-            }</p>
+            <p class="text-sm font-bold text-gray-900">
+              ${this.formatCurrencyCOP(item.subtotal)}
+            </p>
           </div>
         </div>
       </div>
@@ -780,10 +796,10 @@ if (typeof ShoppingCart === "undefined") {
       this.cartItems.forEach((item) => {
         message += `• ${item.product.nombre} (x${
           item.quantity
-        }) - $${item.subtotal.toFixed(2)}\n`;
+        }) - ${this.formatCurrencyCOP(item.subtotal)}\n`;
       });
       message += `
-*Total: $${total.toFixed(2)}*\n\n¿Podrían confirmar disponibilidad?`;
+*Total: ${this.formatCurrencyCOP(total)}*\n\n¿Podrían confirmar disponibilidad?`;
 
       const encodedMessage = encodeURIComponent(message);
       const phoneNumber = "3044931438";

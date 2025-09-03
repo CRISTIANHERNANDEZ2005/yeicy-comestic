@@ -7,9 +7,9 @@ from sqlalchemy import or_, and_
 from datetime import datetime, timedelta
 from flask_wtf.csrf import generate_csrf
 
-admin_products_bp = Blueprint('admin_products', __name__, url_prefix='/admin')
+admin_lista_product_bp = Blueprint('admin_products', __name__, url_prefix='/admin')
 
-@admin_products_bp.route('/lista-productos', methods=['GET'])
+@admin_lista_product_bp.route('/lista-productos', methods=['GET'])
 @admin_jwt_required
 def get_all_products(admin_user):
     error_message = None
@@ -126,7 +126,7 @@ def get_all_products(admin_user):
                          csrf_token=generate_csrf())
 
 # Endpoint para cambiar el estado de un producto
-@admin_products_bp.route('/api/products/<string:product_id>/status', methods=['POST'])
+@admin_lista_product_bp.route('/api/products/<string:product_id>/status', methods=['POST'])
 @admin_jwt_required
 def update_product_status(admin_user, product_id):
     try:
@@ -213,7 +213,7 @@ def update_product_status(admin_user, product_id):
         }), 500
 
 # Nuevo endpoint API para filtros en tiempo real
-@admin_products_bp.route('/api/products/filter', methods=['GET'])
+@admin_lista_product_bp.route('/api/products/filter', methods=['GET'])
 @admin_jwt_required
 def filter_products_api(admin_user):
     try:
@@ -320,7 +320,7 @@ def filter_products_api(admin_user):
         }), 500
 
 # Endpoint para obtener subcategorías de una categoría
-@admin_products_bp.route('/api/categories/<string:categoria_id>/subcategories', methods=['GET'])
+@admin_lista_product_bp.route('/api/categories/<string:categoria_id>/subcategories', methods=['GET'])
 @admin_jwt_required
 def get_subcategories(admin_user, categoria_id):
     try:
@@ -343,7 +343,7 @@ def get_subcategories(admin_user, categoria_id):
         }), 500
 
 # Endpoint para obtener seudocategorías de una subcategoría
-@admin_products_bp.route('/api/subcategories/<string:subcategoria_id>/pseudocategories', methods=['GET'])
+@admin_lista_product_bp.route('/api/subcategories/<string:subcategoria_id>/pseudocategories', methods=['GET'])
 @admin_jwt_required
 def get_pseudocategories(admin_user, subcategoria_id):
     try:
@@ -365,7 +365,7 @@ def get_pseudocategories(admin_user, subcategoria_id):
             'message': 'Error al obtener seudocategorías'
         }), 500
 
-@admin_products_bp.route('/api/brands', methods=['GET'])
+@admin_lista_product_bp.route('/api/brands', methods=['GET'])
 @admin_jwt_required
 def get_brands_for_category(admin_user):
     try:
@@ -388,7 +388,7 @@ def get_brands_for_category(admin_user):
             query = query.join(Seudocategorias).join(Subcategorias).filter(Subcategorias.categoria_principal_id == categoria_id)
 
         marcas = [marca[0] for marca in query.order_by(Productos.marca).all() if marca[0]]
-        
+
         # Create a list of dicts for the response, which the JS function expects
         marcas_data = [{'id': marca, 'nombre': marca} for marca in marcas]
 

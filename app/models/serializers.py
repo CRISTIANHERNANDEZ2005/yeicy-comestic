@@ -3,10 +3,17 @@
 def format_currency_cop(value):
     if value is None:
         return "$ 0"
-    # Convert to integer to remove decimals
-    int_value = int(value)
-    # Format with thousands separator and replace comma with dot
-    return f"$ {int_value:,}".replace(",", ".")
+    try:
+        # Ensure value is a float before converting to int, to handle potential non-integer numbers
+        # and to catch non-numeric strings that float() would fail on.
+        float_value = float(value)
+        # Convert to integer to remove decimals
+        int_value = int(float_value)
+        # Format with thousands separator and replace comma with dot
+        return f"$ {int_value:,}".replace(",", ".")
+    except (ValueError, TypeError):
+        # Handle cases where value is not a valid number (e.g., "NaN", non-numeric string)
+        return "$ NaN" # Or "$ 0" or some other indicator, but "$ NaN" is what the user reported.
 
 def usuario_to_dict(usuario):
     """Convierte un objeto Usuario a un diccionario."""

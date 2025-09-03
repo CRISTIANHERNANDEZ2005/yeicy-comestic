@@ -242,12 +242,6 @@
     </style>
     
     <script>
-        // Función para obtener el token CSRF
-        function getCsrfToken() {
-            const tokenElement = document.querySelector('meta[name="csrf-token"]');
-            return tokenElement ? tokenElement.getAttribute('content') : '';
-        }
-        
         // Función para ir a una página específica
         function goToPage(page) {
             // Actualizar el campo de página en el formulario

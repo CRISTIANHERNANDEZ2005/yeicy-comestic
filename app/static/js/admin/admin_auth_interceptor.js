@@ -5,12 +5,16 @@
 // Guardar la función fetch original
 const originalFetchAdmin = window.fetch;
 
+// Función para obtener el token CSRF
+function getCsrfToken() {
+  const tokenElement = document.querySelector('meta[name="csrf-token"]');
+  return tokenElement ? tokenElement.getAttribute('content') : '';
+}
+
 // Sobrescribir la función fetch global para rutas de admin
 window.fetch = async function (resource, options = {}) {
   // Configurar los encabezados por defecto
   const headers = new Headers(options.headers || {});
-
-  
 
   // Crear las nuevas opciones de la petición
   const newOptions = {
@@ -39,7 +43,7 @@ window.fetch = async function (resource, options = {}) {
         console.error("Error de autenticación de administrador (401 genérico). Redirigiendo al login...");
         window.location.href = "/administracion";
         return Promise.reject(new Error("No autorizado como administrador"));
-      }
+        }
       // Si no es un token expirado pero sigue siendo un 401, redirigir también
       console.error("Error de autenticación de administrador (401 genérico). Redirigiendo al login...");
       window.location.href = "/administracion";

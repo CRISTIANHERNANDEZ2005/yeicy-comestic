@@ -1,11 +1,12 @@
 # app/__init__.py
-from flask import Flask, render_template, session
+from flask import Flask, render_template, session, request
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
 from app.models.serializers import categoria_principal_to_dict
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
+from app.utils.admin_jwt_utils import decode_admin_jwt_token
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -41,15 +42,24 @@ def create_app(config_class=Config):
     jwt.init_app(app)
 
     # Configuración de login_manager después de asociar la app
-    login_manager.login_view = 'auth.login'  # type: ignore
-    login_manager.login_message = 'Por favor inicia sesión para acceder a esta página.'  # type: ignore
-    login_manager.login_message_category = 'info'  # type: ignore
+    login_manager.login_view = 'auth.login'
+    login_manager.login_message = 'Por favor inicia sesión para acceder a esta página.'
+    login_manager.login_message_category = 'info'
 
     @login_manager.user_loader
     def load_user(id):
-        # Flask-Login will now only manage regular user sessions.
-        # Admin authentication is handled via JWT.
         return Usuarios.query.get(id)
+
+    # Context processor to make admin_user available in all templates
+    @app.context_processor
+    def inject_admin_user():
+        admin_user = None
+        token = request.cookies.get('admin_jwt')
+        if token:
+            payload = decode_admin_jwt_token(token)
+            if payload and 'user_id' in payload:
+                admin_user = Admins.query.get(payload['user_id'])
+        return dict(admin_user=admin_user)
 
     # Registrar blueprints
     from app.blueprints.cliente.auth import auth_bp
@@ -59,7 +69,7 @@ def create_app(config_class=Config):
     from app.blueprints.cliente.reviews import reviews_bp
     from app.blueprints.admin.auth import admin_auth_bp
     from app.blueprints.admin.dashboard import admin_dashboard_bp
-    from app.blueprints.admin.products import admin_products_bp
+    from app.blueprints.admin.product.lista_product import admin_lista_product_bp
 
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -68,7 +78,7 @@ def create_app(config_class=Config):
     app.register_blueprint(reviews_bp)
     app.register_blueprint(admin_auth_bp)
     app.register_blueprint(admin_dashboard_bp)
-    app.register_blueprint(admin_products_bp)
+    app.register_blueprint(admin_lista_product_bp)
 
     # Register the /perfil route directly with the app
     @app.route('/perfil')

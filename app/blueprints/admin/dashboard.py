@@ -11,9 +11,9 @@ admin_dashboard_bp = Blueprint('admin_dashboard_bp', __name__)
 def dashboard(admin_user): # admin_user will be passed by the decorator
     # Realizar consultas para obtener estadísticas de productos
     total_productos = Productos.query.count()
-    total_unidades_en_stock = db.session.query(func.sum(Productos.existencia)).scalar() or 0
-    sin_stock = Productos.query.filter(Productos.existencia == 0).count()
-    stock_bajo = Productos.query.filter(Productos.existencia > 0, Productos.existencia < Productos.stock_minimo).count()
+    total_unidades_en_stock = db.session.query(func.sum(Productos._existencia)).scalar() or 0
+    sin_stock = Productos.query.filter(Productos._existencia == 0).count()
+    stock_bajo = Productos.query.filter(Productos._existencia > 0, Productos._existencia < Productos.stock_minimo).count()
 
     # Crear un diccionario con las estadísticas
     stats = {
@@ -26,10 +26,10 @@ def dashboard(admin_user): # admin_user will be passed by the decorator
     # --- Lógica para Tareas Pendientes ---
     productos_para_revisar = Productos.query.filter(
         or_(
-            Productos.existencia == 0,
-            Productos.existencia < Productos.stock_minimo
+            Productos._existencia == 0,
+            Productos._existencia < Productos.stock_minimo
         )
-    ).order_by(Productos.existencia.asc()).all()
+    ).order_by(Productos._existencia.asc()).all()
 
     tasks = []
     for producto in productos_para_revisar:

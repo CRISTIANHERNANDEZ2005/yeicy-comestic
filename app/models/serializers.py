@@ -134,6 +134,57 @@ def producto_to_dict(prod):
         'agotado': prod.agotado
     }
 
+def producto_list_to_dict(prod):
+    """Convierte un objeto Producto a un diccionario para la lista de productos (excluye id)."""
+    if not prod:
+        return None
+        
+    categoria_principal_nombre = None
+    subcategoria_nombre = None
+    seudocategoria_nombre = None
+    categoria_principal_slug = None
+    subcategoria_slug = None
+    seudocategoria_slug = None
+
+    if (seudocategoria := getattr(prod, 'seudocategoria', None)):
+        seudocategoria_nombre = getattr(seudocategoria, 'nombre', None)
+        seudocategoria_slug = getattr(seudocategoria, 'slug', None)
+        if (subcategoria := getattr(seudocategoria, 'subcategoria', None)):
+            subcategoria_nombre = getattr(subcategoria, 'nombre', None)
+            subcategoria_slug = getattr(subcategoria, 'slug', None)
+            if (categoria_principal := getattr(subcategoria, 'categoria_principal', None)):
+                categoria_principal_nombre = getattr(categoria_principal, 'nombre', None)
+                categoria_principal_slug = getattr(categoria_principal, 'slug', None)
+
+    return {
+        'id': prod.id,
+        'nombre': prod.nombre,
+        'slug': prod.slug,
+        'descripcion': prod.descripcion,
+        'precio': float(prod.precio) if prod.precio is not None else 0.0,
+        'costo': float(prod.costo) if prod.costo is not None else 0.0,
+        'imagen_url': prod.imagen_url,
+        'existencia': prod.existencia,
+        'stock_minimo': prod.stock_minimo,
+        'stock_maximo': prod.stock_maximo,
+        'seudocategoria_id': prod.seudocategoria_id,
+        'marca': prod.marca,
+        'estado': prod.estado,
+        'created_at': prod.created_at.isoformat() if prod.created_at else None,
+        'updated_at': prod.updated_at.isoformat() if prod.updated_at else None,
+        'categoria_principal_nombre': categoria_principal_nombre,
+        'subcategoria_nombre': subcategoria_nombre,
+        'seudocategoria_nombre': seudocategoria_nombre,
+        'categoria_principal_slug': categoria_principal_slug,
+        'subcategoria_slug': subcategoria_slug,
+        'seudocategoria_slug': seudocategoria_slug,
+        'calificacion_promedio': prod.calificacion_promedio_almacenada,
+        'es_nuevo': prod.es_nuevo,
+        'reseñas_count': len(prod.reseñas) if hasattr(prod, 'reseñas') else 0,
+        'especificaciones': prod.especificaciones or {},
+        'agotado': prod.agotado
+    }
+
 def like_to_dict(like):
     """Convierte un objeto Like a un diccionario."""
     if not like:

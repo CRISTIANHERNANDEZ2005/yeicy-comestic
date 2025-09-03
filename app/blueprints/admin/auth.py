@@ -24,7 +24,8 @@ def validate_credentials():
     
     return jsonify({'valid': True, 'message': 'Credenciales válidas.'}), 200
 
-from app.utils.admin_jwt_utils import generate_admin_jwt_token, admin_jwt_required
+from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies
+from app.utils.admin_jwt_utils import admin_jwt_required
 
 @admin_auth_bp.route('/administracion', methods=['GET', 'POST'])
 def login():
@@ -42,10 +43,10 @@ def login():
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
         # Generar JWT
-        token = generate_admin_jwt_token(admin)
+        access_token = create_access_token(identity=admin.id, additional_claims={"is_admin": True})
 
         response = make_response(jsonify({'success': True, 'redirect': url_for('admin_dashboard_bp.dashboard')}))
-        response.set_cookie('admin_jwt', token, httponly=True, secure=current_app.config.get('SESSION_COOKIE_SECURE', False), samesite='Lax')
+        set_access_cookies(response, access_token)
         return response
 
     return render_template('admin/page/login_admin.html')

@@ -1,7 +1,7 @@
 # app/__init__.py
 from flask import Flask, render_template, session
 from config import Config
-from .extensions import db, bcrypt, migrate, login_manager
+from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
 from app.models.serializers import categoria_principal_to_dict
 from app.blueprints.cliente.auth import perfil
@@ -38,6 +38,7 @@ def create_app(config_class=Config):
     bcrypt.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    jwt.init_app(app)
 
     # Configuración de login_manager después de asociar la app
     login_manager.login_view = 'auth.login'  # type: ignore
@@ -58,6 +59,7 @@ def create_app(config_class=Config):
     from app.blueprints.cliente.reviews import reviews_bp
     from app.blueprints.admin.auth import admin_auth_bp
     from app.blueprints.admin.dashboard import admin_dashboard_bp
+    from app.blueprints.admin.products import admin_products_bp
 
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -66,6 +68,7 @@ def create_app(config_class=Config):
     app.register_blueprint(reviews_bp)
     app.register_blueprint(admin_auth_bp)
     app.register_blueprint(admin_dashboard_bp)
+    app.register_blueprint(admin_products_bp)
 
     # Register the /perfil route directly with the app
     @app.route('/perfil')

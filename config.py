@@ -12,6 +12,13 @@ class Config:
     SQLALCHEMY_POOL_TIMEOUT = 20
     SQLALCHEMY_POOL_PRE_PING = True
     DEBUG = False
+    JWT_TOKEN_LOCATION = ["cookies"]
+    JWT_ACCESS_COOKIE_NAME = "admin_jwt"
+    JWT_COOKIE_CSRF_PROTECT = False
+    JWT_ACCESS_CSRF_HEADER_NAME = ""
+    JWT_ACCESS_CSRF_FIELD_NAME = ""
+    JWT_IDENTITY_CLAIM = 'user_id'
+    ADMIN_JWT_EXPIRATION_MINUTES = 1440
 
 class DevelopmentConfig(Config):
     DEBUG = True

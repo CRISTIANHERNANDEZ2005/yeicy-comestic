@@ -1,0 +1,470 @@
+{% extends 'admin/page/base.html' %}
+{% block content %}
+    <!-- templates/admin/componentes/lista_productos.html -->
+    <div class="container mx-auto px-4 py-6 relative">
+        <!-- Encabezado y controles -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-800 flex items-center">
+                    <svg class="w-8 h-8 mr-3 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                    Gestión de Productos
+                </h1>
+                <p class="text-gray-500 mt-1">Administra tu inventario de productos</p>
+            </div>
+            <div class="flex flex-wrap gap-2">
+                <!-- Botón para agregar nuevo producto -->
+                <a href="#" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-lg hover:from-green-700 hover:to-emerald-800 flex items-center transition-all duration-300 transform hover:scale-105 shadow-md">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Nuevo Producto
+                </a>
+                <a href="{{ url_for('admin_products.get_all_products') }}" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 flex items-center transition-all duration-300 transform hover:scale-105 shadow-sm border border-gray-200">
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                    </svg>
+                    Limpiar
+                </a>
+            </div>
+        </div>
+        
+        <!-- Incluir el componente de filtros -->
+        {% include 'admin/ui/filtro_producto.html' %}
+        
+        <!-- Información de resultados -->
+        <div class="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center">
+            <div class="mb-3 sm:mb-0">
+                <p class="text-sm text-gray-600">
+                    Mostrando
+                    <span class="font-semibold text-blue-600">{{ pagination.last }}</span>
+                    de
+                    <span class="font-semibold text-blue-600">{{ pagination.total }}</span>
+                    productos
+                </p>
+            </div>
+            <div class="flex items-center">
+                <span class="text-sm text-gray-600 mr-2">Productos por página:</span>
+                <select id="perPageSelect" class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+                    <option value="10" {% if pagination.per_page == 10 %} selected {% endif %}>10</option>
+                    <option value="20" {% if pagination.per_page == 20 %} selected {% endif %}>20</option>
+                    <option value="50" {% if pagination.per_page == 50 %} selected {% endif %}>50</option>
+                    <option value="100" {% if pagination.per_page == 100 %} selected {% endif %}>100</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Tabla de productos -->
+        <div class="bg-white shadow-lg rounded-xl overflow-hidden transition-all duration-300 hover:shadow-xl border border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Producto
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Categorías
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Precio
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Existencia
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Estado
+                            </th>
+                            <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
+                                Acciones
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for product in products %}
+                            <tr class="hover:bg-blue-50 transition-colors duration-200" data-product-id="{{ product.id }}">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                                            <img class="h-12 w-12 object-cover" src="{{ product.imagen_url }}" alt="{{ product.nombre }}">
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-semibold text-gray-900">{{ product.nombre }}</div>
+                                            <div class="text-sm text-gray-500">{{ product.marca or 'Sin marca' }}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ product.categoria_principal_nombre }}</div>
+                                    <div class="text-sm text-gray-500">{{ product.subcategoria_nombre }} / {{ product.seudocategoria_nombre }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-semibold text-gray-900">${{ "%.2f"|format(product.precio) }}</div>
+                                    <div class="text-sm text-gray-500">Costo: ${{ "%.2f"|format(product.costo) }}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">{{ product.existencia }} unidades</div>
+                                    <div class="text-xs font-semibold {% if product.agotado %}text-red-600 bg-red-50 px-2 py-1 rounded-full inline-block{% else %}text-green-600 bg-green-50 px-2 py-1 rounded-full inline-block{% endif %}">
+                                        {% if product.agotado %}AGOTADO{% else %}Disponible{% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <!-- Interruptor de estado tipo foco mejorado -->
+                                    <div class="flex items-center">
+                                        <div class="relative inline-block w-14 h-7 mr-2 align-middle select-none">
+                                            <input type="checkbox" id="toggle-{{ product.id }}" class="sr-only" {% if product.estado == 'activo' %}checked{% endif %} onchange="toggleProductStatus('{{ product.id }}', this.checked)">
+                                            <label for="toggle-{{ product.id }}" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out {% if product.estado == 'activo' %}bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg{% else %}bg-gray-300{% endif %}">
+                                                <span class="absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ease-in-out {% if product.estado == 'activo' %}transform translate-x-7{% else %}transform translate-x-0{% endif %} flex items-center justify-center">
+                                                    <!-- Icono para estado activo -->
+                                                    {% if product.estado == 'activo' %}
+                                                        <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                    {% else %}
+                                                        <!-- Icono para estado inactivo -->
+                                                        <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                                        </svg>
+                                                    {% endif %}
+                                                </span>
+                                            </label>
+                                        </div>
+                                        {% if product.es_nuevo %}
+                                            <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                                Nuevo
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <a href="#" class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                        </svg>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% else %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <svg class="w-16 h-16 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        <p class="text-lg font-medium text-gray-500">No se encontraron productos con los filtros aplicados.</p>
+                                        <p class="text-sm text-gray-400 mt-1">Intenta ajustar tus filtros para ver más resultados</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Contenedor de paginación -->
+        <div class="mt-8 flex flex-col items-center bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+            <div class="text-sm text-gray-700 mb-4">
+                Mostrando página
+                <span class="font-semibold text-blue-600">{{ pagination.page }}</span>
+                de
+                <span class="font-semibold text-blue-600">{{ pagination.pages }}</span>
+            </div>
+            
+            <!-- Paginación responsive -->
+            {% if pagination.pages > 1 %}
+                <div class="flex flex-wrap justify-center gap-2">
+                    <!-- Botón anterior -->
+                    <a href="{{ url_for('admin_products.get_all_products', page=pagination.prev_num, **filter_params) if pagination.has_prev else '#' }}" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Anterior
+                    </a>
+                    
+                    <!-- Números de página -->
+                    {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=1) %}
+                        {% if page_num %}
+                            {% if page_num == pagination.page %}
+                                <span class="px-3 py-2 rounded-lg border border-blue-500 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-sm font-medium">
+                                    {{ page_num }}
+                                </span>
+                            {% else %}
+                                <a href="{{ url_for('admin_products.get_all_products', page=page_num, **filter_params) }}" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">
+                                    {{ page_num }}
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <span class="px-3 py-2 text-gray-500">...</span>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    <!-- Botón siguiente -->
+                    <a href="{{ url_for('admin_products.get_all_products', page=pagination.next_num, **filter_params) if pagination.has_next else '#' }}" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center">
+                        Siguiente
+                        <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Notificación de estado -->
+    <div id="notification" class="fixed top-4 right-4 bg-white rounded-lg shadow-lg p-4 transform transition-transform duration-300 translate-x-full flex items-center z-50">
+        <div id="notificationIcon" class="mr-3"></div>
+        <div>
+            <h4 id="notificationTitle" class="font-semibold text-gray-800"></h4>
+            <p id="notificationMessage" class="text-sm text-gray-600"></p>
+        </div>
+    </div>
+    
+    <style>
+        /* Estilos para el interruptor de estado */
+        .toggle-checkbox:checked + .toggle-label {
+            background: linear-gradient(to right, #34d399, #10b981);
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.3), 0 2px 4px -1px rgba(16, 185, 129, 0.2);
+        }
+        
+        .toggle-checkbox:checked + .toggle-label span {
+            transform: translateX(1.75rem);
+        }
+        
+        /* Estilos responsive para la paginación */
+        @media (max-width: 640px) {
+            .flex-wrap.gap-2 {
+                gap: 0.5rem;
+            }
+            
+            .px-4.py-2 {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+            
+            .px-3.py-2 {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.75rem;
+            }
+        }
+    </style>
+    
+    <script>
+        // Función mejorada para cambiar el estado de un producto
+        function toggleProductStatus(productId, isActive) {
+            console.log('Product ID:', productId); // Debugging line
+            console.log('Is Active:', isActive); // Debugging line
+            // Mostrar indicador de carga
+            const toggle = document.getElementById(`toggle-${productId}`);
+            const label = toggle.nextElementSibling;
+            const span = label.querySelector('span');
+            const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+            
+            // Deshabilitar el toggle durante la petición
+            toggle.disabled = true;
+            
+            // Añadir animación de carga
+            span.innerHTML = `
+                <svg class="animate-spin h-3 w-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+            `;
+            
+            // Resaltar la fila durante la operación
+            row.classList.add('bg-blue-100');
+            
+            // Realizar la petición AJAX
+            fetch(`/admin/api/products/${productId}/status`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken()
+                },
+                body: JSON.stringify({
+                    estado: isActive ? 'activo' : 'inactivo'
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Error en la solicitud');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Si el estado no cambió, mostrar mensaje informativo
+                    if (data.status_unchanged) {
+                        showNotification(
+                            'Información',
+                            data.message,
+                            'info'
+                        );
+                        return;
+                    }
+                    
+                    // Actualizar la UI según el nuevo estado
+                    if (data.new_status === 'activo') {
+                        label.classList.remove('bg-gray-300');
+                        label.classList.add('bg-gradient-to-r', 'from-green-400', 'to-emerald-500', 'shadow-lg');
+                        span.classList.add('transform', 'translate-x-7');
+                        span.classList.remove('translate-x-0');
+                        span.innerHTML = `
+                            <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        `;
+                        
+                        // Actualizar la celda de existencia si se activó el producto
+                    } else {
+                        label.classList.add('bg-gray-300');
+                        label.classList.remove('bg-gradient-to-r', 'from-green-400', 'to-emerald-500', 'shadow-lg');
+                        span.classList.remove('transform', 'translate-x-7');
+                        span.classList.add('translate-x-0');
+                        span.innerHTML = `
+                            <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        `;
+                        
+                        // Actualizar la celda de existencia si se desactivó el producto
+                    }
+                    
+                    // Mostrar notificación de éxito
+                    showNotification(
+                        'Éxito',
+                        data.message,
+                        'success'
+                    );
+                } else {
+                    // Revertir el toggle visualmente
+                    toggle.checked = !isActive;
+                    
+                    // Restaurar el icono original
+                    if (isActive) {
+                        span.innerHTML = `
+                            <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                            </svg>
+                        `;
+                    } else {
+                        span.innerHTML = `
+                            <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                            </svg>
+                        `;
+                    }
+                    
+                    // Mostrar notificación de error
+                    showNotification(
+                        'Error',
+                        data.message,
+                        'error'
+                    );
+                }
+            })
+            .catch(error => {
+                // Revertir el toggle visualmente
+                toggle.checked = !isActive;
+                
+                // Restaurar el icono original
+                if (isActive) {
+                    span.innerHTML = `
+                        <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                        </svg>
+                    `;
+                } else {
+                    span.innerHTML = `
+                        <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                        </svg>
+                    `;
+                }
+                
+                // Mostrar notificación de error
+                showNotification(
+                    'Error',
+                    'No se pudo cambiar el estado del producto. Inténtalo de nuevo.',
+                    'error'
+                );
+                
+                console.error('Error al cambiar estado del producto:', error);
+            })
+            .finally(() => {
+                // Restaurar el estado original de la fila
+                row.classList.remove('bg-blue-100');
+                
+                // Habilitar el toggle nuevamente
+                toggle.disabled = false;
+            });
+        }
+        
+        // Función mejorada para mostrar notificaciones
+        function showNotification(title, message, type) {
+            const notification = document.getElementById('notification');
+            const notificationTitle = document.getElementById('notificationTitle');
+            const notificationMessage = document.getElementById('notificationMessage');
+            const notificationIcon = document.getElementById('notificationIcon');
+            
+            // Configurar el contenido de la notificación
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            // Configurar el icono según el tipo
+            if (type === 'success') {
+                notificationIcon.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                    </div>
+                `;
+            } else if (type === 'error') {
+                notificationIcon.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </div>
+                `;
+            } else if (type === 'info') {
+                notificationIcon.innerHTML = `
+                    <div class="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                `;
+            }
+            
+            // Mostrar la notificación
+            notification.classList.remove('translate-x-full');
+            
+            // Ocultar la notificación después de 5 segundos
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+            }, 5000);
+        }
+        
+        // Función para obtener el token CSRF
+        function getCsrfToken() {
+            const tokenElement = document.querySelector('meta[name="csrf-token"]');
+            return tokenElement ? tokenElement.getAttribute('content') : '';
+        }
+        
+        // Actualizar el formulario cuando cambie el número de elementos por página
+        document.getElementById('perPageSelect').addEventListener('change', function () {
+            const form = document.getElementById('filterForm');
+            const perPageInput = document.createElement('input');
+            perPageInput.type = 'hidden';
+            perPageInput.name = 'per_page';
+            perPageInput.value = this.value;
+            form.appendChild(perPageInput);
+            form.submit();
+        });
+    </script>
+{% endblock %}

@@ -45,6 +45,33 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
         db.Index('idx_categoria_principal_slug', 'slug'), # Índice para el slug
     )
 
+    def check_and_update_status(self):
+        """
+        Verifica el estado de todas las subcategorías asociadas a esta categoría principal.
+        Si todas las subcategorías están inactivas, desactiva la categoría principal.
+        Si hay al menos una subcategoría activa, asegura que la categoría principal esté activa.
+        """
+        from app.models.enums import EstadoEnum # Importar aquí para evitar circular
+        
+        # Contar subcategorías activas asociadas a esta categoría principal
+        active_subcategories_count = Subcategorias.query.filter_by(
+            categoria_principal_id=self.id,
+            estado=EstadoEnum.ACTIVO.value
+        ).count()
+
+        if active_subcategories_count == 0:
+            # Si no hay subcategorías activas, desactivar la categoría principal
+            if self.estado != EstadoEnum.INACTIVO.value:
+                self.estado = EstadoEnum.INACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+        else:
+            # Si hay subcategorías activas, asegurar que la categoría principal esté activa
+            if self.estado != EstadoEnum.ACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+
     def __init__(self, nombre, descripcion, estado='activo', id=None):
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
@@ -77,6 +104,39 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
                  'categoria_principal_id'),
         db.Index('idx_subcategoria_slug', 'slug'), # Índice para el slug
     )
+
+    def check_and_update_status(self):
+        """
+        Verifica el estado de todas las pseudocategorías asociadas a esta subcategoría.
+        Si todas las pseudocategorías están inactivas, desactiva la subcategoría.
+        Si hay al menos una pseudocategoría activa, asegura que la subcategoría esté activa.
+        """
+        from app.models.enums import EstadoEnum # Importar aquí para evitar circular
+        
+        # Contar pseudocategorías activas asociadas a esta subcategoría
+        active_pseudocategories_count = Seudocategorias.query.filter_by(
+            subcategoria_id=self.id,
+            estado=EstadoEnum.ACTIVO.value
+        ).count()
+
+        if active_pseudocategories_count == 0:
+            # Si no hay pseudocategorías activas, desactivar la subcategoría
+            if self.estado != EstadoEnum.INACTIVO.value:
+                self.estado = EstadoEnum.INACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+                # Después de actualizar la subcategoría, verificar el estado de la categoría principal
+                if self.categoria_principal:
+                    self.categoria_principal.check_and_update_status()
+        else:
+            # Si hay pseudocategorías activas, asegurar que la subcategoría esté activa
+            if self.estado != EstadoEnum.ACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+                # Después de actualizar la subcategoría, verificar el estado de la categoría principal
+                if self.categoria_principal:
+                    self.categoria_principal.check_and_update_status()
 
     def __init__(self, nombre, descripcion, categoria_principal_id, estado='activo', id=None):
         if not nombre or not nombre.strip():
@@ -113,6 +173,39 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
         db.Index('idx_seudocategoria_slug', 'slug'), # Índice para el slug
     )
 
+    def check_and_update_status(self):
+        """
+        Verifica el estado de todos los productos asociados a esta pseudocategoría.
+        Si todos los productos están inactivos, desactiva la pseudocategoría.
+        Si hay al menos un producto activo, asegura que la pseudocategoría esté activa.
+        """
+        from app.models.enums import EstadoEnum # Importar aquí para evitar circular
+        
+        # Contar productos activos asociados a esta pseudocategoría
+        active_products_count = Productos.query.filter_by(
+            seudocategoria_id=self.id,
+            estado=EstadoEnum.ACTIVO.value
+        ).count()
+
+        if active_products_count == 0:
+            # Si no hay productos activos, desactivar la pseudocategoría
+            if self.estado != EstadoEnum.INACTIVO.value:
+                self.estado = EstadoEnum.INACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+                # Después de actualizar la pseudocategoría, verificar el estado de la subcategoría
+                if self.subcategoria:
+                    self.subcategoria.check_and_update_status()
+        else:
+            # Si hay productos activos, asegurar que la pseudocategoría esté activa
+            if self.estado != EstadoEnum.ACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+                # Después de actualizar la pseudocategoría, verificar el estado de la subcategoría
+                if self.subcategoria:
+                    self.subcategoria.check_and_update_status()
+
     def __init__(self, nombre, descripcion, subcategoria_id, estado='activo', id=None):
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
@@ -140,7 +233,34 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     precio: Mapped[float] = mapped_column(db.Float, nullable=False)
     costo: Mapped[float] = mapped_column(db.Float, nullable=False)
     imagen_url: Mapped[str] = mapped_column(db.String(255), nullable=False)
-    existencia: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    _existencia: Mapped[int] = mapped_column(db.Integer, nullable=False, name='existencia') # Renombrado para el setter
+
+    @property
+    def existencia(self):
+        return self._existencia
+
+    @existencia.setter
+    def existencia(self, value):
+        if value < 0:
+            raise ValueError("La existencia no puede ser negativa")
+        self._existencia = value
+        if self._existencia == 0:
+            from app.models.enums import EstadoEnum # Importar aquí para evitar circular
+            self.estado = EstadoEnum.INACTIVO.value # Desactivar si la existencia es 0
+            db.session.add(self)
+            db.session.commit()
+            # Después de actualizar el producto, verificar el estado de la pseudocategoría
+            if self.seudocategoria:
+                self.seudocategoria.check_and_update_status()
+        else: # Si la existencia es > 0, asegurar que el producto esté activo
+            from app.models.enums import EstadoEnum # Importar aquí para evitar circular
+            if self.estado != EstadoEnum.ACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
+                db.session.add(self)
+                db.session.commit()
+                # Después de actualizar el producto, verificar el estado de la pseudocategoría
+                if self.seudocategoria:
+                    self.seudocategoria.check_and_update_status()
     stock_minimo: Mapped[int] = mapped_column(db.Integer, default=10, nullable=False)
     stock_maximo: Mapped[int] = mapped_column(db.Integer, default=100, nullable=False)
     seudocategoria_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('seudocategorias.id'), nullable=False)
@@ -223,7 +343,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         self.precio = precio
         self.costo = costo
         self.imagen_url = imagen_url.strip()
-        self.existencia = existencia
+        self.existencia = existencia # Usar el setter para inicializar
         self.stock_minimo = stock_minimo
         self.stock_maximo = stock_maximo
         self.seudocategoria_id = seudocategoria_id

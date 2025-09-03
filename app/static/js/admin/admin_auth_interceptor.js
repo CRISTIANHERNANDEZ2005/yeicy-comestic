@@ -22,11 +22,27 @@ window.fetch = async function (resource, options = {}) {
   try {
     const response = await originalFetchAdmin(resource, newOptions);
 
-    // Si la respuesta es 401 (No autorizado) para una ruta de admin, redirigir al login de admin
+    // Clonar la respuesta para poder leer el cuerpo dos veces (una para verificar el mensaje, otra para pasarla)
+    const clonedResponse = response.clone();
+
+    // Si la respuesta es 401 (No autorizado) para una ruta de admin
     if (response.status === 401 && typeof resource === "string" && resource.startsWith("/admin/")) {
-      console.error("Error de autenticación de administrador. Redirigiendo al login...");
-      // Redirigir al login de admin
-      window.location.href = "/administracion"; // Asumiendo que esta es la ruta de login de admin
+      try {
+        const errorData = await clonedResponse.json();
+        if (errorData && errorData.msg === "Token has expired") {
+          console.error("Token de administrador expirado. Redirigiendo al login...");
+          window.location.href = "/administracion";
+          return Promise.reject(new Error("Token de administrador expirado"));
+        }
+      } catch (e) {
+        // No es un JSON o no contiene el mensaje esperado, manejar como un 401 genérico
+        console.error("Error de autenticación de administrador (401 genérico). Redirigiendo al login...");
+        window.location.href = "/administracion";
+        return Promise.reject(new Error("No autorizado como administrador"));
+      }
+      // Si no es un token expirado pero sigue siendo un 401, redirigir también
+      console.error("Error de autenticación de administrador (401 genérico). Redirigiendo al login...");
+      window.location.href = "/administracion";
       return Promise.reject(new Error("No autorizado como administrador"));
     }
 

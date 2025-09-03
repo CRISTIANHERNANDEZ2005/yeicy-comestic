@@ -47,6 +47,9 @@ window.fetch = async function (resource, options = {}) {
   try {
     const response = await originalFetch(resource, newOptions);
 
+    // Clonar la respuesta para poder leer el cuerpo dos veces
+    const clonedResponse = response.clone();
+
     // Si la respuesta es 401 (No autorizado), manejar según el contexto
     if (response.status === 401) {
       // Si la petición es de login o register, no redirigir, solo devolver el error
@@ -57,26 +60,38 @@ window.fetch = async function (resource, options = {}) {
         return response;
       }
 
-      // NUEVO: Si la petición es a una API (que no sea de auth), no redirigir la página completa.
-      // En su lugar, permite que el código que hizo la llamada maneje el 401.
-      if (typeof resource === "string" && resource.startsWith("/api/")) {
-        console.warn("API call returned 401. Allowing original fetch to resolve with 401 status.");
-        // No hacemos nada más aquí, simplemente devolvemos la respuesta 401
-        // para que el código que hizo la llamada (e.g., ReviewsManager) la maneje.
-        return response;
+      try {
+        const errorData = await clonedResponse.json();
+        if (errorData && errorData.msg === "Token has expired") {
+          console.error("Token de cliente expirado. Redirigiendo a la página principal...");
+          // Limpiar token y datos de usuario antes de redirigir
+          if (window.auth && typeof window.auth.setAuthToken === 'function') {
+            window.auth.setAuthToken(null);
+          }
+          localStorage.removeItem("user");
+          window.location.href = "/"; // Redirigir a la página principal
+          return Promise.reject(new Error("Token de cliente expirado"));
+        }
+      } catch (e) {
+        // No es un JSON o no contiene el mensaje esperado, manejar como un 401 genérico
+        console.error("Error de autenticación (401 genérico). Redirigiendo a la página principal...");
+        // Limpiar token y datos de usuario antes de redirigir
+        if (window.auth && typeof window.auth.setAuthToken === 'function') {
+          window.auth.setAuthToken(null);
+        }
+        localStorage.removeItem("user");
+        window.location.href = "/"; // Redirigir a la página principal
+        return Promise.reject(new Error("No autorizado"));
       }
 
-      // Para otras rutas protegidas (navegación de página), mostrar notificación y redirigir
-      console.error("Error de autenticación. Redirigiendo al login...");
-      if (typeof showNotification === "function") {
-        showNotification(
-          "Tu sesión ha expirado. Por favor, inicia sesión nuevamente.",
-          "error"
-        );
+      // Si no es un token expirado pero sigue siendo un 401, redirigir también
+      console.error("Error de autenticación (401 genérico). Redirigiendo a la página principal...");
+      // Limpiar token y datos de usuario antes de redirigir
+      if (window.auth && typeof window.auth.setAuthToken === 'function') {
+        window.auth.setAuthToken(null);
       }
-      setTimeout(() => {
-        window.location.href = "/login";
-      }, 2000);
+      localStorage.removeItem("user");
+      window.location.href = "/"; // Redirigir a la página principal
       return Promise.reject(new Error("No autorizado"));
     }
 

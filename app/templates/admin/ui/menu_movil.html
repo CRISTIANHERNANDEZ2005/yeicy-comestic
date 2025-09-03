@@ -6,11 +6,11 @@
         </button>
     </div>
     <nav class="mt-5 px-2">
-        <a href="#" class="sidebar-link active group flex items-center px-4 py-3 text-base font-medium rounded-md bg-blue-800 text-white">
+        <a href="/admin/dashboard" class="sidebar-link {% if request.path == '/admin/dashboard' %}active bg-blue-800 text-white{% else %}text-blue-200 hover:bg-blue-800 hover:text-white{% endif %} group flex items-center px-4 py-3 text-base font-medium rounded-md">
             <i class="fas fa-tachometer-alt mr-3"></i>
             Dashboard
         </a>
-        <a href="#" class="sidebar-link mt-1 group flex items-center px-4 py-3 text-base font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
+        <a href="/admin/lista-productos" class="sidebar-link mt-1 {% if request.path == '/admin/lista-productos' %}active bg-blue-800 text-white{% else %}text-blue-200 hover:bg-blue-800 hover:text-white{% endif %} group flex items-center px-4 py-3 text-base font-medium rounded-md">
             <i class="fas fa-boxes mr-3"></i>
             Productos
         </a>

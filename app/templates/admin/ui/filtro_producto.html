@@ -1,0 +1,552 @@
+<!-- Botón flotante de filtros para móvil y desktop -->
+<button onclick="toggleFilters()" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-xl flex items-center justify-center z-30 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 animate-pulse-slow">
+    <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+    </svg>
+</button>
+
+<!-- Overlay para móvil -->
+<div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden transition-opacity duration-300 md:hidden" onclick="toggleFilters()"></div>
+
+<!-- Menú lateral de filtros -->
+<div id="filtersPanel" class="fixed top-0 right-0 h-full w-full md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+    <div class="p-6 bg-gradient-to-b from-white to-gray-50 h-full">
+        <!-- Encabezado del menú -->
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                    <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                    </svg>
+                    Filtros de Búsqueda
+                </h2>
+                <p class="text-gray-500 text-sm mt-1">Refina tus resultados</p>
+            </div>
+            <button onclick="toggleFilters()" class="text-gray-500 hover:text-gray-700 focus:outline-none rounded-full p-2 hover:bg-gray-100 transition-colors duration-200">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        
+        <!-- Formulario de filtros -->
+        <form id="filterForm" method="GET" class="space-y-6">
+            <!-- Filtro por nombre -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    Nombre
+                </label>
+                <input type="text" name="nombre" value="{{ filter_params.get('nombre', '') }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+            </div>
+            
+            <!-- Filtro por estado -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                    </svg>
+                    Estado
+                </label>
+                <div class="custom-select-container">
+                    <div class="custom-select" data-name="estado">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-value">Todos</span>
+                            <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option" data-value="">Todos</div>
+                            <div class="custom-select-option {% if filter_params.get('estado') == 'activo' %}selected{% endif %}" data-value="activo">Activo</div>
+                            <div class="custom-select-option {% if filter_params.get('estado') == 'inactivo' %}selected{% endif %}" data-value="inactivo">Inactivo</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtro por categoría -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Categoría
+                </label>
+                <div class="custom-select-container">
+                    <div class="custom-select" data-name="categoria_id">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-value">Todas</span>
+                            <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option" data-value="">Todas</div>
+                            {% for categoria in categorias %}
+                                <div class="custom-select-option {% if filter_params.get('categoria_id') == categoria.id %}selected{% endif %}" data-value="{{ categoria.id }}">
+                                    {{ categoria.nombre }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtro por subcategoría -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Subcategoría
+                </label>
+                <div class="custom-select-container">
+                    <div class="custom-select" data-name="subcategoria_id">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-value">Todas</span>
+                            <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option" data-value="">Todas</div>
+                            {% for subcategoria in subcategorias %}
+                                <div class="custom-select-option {% if filter_params.get('subcategoria_id') == subcategoria.id %}selected{% endif %}" data-value="{{ subcategoria.id }}">
+                                    {{ subcategoria.nombre }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtro por seudocategoría -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Seudocategoría
+                </label>
+                <div class="custom-select-container">
+                    <div class="custom-select" data-name="seudocategoria_id">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-value">Todas</span>
+                            <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option" data-value="">Todas</div>
+                            {% for seudocategoria in seudocategorias %}
+                                <div class="custom-select-option {% if filter_params.get('seudocategoria_id') == seudocategoria.id %}selected{% endif %}" data-value="{{ seudocategoria.id }}">
+                                    {{ seudocategoria.nombre }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtro por marca -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    Marca
+                </label>
+                <div class="custom-select-container">
+                    <div class="custom-select" data-name="marca">
+                        <div class="custom-select-trigger">
+                            <span class="custom-select-value">Todas</span>
+                            <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-select-option" data-value="">Todas</div>
+                            {% for marca in marcas %}
+                                <div class="custom-select-option {% if filter_params.get('marca') == marca %}selected{% endif %}" data-value="{{ marca }}">
+                                    {{ marca }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtro por rango de precio -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    Rango de Precio
+                </label>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Precio Mínimo</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                            <input type="number" step="0.01" name="min_price" value="{{ filter_params.get('min_price', '') }}" class="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Precio Máximo</label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
+                            <input type="number" step="0.01" name="max_price" value="{{ filter_params.get('max_price', '') }}" class="w-full pl-8 pr-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filtros de estado especial -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path>
+                    </svg>
+                    Filtros Especiales
+                </label>
+                <div class="space-y-3 bg-gray-50 p-4 rounded-lg">
+                    <div class="flex items-center p-2 hover:bg-white rounded-md transition-colors duration-200">
+                        <input type="checkbox" id="agotados" name="agotados" value="true" {% if filter_params.get('agotados') == 'true' %} checked {% endif %} class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all duration-200">
+                        <label for="agotados" class="ml-3 block text-sm text-gray-700">Solo agotados</label>
+                    </div>
+                    <div class="flex items-center p-2 hover:bg-white rounded-md transition-colors duration-200">
+                        <input type="checkbox" id="nuevos" name="nuevos" value="true" {% if filter_params.get('nuevos') == 'true' %} checked {% endif %} class="h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all duration-200">
+                        <label for="nuevos" class="ml-3 block text-sm text-gray-700">Solo productos nuevos</label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ordenamiento -->
+            <div class="filter-section">
+                <label class="block text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                    <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"></path>
+                    </svg>
+                    Ordenamiento
+                </label>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Ordenar por</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" data-name="sort_by">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-value">Fecha de creación</span>
+                                    <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-options">
+                                    <div class="custom-select-option {% if filter_params.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}" data-value="created_at">Fecha de creación</div>
+                                    <div class="custom-select-option {% if filter_params.get('sort_by') == 'nombre' %}selected{% endif %}" data-value="nombre">Nombre</div>
+                                    <div class="custom-select-option {% if filter_params.get('sort_by') == 'precio' %}selected{% endif %}" data-value="precio">Precio</div>
+                                    <div class="custom-select-option {% if filter_params.get('sort_by') == 'existencia' %}selected{% endif %}" data-value="existencia">Existencia</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Orden</label>
+                        <div class="custom-select-container">
+                            <div class="custom-select" data-name="sort_order">
+                                <div class="custom-select-trigger">
+                                    <span class="custom-select-value">Descendente</span>
+                                    <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                                    </svg>
+                                </div>
+                                <div class="custom-select-options">
+                                    <div class="custom-select-option {% if filter_params.get('sort_order', 'desc') == 'desc' %}selected{% endif %}" data-value="desc">Descendente</div>
+                                    <div class="custom-select-option {% if filter_params.get('sort_order') == 'asc' %}selected{% endif %}" data-value="asc">Ascendente</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="flex justify-between pt-4 border-t border-gray-200 mt-6">
+                <button type="button" onclick="toggleFilters()" class="px-5 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-all duration-300 transform hover:scale-105 shadow-sm border border-gray-200">
+                    Cancelar
+                </button>
+                <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 transform hover:scale-105 shadow-md">
+                    Aplicar Filtros
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* Animación de pulso lenta para el botón flotante */
+    @keyframes pulse-slow {
+        0% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        }
+    }
+    
+    .animate-pulse-slow {
+        animation: pulse-slow 3s infinite;
+    }
+    
+    /* Estilos para los selects personalizados */
+    .custom-select-container {
+        position: relative;
+        width: 100%;
+    }
+    
+    .custom-select {
+        position: relative;
+        width: 100%;
+    }
+    
+    .custom-select-trigger {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        background-color: white;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    }
+    
+    .custom-select-trigger:hover {
+        border-color: #9ca3af;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .custom-select-trigger:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+    }
+    
+    .custom-select-value {
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 500;
+    }
+    
+    .custom-select-arrow {
+        width: 1.25rem;
+        height: 1.25rem;
+        flex-shrink: 0;
+        transition: transform 0.3s ease;
+        color: #6b7280;
+    }
+    
+    .custom-select.open .custom-select-arrow {
+        transform: rotate(180deg);
+    }
+    
+    .custom-select-options {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        margin-top: 0.5rem;
+        background-color: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        z-index: 10;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.3s ease;
+        max-height: 200px; /* Aproximadamente 8 elementos */
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #d1d5db #f3f4f6;
+    }
+    
+    .custom-select.open .custom-select-options {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+    
+    .custom-select-option {
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-radius: 0.25rem;
+        margin: 0.25rem;
+    }
+    
+    .custom-select-option:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .custom-select-option.selected {
+        background-color: #eff6ff;
+        color: #1d4ed8;
+        font-weight: 600;
+    }
+    
+    /* Estilos para el scrollbar */
+    .custom-select-options::-webkit-scrollbar {
+        width: 8px;
+    }
+    
+    .custom-select-options::-webkit-scrollbar-track {
+        background: #f3f4f6;
+        border-radius: 4px;
+    }
+    
+    .custom-select-options::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 4px;
+    }
+    
+    .custom-select-options::-webkit-scrollbar-thumb:hover {
+        background: #9ca3af;
+    }
+    
+    /* Estilos para las secciones de filtros */
+    .filter-section {
+        position: relative;
+        padding-bottom: 1rem;
+    }
+    
+    .filter-section:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+    }
+</style>
+
+<script>
+    // Función para inicializar los selects personalizados
+    function initCustomSelects() {
+        const customSelects = document.querySelectorAll('#filtersPanel .custom-select');
+        
+        customSelects.forEach(select => {
+            const trigger = select.querySelector('.custom-select-trigger');
+            const options = select.querySelector('.custom-select-options');
+            const valueDisplay = select.querySelector('.custom-select-value');
+            const optionElements = select.querySelectorAll('.custom-select-option');
+            const selectName = select.getAttribute('data-name');
+            
+            // Establecer el valor inicial
+            const selectedOption = select.querySelector('.custom-select-option.selected');
+            if (selectedOption) {
+                valueDisplay.textContent = selectedOption.textContent;
+            }
+            
+            // Abrir/cerrar el select
+            trigger.addEventListener('click', function(e) {
+                e.stopPropagation();
+                // Cerrar otros selects abiertos
+                customSelects.forEach(otherSelect => {
+                    if (otherSelect !== select && otherSelect.classList.contains('open')) {
+                        otherSelect.classList.remove('open');
+                    }
+                });
+                
+                select.classList.toggle('open');
+            });
+            
+            // Seleccionar una opción
+            optionElements.forEach(option => {
+                option.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Quitar la clase selected de todas las opciones
+                    optionElements.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Añadir la clase selected a la opción seleccionada
+                    this.classList.add('selected');
+                    
+                    // Actualizar el valor mostrado
+                    valueDisplay.textContent = this.textContent;
+                    
+                    // Cerrar el select
+                    select.classList.remove('open');
+                    
+                    // Actualizar el campo oculto en el formulario
+                    let hiddenInput = document.querySelector(`input[name="${selectName}"]`);
+                    if (!hiddenInput) {
+                        hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = selectName;
+                        document.getElementById('filterForm').appendChild(hiddenInput);
+                    }
+                    hiddenInput.value = this.getAttribute('data-value');
+                    
+                    // Si es el select de categoría, recargar las subcategorías
+                    if (selectName === 'categoria_id') {
+                        const form = document.getElementById('filterForm');
+                        form.submit();
+                    }
+                });
+            });
+        });
+    }
+    
+    // Función para alternar la visibilidad del panel de filtros
+    function toggleFilters() {
+        const panel = document.getElementById('filtersPanel');
+        const overlay = document.getElementById('overlay');
+        
+        // Alternar clases para animación
+        panel.classList.toggle('translate-x-full');
+        overlay.classList.toggle('hidden');
+        
+        // Añadir efecto de desenfoque al contenido principal cuando el menú está abierto
+        if (!panel.classList.contains('translate-x-full')) {
+            document.body.classList.add('overflow-hidden', 'md:overflow-visible');
+            // Inicializar los selects personalizados cuando se abre el panel
+            setTimeout(initCustomSelects, 300);
+        } else {
+            document.body.classList.remove('overflow-hidden', 'md:overflow-visible');
+        }
+    }
+    
+    // Cerrar el menú al presionar la tecla Escape
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            const panel = document.getElementById('filtersPanel');
+            if (!panel.classList.contains('translate-x-full')) {
+                toggleFilters();
+            }
+        }
+    });
+    
+    // Cerrar los selects al hacer clic fuera
+    document.addEventListener('click', function(event) {
+        const panel = document.getElementById('filtersPanel');
+        if (!panel.contains(event.target) && !panel.classList.contains('translate-x-full')) {
+            const customSelects = document.querySelectorAll('#filtersPanel .custom-select');
+            customSelects.forEach(select => {
+                if (select.classList.contains('open')) {
+                    select.classList.remove('open');
+                }
+            });
+        }
+    });
+</script>

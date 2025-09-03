@@ -8,8 +8,6 @@ from app.models.domains.user_models import Admins # Import Admins model
 
 admin_dashboard_bp = Blueprint('admin_dashboard_bp', __name__)
 
-
-
 @admin_dashboard_bp.route('/admin/dashboard')
 @admin_jwt_required
 def dashboard(admin_user): # admin_user will be passed by the decorator
@@ -51,4 +49,4 @@ def dashboard(admin_user): # admin_user will be passed by the decorator
                            admin_user=admin_user, 
                            stats=stats, 
                            tasks=tasks,
-                           csrf_token=generate_csrf()) # Pasar el token CSRF
+                           csrf_token=generate_csrf) # Pasar el token CSRF

@@ -11,7 +11,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 def generate_admin_jwt_token(admin_user: Admins) -> str:
     """Genera un token JWT para un usuario administrador."""
     secret = current_app.config.get('SECRET_KEY', 'super-secret')
-    token_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 60)
+    token_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440)
     
     payload = {
         'user_id': admin_user.id,

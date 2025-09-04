@@ -354,9 +354,9 @@ function updateProductsTable(products, pagination) {
                        <div class="relative inline-block w-14 h-7 mr-2 align-middle select-none">
                            <input type="checkbox" id="toggle-${
                              product.id
-                           }" class="sr-only" ${
+                           }" class="sr-only toggle-product-status" data-product-id="${product.id}" ${
         product.estado === "activo" ? "checked" : ""
-      } onchange="toggleProductStatus('${product.id}', this.checked)">
+      }>
                            <label for="toggle-${
                              product.id
                            }" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out ${
@@ -433,9 +433,7 @@ function updatePagination(pagination) {
   // Only add navigation buttons if there's more than one page
   if (pagination.pages > 1) {
     paginationHTML += `
-           <a href="#" onclick="goToPage(${
-             pagination.prev_num
-           })" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium ${
+           <a href="#" data-page="${pagination.prev_num}" class="pagination-link px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium ${
     !pagination.has_prev
       ? "text-gray-400 cursor-not-allowed"
       : "text-gray-700 hover:bg-gray-50 transition-colors duration-200"
@@ -451,7 +449,7 @@ function updatePagination(pagination) {
     const endPage = Math.min(pagination.pages, pagination.page + 2);
 
     if (startPage > 1) {
-      paginationHTML += `<a href="#" onclick="goToPage(1)" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">1</a>`;
+      paginationHTML += `<a href="#" data-page="1" class="pagination-link px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">1</a>`;
       if (startPage > 2) {
         paginationHTML += `<span class="px-3 py-2 text-gray-500">...</span>`;
       }
@@ -461,7 +459,7 @@ function updatePagination(pagination) {
       if (i === pagination.page) {
         paginationHTML += `<span class="px-3 py-2 rounded-lg border border-blue-500 bg-gradient-to-r from-blue-600 to-indigo-700 text-white text-sm font-medium" title="Página actual ${i}">${i}</span>`;
       } else {
-        paginationHTML += `<a href="#" onclick="goToPage(${i})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200" title="Ir a la página ${i}">${i}</a>`;
+        paginationHTML += `<a href="#" data-page="${i}" class="pagination-link px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200" title="Ir a la página ${i}">${i}</a>`;
       }
     }
 
@@ -469,13 +467,11 @@ function updatePagination(pagination) {
       if (endPage < pagination.pages - 1) {
         paginationHTML += `<span class="px-3 py-2 text-gray-500">...</span>`;
       }
-      paginationHTML += `<a href="#" onclick="goToPage(${pagination.pages})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">${pagination.pages}</a>`;
+      paginationHTML += `<a href="#" data-page="${pagination.pages}" class="pagination-link px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200">${pagination.pages}</a>`;
     }
 
     paginationHTML += `
-           <a href="#" onclick="goToPage(${
-             pagination.next_num
-           })" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium ${
+           <a href="#" data-page="${pagination.next_num}" class="pagination-link px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium ${
     !pagination.has_next
       ? "text-gray-400 cursor-not-allowed"
       : "text-gray-700 hover:bg-gray-50 transition-colors duration-200"
@@ -516,7 +512,7 @@ function updateResultsCounter(pagination, products) {
        `;
 }
 
-function goToPage(page) {
+window.goToPage = function(page) {
   let pageInput = document.querySelector('input[name="page"]');
   if (!pageInput) {
     pageInput = document.createElement("input");
@@ -530,7 +526,10 @@ function goToPage(page) {
 }
 
 function resetFilters() {
-  document.getElementById("filterForm").reset();
+  const filterForm = document.getElementById("filterForm");
+  if(filterForm) {
+    filterForm.reset();
+  }
 
   document
     .querySelectorAll("#filtersPanel .custom-select")
@@ -622,6 +621,144 @@ function showNotification(title, message, type) {
   }, 5000);
 }
 
+
+window.toggleProductStatus = function(productId, isActive) {
+    // Mostrar indicador de carga
+    const toggle = document.getElementById(`toggle-${productId}`);
+    if (!toggle) {
+        console.error(`No se encontró el toggle para el producto ${productId}`);
+        return;
+    }
+    
+    const label = toggle.nextElementSibling;
+    const span = label.querySelector('span');
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    
+    // Deshabilitar el toggle durante la petición
+    toggle.disabled = true;
+    
+    // Añadir animación de carga
+    span.innerHTML = `
+        <svg class="animate-spin h-3 w-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    `;
+    
+    // Resaltar la fila durante la operación
+    if (row) {
+        row.classList.add('bg-blue-100');
+    }
+    
+    // Realizar la petición AJAX
+    fetch(`/admin/api/products/${productId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            estado: isActive ? 'activo' : 'inactivo'
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.message || 'Error en la solicitud');
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            // Si el estado no cambió, mostrar mensaje informativo
+            if (data.status_unchanged) {
+                window.toast.info(data.message);
+                return;
+            }
+            
+            // Actualizar la UI según el nuevo estado
+            if (data.new_status === 'activo') {
+                label.classList.remove('bg-gray-300');
+                label.classList.add('bg-gradient-to-r', 'from-green-400', 'to-emerald-500', 'shadow-lg');
+                span.classList.add('transform', 'translate-x-7');
+                span.classList.remove('translate-x-0');
+                span.innerHTML = `
+                    <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                `;
+            } else {
+                label.classList.add('bg-gray-300');
+                label.classList.remove('bg-gradient-to-r', 'from-green-400', 'to-emerald-500', 'shadow-lg');
+                span.classList.remove('transform', 'translate-x-7');
+                span.classList.add('translate-x-0');
+                span.innerHTML = `
+                    <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                `;
+            }
+            
+            // Mostrar notificación de éxito
+            window.toast.success(data.message);
+        } else {
+            // Revertir el toggle visualmente
+            toggle.checked = !isActive;
+            
+            // Restaurar el icono original
+            if (isActive) {
+                span.innerHTML = `
+                    <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                    </svg>
+                `;
+            } else {
+                span.innerHTML = `
+                    <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                    </svg>
+                `;
+            }
+            
+            // Mostrar notificación de error
+            window.toast.error(data.message);
+        }
+    })
+    .catch(error => {
+        // Revertir el toggle visualmente
+        toggle.checked = !isActive;
+        
+        // Restaurar el icono original
+        if (isActive) {
+            span.innerHTML = `
+                <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                </svg>
+            `;
+        } else {
+            span.innerHTML = `
+                <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                </svg>
+            `;
+        }
+        
+        window.toast.error('No se pudo cambiar el estado del producto. Inténtalo de nuevo.');
+        
+        console.error('Error al cambiar estado del producto:', error);
+    })
+    .finally(() => {
+        // Restaurar el estado original de la fila
+        if (row) {
+            row.classList.remove('bg-blue-100');
+        }
+        
+        // Habilitar el toggle nuevamente
+        toggle.disabled = false;
+    });
+}
+
 document.addEventListener("keydown", function (event) {
   if (event.key === "Escape") {
     const panel = document.getElementById("filtersPanel");
@@ -633,11 +770,64 @@ document.addEventListener("keydown", function (event) {
 
 
 function setupFilterEventListeners() {
-  // "Limpiar Filtros" button
-  const resetButton = document.querySelector('#filtersPanel button[onclick="resetFilters()"]');
-  if (resetButton) {
-    resetButton.onclick = null; // Remove inline handler
-    resetButton.addEventListener('click', resetFilters);
+  // "Limpiar Filtros" button in panel
+  const resetPanelButton = document.querySelector('#filtersPanel button[onclick="resetFilters()"]');
+  if (resetPanelButton) {
+    resetPanelButton.onclick = null; // Remove inline handler
+    resetPanelButton.addEventListener('click', resetFilters);
+  }
+
+  // Main "Limpiar Filtros" button
+  const resetMainButton = document.getElementById('reset-filters-main-button');
+  if (resetMainButton) {
+    resetMainButton.addEventListener('click', resetFilters);
+  }
+
+  // Per page select
+  const perPageSelect = document.getElementById('perPageSelect');
+  if (perPageSelect) {
+    perPageSelect.addEventListener('change', function () {
+        let perPageInput = document.querySelector('input[name="per_page"]');
+        if (!perPageInput) {
+            perPageInput = document.createElement('input');
+            perPageInput.type = 'hidden';
+            perPageInput.name = 'per_page';
+            document.getElementById('filterForm').appendChild(perPageInput);
+        }
+        perPageInput.value = this.value;
+        let pageInput = document.querySelector('input[name="page"]');
+        if (pageInput) {
+            pageInput.value = '1';
+        }
+        applyFilters();
+    });
+  }
+
+  // Pagination links (delegation)
+  const paginationContainer = document.querySelector(".mt-8.flex.flex-col.items-center");
+  if (paginationContainer) {
+      paginationContainer.addEventListener('click', function(e) {
+          const target = e.target.closest('.pagination-link');
+          if (target && !target.classList.contains('cursor-not-allowed')) {
+              e.preventDefault();
+              const page = target.dataset.page;
+              if (page) {
+                  window.goToPage(page);
+              }
+          }
+      });
+  }
+
+  // Product status toggle (delegation)
+  const tableBody = document.getElementById('products-tbody');
+  if (tableBody) {
+      tableBody.addEventListener('change', function(e) {
+          if (e.target.classList.contains('toggle-product-status')) {
+              const productId = e.target.dataset.productId;
+              const isActive = e.target.checked;
+              window.toggleProductStatus(productId, isActive);
+          }
+      });
   }
 
   // Name input
@@ -672,7 +862,7 @@ function setupFilterEventListeners() {
   }
 
   // Toggle filters button (floating and close)
-  const toggleButtons = document.querySelectorAll('#filtersPanel button[onclick="toggleFilters()"]');
+  const toggleButtons = document.querySelectorAll('button[onclick="toggleFilters()"]');
   toggleButtons.forEach(button => {
     button.onclick = null; // Remove inline handler
     button.addEventListener('click', toggleFilters);
@@ -690,3 +880,4 @@ function setupFilterEventListeners() {
 }
 
 document.addEventListener('DOMContentLoaded', setupFilterEventListeners);
+document.addEventListener('content-loaded', setupFilterEventListeners);

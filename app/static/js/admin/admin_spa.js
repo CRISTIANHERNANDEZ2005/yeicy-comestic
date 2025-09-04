@@ -40,10 +40,8 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the main content area
             mainContentContainer.innerHTML = newContent;
 
-            // Re-initialize any scripts or event listeners for the new content
-            if (typeof setupFilterEventListeners === 'function') {
-                setupFilterEventListeners();
-            }
+            // Dispatch a custom event to signal that new content has been loaded
+            document.dispatchEvent(new CustomEvent('content-loaded', { detail: { container: mainContentContainer } }));
 
             // Update URL in browser history
             if (pushState) {
@@ -52,9 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Update active link in sidebar
             updateActiveLink(url);
-
-            // Re-execute scripts in the new content (if any)
-            reExecuteScripts(mainContentContainer);
 
             // Close mobile sidebar if open
             const mobileSidebar = document.getElementById('mobile-sidebar');
@@ -100,17 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    function reExecuteScripts(element) {
-        const scripts = element.querySelectorAll('script');
-        scripts.forEach(oldScript => {
-            const newScript = document.createElement('script');
-            Array.from(oldScript.attributes).forEach(attr => {
-                newScript.setAttribute(attr.name, attr.value);
-            });
-            newScript.textContent = oldScript.textContent;
-            oldScript.parentNode.replaceChild(newScript, oldScript);
-        });
-    }
+    
 
     // Handle initial page load and popstate events
     window.addEventListener('popstate', function(event) {

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, request
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos
 from app.extensions import db
@@ -45,8 +45,11 @@ def dashboard(admin_user): # admin_user will be passed by the decorator
         })
     # ------------------------------------
 
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     return render_template('admin/componentes/dashboard.html', 
-                           admin_user=admin_user, 
+                           admin_user=admin_user,
                            stats=stats, 
                            tasks=tasks,
-                           csrf_token=generate_csrf) # Pasar el token CSRF
+                           csrf_token=generate_csrf(),
+                           is_ajax=is_ajax) # Pasar el token CSRF

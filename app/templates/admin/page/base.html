@@ -101,7 +101,7 @@
             </header>
 
             <!-- Contenido de la página -->
-            <main class="flex-1 relative focus:outline-none">
+            <main id="main-content-container" class="flex-1 relative focus:outline-none">
                 {% block content %}
                 {% endblock %}
             </main>
@@ -142,5 +142,12 @@
     {% include 'admin/ui/notifications.html' %}
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin/filtro_producto.js') }}"></script>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity duration-300 opacity-0">
+        <div class="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/admin/admin_spa.js') }}"></script>
 </body>
 </html>

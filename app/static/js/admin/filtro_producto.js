@@ -42,14 +42,21 @@ function hideTableSpinner() {
  * Utiliza delegación de eventos para manejar clics en opciones,
  * lo que permite que las opciones cargadas dinámicamente (subcategorías, marcas) funcionen correctamente.
  */
+
+let isGlobalClickListenerAttached = false;
+
 function initCustomSelects() {
   const customSelects = document.querySelectorAll("#filtersPanel .custom-select");
 
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('.custom-select-trigger')) {
-      customSelects.forEach(select => select.classList.remove('open'));
-    }
-  });
+  if (!isGlobalClickListenerAttached) {
+    document.addEventListener('click', (e) => {
+        const openSelect = document.querySelector('.custom-select.open');
+        if (openSelect && !e.target.closest('.custom-select')) {
+            openSelect.classList.remove('open');
+        }
+    });
+    isGlobalClickListenerAttached = true;
+  }
 
   customSelects.forEach((select) => {
     const trigger = select.querySelector(".custom-select-trigger");
@@ -624,6 +631,62 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
-document.addEventListener("DOMContentLoaded", function () {
+
+function setupFilterEventListeners() {
+  // "Limpiar Filtros" button
+  const resetButton = document.querySelector('#filtersPanel button[onclick="resetFilters()"]');
+  if (resetButton) {
+    resetButton.onclick = null; // Remove inline handler
+    resetButton.addEventListener('click', resetFilters);
+  }
+
+  // Name input
+  const nameInput = document.querySelector('#filtersPanel input[name="nombre"]');
+  if (nameInput) {
+    nameInput.onkeyup = null; // Remove inline handler
+    nameInput.addEventListener('keyup', debounceFilter);
+  }
+
+  // Price inputs
+  const minPriceInput = document.querySelector('#filtersPanel input[name="min_price"]');
+  if (minPriceInput) {
+    minPriceInput.onchange = null; // Remove inline handler
+    minPriceInput.addEventListener('change', applyFilters);
+  }
+  const maxPriceInput = document.querySelector('#filtersPanel input[name="max_price"]');
+  if (maxPriceInput) {
+    maxPriceInput.onchange = null; // Remove inline handler
+    maxPriceInput.addEventListener('change', applyFilters);
+  }
+
+  // Checkboxes (agotados, nuevos)
+  const agotadosCheckbox = document.getElementById('agotados');
+  if (agotadosCheckbox) {
+    agotadosCheckbox.onchange = null; // Remove inline handler
+    agotadosCheckbox.addEventListener('change', applyFilters);
+  }
+  const nuevosCheckbox = document.getElementById('nuevos');
+  if (nuevosCheckbox) {
+    nuevosCheckbox.onchange = null; // Remove inline handler
+    nuevosCheckbox.addEventListener('change', applyFilters);
+  }
+
+  // Toggle filters button (floating and close)
+  const toggleButtons = document.querySelectorAll('#filtersPanel button[onclick="toggleFilters()"]');
+  toggleButtons.forEach(button => {
+    button.onclick = null; // Remove inline handler
+    button.addEventListener('click', toggleFilters);
+  });
+
+  // Overlay click
+  const overlay = document.getElementById('overlay');
+  if (overlay) {
+    overlay.onclick = null; // Remove inline handler
+    overlay.addEventListener('click', toggleFilters);
+  }
+
+  // Initial call to initCustomSelects for custom selects
   initCustomSelects();
-});
+}
+
+document.addEventListener('DOMContentLoaded', setupFilterEventListeners);

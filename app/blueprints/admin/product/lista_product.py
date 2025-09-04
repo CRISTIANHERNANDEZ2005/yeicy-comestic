@@ -7,9 +7,7 @@ from sqlalchemy import or_, and_
 from datetime import datetime, timedelta
 from flask_wtf.csrf import generate_csrf
 
-admin_lista_product_bp = Blueprint(
-    'admin_products', __name__, url_prefix='/admin')
-
+admin_lista_product_bp = Blueprint('admin_products', __name__, url_prefix='/admin')
 
 @admin_lista_product_bp.route('/lista-productos', methods=['GET'])
 @admin_jwt_required

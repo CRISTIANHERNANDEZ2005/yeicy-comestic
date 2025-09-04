@@ -40,6 +40,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the main content area
             mainContentContainer.innerHTML = newContent;
 
+            // Re-initialize any scripts or event listeners for the new content
+            if (typeof setupFilterEventListeners === 'function') {
+                setupFilterEventListeners();
+            }
+
             // Update URL in browser history
             if (pushState) {
                 history.pushState({ path: url }, '', url);

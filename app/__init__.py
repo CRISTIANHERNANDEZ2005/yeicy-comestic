@@ -7,6 +7,8 @@ from app.models.serializers import categoria_principal_to_dict
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
 from app.utils.admin_jwt_utils import decode_admin_jwt_token
+from datetime import datetime
+import pytz
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -70,6 +72,7 @@ def create_app(config_class=Config):
     from app.blueprints.admin.auth import admin_auth_bp
     from app.blueprints.admin.dashboard import admin_dashboard_bp
     from app.blueprints.admin.product.lista_product import admin_lista_product_bp
+    from app.blueprints.admin.product.detalle_product import admin_detalle_product_bp
 
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -79,6 +82,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_auth_bp)
     app.register_blueprint(admin_dashboard_bp)
     app.register_blueprint(admin_lista_product_bp)
+    app.register_blueprint(admin_detalle_product_bp)
 
     # Register the /perfil route directly with the app
     @app.route('/perfil')
@@ -147,6 +151,20 @@ def create_app(config_class=Config):
     def slugify_filter(s):
         return s.lower().replace(" ", "-").replace("_", "-")
     app.jinja_env.filters['slugify'] = slugify_filter
+
+    def datetimeformat_filter(value, format='%Y-%m-%d %H:%M:%S'):
+        if value is None:
+            return ""
+        # Ensure the datetime object is timezone-aware (assuming UTC if naive)
+        if value.tzinfo is None:
+            value = pytz.utc.localize(value)
+        
+        # Convert to Colombian time (America/Bogota)
+        colombia_tz = pytz.timezone('America/Bogota')
+        colombian_time = value.astimezone(colombia_tz)
+        
+        return colombian_time.strftime(format)
+    app.jinja_env.filters['datetimeformat'] = datetimeformat_filter
 
     # Manejador de errores 404
     @app.errorhandler(404)

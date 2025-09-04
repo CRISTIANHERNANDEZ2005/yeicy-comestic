@@ -40,6 +40,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Update the main content area
             mainContentContainer.innerHTML = newContent;
 
+            // Update the document title
+            const newTitle = doc.querySelector('title')?.textContent;
+            if (newTitle) {
+                document.title = newTitle;
+            }
+
             // Dispatch a custom event to signal that new content has been loaded
             document.dispatchEvent(new CustomEvent('content-loaded', { detail: { container: mainContentContainer } }));
 
@@ -113,6 +119,31 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadContent(href);
             }
         });
+    });
+
+    // Intercept clicks on product detail links
+    document.addEventListener('click', function(e) {
+        const targetLink = e.target.closest('.spa-product-detail-link');
+        if (targetLink) {
+            const href = targetLink.getAttribute('href');
+            if (href && href.startsWith('/admin/producto/')) {
+                e.preventDefault();
+                loadContent(href);
+            }
+        }
+    });
+
+    // Intercept clicks on back links
+    document.addEventListener('click', function(e) {
+        const targetLink = e.target.closest('.spa-back-link');
+        if (targetLink) {
+            const href = targetLink.getAttribute('href');
+            // Intercepta cualquier enlace con la clase spa-back-link
+            if (href) {
+                e.preventDefault();
+                loadContent(href);
+            }
+        }
     });
 
     // Initial load to set active link and handle direct access

@@ -152,6 +152,13 @@ def create_app(config_class=Config):
         return s.lower().replace(" ", "-").replace("_", "-")
     app.jinja_env.filters['slugify'] = slugify_filter
 
+    # Dictionary for Spanish month names
+    SPANISH_MONTHS = {
+        1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
+        5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
+        9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+    }
+
     def datetimeformat_filter(value, format='%Y-%m-%d %H:%M:%S'):
         if value is None:
             return ""
@@ -162,8 +169,15 @@ def create_app(config_class=Config):
         # Convert to Colombian time (America/Bogota)
         colombia_tz = pytz.timezone('America/Bogota')
         colombian_time = value.astimezone(colombia_tz)
-        
-        return colombian_time.strftime(format)
+
+        # Get the month name in Spanish
+        spanish_month_name = SPANISH_MONTHS[colombian_time.month]
+
+        # Replace the %B directive with the Spanish month name
+        temp_format = format.replace('%B', '___SPANISH_MONTH___')
+        formatted_string_with_placeholder = colombian_time.strftime(temp_format)
+        final_formatted_string = formatted_string_with_placeholder.replace('___SPANISH_MONTH___', spanish_month_name)
+        return final_formatted_string
     app.jinja_env.filters['datetimeformat'] = datetimeformat_filter
 
     # Manejador de errores 404

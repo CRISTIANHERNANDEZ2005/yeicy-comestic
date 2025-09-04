@@ -159,7 +159,7 @@ def producto_to_dict(prod):
         'seudocategoria_id': prod.seudocategoria_id,
         'marca': prod.marca,
         'estado': prod.estado,
-        'created_at': prod.created_at.isoformat() if prod.created_at else None,
+        'created_at': prod.created_at if prod.created_at else None,
         'updated_at': prod.updated_at.isoformat() if prod.updated_at else None,
 
         # Categorías
@@ -225,7 +225,7 @@ def producto_list_to_dict(prod):
         'seudocategoria_id': prod.seudocategoria_id,
         'marca': prod.marca,
         'estado': prod.estado,
-        'created_at': prod.created_at.isoformat() if prod.created_at else None,
+        'created_at': prod.created_at if prod.created_at else None,
         'updated_at': prod.updated_at.isoformat() if prod.updated_at else None,
         'categoria_principal_nombre': categoria_principal_nombre,
         'subcategoria_nombre': subcategoria_nombre,

@@ -18,7 +18,7 @@ class Config:
     JWT_ACCESS_CSRF_HEADER_NAME = ""
     JWT_ACCESS_CSRF_FIELD_NAME = ""
     JWT_IDENTITY_CLAIM = 'user_id'
-    ADMIN_JWT_EXPIRATION_MINUTES = 1440
+    ADMIN_JWT_EXPIRATION_MINUTES = 10080
 
 class DevelopmentConfig(Config):
     DEBUG = True

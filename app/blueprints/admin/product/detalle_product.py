@@ -10,9 +10,9 @@ admin_detalle_product_bp = Blueprint(
     'admin_detalle', __name__, url_prefix='/admin')
 
 
-@admin_detalle_product_bp.route('/producto/<string:product_id>', methods=['GET'])
+@admin_detalle_product_bp.route('/producto/<string:product_slug>', methods=['GET'])
 @admin_jwt_required
-def get_product_detail(admin_user, product_id):
+def get_product_detail(admin_user, product_slug):
     """
     Maneja la solicitud para ver los detalles de un producto específico en el panel de administración.
     """
@@ -23,7 +23,7 @@ def get_product_detail(admin_user, product_id):
             joinedload(Productos.seudocategoria).joinedload(
                 Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal),
             joinedload(Productos.reseñas).joinedload(Reseñas.usuario)
-        ).get_or_404(product_id)
+        ).filter_by(slug=product_slug).first_or_404()
 
         # Serializar el producto a un diccionario. El serializador se encarga de la lógica compleja.
         product_data = producto_to_dict(product)

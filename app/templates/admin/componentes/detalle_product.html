@@ -78,7 +78,7 @@
         class="container mx-auto px-4 py-8">
         <!-- Botón Volver -->
         <div class="mb-6 fade-in">
-            <a href="{{ url_for('admin_products.get_all_products') }}" class="inline-flex items-center text-indigo-600 hover:text-indigo-800 transition font-medium">
+            <a href="{{ url_for('admin_products.get_all_products') }}" class="spa-back-link inline-flex items-center text-indigo-600 hover:text-indigo-800 transition font-medium">
                 <i class="fas fa-arrow-left mr-2"></i>
                 Volver a la lista de productos
             </a>
@@ -440,7 +440,7 @@
                             <div>
                                 <p class="font-bold text-gray-800">Creación del producto</p>
                                 <p class="text-gray-600">Producto agregado al inventario</p>
-                                <p class="text-gray-500 text-sm mt-1">1 de mayo de 2023 - 09:45 AM</p>
+                                <p class="text-gray-500 text-sm mt-1">{{ product.created_at|datetimeformat('%d de %B de %Y - %I:%M %p') }}</p>
                             </div>
                         </div>
                     </div>

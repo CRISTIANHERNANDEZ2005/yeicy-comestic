@@ -64,13 +64,11 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
             if self.estado != EstadoEnum.INACTIVO.value:
                 self.estado = EstadoEnum.INACTIVO.value
                 db.session.add(self)
-                db.session.commit()
         else:
             # Si hay subcategorías activas, asegurar que la categoría principal esté activa
             if self.estado != EstadoEnum.ACTIVO.value:
                 self.estado = EstadoEnum.ACTIVO.value
                 db.session.add(self)
-                db.session.commit()
 
     def __init__(self, nombre, descripcion, estado='activo', id=None):
         if not nombre or not nombre.strip():
@@ -124,7 +122,6 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
             if self.estado != EstadoEnum.INACTIVO.value:
                 self.estado = EstadoEnum.INACTIVO.value
                 db.session.add(self)
-                db.session.commit()
                 # Después de actualizar la subcategoría, verificar el estado de la categoría principal
                 if self.categoria_principal:
                     self.categoria_principal.check_and_update_status()
@@ -133,7 +130,6 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
             if self.estado != EstadoEnum.ACTIVO.value:
                 self.estado = EstadoEnum.ACTIVO.value
                 db.session.add(self)
-                db.session.commit()
                 # Después de actualizar la subcategoría, verificar el estado de la categoría principal
                 if self.categoria_principal:
                     self.categoria_principal.check_and_update_status()
@@ -192,7 +188,6 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
             if self.estado != EstadoEnum.INACTIVO.value:
                 self.estado = EstadoEnum.INACTIVO.value
                 db.session.add(self)
-                db.session.commit()
                 # Después de actualizar la pseudocategoría, verificar el estado de la subcategoría
                 if self.subcategoria:
                     self.subcategoria.check_and_update_status()
@@ -201,7 +196,6 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
             if self.estado != EstadoEnum.ACTIVO.value:
                 self.estado = EstadoEnum.ACTIVO.value
                 db.session.add(self)
-                db.session.commit()
                 # Después de actualizar la pseudocategoría, verificar el estado de la subcategoría
                 if self.subcategoria:
                     self.subcategoria.check_and_update_status()
@@ -248,7 +242,6 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
             from app.models.enums import EstadoEnum # Importar aquí para evitar circular
             self.estado = EstadoEnum.INACTIVO.value # Desactivar si la existencia es 0
             db.session.add(self)
-            db.session.commit()
             # Después de actualizar el producto, verificar el estado de la pseudocategoría
             if self.seudocategoria:
                 self.seudocategoria.check_and_update_status()
@@ -257,7 +250,6 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
             if self.estado != EstadoEnum.ACTIVO.value:
                 self.estado = EstadoEnum.ACTIVO.value
                 db.session.add(self)
-                db.session.commit()
                 # Después de actualizar el producto, verificar el estado de la pseudocategoría
                 if self.seudocategoria:
                     self.seudocategoria.check_and_update_status()

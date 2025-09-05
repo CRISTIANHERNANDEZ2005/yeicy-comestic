@@ -352,8 +352,6 @@ def filter_products_api(admin_user):
         }), 500
 
 # Endpoint para obtener subcategorías de una categoría
-
-
 @admin_lista_product_bp.route('/api/categories/<string:categoria_id>/subcategories', methods=['GET'])
 @admin_jwt_required
 def get_subcategories(admin_user, categoria_id):
@@ -402,7 +400,6 @@ def get_pseudocategories(admin_user, subcategoria_id):
             'success': False,
             'message': 'Error al obtener seudocategorías'
         }), 500
-
 
 @admin_lista_product_bp.route('/api/brands', methods=['GET'])
 @admin_jwt_required

@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, make_response, current_app
+from datetime import timedelta
 from app.models.domains.user_models import Admins
 from app.extensions import db, bcrypt
 from flask_login import login_user, logout_user, login_required
@@ -43,7 +44,8 @@ def login():
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
         # Generar JWT
-        access_token = create_access_token(identity=admin.id, additional_claims={"is_admin": True})
+        admin_jwt_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440) # Default to 24 hours if not set
+        access_token = create_access_token(identity=admin.id, additional_claims={"is_admin": True}, expires_delta=timedelta(minutes=admin_jwt_expiration_minutes))
 
         response = make_response(jsonify({'success': True, 'redirect': url_for('admin_dashboard_bp.dashboard')}))
         set_access_cookies(response, access_token)

@@ -73,6 +73,7 @@ def create_app(config_class=Config):
     from app.blueprints.admin.dashboard import admin_dashboard_bp
     from app.blueprints.admin.product.lista_product import admin_lista_product_bp
     from app.blueprints.admin.product.detalle_product import admin_detalle_product_bp
+    from app.blueprints.admin.product.crear_product import admin_crear_product_bp
 
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -83,6 +84,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_dashboard_bp)
     app.register_blueprint(admin_lista_product_bp)
     app.register_blueprint(admin_detalle_product_bp)
+    app.register_blueprint(admin_crear_product_bp)
 
     # Register the /perfil route directly with the app
     @app.route('/perfil')

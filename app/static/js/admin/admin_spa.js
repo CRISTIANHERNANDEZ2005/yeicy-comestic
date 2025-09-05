@@ -75,6 +75,9 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // Exponer loadContent globalmente para que otros scripts puedan usarla
+    window.loadAdminContent = loadContent;
+
     function updateActiveLink(currentUrl) {
         // Normalize current URL pathname (remove trailing slash if present, unless it's just '/')
         let currentPathname = new URL(currentUrl, window.location.origin).pathname;

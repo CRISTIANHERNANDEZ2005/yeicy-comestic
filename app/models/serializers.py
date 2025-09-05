@@ -136,8 +136,6 @@ def producto_to_dict(prod):
         antiguedad_dias = (datetime.utcnow() - prod.created_at).days
 
     # --- Datos adicionales ---
-    # Simulado, ya que no está en el modelo
-    impuestos = 19
     # Simulado, se necesitaría un modelo de ventas
     ventas_unidades = len(prod.reseñas) * 3 if hasattr(prod, 'reseñas') else 42
 
@@ -184,7 +182,6 @@ def producto_to_dict(prod):
         # --- Campos Enriquecidos ---
         'margen_ganancia': margen_ganancia,
         'antiguedad_dias': antiguedad_dias,
-        'impuestos': impuestos,
         'ventas_unidades': ventas_unidades,
         'existencia_porcentaje': existencia_porcentaje
     }

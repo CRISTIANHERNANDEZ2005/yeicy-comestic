@@ -55,6 +55,6 @@ def get_product_detail(admin_user, product_slug):
     except Exception as e:
         # Loguear el error para depuración
         current_app.logger.error(
-            f"Error al cargar el detalle del producto {product_id}: {e}", exc_info=True)
+            f"Error al cargar el detalle del producto {product_slug}: {e}", exc_info=True)
         # Mostrar una página de error genérica al usuario
         abort(500, description="Ocurrió un error interno al cargar los detalles del producto.")

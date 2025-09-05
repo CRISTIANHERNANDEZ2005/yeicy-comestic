@@ -146,6 +146,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Intercept clicks on general SPA links
+    document.addEventListener('click', function(e) {
+        const targetLink = e.target.closest('.spa-link');
+        if (targetLink) {
+            const href = targetLink.getAttribute('href');
+            if (href && href.startsWith('/admin/')) { // Only intercept admin links
+                e.preventDefault();
+                loadContent(href);
+            }
+        }
+    });
+
     // Initial load to set active link and handle direct access
     updateActiveLink(window.location.pathname + window.location.search);
 });

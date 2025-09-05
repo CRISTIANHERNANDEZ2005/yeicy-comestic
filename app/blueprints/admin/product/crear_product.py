@@ -25,64 +25,90 @@ def create_product(admin_user):
     
     elif request.method == 'POST':
         try:
-            # Obtener datos del formulario
-            nombre = request.form.get('nombre')
-            marca = request.form.get('marca')
-            descripcion = request.form.get('descripcion')
-            imagen_url = request.form.get('imagen_url')
-            precio = float(request.form.get('precio', 0))
-            costo = float(request.form.get('costo', 0))
-            existencia = int(request.form.get('existencia', 0))
-            stock_minimo = int(request.form.get('stock_minimo', 10))
-            stock_maximo = int(request.form.get('stock_maximo', 100))
-            seudocategoria_id = request.form.get('seudocategoria_id')
-            especificaciones_json = request.form.get('especificaciones', '{}')
-            
-            current_app.logger.info(f"DEBUG: seudocategoria_id from form: {seudocategoria_id}")
-            current_app.logger.info(f"DEBUG: marca from form: {marca}")
-            
-            # Validaciones básicas
-            if not nombre or not descripcion or not imagen_url or precio <= 0 or costo <= 0 or existencia < 0:
-                return jsonify({
-                    'success': False,
-                    'message': 'Todos los campos obligatorios deben ser completados correctamente'
-                }), 400
-            
-            if precio <= costo:
-                return jsonify({
-                    'success': False,
-                    'message': 'El precio de venta debe ser mayor que el costo'
-                }), 400
+            # --- 1. Obtención de datos ---
+            data = request.form
+            nombre = data.get('nombre')
+            marca = data.get('marca')
+            descripcion = data.get('descripcion')
+            imagen_url = data.get('imagen_url')
+            precio_str = data.get('precio')
+            costo_str = data.get('costo')
+            existencia_str = data.get('existencia')
+            stock_minimo_str = data.get('stock_minimo', '10')
+            stock_maximo_str = data.get('stock_maximo', '100')
+            seudocategoria_id = data.get('seudocategoria_id')
+            especificaciones_json = data.get('especificaciones', '{}')
 
-            if not seudocategoria_id: # Add this check
+            # --- 2. Validaciones Profesionales ---
+            errors = []
+            if not nombre:
+                errors.append('El nombre del producto es obligatorio.')
+            if not marca:
+                errors.append('La marca del producto es obligatoria.')
+            if not descripcion:
+                errors.append('La descripción del producto es obligatoria.')
+            if not imagen_url:
+                errors.append('La URL de la imagen es obligatoria.')
+            if not seudocategoria_id:
+                errors.append('Debe seleccionar una seudocategoría.')
+
+            # Conversión y validación de números
+            try:
+                precio = float(precio_str)
+                if precio <= 0:
+                    errors.append('El precio debe ser un número positivo.')
+            except (ValueError, TypeError):
+                errors.append('El formato del precio no es válido.')
+                precio = 0
+
+            try:
+                costo = float(costo_str)
+                if costo <= 0:
+                    errors.append('El costo debe ser un número positivo.')
+            except (ValueError, TypeError):
+                errors.append('El formato del costo no es válido.')
+                costo = 0
+
+            if 'El formato del precio no es válido.' not in errors and 'El formato del costo no es válido.' not in errors:
+                if precio <= costo:
+                    errors.append('El precio de venta debe ser mayor que el costo.')
+            
+            try:
+                existencia = int(existencia_str)
+                if existencia < 0:
+                    errors.append('La existencia no puede ser negativa.')
+            except (ValueError, TypeError):
+                errors.append('El formato de la existencia no es válido.')
+
+            # Si hay errores de validación, devolverlos todos juntos
+            if errors:
+                return jsonify({'success': False, 'message': ' '.join(errors)}), 400
+
+            # --- 3. Verificación de Unicidad (Slug) ---
+            from slugify import slugify
+            slug = slugify(nombre)
+            if Productos.query.filter_by(slug=slug).first():
                 return jsonify({
                     'success': False,
-                    'message': 'Debe seleccionar una seudocategoría'
-                }), 400
-            
-            if not marca: # Add this check for marca
-                return jsonify({
-                    'success': False,
-                    'message': 'Debe ingresar una marca para el producto'
-                }), 400
-            
-            # Verificar que la seudocategoría exista
+                    'message': f'Ya existe un producto con el nombre "{nombre}". Por favor, elige otro.'
+                }), 409  # 409 Conflict es más apropiado aquí
+
+            # --- 4. Verificación de Entidades Relacionadas ---
             seudocategoria = Seudocategorias.query.get(seudocategoria_id)
             if not seudocategoria:
                 return jsonify({
                     'success': False,
-                    'message': 'La seudocategoría seleccionada no existe'
+                    'message': 'La seudocategoría seleccionada ya no existe. Por favor, recarga la página.'
                 }), 400
-            
-            # Parsear especificaciones JSON
+
+            # --- 5. Procesamiento y Creación del Objeto ---
             try:
                 especificaciones = json.loads(especificaciones_json)
                 if not isinstance(especificaciones, dict):
                     especificaciones = {}
             except json.JSONDecodeError:
                 especificaciones = {}
-            
-            # Crear el nuevo producto
+
             nuevo_producto = Productos(
                 nombre=nombre,
                 marca=marca,
@@ -90,33 +116,29 @@ def create_product(admin_user):
                 imagen_url=imagen_url,
                 precio=precio,
                 costo=costo,
-                existencia=existencia,
-                stock_minimo=stock_minimo,
-                stock_maximo=stock_maximo,
+                existencia=int(existencia_str),
+                stock_minimo=int(stock_minimo_str),
+                stock_maximo=int(stock_maximo_str),
                 seudocategoria_id=seudocategoria_id,
                 especificaciones=especificaciones
             )
-            
-            # Guardar en la base de datos
+
+            # --- 6. Persistencia en Base de Datos ---
             db.session.add(nuevo_producto)
             db.session.commit()
             
-            # Actualizar el estado de la seudocategoría y categorías superiores
             seudocategoria.check_and_update_status()
             
-            # Devolver respuesta exitosa
             return jsonify({
                 'success': True,
-                'message': 'Producto creado exitosamente',
+                'message': 'Producto creado exitosamente.',
                 'product_id': nuevo_producto.id,
                 'product_slug': nuevo_producto.slug
             }), 201
             
         except ValueError as e:
-            return jsonify({
-                'success': False,
-                'message': f'Error en los datos proporcionados: {str(e)}'
-            }), 400
+            # Este error ahora es menos probable gracias a las validaciones de arriba
+            return jsonify({'success': False, 'message': f'Error en los datos proporcionados: {str(e)}'}), 400
         except Exception as e:
             # Loguear el error para depuración
             current_app.logger.error(

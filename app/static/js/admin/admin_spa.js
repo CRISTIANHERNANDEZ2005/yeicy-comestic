@@ -104,8 +104,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    
-
     // Handle initial page load and popstate events
     window.addEventListener('popstate', function(event) {
         if (event.state && event.state.path) {
@@ -117,35 +115,11 @@ document.addEventListener('DOMContentLoaded', function() {
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
-            if (href && href.startsWith('/admin/')) { // Only intercept admin links
+            if (href && href.startsWith('/admin/') && href !== '/admin/producto/crear') { // Only intercept admin links
                 e.preventDefault();
                 loadContent(href);
             }
         });
-    });
-
-    // Intercept clicks on product detail links
-    document.addEventListener('click', function(e) {
-        const targetLink = e.target.closest('.spa-product-detail-link');
-        if (targetLink) {
-            const href = targetLink.getAttribute('href');
-            if (href && href.startsWith('/admin/producto/')) {
-                e.preventDefault();
-                loadContent(href);
-            }
-        }
-    });
-
-    // Intercept clicks on edit product links
-    document.addEventListener('click', function(e) {
-        const targetLink = e.target.closest('.spa-edit-product-link');
-        if (targetLink) {
-            const href = targetLink.getAttribute('href');
-            if (href && href.startsWith('/admin/producto/editar/')) {
-                e.preventDefault();
-                loadContent(href);
-            }
-        }
     });
 
     // Intercept clicks on back links
@@ -166,7 +140,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const targetLink = e.target.closest('.spa-link');
         if (targetLink) {
             const href = targetLink.getAttribute('href');
-            if (href && href.startsWith('/admin/')) { // Only intercept admin links
+            if (href && href.startsWith('/admin/') && href !== '/admin/producto/crear') { // Only intercept admin links
                 e.preventDefault();
                 loadContent(href);
             }

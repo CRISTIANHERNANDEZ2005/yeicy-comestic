@@ -28,13 +28,10 @@ def edit_product_page(admin_user, product_id):
     selected_subcategoria_id = product.seudocategoria.subcategoria.id if product.seudocategoria and product.seudocategoria.subcategoria else None
     selected_categoria_principal_id = product.seudocategoria.subcategoria.categoria_principal.id if product.seudocategoria and product.seudocategoria.subcategoria and product.seudocategoria.subcategoria.categoria_principal else None
 
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
     return render_template(
         'admin/componentes/editar_product.html',
         product=product_data,
         csrf_token=generate_csrf(),
-        is_ajax=is_ajax,
         selected_seudocategoria_id=selected_seudocategoria_id,
         selected_subcategoria_id=selected_subcategoria_id,
         selected_categoria_principal_id=selected_categoria_principal_id

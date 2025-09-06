@@ -40,17 +40,12 @@ def get_product_detail(admin_user, product_slug):
         reviews_data = [resena_to_dict(
             review) for review in product.reseñas]
 
-        # Determinar si la solicitud es AJAX para carga parcial de la página
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-
         # Renderizar la plantilla con los datos del producto
         return render_template(
             'admin/componentes/detalle_product.html',
             product=product_data,
             reviews=reviews_data,
-            csrf_token=generate_csrf(),
-            is_ajax=is_ajax
-        )
+            csrf_token=generate_csrf())
 
     except Exception as e:
         # Loguear el error para depuración

@@ -6,7 +6,7 @@ function initializeEditarProductForm() {
     return;
   }
 
-  const productId = form.dataset.productId;
+  const productSlug = form.dataset.productSlug;
 
   // Asegurarse de que todos los elementos necesarios existan antes de continuar
   const imagenUrlInput = document.getElementById("imagen_url");
@@ -661,7 +661,7 @@ function initializeEditarProductForm() {
     submitBtn.classList.add("btn-disabled");
     submitText.innerHTML = '<span class="loading-spinner mr-2"></span> Guardando...';
 
-    fetch(`/admin/api/producto/editar/${productId}`, {
+    fetch(`/admin/api/producto/editar/${productSlug}`, {
       method: "PUT",
       body: formData,
     })

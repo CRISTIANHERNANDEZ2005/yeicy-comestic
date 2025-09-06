@@ -1,8 +1,18 @@
-function initializeCrearProductForm() {
+let priceChartInstance; // Declare priceChartInstance in the global scope
+
+function initializeEditarProductForm() {
+  console.log('DEBUG: initializeEditarProductForm() called.');
   // Elementos del DOM
   const form = document.getElementById("product-form");
-  // Si el formulario no existe, significa que no estamos en la página de creación de productos, salimos.
+  // Si el formulario no existe, significa que no estamos en la página de edición de productos, salimos.
   if (!form) {
+    console.log('DEBUG: Product form not found, exiting.');
+    return;
+  }
+
+  const productId = form.dataset.productId; // Obtener el ID del producto del atributo data
+  if (!productId) {
+    console.error("DEBUG: No product ID found for editing.");
     return;
   }
 
@@ -81,12 +91,10 @@ function initializeCrearProductForm() {
     !priceChartCanvas
   ) {
     console.warn(
-      "Faltan elementos críticos en el DOM para inicializar crear_product.js"
+      "DEBUG: Missing critical DOM elements for initializing editar_product.js"
     );
     return;
   }
-
-  let priceChartInstance; // Declare priceChartInstance locally
 
   // Destruir la instancia anterior del gráfico si existe
   if (priceChartInstance) {
@@ -124,7 +132,6 @@ function initializeCrearProductForm() {
 
   // Previsualización de imagen
   imagenUrlInput.oninput = function () {
-    // Usar oninput directamente para evitar duplicación de listeners
     const url = this.value;
     if (url) {
       previewImage.src = url;
@@ -161,8 +168,6 @@ function initializeCrearProductForm() {
       return true;
     }
   }
-
-  
 
   // Validación de stock
   function validateStock() {
@@ -241,31 +246,28 @@ function initializeCrearProductForm() {
     })}`;
 
     // Actualizar gráfico
-    if (priceChartInstance && precio > 0 && costo > 0 && precio > costo) {
-      priceChartInstance.data.datasets[0].data = [costo, precio - costo];
-      priceChartInstance.update();
-    } else if (priceChartInstance) {
-      priceChartInstance.data.datasets[0].data = [0, 0];
-      priceChartInstance.update();
+    if (window.priceChartInstance && precio > 0 && costo > 0 && precio > costo) {
+      window.priceChartInstance.data.datasets[0].data = [costo, precio - costo];
+      window.priceChartInstance.update();
+    } else if (window.priceChartInstance) {
+      window.priceChartInstance.data.datasets[0].data = [0, 0];
+      window.priceChartInstance.update();
     }
   }
 
   precioInput.oninput = function () {
-    // Usar oninput directamente
     validatePrices();
     updateFinancialMetrics();
     updateFormStatus();
   };
 
   costoInput.oninput = function () {
-    // Usar oninput directamente
     validatePrices();
     updateFinancialMetrics();
     updateFormStatus();
   };
 
   existenciaInput.oninput = function () {
-    // Usar oninput directamente
     updateFinancialMetrics();
     validateStock();
     updateFormStatus();
@@ -284,11 +286,10 @@ function initializeCrearProductForm() {
   };
 
   // Cargar subcategorías desde la API
-  categoriaPrincipal.onchange = function () {
-    // Usar onchange directamente
+  categoriaPrincipal.onchange = async function () {
     const selectedCategory = this.value;
+    console.log(`DEBUG: categoriaPrincipal.onchange triggered. selectedCategory: ${selectedCategory}`);
 
-    // Limpiar subcategoría y seudocategoría
     subcategoria.innerHTML =
       '<option value="">Selecciona una subcategoría</option>';
     seudocategoria.innerHTML =
@@ -296,80 +297,113 @@ function initializeCrearProductForm() {
     seudocategoria.disabled = true;
 
     if (selectedCategory) {
-      // Habilitar subcategoría
       subcategoria.disabled = false;
       subcategoria.classList.remove("bg-gray-100");
 
-      // Cargar subcategorías desde la API
-      fetch(`/admin/api/categorias/${selectedCategory}/subcategorias`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            data.subcategorias.forEach((sub) => {
-              const option = document.createElement("option");
-              option.value = sub.id;
-              option.textContent = sub.nombre;
-              subcategoria.appendChild(option);
-            });
-          } else {
-            console.error("Error al cargar subcategorías:", data.message);
+      try {
+        const response = await fetch(
+          `/admin/api/categorias/${selectedCategory}/subcategorias`
+        );
+        const data = await response.json();
+        console.log('DEBUG: Subcategories API response:', data);
+        if (data.success) {
+          data.subcategorias.forEach((sub) => {
+            const option = document.createElement("option");
+            option.value = sub.id;
+            option.textContent = sub.nombre;
+            subcategoria.appendChild(option);
+          });
+          console.log(`DEBUG: Subcategoria options after population: ${subcategoria.options.length}`);
+          // Trigger change event on subcategoria if a selected subcategory exists
+          if (form.dataset.selectedSubcategoriaId) {
+            subcategoria.value = form.dataset.selectedSubcategoriaId; // Set value before dispatching
+            console.log(`DEBUG: Attempting to pre-select subcategoria with ID: ${form.dataset.selectedSubcategoriaId}. Current value: ${subcategoria.value}`);
+            const event = new Event('change');
+            subcategoria.dispatchEvent(event);
+            console.log('DEBUG: Dispatched change event for subcategoria.');
           }
-        })
-        .catch((error) => {
-          console.error("Error en la solicitud:", error);
-        });
+          updateFormStatus();
+          return Promise.resolve(); // Resolve the promise when options are appended
+        } else {
+          console.error("DEBUG: Error loading subcategories:", data.message);
+          updateFormStatus();
+          return Promise.reject(new Error(data.message));
+        }
+      } catch (error) {
+        console.error("DEBUG: Request error for subcategories:", error);
+        updateFormStatus();
+        return Promise.reject(error);
+      }
     } else {
       subcategoria.disabled = true;
       subcategoria.classList.add("bg-gray-100");
+      updateFormStatus();
+      return Promise.resolve();
     }
-    updateFormStatus();
   };
 
   // Cargar seudocategorías desde la API
-  subcategoria.onchange = function () {
-    // Usar onchange directamente
+  subcategoria.onchange = async function () {
     const selectedSubcategory = this.value;
+    console.log(`DEBUG: subcategoria.onchange triggered. selectedSubcategory: ${selectedSubcategory}`);
 
-    // Limpiar seudocategoría
     seudocategoria.innerHTML =
       '<option value="">Selecciona una seudocategoría</option>';
 
     if (selectedSubcategory) {
-      // Habilitar seudocategoría
       seudocategoria.disabled = false;
       seudocategoria.classList.remove("bg-gray-100");
 
-      // Cargar seudocategorías desde la API
-      fetch(`/admin/api/subcategorias/${selectedSubcategory}/seudocategorias`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success) {
-            data.seudocategorias.forEach((seudo) => {
-              const option = document.createElement("option");
-              option.value = seudo.id;
-              option.textContent = seudo.nombre;
-              seudocategoria.appendChild(option);
-            });
-          } else {
-            console.error("Error al cargar seudocategorías:", data.message);
+      try {
+        const response = await fetch(
+          `/admin/api/subcategorias/${selectedSubcategory}/seudocategorias`
+        );
+        const data = await response.json();
+        console.log('DEBUG: Seudocategories API response:', data);
+        if (data.success) {
+          data.seudocategorias.forEach((seudo) => {
+            const option = document.createElement("option");
+            option.value = seudo.id;
+            option.textContent = seudo.nombre;
+            seudocategoria.appendChild(option);
+          });
+          console.log(`DEBUG: Seudocategoria options after population: ${seudocategoria.options.length}`);
+          // Trigger change event on seudocategoria if a selected seudocategory exists
+          if (form.dataset.selectedSeudocategoriaId) {
+            seudocategoria.value = form.dataset.selectedSeudocategoriaId; // Set value before dispatching
+            console.log(`DEBUG: Attempting to pre-select seudocategoria with ID: ${form.dataset.selectedSeudocategoriaId}. Current value: ${seudocategoria.value}`);
+            const event = new Event('change');
+            seudocategoria.dispatchEvent(event);
+            console.log('DEBUG: Dispatched change event for seudocategoria.');
           }
-        })
-        .catch((error) => {
-          console.error("Error en la solicitud:", error);
-        });
+          updateFormStatus();
+          return Promise.resolve(); // Resolve the promise when options are appended
+        } else {
+          console.error("DEBUG: Error loading seudocategories:", data.message);
+          updateFormStatus();
+          return Promise.reject(new Error(data.message));
+        }
+      } catch (error) {
+        console.error("DEBUG: Request error for seudocategories:", error);
+        updateFormStatus();
+        return Promise.reject(error);
+      }
     } else {
       seudocategoria.disabled = true;
       seudocategoria.classList.add("bg-gray-100");
+      updateFormStatus();
+      return Promise.resolve();
     }
-    updateFormStatus();
   };
 
   // Cambio de seudocategoría
-  seudocategoria.onchange = updateFormStatus; // Usar onchange directamente
+  seudocategoria.onchange = function() {
+    console.log(`DEBUG: seudocategoria.onchange triggered. Current value: ${seudocategoria.value}`);
+    updateFormStatus();
+  };
 
   // Agregar especificación
   addEspecificacionBtn.onclick = function () {
-    // Usar onclick directamente
     const nuevaEspecificacion = document.createElement("div");
     nuevaEspecificacion.className =
       "grid grid-cols-1 md:grid-cols-5 gap-3 items-center especificacion-item fade-in";
@@ -392,15 +426,13 @@ function initializeCrearProductForm() {
     // Agregar evento para eliminar
     nuevaEspecificacion.querySelector(".remove-especificacion").onclick =
       function () {
-        // Usar onclick directamente
-        nuevaEspecificacion.remove();
+        this.closest(".especificacion-item").remove();
       };
   };
 
-  // Eliminar especificación (para las existentes)
+  // Eliminar especificación (para las existentes y nuevas)
   document.querySelectorAll(".remove-especificacion").forEach((btn) => {
     btn.onclick = function () {
-      // Usar onclick directamente
       this.closest(".especificacion-item").remove();
     };
   });
@@ -433,8 +465,8 @@ function initializeCrearProductForm() {
       : "w-3 h-3 rounded-full bg-red-500 mr-2";
 
     // Verificar inventario
-    const existencia = existenciaInput.value; // Use existenciaInput directly
-    const inventoryComplete = existencia !== "" && validateStock(); // Add validateStock()
+    const existencia = existenciaInput.value;
+    const inventoryComplete = existencia !== "" && validateStock();
     statusInventory.className = inventoryComplete
       ? "w-3 h-3 rounded-full bg-green-500 mr-2"
       : "w-3 h-3 rounded-full bg-red-500 mr-2";
@@ -462,7 +494,7 @@ function initializeCrearProductForm() {
     if (!formComplete) {
       submitBtn.setAttribute(
         "title",
-        "Completa todos los campos para guardar el producto."
+        "Completa todos los campos para guardar los cambios."
       );
     } else {
       submitBtn.removeAttribute("title");
@@ -470,10 +502,6 @@ function initializeCrearProductForm() {
 
     return formComplete; // Return true if form is complete and valid
   }
-
-  // Eventos para actualizar estado del formulario
-  document.getElementById("nombre").oninput = updateFormStatus; // Usar oninput directamente
-  document.getElementById("descripcion").oninput = updateFormStatus; // Usar oninput directamente
 
   function openModal(modal) {
     modal.classList.remove("hidden");
@@ -495,7 +523,6 @@ function initializeCrearProductForm() {
 
   // Vista previa del producto
   previewBtn.onclick = function () {
-    // Usar onclick directamente
     const nombre =
       document.getElementById("nombre").value || "Nombre del Producto";
     const descripcion =
@@ -703,7 +730,7 @@ function initializeCrearProductForm() {
   }
 
   // Enviar formulario
-  form.addEventListener("submit", function (e) {
+  form.addEventListener("submit", async function (e) {
     e.preventDefault(); // Prevenir siempre el envío por defecto
 
     const isFormComplete = updateFormStatus();
@@ -734,55 +761,50 @@ function initializeCrearProductForm() {
       '<span class="loading-spinner mr-2"></span> Guardando...';
 
     // Enviar datos al servidor
-    fetch("/admin/producto/crear", {
-      method: "POST",
-      body: formData,
-    })
-      .then((response) => {
-        // Devolvemos una promesa que se resuelve con el status y el body en formato JSON
-        return response
-          .json()
-          .then((data) => ({ status: response.status, body: data }));
-      })
-      .then(({ status, body }) => {
-        if (body.success) {
-          showNotification("Producto creado exitosamente");
-          setTimeout(() => {
-            window.loadAdminContent("/admin/lista-productos");
-          }, 2000);
-        } else {
-          showNotification(
-            body.message || "Ocurrió un error al crear el producto",
-            "error"
-          );
+    try {
+      const response = await fetch(`/admin/api/producto/editar/${productId}`, {
+        method: "PUT",
+        body: formData,
+      });
 
-          // Ahora 'status' está disponible aquí y podemos verificar si es 409
-          if (status === 409) {
-            const nombreInput = document.getElementById("nombre");
-            nombreInput.classList.add("border-red-500");
-            nombreInput.focus();
-            nombreInput.addEventListener(
-              "input",
-              () => {
-                nombreInput.classList.remove("border-red-500");
-              },
-              { once: true }
-            );
-          }
+      const data = await response.json();
 
-          submitBtn.classList.remove("btn-disabled"); // Reactivar en caso de error
-          submitText.textContent = "Guardar Producto";
-        }
-      })
-      .catch((error) => {
-        console.error("Error en la solicitud:", error);
+      if (data.success) {
+        showNotification("Producto actualizado exitosamente");
+        setTimeout(() => {
+          window.loadAdminContent("/admin/lista-productos"); // Redirigir a la lista de productos
+        }, 2000);
+      } else {
         showNotification(
-          "Ocurrió un error en la conexión con el servidor",
+          data.message || "Ocurrió un error al actualizar el producto",
           "error"
         );
-        submitBtn.classList.remove("btn-disabled"); // Reactivar en caso de error
-        submitText.textContent = "Guardar Producto";
-      });
+
+        if (response.status === 409) {
+          const nombreInput = document.getElementById("nombre");
+          nombreInput.classList.add("border-red-500");
+          nombreInput.focus();
+          nombreInput.addEventListener(
+            "input",
+            () => {
+              nombreInput.classList.remove("border-red-500");
+            },
+            { once: true }
+          );
+        }
+
+        submitBtn.classList.remove("btn-disabled");
+        submitText.textContent = "Guardar Cambios";
+      }
+    } catch (error) {
+      console.error("Error en la solicitud:", error);
+      showNotification(
+        "Ocurrió un error en la conexión con el servidor",
+        "error"
+      );
+      submitBtn.classList.remove("btn-disabled");
+      submitText.textContent = "Guardar Cambios";
+    }
   });
 
   // Mostrar notificación (usando el sistema de notifications.html)
@@ -794,42 +816,165 @@ function initializeCrearProductForm() {
     }
   }
 
-  // Cargar categorías principales desde la API
-  async function loadCategoriasPrincipales() {
+  // Cargar categorías principales desde la API y pre-seleccionar
+  async function loadCategoriasPrincipales(selectedCategoriaId, selectedSubcategoriaId, selectedSeudocategoriaId) {
+    console.log(`DEBUG: loadCategoriasPrincipales called with:
+      selectedCategoriaId: ${selectedCategoriaId},
+      selectedSubcategoriaId: ${selectedSubcategoriaId},
+      selectedSeudocategoriaId: ${selectedSeudocategoriaId}`);
     try {
       const response = await fetch("/admin/api/categorias_principales");
       const data = await response.json();
+      console.log('DEBUG: Categorias Principales API response:', data);
 
       if (data.success) {
-        // Limpiar opciones existentes excepto la primera (placeholder)
         categoriaPrincipal.innerHTML =
           '<option value="">Selecciona una categoría</option>';
         data.categorias.forEach((cat) => {
           const option = document.createElement("option");
           option.value = cat.id;
           option.textContent = cat.nombre;
+            // Set selected attribute if it matches the current product's category
+            if (cat.id === selectedCategoriaId) {
+                option.selected = true;
+                console.log(`DEBUG: Pre-selected main category: ${cat.nombre} (${cat.id})`);
+            }
           categoriaPrincipal.appendChild(option);
         });
+        console.log(`DEBUG: categoriaPrincipal options after population: ${categoriaPrincipal.options.length}`);
+
+        // Pre-seleccionar categoría principal
+        if (selectedCategoriaId) {
+          categoriaPrincipal.value = selectedCategoriaId;
+          console.log(`DEBUG: categoriaPrincipal.value set to: ${categoriaPrincipal.value}`);
+        }
+
       } else {
-        console.error("Error al cargar categorías principales:", data.message);
+        console.error("DEBUG: Error loading main categories:", data.message);
       }
     } catch (error) {
-      console.error("Error en la solicitud de categorías principales:", error);
+      console.error("DEBUG: Request error for main categories:", error);
     }
+
+    // Después de cargar y posiblemente pre-seleccionar la categoría principal,
+    // necesitamos esperar a que las subcategorías se carguen para pre-seleccionar la subcategoría.
+    // Esto se maneja mejor con un patrón async/await o promesas encadenadas.
+    // Por ahora, la lógica de pre-selección de subcategoría y seudocategoría se moverá a una función separada
+    // que se llamará después de que las categorías superiores se hayan cargado y seleccionado.
+    // La lógica de pre-selección de subcategoría y seudocategoría se manejará en `preSelectCategories`.
   }
 
-  // Inicializar estado del formulario y cargar categorías principales
-  updateFormStatus();
-  loadCategoriasPrincipales();
-}
+  // Función para pre-seleccionar subcategorías y seudocategorías
+  async function preSelectCategories(selectedCategoriaId, selectedSubcategoriaId, selectedSeudocategoriaId) {
+    console.log(`DEBUG: preSelectCategories called with:
+      selectedCategoriaId: ${selectedCategoriaId},
+      selectedSubcategoriaId: ${selectedSubcategoriaId},
+      selectedSeudocategoriaId: ${selectedSeudocategoriaId}`);
+    if (selectedCategoriaId) {
+      console.log(`DEBUG: categoriaPrincipal.value before programmatic set: ${categoriaPrincipal.value}`);
+      // Ensure categoriaPrincipal has the correct value before dispatching change
+      if (categoriaPrincipal.value !== selectedCategoriaId) {
+          categoriaPrincipal.value = selectedCategoriaId;
+          console.log(`DEBUG: categoriaPrincipal.value set programmatically to: ${categoriaPrincipal.value}`);
+          await categoriaPrincipal.onchange(); // Await the change event to ensure subcategories are loaded
+          console.log('DEBUG: Awaited categoriaPrincipal.onchange completion.');
+      } else {
+          console.log('DEBUG: categoriaPrincipal.value already matches selectedCategoriaId. Triggering onchange anyway.');
+          await categoriaPrincipal.onchange(); // Still trigger to ensure subcategories load
+      }
 
-// Ejecutar la función de inicialización cuando el DOM esté completamente cargado
-document.addEventListener("DOMContentLoaded", initializeCrearProductForm);
+      if (selectedSubcategoriaId) {
+        console.log(`DEBUG: subcategoria.value before programmatic set: ${subcategoria.value}`);
+        // Ensure subcategoria has the correct value before dispatching change
+        if (subcategoria.value !== selectedSubcategoriaId) {
+            subcategoria.value = selectedSubcategoriaId;
+            console.log(`DEBUG: subcategoria.value set programmatically to: ${subcategoria.value}`);
+            await subcategoria.onchange(); // Await the change event to ensure seudocategories are loaded
+            console.log('DEBUG: Awaited subcategoria.onchange completion.');
+        } else {
+            console.log('DEBUG: subcategoria.value already matches selectedSubcategoriaId. Triggering onchange anyway.');
+            await subcategoria.onchange(); // Still trigger to ensure seudocategories load
+        }
+        // Explicitly set seudocategoria value after subcategory has loaded its options
+        if (selectedSeudocategoriaId) {
+          console.log(`DEBUG: seudocategoria.value before final set: ${seudocategoria.value}`);
+          seudocategoria.value = selectedSeudocategoriaId;
+          console.log(`DEBUG: seudocategoria.value finally set to: ${seudocategoria.value}`);
+        }
+      }
+    }
+    updateFormStatus(); // Actualizar el estado del formulario después de pre-seleccionar
+    console.log('DEBUG: preSelectCategories finished. Form status updated.');
+  }
+
+  // Inicializar estado del formulario y cargar datos del producto
+  async function init() {
+    console.log('DEBUG: init() called.');
+    // Obtener datos del producto del HTML (ya prellenados por Jinja)
+    const productData = {
+        nombre: document.getElementById("nombre").value,
+        marca: document.getElementById("marca").value,
+        descripcion: document.getElementById("descripcion").value,
+        imagen_url: document.getElementById("imagen_url").value,
+        precio: parseFloat(document.getElementById("precio").value),
+        costo: parseFloat(document.getElementById("costo").value),
+        existencia: parseInt(document.getElementById("existencia").value),
+        stock_minimo: parseInt(document.getElementById("stock_minimo").value),
+        stock_maximo: parseInt(document.getElementById("stock_maximo").value),
+        seudocategoria_id: form.dataset.selectedSeudocategoriaId, // Asume que el ID de seudocategoría se pasa como data attribute
+        subcategoria_id: form.dataset.selectedSubcategoriaId, // Asume que el ID de subcategoría se pasa como data attribute
+        categoria_principal_id: form.dataset.selectedCategoriaPrincipalId // Asume que el ID de categoría principal se pasa como data attribute
+    };
+    console.log('DEBUG: productData from HTML:', productData);
+
+    // Cargar categorías principales y luego pre-seleccionar
+    console.log('DEBUG: Calling loadCategoriasPrincipales...');
+    await loadCategoriasPrincipales(productData.categoria_principal_id, productData.subcategoria_id, productData.seudocategoria_id);
+    console.log('DEBUG: loadCategoriasPrincipales finished. Calling preSelectCategories...');
+    await preSelectCategories(productData.categoria_principal_id, productData.subcategoria_id, productData.seudocategoria_id);
+    console.log('DEBUG: preSelectCategories finished.');
+
+    // Asegurarse de que los campos de categoría estén habilitados si tienen valores
+    if (productData.categoria_principal_id) {
+        subcategoria.disabled = false;
+        subcategoria.classList.remove("bg-gray-100");
+        console.log('DEBUG: Subcategoria enabled.');
+    }
+    if (productData.subcategoria_id) {
+        seudocategoria.disabled = false;
+        seudocategoria.classList.remove("bg-gray-100");
+        console.log('DEBUG: Seudocategoria enabled.');
+    }
+
+    // La lógica de especificaciones ya está en el HTML, solo necesitamos asegurar que los botones de eliminar funcionen
+    document.querySelectorAll(".remove-especificacion").forEach((btn) => {
+        btn.onclick = function () {
+            this.closest(".especificacion-item").remove();
+        };
+    });
+
+    updateFormStatus(); // Actualizar el estado final del formulario
+    updateFinancialMetrics(); // Actualizar métricas con los valores actuales
+    console.log('DEBUG: init() finished. Form status and financial metrics updated.');
+  }
+
+  init();
+}
 
 // Escuchar el evento personalizado 'content-loaded' de admin_spa.js
 document.addEventListener("content-loaded", function (event) {
-  // Verificar si el contenido cargado incluye el formulario de creación de producto
-  if (event.detail.container.querySelector("#product-form")) {
-    initializeCrearProductForm();
+  // Verificar si el contenido cargado incluye el formulario de edición de producto
+  if (event.detail.container.querySelector("#product-form[data-product-id]")) {
+    console.log('DEBUG: content-loaded event detected product form. Initializing...');
+    initializeEditarProductForm();
   }
+});
+
+// Inicializar el formulario cuando la página se carga directamente (no via SPA)
+document.addEventListener("DOMContentLoaded", function() {
+    const form = document.getElementById("product-form");
+    if (form && form.dataset.productId) { // Check if the form exists and has a product ID
+        console.log('DEBUG: DOMContentLoaded event detected product form. Initializing...');
+        initializeEditarProductForm();
+    }
 });

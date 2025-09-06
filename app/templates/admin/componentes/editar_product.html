@@ -1,6 +1,6 @@
 {% extends 'admin/page/base.html' %}
 {% block title %}
-    Nuevo Producto - Panel de Administración
+    Editar Producto - Panel de Administración
 {% endblock %}
 {% block content %}
 
@@ -9,8 +9,8 @@
         <div class="mb-8 fade-in">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                    <h2 class="text-3xl font-bold text-gray-800">Crear Nuevo Producto</h2>
-                    <p class="text-gray-600 mt-1">Agrega un nuevo producto a tu inventario con análisis financiero</p>
+                    <h2 class="text-3xl font-bold text-gray-800">Editar Producto</h2>
+                    <p class="text-gray-600 mt-1">Modifica los detalles de este producto existente</p>
                 </div>
                 <div class="mb-6 fade-in">
                     <a href="{{ url_for('admin_products.get_all_products') }}" class="spa-back-link inline-flex items-center text-indigo-600 hover:text-indigo-800 transition font-medium">
@@ -25,9 +25,12 @@
             class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <!-- Formulario Principal -->
             <div class="lg:col-span-2">
-                <form id="product-form" class="bg-white rounded-xl card-shadow p-6">
-                    <input
-                    type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <form id="product-form" class="bg-white rounded-xl card-shadow p-6"
+                      data-product-id="{{ product.id }}"
+                      data-selected-seudocategoria-id="{{ selected_seudocategoria_id }}"
+                      data-selected-subcategoria-id="{{ selected_subcategoria_id }}"
+                      data-selected-categoria-principal-id="{{ selected_categoria_principal_id }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
 
                     <!-- Información Básica -->
                     <div id="seccion-basica" class="mb-8 p-4 rounded-lg transition-colors duration-300 ease-in-out">
@@ -42,7 +45,7 @@
                             <div>
                                 <label for="nombre" class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
                                 <div class="relative">
-                                    <input type="text" id="nombre" name="nombre" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: Laptop Gamer ASUS ROG">
+                                    <input type="text" id="nombre" name="nombre" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: Laptop Gamer ASUS ROG" value="{{ product.nombre }}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-tag text-gray-400"></i>
                                     </div>
@@ -52,7 +55,7 @@
                             <div>
                                 <label for="marca" class="block text-sm font-medium text-gray-700 mb-1">Marca</label>
                                 <div class="relative">
-                                    <input type="text" id="marca" name="marca" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: ASUS">
+                                    <input type="text" id="marca" name="marca" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Ej: ASUS" value="{{ product.marca }}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-copyright text-gray-400"></i>
                                     </div>
@@ -62,19 +65,19 @@
 
                         <div class="mt-6">
                             <label for="descripcion" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                            <textarea id="descripcion" name="descripcion" rows="3" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Describe las características principales del producto"></textarea>
+                            <textarea id="descripcion" name="descripcion" rows="3" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Describe las características principales del producto">{{ product.descripcion }}</textarea>
                         </div>
 
                         <div class="mt-6">
                             <label for="imagen_url" class="block text-sm font-medium text-gray-700 mb-1">URL de la Imagen</label>
                             <div class="relative">
-                                <input type="url" id="imagen_url" name="imagen_url" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://ejemplo.com/imagen.jpg">
+                                <input type="url" id="imagen_url" name="imagen_url" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://ejemplo.com/imagen.jpg" value="{{ product.imagen_url }}">
                                 <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                     <i class="fas fa-image text-gray-400"></i>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
                     <!-- Categorías -->
                     <div id="seccion-categorias" class="mb-8 p-4 rounded-lg transition-colors duration-300 ease-in-out">
@@ -122,7 +125,7 @@
                             <div>
                                 <label for="precio" class="block text-sm font-medium text-gray-700 mb-1">Precio de Venta ($)</label>
                                 <div class="relative">
-                                    <input type="number" id="precio" name="precio" min="0.01" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00">
+                                    <input type="number" id="precio" name="precio" min="0.01" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00" value="{{ '%.2f' | format(product.precio) }}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-dollar-sign text-gray-400"></i>
                                     </div>
@@ -132,7 +135,7 @@
                             <div>
                                 <label for="costo" class="block text-sm font-medium text-gray-700 mb-1">Costo del Producto ($)</label>
                                 <div class="relative">
-                                    <input type="number" id="costo" name="costo" min="0.01" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00">
+                                    <input type="number" id="costo" name="costo" min="0.01" step="0.01" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0.00" value="{{ '%.2f' | format(product.costo) }}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-coins text-gray-400"></i>
                                     </div>
@@ -159,7 +162,7 @@
                             <div>
                                 <label for="existencia" class="block text-sm font-medium text-gray-700 mb-1">Existencia Actual</label>
                                 <div class="relative">
-                                    <input type="number" id="existencia" name="existencia" min="0" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0">
+                                    <input type="number" id="existencia" name="existencia" min="0" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="0" value="{{ product.existencia }}">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-boxes text-gray-400"></i>
                                     </div>
@@ -170,7 +173,7 @@
                             <div>
                                 <label for="stock_minimo" class="block text-sm font-medium text-gray-700 mb-1">Stock Mínimo</label>
                                 <div class="relative">
-                                    <input type="number" id="stock_minimo" name="stock_minimo" min="0" value="10" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <input type="number" id="stock_minimo" name="stock_minimo" min="0" value="{{ product.stock_minimo if product.stock_minimo is not none else 10 }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-level-down-alt text-gray-400"></i>
                                     </div>
@@ -180,7 +183,7 @@
                             <div>
                                 <label for="stock_maximo" class="block text-sm font-medium text-gray-700 mb-1">Stock Máximo</label>
                                 <div class="relative">
-                                    <input type="number" id="stock_maximo" name="stock_maximo" min="0" value="100" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                                    <input type="number" id="stock_maximo" name="stock_maximo" min="0" value="{{ product.stock_maximo if product.stock_maximo is not none else 100 }}" class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                                     <div class="absolute inset-y-0 right-0 flex items-center pr-3">
                                         <i class="fas fa-level-up-alt text-gray-400"></i>
                                     </div>
@@ -199,19 +202,37 @@
                         </div>
 
                         <div id="especificaciones-container" class="space-y-3">
-                            <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center especificacion-item">
-                                <div class="md:col-span-2">
-                                    <input type="text" class="especificacion-key w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Propiedad">
+                            {% if product.especificaciones %}
+                                {% for key, value in product.especificaciones.items() %}
+                                    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center especificacion-item fade-in">
+                                        <div class="md:col-span-2">
+                                            <input type="text" class="especificacion-key w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Propiedad" value="{{ key }}">
+                                        </div>
+                                        <div class="md:col-span-2">
+                                            <input type="text" class="especificacion-value w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Valor" value="{{ value }}">
+                                        </div>
+                                        <div>
+                                            <button type="button" class="remove-especificacion w-full py-3 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="grid grid-cols-1 md:grid-cols-5 gap-3 items-center especificacion-item">
+                                    <div class="md:col-span-2">
+                                        <input type="text" class="especificacion-key w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Propiedad">
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <input type="text" class="especificacion-value w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Valor">
+                                    </div>
+                                    <div>
+                                        <button type="button" class="remove-especificacion w-full py-3 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="md:col-span-2">
-                                    <input type="text" class="especificacion-value w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Valor">
-                                </div>
-                                <div>
-                                    <button type="button" class="remove-especificacion w-full py-3 px-4 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
+                            {% endif %}
                         </div>
 
                         <button type="button" id="add-especificacion" class="mt-4 py-3 px-4 bg-indigo-100 text-indigo-700 rounded-lg hover:bg-indigo-200 transition flex items-center">
@@ -224,7 +245,7 @@
                     <div class="flex flex-wrap gap-3 pt-4 border-t border-gray-200">
                         <button type="submit" id="submit-btn" class="px-6 py-3 btn-primary text-white font-medium rounded-lg flex items-center">
                             <i class="fas fa-save mr-2"></i>
-                            <span id="submit-text">Guardar Producto</span>
+                            <span id="submit-text">Guardar Cambios</span>
                         </button>
                         <button type="button" id="preview-btn" class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition flex items-center">
                             <i class="fas fa-eye mr-2"></i>
@@ -246,8 +267,8 @@
                         <h3 class="text-lg font-semibold text-gray-800">Previsualización</h3>
                     </div>
                     <div class="aspect-square bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden">
-                        <img id="preview-image" src="https://via.placeholder.com/400" alt="Previsualización" class="w-full h-full object-cover hidden">
-                        <div id="image-placeholder" class="text-center p-4">
+                        <img id="preview-image" src="{{ product.imagen_url if product.imagen_url else 'https://via.placeholder.com/400' }}" alt="Previsualización" class="w-full h-full object-cover {% if not product.imagen_url %}hidden{% endif %}">
+                        <div id="image-placeholder" class="text-center p-4 {% if product.imagen_url %}hidden{% endif %}">
                             <i class="fas fa-image text-gray-400 text-4xl mb-2"></i>
                             <p class="text-gray-500">Ingresa una URL de imagen</p>
                         </div>
@@ -548,5 +569,5 @@
             }
         }
     </style>
-    <script src="{{ url_for('static', filename='js/admin/crear_product.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/admin/editar_product.js') }}"></script>
 {% endblock %}

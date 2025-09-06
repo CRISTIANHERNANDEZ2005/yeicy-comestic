@@ -136,6 +136,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Intercept clicks on edit product links
+    document.addEventListener('click', function(e) {
+        const targetLink = e.target.closest('.spa-edit-product-link');
+        if (targetLink) {
+            const href = targetLink.getAttribute('href');
+            if (href && href.startsWith('/admin/producto/editar/')) {
+                e.preventDefault();
+                loadContent(href);
+            }
+        }
+    });
+
     // Intercept clicks on back links
     document.addEventListener('click', function(e) {
         const targetLink = e.target.closest('.spa-back-link');

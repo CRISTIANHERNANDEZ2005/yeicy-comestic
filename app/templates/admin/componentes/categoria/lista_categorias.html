@@ -1,0 +1,2049 @@
+{% extends 'admin/page/base.html' %}
+{% block title %} Lista Categorias - Panel de Administración{% endblock %} 
+{% block content %}
+    <div class="min-h-screen">
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Título y botón principal -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
+                <div class="mb-4 sm:mb-0">
+                    <h1 class="text-2xl sm:text-3xl font-bold text-gray-900">Categorías de Inventario</h1>
+                    <p class="text-gray-600 mt-1 text-sm sm:text-base">Gestiona la jerarquía de categorías de tu inventario</p>
+                </div>
+                <button id="addCategoryBtn" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center justify-center transition duration-200 shadow-md hover:shadow-lg w-full sm:w-auto">
+                    <i class="fas fa-plus mr-2"></i>
+                    Agregar Categoría
+                </button>
+            </div>
+            
+            <!-- Contenido principal -->
+            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+                <!-- Tabs para niveles de categoría -->
+                <div class="border-b border-gray-200">
+                    <nav class="flex -mb-px">
+                        <button class="tab-btn active py-3 px-4 sm:py-4 sm:px-6 text-center border-b-2 border-blue-500 font-medium text-sm text-blue-600 focus:outline-none" data-level="all">
+                            Todas
+                        </button>
+                        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" data-level="main">
+                            Principales
+                        </button>
+                        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" data-level="sub">
+                            Subcategorías
+                        </button>
+                        <button class="tab-btn py-3 px-4 sm:py-4 sm:px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300 focus:outline-none" data-level="pseudo">
+                            Seudocategorías
+                        </button>
+                    </nav>
+                </div>
+                
+                <!-- Lista de categorías (Vista Jerárquica) -->
+                <div id="hierarchicalView" class="p-4 sm:p-6 hierarchical-view">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800">Categorías Principales</h3>
+                            <p class="text-sm text-gray-500">Gestiona la jerarquía de categorías de tu inventario</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Contenedor para las categorías -->
+                    <div id="categoriesContainer" class="space-y-4">
+                        <!-- Las categorías se cargarán dinámicamente aquí -->
+                    </div>
+                </div>
+                
+                <!-- Vista de Tablas para Categorías Principales -->
+                <div id="mainCategoriesTableView" class="p-4 sm:p-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800">Categorías Principales</h3>
+                            <p class="text-sm text-gray-500">Lista de todas las categorías principales del inventario</p>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="category-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Slug</th>
+                                    <th>Subcategorías</th>
+                                    <th>Estado</th>
+                                    <th>Fecha de Creación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mainCategoriesTableBody">
+                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Vista de Tablas para Subcategorías -->
+                <div id="subCategoriesTableView" class="p-4 sm:p-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800">Subcategorías</h3>
+                            <p class="text-sm text-gray-500">Lista de todas las subcategorías del inventario</p>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="category-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Slug</th>
+                                    <th>Categoría Principal</th>
+                                    <th>Seudocategorías</th>
+                                    <th>Estado</th>
+                                    <th>Fecha de Creación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="subCategoriesTableBody">
+                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Vista de Tablas para Seudocategorías -->
+                <div id="pseudoCategoriesTableView" class="p-4 sm:p-6 hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-800">Seudocategorías</h3>
+                            <p class="text-sm text-gray-500">Lista de todas las seudocategorías del inventario</p>
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="category-table">
+                            <thead>
+                                <tr>
+                                    <th>Nombre</th>
+                                    <th>Slug</th>
+                                    <th>Subcategoría</th>
+                                    <th>Categoría Principal</th>
+                                    <th>Estado</th>
+                                    <th>Fecha de Creación</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="pseudoCategoriesTableBody">
+                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Paginación como bloque independiente -->
+            <div class="pagination-container">
+                <div class="pagination-info text-center sm:text-left">
+                    Mostrando <span class="font-medium" id="showingFrom">1</span> a <span class="font-medium" id="showingTo">10</span> de <span class="font-medium" id="totalItems">0</span> categorías
+                </div>
+                
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="pagination-per-page">
+                        <span class="text-sm text-gray-700">Mostrar:</span>
+                        <select id="itemsPerPage" class="border border-gray-300 rounded-md text-sm">
+                            <option value="5">5</option>
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                        </select>
+                        <span class="text-sm text-gray-700">por página</span>
+                    </div>
+                    
+                    <div class="pagination-buttons" id="paginationContainer">
+                        <!-- Los botones de paginación se cargarán dinámicamente aquí -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <!-- Menú lateral de filtros -->
+    <div id="filterMenu" class="filter-menu fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl z-50 overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-bold text-gray-800">Filtros Avanzados</h2>
+                <button id="closeFilterMenu" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Búsqueda por nombre (común para todos los niveles) -->
+                <div class="filter-field" id="nameFilterField">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                    <div class="relative">
+                        <input type="text" id="nameFilter" placeholder="Buscar por nombre..." 
+                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Estado (común para todos los niveles) -->
+                <div class="filter-field" id="statusFilterField">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <select id="statusFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todos</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
+                </div>
+                
+                <!-- Categoría Principal (solo para subcategorías y seudocategorías) -->
+                <div class="filter-field hidden" id="mainCategoryFilterField">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
+                    <select id="mainCategoryFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todas las categorías principales</option>
+                    </select>
+                </div>
+                
+                <!-- Subcategoría (solo para seudocategorías) -->
+                <div class="filter-field hidden" id="subCategoryFilterField">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
+                    <select id="subCategoryFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todas las subcategorías</option>
+                    </select>
+                </div>
+                
+                <!-- Ordenamiento (común para todos los niveles) -->
+                <div class="filter-field" id="sortFilterField">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                    <select id="sortFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="nombre">Nombre (A-Z)</option>
+                        <option value="nombre-desc">Nombre (Z-A)</option>
+                        <option value="created_at">Fecha (más recientes primero)</option>
+                        <option value="created_at-desc">Fecha (más antiguos primero)</option>
+                    </select>
+                </div>
+                
+                <!-- Botones de acción -->
+                <div class="flex flex-col sm:flex-row gap-3 pt-4">
+                    <button id="applyFilters" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
+                        Aplicar filtros
+                    </button>
+                    <button id="clearFilters" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
+                        Limpiar filtros
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Overlay para el menú de filtros -->
+    <div id="filterOverlay" class="filter-overlay"></div>
+    
+    <!-- Botón flotante para abrir filtros - inicialmente oculto -->
+    <button id="filterFab" class="fab bg-blue-600 text-white hover:bg-blue-700 hidden-filter">
+        <i class="fas fa-filter"></i>
+    </button>
+    
+    <!-- Modal para añadir/editar categoría -->
+    <div id="categoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 modal-backdrop">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Agregar Nueva Categoría</h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-500 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <form id="categoryForm">
+                    <div class="space-y-5">
+                        <!-- Campo: Nombre -->
+                        <div>
+                            <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                            <input type="text" id="categoryName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                        </div>
+                        
+                        <!-- Campo: Descripción -->
+                        <div>
+                            <label for="categoryDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                            <textarea id="categoryDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required></textarea>
+                        </div>
+                        
+                        <!-- Campo: Nivel -->
+                        <div>
+                            <label for="categoryLevel" class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
+                            <select id="categoryLevel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="main">Categoría Principal</option>
+                                <option value="sub">Subcategoría</option>
+                                <option value="pseudo">Seudocategoría</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Campos dinámicos según el nivel -->
+                        <div id="dynamicFields">
+                            <!-- Se llenarán dinámicamente según el nivel seleccionado -->
+                        </div>
+                        
+                        <!-- Campo: Estado -->
+                        <div class="flex items-center">
+                            <input type="checkbox" id="categoryStatus" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                            <label for="categoryStatus" class="ml-2 text-sm text-gray-700">Activo</label>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3 mt-8">
+                        <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notificación -->
+    <div id="notification" class="notification"></div>
+    <style>
+        /* Animaciones personalizadas */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-down {
+            animation: slideDown 0.3s ease-in-out;
+        }
+        @keyframes slideDown {
+            from { max-height: 0; opacity: 0; }
+            to { max-height: 500px; opacity: 1; }
+        }
+        /* Estilos para el modal */
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+        /* Estilos para el menú lateral */
+        .filter-menu {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .filter-menu.open {
+            transform: translateX(0);
+        }
+        /* Botón flotante */
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 40;
+            transition: all 0.3s ease;
+        }
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        /* Overlay para el menú de filtros */
+        .filter-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 45;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .filter-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        /* Estilos para la paginación */
+        .pagination-container {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem;
+            margin-top: 1.5rem;
+        }
+        .pagination-info {
+            font-size: 0.875rem;
+            color: #4b5563;
+            margin-bottom: 0.75rem;
+        }
+        .pagination-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .pagination-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+        .pagination-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .pagination-button:hover:not(.active):not(:disabled) {
+            background-color: #f3f4f6;
+        }
+        .pagination-button.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .pagination-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination-nav-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .pagination-nav-button:hover:not(:disabled) {
+            background-color: #f3f4f6;
+        }
+        .pagination-nav-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .pagination-per-page {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .pagination-per-page select {
+            border-radius: 0.375rem;
+            border: 1px solid #d1d5db;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+        }
+        
+        /* Estilos para las tablas */
+        .table-container {
+            overflow-x: auto;
+        }
+        .category-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .category-table th {
+            background-color: #f9fafb;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .category-table td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .category-table tr:hover {
+            background-color: #f9fafb;
+        }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-badge.active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-badge.inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .action-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 0.375rem;
+            margin-right: 0.25rem;
+            transition: all 0.2s;
+        }
+        .action-button:hover {
+            background-color: #f3f4f6;
+        }
+        .action-button.view:hover {
+            color: #3b82f6;
+            background-color: #eff6ff;
+        }
+        .action-button.edit:hover {
+            color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .action-button.delete:hover {
+            color: #ef4444;
+            background-color: #fef2f2;
+        }
+        
+        /* Mejoras para móviles */
+        @media (max-width: 768px) {
+            /* Ajustes generales */
+            .category-card, .subcategory-card, .pseudocategory-card {
+                border-radius: 0.5rem;
+            }
+            
+            /* Ajustes para las tarjetas de categorías */
+            .category-card > div, .subcategory-card > div, .pseudocategory-card > div {
+                padding: 0.75rem;
+            }
+            
+            /* Hacer los botones más grandes para móviles */
+            .toggle-btn {
+                width: 2rem;
+                height: 2rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.25rem;
+            }
+            
+            /* Ajustar el tamaño de los iconos */
+            .toggle-btn i {
+                font-size: 1rem;
+            }
+            
+            /* Ajustar el espaciado entre elementos */
+            .space-y-4 > * + * {
+                margin-top: 1rem;
+            }
+            
+            /* Ajustar el espaciado en subcategorías y seudocategorías */
+            .ml-6 {
+                margin-left: 1rem;
+            }
+            
+            /* Hacer los toggles de estado más grandes */
+            .relative.inline-block.w-10 {
+                width: 2.5rem;
+            }
+            
+            .relative.inline-block.w-10 label {
+                height: 1.5rem;
+            }
+            
+            .relative.inline-block.w-10 label span {
+                width: 1.5rem;
+                height: 1.5rem;
+            }
+            
+            /* Ajustar los botones de acción */
+            button.p-2 {
+                width: 2.5rem;
+                height: 2.5rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            button.p-1.5 {
+                width: 2.25rem;
+                height: 2.25rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Mejorar la visualización del texto en móviles */
+            h4 {
+                font-size: 1.125rem;
+                line-height: 1.375rem;
+            }
+            
+            h6 {
+                font-size: 1rem;
+                line-height: 1.25rem;
+            }
+            
+            /* Ajustar el espaciado de los metadatos */
+            .flex.items-center.mt-1.text-xs {
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+            
+            .flex.items-center.mt-1.text-xs span.mx-2 {
+                margin: 0 0.25rem;
+            }
+            
+            /* Ajustar la estructura de las tarjetas para móviles */
+            .category-card > div > div.flex.justify-between.items-start {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            
+            .category-card > div > div.flex.justify-between.items-start > div:first-child {
+                width: 100%;
+            }
+            
+            .category-card > div > div.flex.justify-between.items-start > div:last-child {
+                align-self: flex-end;
+            }
+            
+            /* Ajustar la estructura de las subcategorías para móviles */
+            .subcategory-card > div, .pseudocategory-card > div {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            
+            .subcategory-card > div > div:first-child, .pseudocategory-card > div > div:first-child {
+                width: 100%;
+            }
+            
+            .subcategory-card > div > div:last-child, .pseudocategory-card > div > div:last-child {
+                align-self: flex-end;
+            }
+            
+            /* Ajustar el menú lateral para móviles */
+            .filter-menu {
+                width: 100%;
+                max-width: 100%;
+            }
+            
+            /* Ajustar los tabs para móviles */
+            nav.flex {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none; /* Firefox */
+            }
+            
+            nav.flex::-webkit-scrollbar {
+                display: none; /* Chrome, Safari, Edge */
+            }
+            
+            nav.flex > button {
+                flex-shrink: 0;
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            /* Ajustes para las tablas en móviles */
+            .table-container {
+                margin: 0 -1rem;
+                padding: 0 1rem;
+            }
+            
+            .category-table {
+                font-size: 0.875rem;
+            }
+            
+            .category-table th, .category-table td {
+                padding: 0.5rem;
+            }
+            
+            .action-button {
+                width: 1.75rem;
+                height: 1.75rem;
+            }
+        }
+        
+        /* Clase para ocultar el botón de filtro */
+        .hidden-filter {
+            display: none;
+        }
+        
+        /* Estilos para los campos de filtro dinámicos */
+        .filter-field {
+            transition: all 0.3s ease;
+        }
+        .filter-field.hidden {
+            display: none;
+        }
+        
+        /* Estilos para el toggle de estado */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #10b981;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        /* Estilos para notificaciones */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        
+        .notification.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .notification.success {
+            background-color: #10b981;
+        }
+        
+        .notification.error {
+            background-color: #ef4444;
+        }
+        
+        /* Estilos para el loader */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Estilos para la vista jerárquica */
+        .hierarchical-view .category-card {
+            margin-bottom: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .hierarchical-view .category-header {
+            padding: 1rem;
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hierarchical-view .category-info {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .hierarchical-view .category-toggle {
+            margin-right: 0.75rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: transform 0.2s;
+        }
+        
+        .hierarchical-view .category-toggle.open {
+            transform: rotate(90deg);
+        }
+        
+        .hierarchical-view .category-details h4 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .hierarchical-view .category-details p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .hierarchical-view .category-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .hierarchical-view .category-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .hierarchical-view .subcategory-list {
+            background-color: #f9fafb;
+            padding: 1rem;
+            border-top: 1px solid #e5e7eb;
+            display: none;
+        }
+        
+        .hierarchical-view .subcategory-list.open {
+            display: block;
+        }
+        
+        .hierarchical-view .subcategory-card {
+            margin-bottom: 0.75rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            overflow: hidden;
+        }
+        
+        .hierarchical-view .subcategory-header {
+            padding: 0.75rem;
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hierarchical-view .subcategory-info {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .hierarchical-view .subcategory-toggle {
+            margin-right: 0.75rem;
+            cursor: pointer;
+            color: #6b7280;
+            transition: transform 0.2s;
+        }
+        
+        .hierarchical-view .subcategory-toggle.open {
+            transform: rotate(90deg);
+        }
+        
+        .hierarchical-view .subcategory-details h6 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .hierarchical-view .subcategory-details p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .hierarchical-view .subcategory-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .hierarchical-view .subcategory-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .hierarchical-view .pseudocategory-list {
+            padding: 0.75rem;
+            margin-left: 1.5rem;
+            display: none;
+        }
+        
+        .hierarchical-view .pseudocategory-list.open {
+            display: block;
+        }
+        
+        .hierarchical-view .pseudocategory-card {
+            margin-bottom: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+            background-color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .hierarchical-view .pseudocategory-info h6 {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .hierarchical-view .pseudocategory-info p {
+            color: #6b7280;
+            font-size: 0.875rem;
+        }
+        
+        .hierarchical-view .pseudocategory-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 0.5rem;
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+        
+        .hierarchical-view .pseudocategory-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Variables globales
+            let currentView = 'all';
+            let currentPage = 1;
+            let itemsPerPage = 10;
+            let isLoading = false;
+            
+            // Elementos del DOM
+            const hierarchicalView = document.getElementById('hierarchicalView');
+            const mainCategoriesTableView = document.getElementById('mainCategoriesTableView');
+            const subCategoriesTableView = document.getElementById('subCategoriesTableView');
+            const pseudoCategoriesTableView = document.getElementById('pseudoCategoriesTableView');
+            const filterFab = document.getElementById('filterFab');
+            const categoriesContainer = document.getElementById('categoriesContainer');
+            const mainCategoriesTableBody = document.getElementById('mainCategoriesTableBody');
+            const subCategoriesTableBody = document.getElementById('subCategoriesTableBody');
+            const pseudoCategoriesTableBody = document.getElementById('pseudoCategoriesTableBody');
+            const paginationContainer = document.getElementById('paginationContainer');
+            const showingFrom = document.getElementById('showingFrom');
+            const showingTo = document.getElementById('showingTo');
+            const totalItems = document.getElementById('totalItems');
+            
+            // Campos de filtro
+            const nameFilterField = document.getElementById('nameFilterField');
+            const statusFilterField = document.getElementById('statusFilterField');
+            const mainCategoryFilterField = document.getElementById('mainCategoryFilterField');
+            const subCategoryFilterField = document.getElementById('subCategoryFilterField');
+            const sortFilterField = document.getElementById('sortFilterField');
+            
+            // Inicializar la vista
+            initializeView();
+            
+            // Función para inicializar la vista
+            function initializeView() {
+                // Obtener la vista actual de la URL
+                const urlParams = new URLSearchParams(window.location.search);
+                currentView = urlParams.get('view') || 'all';
+                
+                // Establecer el tab activo
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                    btn.classList.add('border-transparent', 'text-gray-500');
+                    
+                    if (btn.getAttribute('data-level') === currentView) {
+                        btn.classList.add('active', 'border-blue-500', 'text-blue-600');
+                        btn.classList.remove('border-transparent', 'text-gray-500');
+                    }
+                });
+                
+                // Mostrar la vista correspondiente
+                showView(currentView);
+                
+                // Cargar los datos iniciales
+                if (currentView === 'all') {
+                    loadHierarchicalCategories();
+                } else {
+                    loadTableData();
+                }
+            }
+            
+            // Función para mostrar la vista correspondiente
+            function showView(viewType) {
+                // Ocultar todas las vistas
+                hierarchicalView.classList.add('hidden');
+                mainCategoriesTableView.classList.add('hidden');
+                subCategoriesTableView.classList.add('hidden');
+                pseudoCategoriesTableView.classList.add('hidden');
+                
+                // Controlar la visibilidad del botón de filtro y los campos de filtro
+                if (viewType === 'all') {
+                    hierarchicalView.classList.remove('hidden');
+                    filterFab.classList.add('hidden-filter');
+                } else if (viewType === 'main') {
+                    mainCategoriesTableView.classList.remove('hidden');
+                    filterFab.classList.remove('hidden-filter');
+                    updateFilterFields('main');
+                } else if (viewType === 'sub') {
+                    subCategoriesTableView.classList.remove('hidden');
+                    filterFab.classList.remove('hidden-filter');
+                    updateFilterFields('sub');
+                } else if (viewType === 'pseudo') {
+                    pseudoCategoriesTableView.classList.remove('hidden');
+                    filterFab.classList.remove('hidden-filter');
+                    updateFilterFields('pseudo');
+                }
+            }
+            
+            // Función para actualizar los campos de filtro según la vista actual
+            function updateFilterFields(viewType) {
+                // Mostrar campos comunes
+                nameFilterField.classList.remove('hidden');
+                statusFilterField.classList.remove('hidden');
+                sortFilterField.classList.remove('hidden');
+                
+                // Ocultar campos específicos
+                mainCategoryFilterField.classList.add('hidden');
+                subCategoryFilterField.classList.add('hidden');
+                
+                // Mostrar campos según el tipo de vista
+                if (viewType === 'sub') {
+                    // Para subcategorías: mostrar campo de categoría principal
+                    mainCategoryFilterField.classList.remove('hidden');
+                    loadMainCategoriesForFilter();
+                } else if (viewType === 'pseudo') {
+                    // Para seudocategorías: mostrar campos de categoría principal y subcategoría
+                    mainCategoryFilterField.classList.remove('hidden');
+                    subCategoryFilterField.classList.remove('hidden');
+                    loadMainCategoriesForFilter();
+                    loadSubcategoriesForFilter();
+                }
+            }
+            
+            // Función para cargar categorías principales para el filtro
+            function loadMainCategoriesForFilter() {
+                const mainCategoryFilter = document.getElementById('mainCategoryFilter');
+                
+                // Limpiar opciones actuales
+                mainCategoryFilter.innerHTML = '<option value="all">Todas las categorías principales</option>';
+                
+                // Obtener categorías principales del servidor
+                fetch('/admin/api/categorias-principales/filter?per_page=100')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.categorias) {
+                            data.categorias.forEach(category => {
+                                const option = document.createElement('option');
+                                option.value = category.id;
+                                option.textContent = category.nombre;
+                                mainCategoryFilter.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar categorías principales:', error);
+                        showNotification('Error al cargar categorías principales', 'error');
+                    });
+            }
+            
+            // Función para cargar subcategorías para el filtro
+            function loadSubcategoriesForFilter() {
+                const mainCategoryId = document.getElementById('mainCategoryFilter').value;
+                const subCategoryFilter = document.getElementById('subCategoryFilter');
+                
+                // Limpiar opciones actuales
+                subCategoryFilter.innerHTML = '<option value="all">Todas las subcategorías</option>';
+                
+                if (mainCategoryId !== 'all') {
+                    // Obtener subcategorías del servidor
+                    fetch(`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.subcategorias) {
+                                data.subcategorias.forEach(subcategory => {
+                                    const option = document.createElement('option');
+                                    option.value = subcategory.id;
+                                    option.textContent = subcategory.nombre;
+                                    subCategoryFilter.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar subcategorías:', error);
+                            showNotification('Error al cargar subcategorías', 'error');
+                        });
+                }
+            }
+            
+            // Función para cargar categorías jerárquicas
+            function loadHierarchicalCategories() {
+                if (isLoading) return;
+                isLoading = true;
+                
+                // Mostrar loader
+                categoriesContainer.innerHTML = '<div class="loader"></div>';
+                
+                // Obtener categorías principales del servidor
+                fetch('/admin/api/categorias-principales/filter?per_page=100')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.categorias) {
+                            renderHierarchicalCategories(data.categorias);
+                        } else {
+                            categoriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
+                        }
+                        
+                        isLoading = false;
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar categorías jerárquicas:', error);
+                        categoriesContainer.innerHTML = '<p class="text-red-500 text-center py-4">Error al cargar categorías</p>';
+                        showNotification('Error al cargar categorías', 'error');
+                        isLoading = false;
+                    });
+            }
+            
+            // Función para renderizar categorías jerárquicas
+            function renderHierarchicalCategories(categories) {
+                let html = '';
+                
+                if (categories && categories.length > 0) {
+                    categories.forEach(category => {
+                        // Contar subcategorías activas
+                        const activeSubcategories = category.subcategorias ? 
+                            category.subcategorias.filter(sub => sub.estado === 'activo').length : 0;
+                        
+                        // Contar productos totales
+                        let totalProducts = 0;
+                        if (category.subcategorias) {
+                            category.subcategorias.forEach(subcategory => {
+                                if (subcategory.seudocategorias) {
+                                    subcategory.seudocategorias.forEach(pseudocategory => {
+                                        totalProducts += pseudocategory.productos ? pseudocategory.productos.length : 0;
+                                    });
+                                }
+                            });
+                        }
+                        
+                        html += `
+                            <div class="category-card">
+                                <div class="category-header">
+                                    <div class="category-info">
+                                        <button class="category-toggle" data-target="sub-${category.id}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                        <div class="category-details">
+                                            <h4>${category.nombre}</h4>
+                                            <p>${category.descripcion}</p>
+                                            <div class="category-meta">
+                                                <span class="inline-flex items-center mr-3">
+                                                    <i class="fas fa-folder mr-1"></i> ${activeSubcategories} subcategorías
+                                                </span>
+                                                <span class="inline-flex items-center">
+                                                    <i class="fas fa-tag mr-1"></i> ${totalProducts} productos
+                                                </span>
+                                                <span class="inline-flex items-center ml-3">
+                                                    <i class="fas fa-clock mr-1"></i> ${formatDate(category.created_at)}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="category-actions">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="main-category-status" data-id="${category.id}" 
+                                                   ${category.estado === 'activo' ? 'checked' : ''}>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <button class="action-button view" title="Ver detalles" 
+                                                onclick="viewCategory('${category.id}', 'main')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-button edit" title="Editar" 
+                                                onclick="editCategory('${category.id}', 'main')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Subcategorías -->
+                                <div class="subcategory-list" id="sub-${category.id}">
+                                    <div class="mb-2">
+                                        <h5 class="font-medium text-gray-700">Subcategorías</h5>
+                                    </div>
+                                    
+                                    <div class="space-y-3 ml-4">
+                                        ${renderSubcategories(category.subcategorias || [], category.id)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
+                }
+                
+                categoriesContainer.innerHTML = html;
+                
+                // Inicializar eventos para la vista jerárquica
+                initializeHierarchicalView();
+            }
+            
+            // Función para renderizar subcategorías
+            function renderSubcategories(subcategories, mainCategoryId) {
+                let html = '';
+                
+                if (subcategories && subcategories.length > 0) {
+                    subcategories.forEach(subcategory => {
+                        // Contar seudocategorías activas
+                        const activePseudocategories = subcategory.seudocategorias ? 
+                            subcategory.seudocategorias.filter(pseudo => pseudo.estado === 'activo').length : 0;
+                        
+                        // Contar productos totales
+                        let totalProducts = 0;
+                        if (subcategory.seudocategorias) {
+                            subcategory.seudocategorias.forEach(pseudocategory => {
+                                totalProducts += pseudocategory.productos ? pseudocategory.productos.length : 0;
+                            });
+                        }
+                        
+                        html += `
+                            <div class="subcategory-card">
+                                <div class="subcategory-header">
+                                    <div class="subcategory-info">
+                                        <button class="subcategory-toggle" data-target="pseudo-${subcategory.id}">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                        <div class="subcategory-details">
+                                            <h6>${subcategory.nombre}</h6>
+                                            <p class="text-xs text-gray-500">${subcategory.descripcion}</p>
+                                            <div class="subcategory-meta">
+                                                <span class="inline-flex items-center mr-3">
+                                                    <i class="fas fa-folder mr-1"></i> ${activePseudocategories} seudocategorías
+                                                </span>
+                                                <span class="inline-flex items-center">
+                                                    <i class="fas fa-tag mr-1"></i> ${totalProducts} productos
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="subcategory-actions">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" class="subcategory-status" data-id="${subcategory.id}" 
+                                                   ${subcategory.estado === 'activo' ? 'checked' : ''}>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <button class="action-button view" title="Ver detalles" 
+                                                onclick="viewCategory('${subcategory.id}', 'sub')">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-button edit" title="Editar" 
+                                                onclick="editCategory('${subcategory.id}', 'sub')">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Seudocategorías -->
+                                <div class="pseudocategory-list" id="pseudo-${subcategory.id}">
+                                    <div class="mb-2">
+                                        <h5 class="font-medium text-gray-700 text-sm">Seudocategorías</h5>
+                                    </div>
+                                    
+                                    <div class="space-y-2 ml-4">
+                                        ${renderPseudocategories(subcategory.seudocategorias || [], subcategory.id)}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<p class="text-gray-500 text-center py-2">No hay subcategorías</p>';
+                }
+                
+                return html;
+            }
+            
+            // Función para renderizar seudocategorías
+            function renderPseudocategories(pseudocategories, subcategoryId) {
+                let html = '';
+                
+                if (pseudocategories && pseudocategories.length > 0) {
+                    pseudocategories.forEach(pseudocategory => {
+                        // Contar productos
+                        const totalProducts = pseudocategory.productos ? pseudocategory.productos.length : 0;
+                        
+                        html += `
+                            <div class="pseudocategory-card">
+                                <div class="pseudocategory-info">
+                                    <h6 class="font-medium text-gray-800 text-sm">${pseudocategory.nombre}</h6>
+                                    <p class="text-xs text-gray-500">${pseudocategory.descripcion}</p>
+                                    <div class="pseudocategory-meta">
+                                        <span class="inline-flex items-center">
+                                            <i class="fas fa-tag mr-1"></i> ${totalProducts} productos
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="pseudocategory-actions">
+                                    <label class="toggle-switch">
+                                        <input type="checkbox" class="pseudocategory-status" data-id="${pseudocategory.id}" 
+                                               ${pseudocategory.estado === 'activo' ? 'checked' : ''}>
+                                        <span class="toggle-slider"></span>
+                                    </label>
+                                    <button class="action-button view" title="Ver detalles" 
+                                            onclick="viewCategory('${pseudocategory.id}', 'pseudo')">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button class="action-button edit" title="Editar" 
+                                            onclick="editCategory('${pseudocategory.id}', 'pseudo')">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html = '<p class="text-gray-500 text-center py-2">No hay seudocategorías</p>';
+                }
+                
+                return html;
+            }
+            
+            // Función para inicializar la vista jerárquica
+            function initializeHierarchicalView() {
+                // Toggle para expandir/colapsar categorías
+                document.querySelectorAll('.category-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const targetId = this.getAttribute('data-target');
+                        const targetElement = document.getElementById(targetId);
+                        const icon = this.querySelector('i');
+                        
+                        if (targetElement.classList.contains('open')) {
+                            targetElement.classList.remove('open');
+                            icon.classList.remove('fa-chevron-down');
+                            icon.classList.add('fa-chevron-right');
+                        } else {
+                            targetElement.classList.add('open');
+                            icon.classList.remove('fa-chevron-right');
+                            icon.classList.add('fa-chevron-down');
+                        }
+                    });
+                });
+                
+                // Toggle para expandir/colapsar subcategorías
+                document.querySelectorAll('.subcategory-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', function() {
+                        const targetId = this.getAttribute('data-target');
+                        const targetElement = document.getElementById(targetId);
+                        const icon = this.querySelector('i');
+                        
+                        if (targetElement.classList.contains('open')) {
+                            targetElement.classList.remove('open');
+                            icon.classList.remove('fa-chevron-down');
+                            icon.classList.add('fa-chevron-right');
+                        } else {
+                            targetElement.classList.add('open');
+                            icon.classList.remove('fa-chevron-right');
+                            icon.classList.add('fa-chevron-down');
+                        }
+                    });
+                });
+                
+                // Toggle de estado para categorías principales
+                document.querySelectorAll('.main-category-status').forEach(toggle => {
+                    toggle.addEventListener('change', function() {
+                        const categoryId = this.getAttribute('data-id');
+                        const newStatus = this.checked ? 'activo' : 'inactivo';
+                        updateMainCategoryStatus(categoryId, newStatus);
+                    });
+                });
+                
+                // Toggle de estado para subcategorías
+                document.querySelectorAll('.subcategory-status').forEach(toggle => {
+                    toggle.addEventListener('change', function() {
+                        const subcategoryId = this.getAttribute('data-id');
+                        const newStatus = this.checked ? 'activo' : 'inactivo';
+                        updateSubcategoryStatus(subcategoryId, newStatus);
+                    });
+                });
+                
+                // Toggle de estado para seudocategorías
+                document.querySelectorAll('.pseudocategory-status').forEach(toggle => {
+                    toggle.addEventListener('change', function() {
+                        const pseudocategoryId = this.getAttribute('data-id');
+                        const newStatus = this.checked ? 'activo' : 'inactivo';
+                        updatePseudocategoryStatus(pseudocategoryId, newStatus);
+                    });
+                });
+            }
+            
+            // Función para cargar datos de tabla
+            function loadTableData(resetPage = true) {
+                if (isLoading) return;
+                isLoading = true;
+                
+                if (resetPage) {
+                    currentPage = 1;
+                }
+                
+                // Obtener parámetros de filtro
+                const nameFilter = document.getElementById('nameFilter').value;
+                const statusFilter = document.getElementById('statusFilter').value;
+                const mainCategoryFilter = document.getElementById('mainCategoryFilter').value;
+                const subCategoryFilter = document.getElementById('subCategoryFilter').value;
+                const sortFilter = document.getElementById('sortFilter').value;
+                
+                // Construir URL de la API
+                let apiUrl = '';
+                let tableBody = '';
+                
+                if (currentView === 'main') {
+                    apiUrl = `/admin/api/categorias-principales/filter?page=${currentPage}&per_page=${itemsPerPage}`;
+                    tableBody = mainCategoriesTableBody;
+                } else if (currentView === 'sub') {
+                    apiUrl = `/admin/api/subcategorias/filter?page=${currentPage}&per_page=${itemsPerPage}`;
+                    tableBody = subCategoriesTableBody;
+                } else if (currentView === 'pseudo') {
+                    apiUrl = `/admin/api/seudocategorias/filter?page=${currentPage}&per_page=${itemsPerPage}`;
+                    tableBody = pseudoCategoriesTableBody;
+                }
+                
+                // Agregar parámetros de filtro
+                if (nameFilter) apiUrl += `&nombre=${encodeURIComponent(nameFilter)}`;
+                if (statusFilter !== 'all') apiUrl += `&estado=${statusFilter}`;
+                if (currentView === 'sub' && mainCategoryFilter !== 'all') apiUrl += `&categoria_id=${mainCategoryFilter}`;
+                if (currentView === 'pseudo' && subCategoryFilter !== 'all') apiUrl += `&subcategoria_id=${subCategoryFilter}`;
+                
+                // Agregar parámetros de ordenamiento
+                if (sortFilter === 'nombre-desc') {
+                    apiUrl += '&sort_by=nombre&sort_order=desc';
+                } else if (sortFilter === 'created_at') {
+                    apiUrl += '&sort_by=created_at&sort_order=asc';
+                } else if (sortFilter === 'created_at-desc') {
+                    apiUrl += '&sort_by=created_at&sort_order=desc';
+                } else {
+                    apiUrl += '&sort_by=nombre&sort_order=asc';
+                }
+                
+                // Mostrar loader
+                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="loader"></div></td></tr>';
+                
+                // Obtener datos del servidor
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Actualizar tabla
+                            updateTable(data, tableBody);
+                            
+                            // Actualizar paginación
+                            updatePagination(data.pagination);
+                            
+                            // Actualizar información de paginación
+                            updatePaginationInfo(data.pagination);
+                        } else {
+                            tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
+                            showNotification('Error al cargar datos', 'error');
+                        }
+                        
+                        isLoading = false;
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar datos de tabla:', error);
+                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
+                        showNotification('Error al cargar datos', 'error');
+                        isLoading = false;
+                    });
+            }
+            
+            // Función para actualizar la tabla
+            function updateTable(data, tableBody) {
+                let html = '';
+                
+                if (currentView === 'main') {
+                    if (data.categorias && data.categorias.length > 0) {
+                        data.categorias.forEach(category => {
+                            html += `
+                                <tr>
+                                    <td>${category.nombre}</td>
+                                    <td>${category.slug}</td>
+                                    <td>${category.subcategorias ? category.subcategorias.length : 0}</td>
+                                    <td>
+                                        <span class="status-badge ${category.estado === 'activo' ? 'active' : 'inactive'}">
+                                            <i class="fas fa-circle mr-1"></i> ${category.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </td>
+                                    <td>${formatDate(category.created_at)}</td>
+                                    <td>
+                                        <div class="flex">
+                                            <button class="action-button view" title="Ver detalles" onclick="viewCategory('${category.id}', 'main')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-button edit" title="Editar" onclick="editCategory('${category.id}', 'main')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        html = '<tr><td colspan="6" class="text-center py-4 text-gray-500">No se encontraron categorías principales</td></tr>';
+                    }
+                } else if (currentView === 'sub') {
+                    if (data.subcategorias && data.subcategorias.length > 0) {
+                        data.subcategorias.forEach(subcategory => {
+                            html += `
+                                <tr>
+                                    <td>${subcategory.nombre}</td>
+                                    <td>${subcategory.slug}</td>
+                                    <td>${subcategory.categoria_principal_nombre || '-'}</td>
+                                    <td>${subcategory.seudocategorias ? subcategory.seudocategorias.length : 0}</td>
+                                    <td>
+                                        <span class="status-badge ${subcategory.estado === 'activo' ? 'active' : 'inactive'}">
+                                            <i class="fas fa-circle mr-1"></i> ${subcategory.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </td>
+                                    <td>${formatDate(subcategory.created_at)}</td>
+                                    <td>
+                                        <div class="flex">
+                                            <button class="action-button view" title="Ver detalles" onclick="viewCategory('${subcategory.id}', 'sub')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-button edit" title="Editar" onclick="editCategory('${subcategory.id}', 'sub')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron subcategorías</td></tr>';
+                    }
+                } else if (currentView === 'pseudo') {
+                    if (data.seudocategorias && data.seudocategorias.length > 0) {
+                        data.seudocategorias.forEach(pseudocategory => {
+                            html += `
+                                <tr>
+                                    <td>${pseudocategory.nombre}</td>
+                                    <td>${pseudocategory.slug}</td>
+                                    <td>${pseudocategory.subcategoria_nombre || '-'}</td>
+                                    <td>${pseudocategory.categoria_principal_nombre || '-'}</td>
+                                    <td>
+                                        <span class="status-badge ${pseudocategory.estado === 'activo' ? 'active' : 'inactive'}">
+                                            <i class="fas fa-circle mr-1"></i> ${pseudocategory.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                        </span>
+                                    </td>
+                                    <td>${formatDate(pseudocategory.created_at)}</td>
+                                    <td>
+                                        <div class="flex">
+                                            <button class="action-button view" title="Ver detalles" onclick="viewCategory('${pseudocategory.id}', 'pseudo')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-button edit" title="Editar" onclick="editCategory('${pseudocategory.id}', 'pseudo')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    } else {
+                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron seudocategorías</td></tr>';
+                    }
+                }
+                
+                tableBody.innerHTML = html;
+            }
+            
+            // Función para actualizar la paginación
+            function updatePagination(pagination) {
+                let html = '';
+                
+                // Botón Anterior
+                html += `
+                    <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${pagination.has_prev ? '' : 'disabled'}" 
+                            onclick="changePage(${pagination.prev_num})" ${!pagination.has_prev ? 'disabled' : ''}>
+                        <i class="fas fa-chevron-left mr-1"></i> Anterior
+                    </button>
+                `;
+                
+                // Botones de página
+                const maxVisiblePages = 5;
+                let startPage = Math.max(1, pagination.page - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(pagination.pages, startPage + maxVisiblePages - 1);
+                
+                if (endPage - startPage + 1 < maxVisiblePages) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                if (startPage > 1) {
+                    html += `<button class="pagination-button border border-gray-300 text-gray-700" onclick="changePage(1)">1</button>`;
+                    if (startPage > 2) {
+                        html += `<span class="px-2 text-gray-500">...</span>`;
+                    }
+                }
+                
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `
+                        <button class="pagination-button border border-gray-300 ${i === pagination.page ? 'active bg-blue-600 text-white' : 'text-gray-700'}" 
+                                onclick="changePage(${i})">${i}</button>
+                    `;
+                }
+                
+                if (endPage < pagination.pages) {
+                    if (endPage < pagination.pages - 1) {
+                        html += `<span class="px-2 text-gray-500">...</span>`;
+                    }
+                    html += `<button class="pagination-button border border-gray-300 text-gray-700" onclick="changePage(${pagination.pages})">${pagination.pages}</button>`;
+                }
+                
+                // Botón Siguiente
+                html += `
+                    <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${pagination.has_next ? '' : 'disabled'}" 
+                            onclick="changePage(${pagination.next_num})" ${!pagination.has_next ? 'disabled' : ''}>
+                        Siguiente <i class="fas fa-chevron-right ml-1"></i>
+                    </button>
+                `;
+                
+                paginationContainer.innerHTML = html;
+            }
+            
+            // Función para actualizar la información de paginación
+            function updatePaginationInfo(pagination) {
+                const from = (pagination.page - 1) * pagination.per_page + 1;
+                const to = Math.min(pagination.page * pagination.per_page, pagination.total);
+                
+                showingFrom.textContent = from;
+                showingTo.textContent = to;
+                totalItems.textContent = pagination.total;
+            }
+            
+            // Función para cambiar de página
+            function changePage(page) {
+                currentPage = page;
+                loadTableData(false);
+            }
+            
+            // Función para formatear fecha
+            function formatDate(dateString) {
+                if (!dateString) return '-';
+                
+                const date = new Date(dateString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const year = date.getFullYear();
+                
+                return `${day}/${month}/${year}`;
+            }
+            
+            // Función para mostrar notificación
+            function showNotification(message, type) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type}`;
+                notification.classList.add('show');
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, 3000);
+            }
+            
+            // Función para actualizar el estado de una categoría principal
+            function updateMainCategoryStatus(categoryId, newStatus) {
+                fetch(`/admin/api/categorias-principales/${categoryId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({ estado: newStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                    } else {
+                        // Revertir el toggle si hubo un error
+                        const toggle = document.querySelector(`.main-category-status[data-id="${categoryId}"]`);
+                        if (toggle) {
+                            toggle.checked = newStatus === 'inactivo';
+                        }
+                        showNotification(data.message || 'Error al actualizar estado', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar estado de categoría principal:', error);
+                    showNotification('Error al actualizar estado', 'error');
+                });
+            }
+            
+            // Función para actualizar el estado de una subcategoría
+            function updateSubcategoryStatus(subcategoryId, newStatus) {
+                fetch(`/admin/api/subcategorias/${subcategoryId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({ estado: newStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                    } else {
+                        // Revertir el toggle si hubo un error
+                        const toggle = document.querySelector(`.subcategory-status[data-id="${subcategoryId}"]`);
+                        if (toggle) {
+                            toggle.checked = newStatus === 'inactivo';
+                        }
+                        showNotification(data.message || 'Error al actualizar estado', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar estado de subcategoría:', error);
+                    showNotification('Error al actualizar estado', 'error');
+                });
+            }
+            
+            // Función para actualizar el estado de una seudocategoría
+            function updatePseudocategoryStatus(pseudocategoryId, newStatus) {
+                fetch(`/admin/api/seudocategorias/${pseudocategoryId}/status`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({ estado: newStatus })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(data.message, 'success');
+                    } else {
+                        // Revertir el toggle si hubo un error
+                        const toggle = document.querySelector(`.pseudocategory-status[data-id="${pseudocategoryId}"]`);
+                        if (toggle) {
+                            toggle.checked = newStatus === 'inactivo';
+                        }
+                        showNotification(data.message || 'Error al actualizar estado', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error al actualizar estado de seudocategoría:', error);
+                    showNotification('Error al actualizar estado', 'error');
+                });
+            }
+            
+            // Función para ver detalles de una categoría
+            function viewCategory(categoryId, categoryType) {
+                // Implementar la lógica para ver detalles
+                console.log(`Ver detalles de ${categoryType} con ID: ${categoryId}`);
+                showNotification(`Ver detalles de ${categoryType}`, 'success');
+            }
+            
+            // Función para editar una categoría
+            function editCategory(categoryId, categoryType) {
+                // Implementar la lógica para editar
+                console.log(`Editar ${categoryType} con ID: ${categoryId}`);
+                showNotification(`Editar ${categoryType}`, 'success');
+            }
+            
+            // Tabs para niveles de categoría
+            document.querySelectorAll('.tab-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    // Remover clase activa de todos los tabs
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    
+                    // Añadir clase activa al tab actual
+                    this.classList.add('active', 'border-blue-500', 'text-blue-600');
+                    this.classList.remove('border-transparent', 'text-gray-500');
+                    
+                    // Actualizar la vista actual
+                    currentView = this.getAttribute('data-level');
+                    
+                    // Mostrar la vista correspondiente
+                    showView(currentView);
+                    
+                    // Actualizar la URL sin recargar la página
+                    const url = new URL(window.location);
+                    url.searchParams.set('view', currentView);
+                    window.history.pushState({}, '', url);
+                    
+                    // Cargar los datos según la vista
+                    if (currentView === 'all') {
+                        loadHierarchicalCategories();
+                    } else {
+                        loadTableData();
+                    }
+                });
+            });
+            
+            // Selector de elementos por página
+            document.getElementById('itemsPerPage').addEventListener('change', function() {
+                itemsPerPage = parseInt(this.value);
+                loadTableData();
+            });
+            
+            // Menú lateral de filtros
+            const filterMenu = document.getElementById('filterMenu');
+            const filterOverlay = document.getElementById('filterOverlay');
+            const closeFilterMenu = document.getElementById('closeFilterMenu');
+            const applyFilters = document.getElementById('applyFilters');
+            const clearFilters = document.getElementById('clearFilters');
+            
+            // Abrir menú de filtros
+            filterFab.addEventListener('click', function() {
+                filterMenu.classList.add('open');
+                filterOverlay.classList.add('active');
+                document.body.style.overflow = 'hidden'; // Evitar scroll en el body
+            });
+            
+            // Cerrar menú de filtros
+            function closeFilterMenuFunc() {
+                filterMenu.classList.remove('open');
+                filterOverlay.classList.remove('active');
+                document.body.style.overflow = ''; // Restaurar scroll
+            }
+            
+            closeFilterMenu.addEventListener('click', closeFilterMenuFunc);
+            filterOverlay.addEventListener('click', closeFilterMenuFunc);
+            
+            // Aplicar filtros
+            applyFilters.addEventListener('click', function() {
+                loadTableData();
+                closeFilterMenuFunc();
+                showNotification('Filtros aplicados correctamente', 'success');
+            });
+            
+            // Limpiar filtros
+            clearFilters.addEventListener('click', function() {
+                document.getElementById('nameFilter').value = '';
+                document.getElementById('statusFilter').value = 'all';
+                document.getElementById('mainCategoryFilter').value = 'all';
+                document.getElementById('subCategoryFilter').value = 'all';
+                document.getElementById('sortFilter').value = 'nombre';
+                
+                // Si estamos en la vista de seudocategorías, recargar las subcategorías
+                if (currentView === 'pseudo') {
+                    loadSubcategoriesForFilter();
+                }
+                
+                loadTableData();
+                closeFilterMenuFunc();
+                showNotification('Filtros limpiados correctamente', 'success');
+            });
+            
+            // Evento para cargar subcategorías cuando cambia la categoría principal
+            document.getElementById('mainCategoryFilter').addEventListener('change', function() {
+                if (currentView === 'pseudo') {
+                    loadSubcategoriesForFilter();
+                }
+            });
+            
+            // Modal para añadir/editar categoría
+            const modal = document.getElementById('categoryModal');
+            const addCategoryBtn = document.getElementById('addCategoryBtn');
+            const closeModal = document.getElementById('closeModal');
+            const cancelBtn = document.getElementById('cancelBtn');
+            const categoryForm = document.getElementById('categoryForm');
+            const categoryLevel = document.getElementById('categoryLevel');
+            const dynamicFields = document.getElementById('dynamicFields');
+            
+            addCategoryBtn.addEventListener('click', function() {
+                modal.classList.remove('hidden');
+                document.getElementById('modalTitle').textContent = 'Agregar Nueva Categoría';
+                categoryForm.reset();
+                updateDynamicFields();
+            });
+            
+            closeModal.addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+            
+            cancelBtn.addEventListener('click', function() {
+                modal.classList.add('hidden');
+            });
+            
+            // Actualizar campos dinámicos según el nivel seleccionado
+            categoryLevel.addEventListener('change', updateDynamicFields);
+            
+            function updateDynamicFields() {
+                const level = categoryLevel.value;
+                dynamicFields.innerHTML = '';
+                
+                if (level === 'sub') {
+                    // Para subcategoría: mostrar campo para seleccionar categoría principal
+                    dynamicFields.innerHTML = `
+                        <div>
+                            <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
+                            <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Seleccionar categoría principal</option>
+                            </select>
+                        </div>
+                    `;
+                    
+                    // Cargar categorías principales
+                    loadMainCategoriesForModal();
+                } else if (level === 'pseudo') {
+                    // Para seudocategoría: mostrar campos para categoría principal y subcategoría
+                    dynamicFields.innerHTML = `
+                        <div>
+                            <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
+                            <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Seleccionar categoría principal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="subCategory" class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
+                            <select id="subCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Seleccionar subcategoría</option>
+                            </select>
+                        </div>
+                    `;
+                    
+                    // Cargar categorías principales
+                    loadMainCategoriesForModal();
+                    
+                    // Agregar evento para cargar subcategorías cuando se seleccione una categoría principal
+                    document.getElementById('mainCategory').addEventListener('change', loadSubcategoriesForModal);
+                }
+            }
+            
+            // Función para cargar categorías principales para el modal
+            function loadMainCategoriesForModal() {
+                const mainCategorySelect = document.getElementById('mainCategory');
+                
+                // Limpiar opciones actuales
+                mainCategorySelect.innerHTML = '<option value="">Seleccionar categoría principal</option>';
+                
+                // Obtener categorías principales del servidor
+                fetch('/admin/api/categorias-principales/filter?per_page=100&estado=activo')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.categorias) {
+                            data.categorias.forEach(category => {
+                                const option = document.createElement('option');
+                                option.value = category.id;
+                                option.textContent = category.nombre;
+                                mainCategorySelect.appendChild(option);
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar categorías principales:', error);
+                        showNotification('Error al cargar categorías principales', 'error');
+                    });
+            }
+            
+            // Función para cargar subcategorías para el modal
+            function loadSubcategoriesForModal() {
+                const mainCategoryId = document.getElementById('mainCategory').value;
+                const subCategorySelect = document.getElementById('subCategory');
+                
+                // Limpiar opciones actuales
+                subCategorySelect.innerHTML = '<option value="">Seleccionar subcategoría</option>';
+                
+                if (mainCategoryId) {
+                    // Obtener subcategorías del servidor
+                    fetch(`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success && data.subcategorias) {
+                                data.subcategorias.forEach(subcategory => {
+                                    const option = document.createElement('option');
+                                    option.value = subcategory.id;
+                                    option.textContent = subcategory.nombre;
+                                    subCategorySelect.appendChild(option);
+                                });
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al cargar subcategorías:', error);
+                            showNotification('Error al cargar subcategorías', 'error');
+                        });
+                }
+            }
+            
+            // Envío del formulario
+            categoryForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Obtener datos del formulario
+                const formData = {
+                    nombre: document.getElementById('categoryName').value,
+                    descripcion: document.getElementById('categoryDescription').value,
+                    nivel: document.getElementById('categoryLevel').value,
+                    estado: document.getElementById('categoryStatus').checked ? 'activo' : 'inactivo'
+                };
+                
+                // Agregar campos según el nivel
+                if (formData.nivel === 'sub') {
+                    formData.categoria_principal_id = document.getElementById('mainCategory').value;
+                } else if (formData.nivel === 'pseudo') {
+                    formData.categoria_principal_id = document.getElementById('mainCategory').value;
+                    formData.subcategoria_id = document.getElementById('subCategory').value;
+                }
+                
+                // Aquí iría la lógica para guardar la categoría
+                console.log('Guardando categoría:', formData);
+                
+                // Cerrar modal
+                modal.classList.add('hidden');
+                
+                // Mostrar mensaje de éxito
+                showNotification('Categoría guardada correctamente', 'success');
+                
+                // Recargar los datos según la vista actual
+                if (currentView === 'all') {
+                    loadHierarchicalCategories();
+                } else {
+                    loadTableData();
+                }
+            });
+        });
+    </script>
+{% endblock %}

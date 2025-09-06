@@ -1,0 +1,673 @@
+from flask import Blueprint, jsonify, request, render_template, current_app
+from app.utils.admin_jwt_utils import admin_jwt_required
+from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
+from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict
+from app.extensions import db
+from sqlalchemy import or_, and_
+from datetime import datetime
+from flask_wtf.csrf import generate_csrf
+
+admin_lista_categorias_bp = Blueprint('admin_categorias', __name__, url_prefix='/admin')
+
+@admin_lista_categorias_bp.route('/lista-categorias', methods=['GET'])
+@admin_jwt_required
+def get_all_categories(admin_user):
+    error_message = None
+    categorias_data = []
+    subcategorias_data = []
+    seudocategorias_data = []
+    pagination_data = None
+    current_view = request.args.get('view', 'all')
+    
+    try:
+        # Obtener parámetros de filtro
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        nombre = request.args.get('nombre', '')
+        estado = request.args.get('estado', '')
+        categoria_id = request.args.get('categoria_id', '')
+        subcategoria_id = request.args.get('subcategoria_id', '')
+        sort_by = request.args.get('sort_by', 'nombre')
+        sort_order = request.args.get('sort_order', 'asc')
+        
+        # Cargar datos según la vista actual
+        if current_view == 'main':
+            # Vista de categorías principales
+            query = CategoriasPrincipales.query
+            
+            if nombre:
+                query = query.filter(CategoriasPrincipales.nombre.ilike(f'%{nombre}%'))
+                
+            if estado:
+                query = query.filter(CategoriasPrincipales.estado == estado)
+            
+            # Aplicar ordenamiento
+            if sort_by == 'nombre':
+                order_field = CategoriasPrincipales.nombre
+            elif sort_by == 'created_at':
+                order_field = CategoriasPrincipales.created_at
+            else:
+                order_field = CategoriasPrincipales.nombre
+                
+            if sort_order == 'asc':
+                query = query.order_by(order_field.asc())
+            else:
+                query = query.order_by(order_field.desc())
+            
+            # Paginación
+            pagination_data = query.paginate(
+                page=page, per_page=per_page, error_out=False)
+            
+            # Serializar datos
+            categorias_data = [categoria_principal_to_dict(
+                cat) for cat in pagination_data.items]
+                
+        elif current_view == 'sub':
+            # Vista de subcategorías
+            query = Subcategorias.query
+            
+            if nombre:
+                query = query.filter(Subcategorias.nombre.ilike(f'%{nombre}%'))
+                
+            if estado:
+                query = query.filter(Subcategorias.estado == estado)
+                
+            if categoria_id:
+                query = query.filter(Subcategorias.categoria_principal_id == categoria_id)
+            
+            # Aplicar ordenamiento
+            if sort_by == 'nombre':
+                order_field = Subcategorias.nombre
+            elif sort_by == 'created_at':
+                order_field = Subcategorias.created_at
+            else:
+                order_field = Subcategorias.nombre
+                
+            if sort_order == 'asc':
+                query = query.order_by(order_field.asc())
+            else:
+                query = query.order_by(order_field.desc())
+            
+            # Paginación
+            pagination_data = query.paginate(
+                page=page, per_page=per_page, error_out=False)
+            
+            # Serializar datos
+            subcategorias_data = [subcategoria_to_dict(
+                sub) for sub in pagination_data.items]
+            
+            # Obtener categorías principales para el filtro
+            categorias_data = [categoria_principal_to_dict(
+                cat) for cat in CategoriasPrincipales.query.filter_by(estado='activo').all()]
+                
+        elif current_view == 'pseudo':
+            # Vista de seudocategorías
+            query = Seudocategorias.query
+            
+            if nombre:
+                query = query.filter(Seudocategorias.nombre.ilike(f'%{nombre}%'))
+                
+            if estado:
+                query = query.filter(Seudocategorias.estado == estado)
+                
+            if subcategoria_id:
+                query = query.filter(Seudocategorias.subcategoria_id == subcategoria_id)
+            
+            # Aplicar ordenamiento
+            if sort_by == 'nombre':
+                order_field = Seudocategorias.nombre
+            elif sort_by == 'created_at':
+                order_field = Seudocategorias.created_at
+            else:
+                order_field = Seudocategorias.nombre
+                
+            if sort_order == 'asc':
+                query = query.order_by(order_field.asc())
+            else:
+                query = query.order_by(order_field.desc())
+            
+            # Paginación
+            pagination_data = query.paginate(
+                page=page, per_page=per_page, error_out=False)
+            
+            # Serializar datos
+            seudocategorias_data = [seudocategoria_to_dict(
+                seudo) for seudo in pagination_data.items]
+            
+            # Obtener subcategorías para el filtro
+            subcategorias_data = [subcategoria_to_dict(
+                sub) for sub in Subcategorias.query.filter_by(estado='activo').all()]
+            
+            # Obtener categorías principales para el filtro
+            categorias_data = [categoria_principal_to_dict(
+                cat) for cat in CategoriasPrincipales.query.filter_by(estado='activo').all()]
+                
+        else:  # Vista 'all' - jerárquica
+            # Obtener todas las categorías principales con sus relaciones
+            categorias_principales = CategoriasPrincipales.query.all()
+            categorias_data = [categoria_principal_to_dict(
+                cat) for cat in categorias_principales]
+    
+    except Exception as e:
+        current_app.logger.error(
+            f"Error al cargar categorías en el panel de administración: {e}")
+        error_message = "Ocurrió un error al cargar las categorías. Por favor, inténtalo de nuevo."
+
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    return render_template('admin/componentes/categoria/lista_categorias.html',
+                           categorias=categorias_data,
+                           subcategorias=subcategorias_data,
+                           seudocategorias=seudocategorias_data,
+                           pagination=pagination_data,
+                           current_view=current_view,
+                           filter_params=request.args,
+                           error_message=error_message,
+                           csrf_token=generate_csrf(),
+                           is_ajax=is_ajax)
+
+# Endpoint para cambiar el estado de una categoría principal
+@admin_lista_categorias_bp.route('/api/categorias-principales/<string:categoria_id>/status', methods=['POST'])
+@admin_jwt_required
+def update_main_category_status(admin_user, categoria_id):
+    try:
+        # Validar que la categoría exista
+        categoria = CategoriasPrincipales.query.get(categoria_id)
+        if not categoria:
+            return jsonify({
+                'success': False,
+                'message': 'Categoría no encontrada',
+                'error_code': 'CATEGORY_NOT_FOUND'
+            }), 404
+
+        # Validar datos de entrada
+        data = request.get_json()
+        if not data or 'estado' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos incompletos',
+                'error_code': 'INVALID_DATA'
+            }), 400
+
+        new_status = data.get('estado')
+        if new_status not in ['activo', 'inactivo']:
+            return jsonify({
+                'success': False,
+                'message': 'Estado no válido',
+                'error_code': 'INVALID_STATUS'
+            }), 400
+
+        # Verificar si el estado ya es el mismo
+        if categoria.estado == new_status:
+            return jsonify({
+                'success': True,
+                'message': f'La categoría ya estaba {"activada" if new_status == "activo" else "desactivada"}',
+                'status_unchanged': True,
+                'current_status': new_status
+            }), 200
+
+        # Guardar estado anterior para logging
+        old_status = categoria.estado
+
+        # Actualizar el estado de la categoría
+        categoria.estado = new_status
+
+        # Guardar cambios en la base de datos
+        db.session.commit()
+
+        # Registrar la acción en el log
+        current_app.logger.info(
+            f"Categoría principal {categoria_id} ('{categoria.nombre}') cambiada de estado de {old_status} a {new_status} "
+            f"por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        # Respuesta exitosa
+        return jsonify({
+            'success': True,
+            'message': f'La categoría ha sido {"activada" if new_status == "activo" else "desactivada"} correctamente',
+            'category_id': categoria_id,
+            'category_name': categoria.nombre,
+            'old_status': old_status,
+            'new_status': new_status,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        # Revertir cambios en caso de error
+        db.session.rollback()
+
+        # Registrar el error
+        current_app.logger.error(
+            f"Error al cambiar estado de la categoría principal {categoria_id}: {str(e)}",
+            exc_info=True
+        )
+
+        # Respuesta de error
+        return jsonify({
+            'success': False,
+            'message': 'Error al cambiar el estado de la categoría',
+            'error_code': 'INTERNAL_ERROR',
+            'error_details': str(e) if current_app.debug else None
+        }), 500
+
+# Endpoint para cambiar el estado de una subcategoría
+@admin_lista_categorias_bp.route('/api/subcategorias/<string:subcategoria_id>/status', methods=['POST'])
+@admin_jwt_required
+def update_subcategory_status(admin_user, subcategoria_id):
+    try:
+        # Validar que la subcategoría exista
+        subcategoria = Subcategorias.query.get(subcategoria_id)
+        if not subcategoria:
+            return jsonify({
+                'success': False,
+                'message': 'Subcategoría no encontrada',
+                'error_code': 'SUBCATEGORY_NOT_FOUND'
+            }), 404
+
+        # Validar datos de entrada
+        data = request.get_json()
+        if not data or 'estado' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos incompletos',
+                'error_code': 'INVALID_DATA'
+            }), 400
+
+        new_status = data.get('estado')
+        if new_status not in ['activo', 'inactivo']:
+            return jsonify({
+                'success': False,
+                'message': 'Estado no válido',
+                'error_code': 'INVALID_STATUS'
+            }), 400
+
+        # Verificar si el estado ya es el mismo
+        if subcategoria.estado == new_status:
+            return jsonify({
+                'success': True,
+                'message': f'La subcategoría ya estaba {"activada" if new_status == "activo" else "desactivada"}',
+                'status_unchanged': True,
+                'current_status': new_status
+            }), 200
+
+        # Guardar estado anterior para logging
+        old_status = subcategoria.estado
+
+        # Actualizar el estado de la subcategoría
+        subcategoria.estado = new_status
+
+        # Guardar cambios en la base de datos
+        db.session.commit()
+
+        # Registrar la acción en el log
+        current_app.logger.info(
+            f"Subcategoría {subcategoria_id} ('{subcategoria.nombre}') cambiada de estado de {old_status} a {new_status} "
+            f"por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        # Respuesta exitosa
+        return jsonify({
+            'success': True,
+            'message': f'La subcategoría ha sido {"activada" if new_status == "activo" else "desactivada"} correctamente',
+            'subcategory_id': subcategoria_id,
+            'subcategory_name': subcategoria.nombre,
+            'old_status': old_status,
+            'new_status': new_status,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        # Revertir cambios en caso de error
+        db.session.rollback()
+
+        # Registrar el error
+        current_app.logger.error(
+            f"Error al cambiar estado de la subcategoría {subcategoria_id}: {str(e)}",
+            exc_info=True
+        )
+
+        # Respuesta de error
+        return jsonify({
+            'success': False,
+            'message': 'Error al cambiar el estado de la subcategoría',
+            'error_code': 'INTERNAL_ERROR',
+            'error_details': str(e) if current_app.debug else None
+        }), 500
+
+# Endpoint para cambiar el estado de una seudocategoría
+@admin_lista_categorias_bp.route('/api/seudocategorias/<string:seudocategoria_id>/status', methods=['POST'])
+@admin_jwt_required
+def update_pseudocategory_status(admin_user, seudocategoria_id):
+    try:
+        # Validar que la seudocategoría exista
+        seudocategoria = Seudocategorias.query.get(seudocategoria_id)
+        if not seudocategoria:
+            return jsonify({
+                'success': False,
+                'message': 'Seudocategoría no encontrada',
+                'error_code': 'PSEUDOCATEGORY_NOT_FOUND'
+            }), 404
+
+        # Validar datos de entrada
+        data = request.get_json()
+        if not data or 'estado' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos incompletos',
+                'error_code': 'INVALID_DATA'
+            }), 400
+
+        new_status = data.get('estado')
+        if new_status not in ['activo', 'inactivo']:
+            return jsonify({
+                'success': False,
+                'message': 'Estado no válido',
+                'error_code': 'INVALID_STATUS'
+            }), 400
+
+        # Verificar si el estado ya es el mismo
+        if seudocategoria.estado == new_status:
+            return jsonify({
+                'success': True,
+                'message': f'La seudocategoría ya estaba {"activada" if new_status == "activo" else "desactivada"}',
+                'status_unchanged': True,
+                'current_status': new_status
+            }), 200
+
+        # Guardar estado anterior para logging
+        old_status = seudocategoria.estado
+
+        # Actualizar el estado de la seudocategoría
+        seudocategoria.estado = new_status
+
+        # Guardar cambios en la base de datos
+        db.session.commit()
+
+        # Registrar la acción en el log
+        current_app.logger.info(
+            f"Seudocategoría {seudocategoria_id} ('{seudocategoria.nombre}') cambiada de estado de {old_status} a {new_status} "
+            f"por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        # Respuesta exitosa
+        return jsonify({
+            'success': True,
+            'message': f'La seudocategoría ha sido {"activada" if new_status == "activo" else "desactivada"} correctamente',
+            'pseudocategory_id': seudocategoria_id,
+            'pseudocategory_name': seudocategoria.nombre,
+            'old_status': old_status,
+            'new_status': new_status,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        # Revertir cambios en caso de error
+        db.session.rollback()
+
+        # Registrar el error
+        current_app.logger.error(
+            f"Error al cambiar estado de la seudocategoría {seudocategoria_id}: {str(e)}",
+            exc_info=True
+        )
+
+        # Respuesta de error
+        return jsonify({
+            'success': False,
+            'message': 'Error al cambiar el estado de la seudocategoría',
+            'error_code': 'INTERNAL_ERROR',
+            'error_details': str(e) if current_app.debug else None
+        }), 500
+
+# Endpoint API para filtros en tiempo real - Categorías Principales
+@admin_lista_categorias_bp.route('/api/categorias-principales/filter', methods=['GET'])
+@admin_jwt_required
+def filter_main_categories_api(admin_user):
+    try:
+        # Obtener parámetros de filtro
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        nombre = request.args.get('nombre', '')
+        estado = request.args.get('estado', '')
+        sort_by = request.args.get('sort_by', 'nombre')
+        sort_order = request.args.get('sort_order', 'asc')
+
+        # Construir consulta base
+        query = CategoriasPrincipales.query
+
+        # Aplicar filtros
+        if nombre:
+            query = query.filter(CategoriasPrincipales.nombre.ilike(f'%{nombre}%'))
+
+        if estado:
+            query = query.filter(CategoriasPrincipales.estado == estado)
+
+        # Aplicar ordenamiento
+        if sort_by == 'nombre':
+            order_field = CategoriasPrincipales.nombre
+        elif sort_by == 'created_at':
+            order_field = CategoriasPrincipales.created_at
+        else:
+            order_field = CategoriasPrincipales.nombre
+
+        if sort_order == 'asc':
+            query = query.order_by(order_field.asc())
+        else:
+            query = query.order_by(order_field.desc())
+
+        # Contar el total general de categorías en la base de datos
+        total_general = db.session.query(CategoriasPrincipales.id).count()
+
+        # Paginación sobre la consulta filtrada
+        categorias_paginadas = query.paginate(
+            page=page, per_page=per_page, error_out=False)
+
+        # Serializar categorías
+        categorias_data = [categoria_principal_to_dict(
+            categoria) for categoria in categorias_paginadas.items]
+
+        # Preparar respuesta JSON
+        response_data = {
+            'categorias': categorias_data,
+            'pagination': {
+                'page': categorias_paginadas.page,
+                'pages': categorias_paginadas.pages,
+                'per_page': categorias_paginadas.per_page,
+                'total': categorias_paginadas.total,  # Total de categorías filtradas
+                'total_general': total_general,      # Total de categorías sin filtrar
+                'has_next': categorias_paginadas.has_next,
+                'has_prev': categorias_paginadas.has_prev,
+                'next_num': categorias_paginadas.next_num,
+                'prev_num': categorias_paginadas.prev_num
+            },
+            'success': True
+        }
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        current_app.logger.error(f"Error en filtro AJAX de categorías principales: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al filtrar categorías principales',
+            'error': str(e) if current_app.debug else None
+        }), 500
+
+# Endpoint API para filtros en tiempo real - Subcategorías
+@admin_lista_categorias_bp.route('/api/subcategorias/filter', methods=['GET'])
+@admin_jwt_required
+def filter_subcategories_api(admin_user):
+    try:
+        # Obtener parámetros de filtro
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        nombre = request.args.get('nombre', '')
+        estado = request.args.get('estado', '')
+        categoria_id = request.args.get('categoria_id', '')
+        sort_by = request.args.get('sort_by', 'nombre')
+        sort_order = request.args.get('sort_order', 'asc')
+
+        # Construir consulta base
+        query = Subcategorias.query
+
+        # Aplicar filtros
+        if nombre:
+            query = query.filter(Subcategorias.nombre.ilike(f'%{nombre}%'))
+
+        if estado:
+            query = query.filter(Subcategorias.estado == estado)
+            
+        if categoria_id:
+            query = query.filter(Subcategorias.categoria_principal_id == categoria_id)
+
+        # Aplicar ordenamiento
+        if sort_by == 'nombre':
+            order_field = Subcategorias.nombre
+        elif sort_by == 'created_at':
+            order_field = Subcategorias.created_at
+        else:
+            order_field = Subcategorias.nombre
+
+        if sort_order == 'asc':
+            query = query.order_by(order_field.asc())
+        else:
+            query = query.order_by(order_field.desc())
+
+        # Contar el total general de subcategorías en la base de datos
+        total_general = db.session.query(Subcategorias.id).count()
+
+        # Paginación sobre la consulta filtrada
+        subcategorias_paginadas = query.paginate(
+            page=page, per_page=per_page, error_out=False)
+
+        # Serializar subcategorías
+        subcategorias_data = [subcategoria_to_dict(
+            subcategoria) for subcategoria in subcategorias_paginadas.items]
+
+        # Preparar respuesta JSON
+        response_data = {
+            'subcategorias': subcategorias_data,
+            'pagination': {
+                'page': subcategorias_paginadas.page,
+                'pages': subcategorias_paginadas.pages,
+                'per_page': subcategorias_paginadas.per_page,
+                'total': subcategorias_paginadas.total,  # Total de subcategorías filtradas
+                'total_general': total_general,      # Total de subcategorías sin filtrar
+                'has_next': subcategorias_paginadas.has_next,
+                'has_prev': subcategorias_paginadas.has_prev,
+                'next_num': subcategorias_paginadas.next_num,
+                'prev_num': subcategorias_paginadas.prev_num
+            },
+            'success': True
+        }
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        current_app.logger.error(f"Error en filtro AJAX de subcategorías: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al filtrar subcategorías',
+            'error': str(e) if current_app.debug else None
+        }), 500
+
+# Endpoint API para filtros en tiempo real - Seudocategorías
+@admin_lista_categorias_bp.route('/api/seudocategorias/filter', methods=['GET'])
+@admin_jwt_required
+def filter_pseudocategories_api(admin_user):
+    try:
+        # Obtener parámetros de filtro
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        nombre = request.args.get('nombre', '')
+        estado = request.args.get('estado', '')
+        subcategoria_id = request.args.get('subcategoria_id', '')
+        sort_by = request.args.get('sort_by', 'nombre')
+        sort_order = request.args.get('sort_order', 'asc')
+
+        # Construir consulta base
+        query = Seudocategorias.query
+
+        # Aplicar filtros
+        if nombre:
+            query = query.filter(Seudocategorias.nombre.ilike(f'%{nombre}%'))
+
+        if estado:
+            query = query.filter(Seudocategorias.estado == estado)
+            
+        if subcategoria_id:
+            query = query.filter(Seudocategorias.subcategoria_id == subcategoria_id)
+
+        # Aplicar ordenamiento
+        if sort_by == 'nombre':
+            order_field = Seudocategorias.nombre
+        elif sort_by == 'created_at':
+            order_field = Seudocategorias.created_at
+        else:
+            order_field = Seudocategorias.nombre
+
+        if sort_order == 'asc':
+            query = query.order_by(order_field.asc())
+        else:
+            query = query.order_by(order_field.desc())
+
+        # Contar el total general de seudocategorías en la base de datos
+        total_general = db.session.query(Seudocategorias.id).count()
+
+        # Paginación sobre la consulta filtrada
+        seudocategorias_paginadas = query.paginate(
+            page=page, per_page=per_page, error_out=False)
+
+        # Serializar seudocategorías
+        seudocategorias_data = [seudocategoria_to_dict(
+            seudocategoria) for seudocategoria in seudocategorias_paginadas.items]
+
+        # Preparar respuesta JSON
+        response_data = {
+            'seudocategorias': seudocategorias_data,
+            'pagination': {
+                'page': seudocategorias_paginadas.page,
+                'pages': seudocategorias_paginadas.pages,
+                'per_page': seudocategorias_paginadas.per_page,
+                'total': seudocategorias_paginadas.total,  # Total de seudocategorías filtradas
+                'total_general': total_general,      # Total de seudocategorías sin filtrar
+                'has_next': seudocategorias_paginadas.has_next,
+                'has_prev': seudocategorias_paginadas.has_prev,
+                'next_num': seudocategorias_paginadas.next_num,
+                'prev_num': seudocategorias_paginadas.prev_num
+            },
+            'success': True
+        }
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        current_app.logger.error(f"Error en filtro AJAX de seudocategorías: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al filtrar seudocategorías',
+            'error': str(e) if current_app.debug else None
+        }), 500
+
+# Endpoint para obtener subcategorías de una categoría
+@admin_lista_categorias_bp.route('/api/categorias-principales/<string:categoria_id>/subcategorias', methods=['GET'])
+@admin_jwt_required
+def get_subcategories_for_category(admin_user, categoria_id):
+    try:
+        subcategorias = Subcategorias.query.filter_by(
+            categoria_principal_id=categoria_id,
+            estado='activo'
+        ).all()
+
+        subcategorias_data = [subcategoria_to_dict(
+            sub) for sub in subcategorias]
+
+        return jsonify({
+            'success': True,
+            'subcategorias': subcategorias_data
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener subcategorías: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al obtener subcategorías'
+        }), 500

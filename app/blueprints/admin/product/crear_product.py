@@ -19,7 +19,7 @@ def create_product(admin_user):
     if request.method == 'GET':
         # Renderizar el formulario de creación
         return render_template(
-            'admin/componentes/nuevo_product.html',
+            'admin/componentes/producto/nuevo_product.html',
             csrf_token=generate_csrf()
         )
     

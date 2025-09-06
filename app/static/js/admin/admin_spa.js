@@ -26,16 +26,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
+            if (response.redirected) {
+                // If the request was redirected, it's likely an auth failure.
+                // Reload the page to the redirected location (e.g., the login page).
+                window.location.href = response.url;
+                return null; // Return null to stop the promise chain
+            }
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             return response.text();
         })
         .then(html => {
+            if (!html) return; // Do nothing if the response was a redirect
+
             // Parse the HTML response
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            const newContent = doc.getElementById('main-content-container').innerHTML;
+            const mainContent = doc.getElementById('main-content-container');
+
+            if (!mainContent) {
+                // This can happen if the fetched page is not what we expect (e.g., an error page)
+                // but wasn't a redirect. We can try to reload or show an error.
+                console.error('Error: #main-content-container not found in fetched content.');
+                // For simplicity, let's just reload the page to handle unexpected states.
+                window.location.reload();
+                return;
+            }
+            const newContent = mainContent.innerHTML;
+
 
             // Update the main content area
             mainContentContainer.innerHTML = newContent;

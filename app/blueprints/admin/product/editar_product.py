@@ -33,7 +33,7 @@ def edit_product_page(admin_user, product_slug):
     selected_categoria_principal_id = product.seudocategoria.subcategoria.categoria_principal.id if product.seudocategoria and product.seudocategoria.subcategoria and product.seudocategoria.subcategoria.categoria_principal else None
 
     return render_template(
-        'admin/componentes/editar_product.html',
+        'admin/componentes/producto/editar_product.html',
         product=product_data,
         csrf_token=generate_csrf(),
         selected_seudocategoria_id=selected_seudocategoria_id,

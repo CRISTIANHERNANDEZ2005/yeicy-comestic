@@ -42,7 +42,7 @@ def get_product_detail(admin_user, product_slug):
 
         # Renderizar la plantilla con los datos del producto
         return render_template(
-            'admin/componentes/detalle_product.html',
+            'admin/componentes/producto/detalle_product.html',
             product=product_data,
             reviews=reviews_data,
             csrf_token=generate_csrf())

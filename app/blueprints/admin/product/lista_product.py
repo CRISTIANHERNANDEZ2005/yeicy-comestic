@@ -134,7 +134,7 @@ def get_all_products(admin_user):
 
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-    return render_template('admin/componentes/lista_productos.html',
+    return render_template('admin/componentes/producto/lista_productos.html',
                            products=products_data,
                            pagination=productos_paginados,
                            categorias=categorias_data,

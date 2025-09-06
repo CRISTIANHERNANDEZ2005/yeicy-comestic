@@ -10,16 +10,20 @@ from slugify import slugify
 admin_editar_product_bp = Blueprint(
     'admin_editar', __name__, url_prefix='/admin')
 
-@admin_editar_product_bp.route('/producto/editar/<string:product_id>', methods=['GET'])
+@admin_editar_product_bp.route('/producto/editar/<string:product_slug>', methods=['GET'])
 @admin_jwt_required
-def edit_product_page(admin_user, product_id):
+def edit_product_page(admin_user, product_slug):
     """
     Maneja la solicitud para mostrar el formulario de edición de un producto.
     GET: Muestra el formulario de edición prellenado con los datos del producto.
     """
-    product = Productos.query.get(product_id)
+    product = Productos.query.filter_by(slug=product_slug).first()
     if not product:
         abort(404, description="Producto no encontrado")
+
+    if product.estado == 'inactivo':
+        flash('No se puede editar un producto que está inactivo.', 'warning')
+        return redirect(url_for('admin_products.get_all_products'))
 
     product_data = producto_to_dict(product)
 
@@ -37,16 +41,19 @@ def edit_product_page(admin_user, product_id):
         selected_categoria_principal_id=selected_categoria_principal_id
     )
 
-@admin_editar_product_bp.route('/api/producto/editar/<string:product_id>', methods=['PUT'])
+@admin_editar_product_bp.route('/api/producto/editar/<string:product_slug>', methods=['PUT'])
 @admin_jwt_required
-def update_product_api(admin_user, product_id):
+def update_product_api(admin_user, product_slug):
     """
     Maneja la solicitud API para actualizar un producto existente.
     PUT: Procesa los datos del formulario y actualiza el producto.
     """
-    product = Productos.query.get(product_id)
+    product = Productos.query.filter_by(slug=product_slug).first()
     if not product:
         return jsonify({'success': False, 'message': 'Producto no encontrado'}), 404
+
+    if product.estado == 'inactivo':
+        return jsonify({'success': False, 'message': 'No se puede editar un producto que está inactivo.'}), 403
 
     try:
         # --- 1. Obtención de datos ---
@@ -163,7 +170,7 @@ def update_product_api(admin_user, product_id):
         return jsonify({'success': False, 'message': f'Error en los datos proporcionados: {str(e)}'}), 400
     except Exception as e:
         current_app.logger.error(
-            f"Error al actualizar el producto {product_id}: {e}", exc_info=True)
+            f"Error al actualizar el producto {product_slug}: {e}", exc_info=True)
         db.session.rollback()
         return jsonify({
             'success': False,

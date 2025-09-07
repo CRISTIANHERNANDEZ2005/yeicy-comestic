@@ -22,7 +22,7 @@
             <div id="pagination-top-controls" class="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
                 <div class="mb-3 sm:mb-0">
                     <p class="text-sm text-gray-600">
-                        Mostrando <span class="font-semibold text-blue-600" id="pagination-showing-top">{{ pagination.items | length }}</span> de <span class="font-semibold text-blue-600" id="pagination-total-top">{{ pagination.total_general }}</span> categorías
+                        Mostrando <span class="font-semibold text-blue-600" id="pagination-showing-top">{{ pagination.items | length }}</span> de <span class="font-semibold text-blue-600" id="pagination-total-top">{{ pagination.total }}</span> categorías
                     </p>
                 </div>
                 <div class="flex items-center">
@@ -1223,9 +1223,14 @@
                 }
 
                 // Obtener categorías principales del servidor
-                fetch('/admin/api/categorias-principales/filter?per_page=100').then(response => response.json()).then(data => {
+                fetch(`/admin/api/categorias-principales/filter?page=${this.currentPage}&per_page=${this.itemsPerPage}`).then(response => response.json()).then(data => {
                     if (data.success && data.categorias && this.elements.categoriesContainer) {
                         this.renderHierarchicalCategories(data.categorias);
+                        // Add pagination update here
+                        if (data.pagination) {
+                            this.updatePagination(data.pagination);
+                            this.updatePaginationInfo(data);
+                        }
                     } else if (this.elements.categoriesContainer) {
                         this.elements.categoriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
                     }
@@ -1636,7 +1641,7 @@
                         // Actualizar paginación
                         if (data.pagination) {
                             this.updatePagination(data.pagination);
-                            this.updatePaginationInfo(data.pagination);
+                            this.updatePaginationInfo(data);
                         }
                     } else {
                         tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
@@ -1881,19 +1886,24 @@
             },
 
             // Función para actualizar la información de paginación
-            updatePaginationInfo: function (pagination) {
-                const from = (pagination.page - 1) * pagination.per_page + 1;
-                const to = Math.min(pagination.page * pagination.per_page, pagination.total);
+            updatePaginationInfo: function (data) {
+                // Determine the correct array based on the current view
+                let itemsArray = [];
+                if (this.currentView === 'main' || this.currentView === 'all') { // 'all' view also uses data.categorias
+                    itemsArray = data.categorias;
+                } else if (this.currentView === 'sub') {
+                    itemsArray = data.subcategorias;
+                } else if (this.currentView === 'pseudo') {
+                    itemsArray = data.seudocategorias;
+                }
 
                 if (this.elements.showingTo) {
-                    this.elements.showingTo.textContent = `${from}-${to}`;
+                    this.elements.showingTo.textContent = itemsArray.length;
                 }
                 if (this.elements.totalItems) {
-                    this.elements.totalItems.textContent = pagination.total;
+                    this.elements.totalItems.textContent = data.pagination.total;
                 }
-                if (this.elements.totalGeneralItems) {
-                    this.elements.totalGeneralItems.textContent = pagination.total_general;
-                }
+                // Removed the line for totalGeneralItems as it's no longer needed for the display.
             },
 
             // Función para formatear fecha
@@ -1929,7 +1939,11 @@
             // Función para cambiar de página
             changePage: function (page) {
                 this.currentPage = page;
-                this.loadTableData(false);
+                if (this.currentView === 'all') {
+                    this.loadHierarchicalCategories();
+                } else {
+                    this.loadTableData(false);
+                }
             },
 
             // Función para actualizar el estado de una categoría principal
@@ -2066,7 +2080,11 @@
                 if (itemsPerPageSelect) {
                     itemsPerPageSelect.addEventListener('change', (e) => {
                         this.itemsPerPage = parseInt(e.target.value);
-                        this.loadTableData();
+                        if (this.currentView === 'all') {
+                            this.loadHierarchicalCategories();
+                        } else {
+                            this.loadTableData();
+                        }
                     });
                 }
 

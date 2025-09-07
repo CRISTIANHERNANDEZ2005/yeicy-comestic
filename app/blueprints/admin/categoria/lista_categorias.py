@@ -4,6 +4,7 @@ from app.models.domains.product_models import CategoriasPrincipales, Subcategori
 from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict
 from app.extensions import db
 from sqlalchemy import or_, and_
+from sqlalchemy.orm import joinedload, subqueryload
 from datetime import datetime
 from flask_wtf.csrf import generate_csrf
 
@@ -33,7 +34,7 @@ def get_all_categories(admin_user):
         # Cargar datos según la vista actual
         if current_view == 'main':
             # Vista de categorías principales
-            query = CategoriasPrincipales.query
+            query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias))
             
             if nombre:
                 query = query.filter(CategoriasPrincipales.nombre.ilike(f'%{nombre}%'))
@@ -64,7 +65,7 @@ def get_all_categories(admin_user):
                 
         elif current_view == 'sub':
             # Vista de subcategorías
-            query = Subcategorias.query
+            query = Subcategorias.query.options(joinedload(Subcategorias.categoria_principal), subqueryload(Subcategorias.seudocategorias))
             
             if nombre:
                 query = query.filter(Subcategorias.nombre.ilike(f'%{nombre}%'))
@@ -102,7 +103,7 @@ def get_all_categories(admin_user):
                 
         elif current_view == 'pseudo':
             # Vista de seudocategorías
-            query = Seudocategorias.query
+            query = Seudocategorias.query.options(joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal), subqueryload(Seudocategorias.productos))
             
             if nombre:
                 query = query.filter(Seudocategorias.nombre.ilike(f'%{nombre}%'))
@@ -144,7 +145,7 @@ def get_all_categories(admin_user):
                 
         else:  # Vista 'all' - jerárquica
             # Obtener todas las categorías principales con sus relaciones
-            categorias_principales = CategoriasPrincipales.query.all()
+            categorias_principales = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos)).all()
             categorias_data = [categoria_principal_to_dict(
                 cat) for cat in categorias_principales]
     

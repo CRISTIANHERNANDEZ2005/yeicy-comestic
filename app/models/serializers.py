@@ -58,44 +58,97 @@ def categoria_principal_to_dict(cat):
     """Convierte un objeto CategoriaPrincipal a un diccionario."""
     if not cat:
         return None
+
+    active_subcategories_count = 0
+    total_products_in_main_category = 0
+    subcategorias_data = []
+
+    if hasattr(cat, 'subcategorias') and cat.subcategorias is not None:
+        for sub in cat.subcategorias:
+            sub_dict = subcategoria_to_dict(sub)
+            subcategorias_data.append(sub_dict)
+            if sub.estado == 'activo':
+                active_subcategories_count += 1
+            total_products_in_main_category += sub_dict.get('total_productos', 0)
+
     return {
         'id': cat.id,
         'nombre': cat.nombre,
-        'slug': cat.slug, # Added slug
+        'slug': cat.slug,
         'descripcion': cat.descripcion,
         'estado': cat.estado,
         'created_at': cat.created_at.isoformat() if cat.created_at else None,
         'updated_at': cat.updated_at.isoformat() if cat.updated_at else None,
-        'subcategorias': [subcategoria_to_dict(s) for s in cat.subcategorias] if hasattr(cat, 'subcategorias') else [] # Added subcategories
+        'subcategorias': subcategorias_data,
+        'active_subcategorias_count': active_subcategories_count,
+        'total_productos': total_products_in_main_category
     }
 
 def subcategoria_to_dict(sub):
     """Convierte un objeto Subcategoria a un diccionario."""
     if not sub:
         return None
+
+    categoria_principal_nombre = None
+    if hasattr(sub, 'categoria_principal') and sub.categoria_principal is not None:
+        categoria_principal_nombre = sub.categoria_principal.nombre
+
+    active_pseudocategories_count = 0
+    total_products_in_subcategory = 0
+    seudocategorias_data = []
+
+    if hasattr(sub, 'seudocategorias') and sub.seudocategorias is not None:
+        for seudo in sub.seudocategorias:
+            seudo_dict = seudocategoria_to_dict(seudo)
+            seudocategorias_data.append(seudo_dict)
+            if seudo.estado == 'activo':
+                active_pseudocategories_count += 1
+            total_products_in_subcategory += seudo_dict.get('total_productos', 0)
+
     return {
         'id': sub.id,
         'nombre': sub.nombre,
+        'slug': sub.slug,
         'descripcion': sub.descripcion,
         'categoria_principal_id': sub.categoria_principal_id,
+        'categoria_principal_nombre': categoria_principal_nombre,
         'estado': sub.estado,
         'created_at': sub.created_at.isoformat() if sub.created_at else None,
         'updated_at': sub.updated_at.isoformat() if sub.updated_at else None,
-        'seudocategorias': [seudocategoria_to_dict(s) for s in sub.seudocategorias] if hasattr(sub, 'seudocategorias') else [] # Added seudocategorias
+        'seudocategorias': seudocategorias_data,
+        'active_seudocategorias_count': active_pseudocategories_count,
+        'total_productos': total_products_in_subcategory
     }
 
 def seudocategoria_to_dict(seudo):
     """Convierte un objeto Seudocategoria a un diccionario."""
     if not seudo:
         return None
+
+    subcategoria_nombre = None
+    categoria_principal_nombre = None
+    total_products_in_pseudocategory = 0
+
+    if hasattr(seudo, 'subcategoria') and seudo.subcategoria is not None:
+        subcategoria_nombre = seudo.subcategoria.nombre
+        if hasattr(seudo.subcategoria, 'categoria_principal') and seudo.subcategoria.categoria_principal is not None:
+            categoria_principal_nombre = seudo.subcategoria.categoria_principal.nombre
+    
+    if hasattr(seudo, 'productos') and seudo.productos is not None:
+        total_products_in_pseudocategory = len(seudo.productos)
+
     return {
         'id': seudo.id,
         'nombre': seudo.nombre,
+        'slug': seudo.slug,
         'descripcion': seudo.descripcion,
         'subcategoria_id': seudo.subcategoria_id,
+        'subcategoria_nombre': subcategoria_nombre,
+        'categoria_principal_nombre': categoria_principal_nombre,
         'estado': seudo.estado,
         'created_at': seudo.created_at.isoformat() if seudo.created_at else None,
-        'updated_at': seudo.updated_at.isoformat() if seudo.updated_at else None
+        'updated_at': seudo.updated_at.isoformat() if seudo.updated_at else None,
+        'total_productos': total_products_in_pseudocategory
     }
 
 from datetime import datetime

@@ -1,5 +1,6 @@
 // Variable para almacenar el timeout del debounce
-let debounceTimeout;
+// Se adjunta a window para evitar errores de redeclaración en un entorno SPA
+window.debounceTimeout = window.debounceTimeout || null;
 
 function formatCurrency(value) {
     if (value === null || value === undefined || isNaN(value)) {
@@ -43,19 +44,21 @@ function hideTableSpinner() {
  * lo que permite que las opciones cargadas dinámicamente (subcategorías, marcas) funcionen correctamente.
  */
 
-let isGlobalClickListenerAttached = false;
+// Bandera para asegurar que el event listener global se adjunte solo una vez
+// Se adjunta a window para evitar errores de redeclaración en un entorno SPA
+window.isGlobalClickListenerAttached = window.isGlobalClickListenerAttached || false;
 
 function initCustomSelects() {
   const customSelects = document.querySelectorAll("#filtersPanel .custom-select");
 
-  if (!isGlobalClickListenerAttached) {
+  if (!window.isGlobalClickListenerAttached) {
     document.addEventListener('click', (e) => {
         const openSelect = document.querySelector('.custom-select.open');
         if (openSelect && !e.target.closest('.custom-select')) {
             openSelect.classList.remove('open');
         }
     });
-    isGlobalClickListenerAttached = true;
+    window.isGlobalClickListenerAttached = true;
   }
 
   customSelects.forEach((select) => {
@@ -566,8 +569,8 @@ function resetFilters() {
 }
 
 function debounceFilter() {
-  clearTimeout(debounceTimeout);
-  debounceTimeout = setTimeout(() => {
+  clearTimeout(window.debounceTimeout);
+  window.debounceTimeout = setTimeout(() => {
     applyFilters();
   }, 500);
 }

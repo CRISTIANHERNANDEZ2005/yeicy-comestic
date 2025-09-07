@@ -1,8 +1,11 @@
 {% extends 'admin/page/base.html' %}
-{% block title %} Lista Categorias - Panel de Administración{% endblock %} 
+{% block title %}
+    Lista Categorias - Panel de Administración
+{% endblock %}
 {% block content %}
     <div class="min-h-screen">
-        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main
+            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <!-- Título y botón principal -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6">
                 <div class="mb-4 sm:mb-0">
@@ -14,9 +17,10 @@
                     Agregar Categoría
                 </button>
             </div>
-            
+
             <!-- Contenido principal -->
-            <div class="bg-white rounded-xl shadow-md overflow-hidden">
+            <div
+                class="bg-white rounded-xl shadow-md overflow-hidden">
                 <!-- Tabs para niveles de categoría -->
                 <div class="border-b border-gray-200">
                     <nav class="flex -mb-px">
@@ -34,7 +38,7 @@
                         </button>
                     </nav>
                 </div>
-                
+
                 <!-- Lista de categorías (Vista Jerárquica) -->
                 <div id="hierarchicalView" class="p-4 sm:p-6 hierarchical-view">
                     <div class="flex justify-between items-center mb-4">
@@ -43,13 +47,13 @@
                             <p class="text-sm text-gray-500">Gestiona la jerarquía de categorías de tu inventario</p>
                         </div>
                     </div>
-                    
+
                     <!-- Contenedor para las categorías -->
-                    <div id="categoriesContainer" class="space-y-4">
-                        <!-- Las categorías se cargarán dinámicamente aquí -->
+                    <div
+                        id="categoriesContainer" class="space-y-4"><!-- Las categorías se cargarán dinámicamente aquí -->
                     </div>
                 </div>
-                
+
                 <!-- Vista de Tablas para Categorías Principales -->
                 <div id="mainCategoriesTableView" class="p-4 sm:p-6 hidden">
                     <div class="flex justify-between items-center mb-4">
@@ -58,7 +62,7 @@
                             <p class="text-sm text-gray-500">Lista de todas las categorías principales del inventario</p>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <table class="category-table">
                             <thead>
@@ -71,13 +75,13 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="mainCategoriesTableBody">
-                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            <tbody
+                                id="mainCategoriesTableBody"><!-- Las filas se cargarán dinámicamente aquí -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Vista de Tablas para Subcategorías -->
                 <div id="subCategoriesTableView" class="p-4 sm:p-6 hidden">
                     <div class="flex justify-between items-center mb-4">
@@ -86,7 +90,7 @@
                             <p class="text-sm text-gray-500">Lista de todas las subcategorías del inventario</p>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <table class="category-table">
                             <thead>
@@ -100,13 +104,13 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="subCategoriesTableBody">
-                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            <tbody
+                                id="subCategoriesTableBody"><!-- Las filas se cargarán dinámicamente aquí -->
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
+
                 <!-- Vista de Tablas para Seudocategorías -->
                 <div id="pseudoCategoriesTableView" class="p-4 sm:p-6 hidden">
                     <div class="flex justify-between items-center mb-4">
@@ -115,7 +119,7 @@
                             <p class="text-sm text-gray-500">Lista de todas las seudocategorías del inventario</p>
                         </div>
                     </div>
-                    
+
                     <div class="table-container">
                         <table class="category-table">
                             <thead>
@@ -129,20 +133,24 @@
                                     <th>Acciones</th>
                                 </tr>
                             </thead>
-                            <tbody id="pseudoCategoriesTableBody">
-                                <!-- Las filas se cargarán dinámicamente aquí -->
+                            <tbody
+                                id="pseudoCategoriesTableBody"><!-- Las filas se cargarán dinámicamente aquí -->
                             </tbody>
                         </table>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Paginación como bloque independiente -->
             <div class="pagination-container">
                 <div class="pagination-info text-center sm:text-left">
-                    Mostrando <span class="font-medium" id="showingTo">10</span> de <span class="font-medium" id="totalItems">0</span> categorías
+                    Mostrando
+                    <span class="font-medium" id="showingTo">10</span>
+                    de
+                    <span class="font-medium" id="totalItems">0</span>
+                    categorías
                 </div>
-                
+
                 <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="pagination-per-page">
                         <span class="text-sm text-gray-700">Mostrar:</span>
@@ -154,15 +162,15 @@
                         </select>
                         <span class="text-sm text-gray-700">por página</span>
                     </div>
-                    
-                    <div class="pagination-buttons" id="paginationContainer">
-                        <!-- Los botones de paginación se cargarán dinámicamente aquí -->
+
+                    <div
+                        class="pagination-buttons" id="paginationContainer"><!-- Los botones de paginación se cargarán dinámicamente aquí -->
                     </div>
                 </div>
             </div>
         </main>
     </div>
-    
+
     <!-- Menú lateral de filtros -->
     <div id="filterMenu" class="filter-menu fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl z-50 overflow-y-auto">
         <div class="p-6">
@@ -172,20 +180,20 @@
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
-            <div class="space-y-6">
+
+            <div
+                class="space-y-6">
                 <!-- Búsqueda por nombre (común para todos los niveles) -->
                 <div class="filter-field" id="nameFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                     <div class="relative">
-                        <input type="text" id="nameFilter" placeholder="Buscar por nombre..." 
-                            class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <input type="text" id="nameFilter" placeholder="Buscar por nombre..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <i class="fas fa-search text-gray-400"></i>
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Estado (común para todos los niveles) -->
                 <div class="filter-field" id="statusFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
@@ -195,7 +203,7 @@
                         <option value="inactivo">Inactivos</option>
                     </select>
                 </div>
-                
+
                 <!-- Categoría Principal (solo para subcategorías y seudocategorías) -->
                 <div class="filter-field hidden" id="mainCategoryFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
@@ -203,7 +211,7 @@
                         <option value="all">Todas las categorías principales</option>
                     </select>
                 </div>
-                
+
                 <!-- Subcategoría (solo para seudocategorías) -->
                 <div class="filter-field hidden" id="subCategoryFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
@@ -211,7 +219,7 @@
                         <option value="all">Todas las subcategorías</option>
                     </select>
                 </div>
-                
+
                 <!-- Ordenamiento (común para todos los niveles) -->
                 <div class="filter-field" id="sortFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
@@ -222,7 +230,7 @@
                         <option value="created_at-desc">Fecha (más antiguos primero)</option>
                     </select>
                 </div>
-                
+
                 <!-- Botones de acción -->
                 <div class="flex flex-col sm:flex-row gap-3 pt-4">
                     <button id="applyFilters" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
@@ -235,15 +243,15 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Overlay para el menú de filtros -->
     <div id="filterOverlay" class="filter-overlay"></div>
-    
+
     <!-- Botón flotante para abrir filtros - inicialmente oculto -->
     <button id="filterFab" class="fab bg-blue-600 text-white hover:bg-blue-700 hidden-filter">
         <i class="fas fa-filter"></i>
     </button>
-    
+
     <!-- Modal para añadir/editar categoría -->
     <div id="categoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 modal-backdrop">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all">
@@ -254,21 +262,22 @@
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-                
+
                 <form id="categoryForm">
-                    <div class="space-y-5">
+                    <div
+                        class="space-y-5">
                         <!-- Campo: Nombre -->
                         <div>
                             <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                             <input type="text" id="categoryName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
                         </div>
-                        
+
                         <!-- Campo: Descripción -->
                         <div>
                             <label for="categoryDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
                             <textarea id="categoryDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required></textarea>
                         </div>
-                        
+
                         <!-- Campo: Nivel -->
                         <div>
                             <label for="categoryLevel" class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
@@ -278,19 +287,19 @@
                                 <option value="pseudo">Seudocategoría</option>
                             </select>
                         </div>
-                        
+
                         <!-- Campos dinámicos según el nivel -->
-                        <div id="dynamicFields">
-                            <!-- Se llenarán dinámicamente según el nivel seleccionado -->
+                        <div
+                            id="dynamicFields"><!-- Se llenarán dinámicamente según el nivel seleccionado -->
                         </div>
-                        
+
                         <!-- Campo: Estado -->
                         <div class="flex items-center">
                             <input type="checkbox" id="categoryStatus" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
                             <label for="categoryStatus" class="ml-2 text-sm text-gray-700">Activo</label>
                         </div>
                     </div>
-                    
+
                     <div class="flex justify-end space-x-3 mt-8">
                         <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
                             Cancelar
@@ -303,7 +312,7 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Notificación -->
     <div id="notification" class="notification"></div>
     <style>
@@ -312,15 +321,27 @@
             animation: fadeIn 0.3s ease-in-out;
         }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-10px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
         .slide-down {
             animation: slideDown 0.3s ease-in-out;
         }
         @keyframes slideDown {
-            from { max-height: 0; opacity: 0; }
-            to { max-height: 500px; opacity: 1; }
+            from {
+                max-height: 0;
+                opacity: 0;
+            }
+            to {
+                max-height: 500px;
+                opacity: 1;
+            }
         }
         /* Estilos para el modal */
         .modal-backdrop {
@@ -445,7 +466,7 @@
             font-size: 0.875rem;
             line-height: 1.25rem;
         }
-        
+
         /* Estilos para las tablas */
         .table-container {
             overflow-x: auto;
@@ -510,19 +531,23 @@
             color: #ef4444;
             background-color: #fef2f2;
         }
-        
+
         /* Mejoras para móviles */
-        @media (max-width: 768px) {
+        @media(max-width: 768px) {
             /* Ajustes generales */
-            .category-card, .subcategory-card, .pseudocategory-card {
+            .category-card,
+            .subcategory-card,
+            .pseudocategory-card {
                 border-radius: 0.5rem;
             }
-            
+
             /* Ajustes para las tarjetas de categorías */
-            .category-card > div, .subcategory-card > div, .pseudocategory-card > div {
+            .category-card > div,
+            .subcategory-card > div,
+            .pseudocategory-card > div {
                 padding: 0.75rem;
             }
-            
+
             /* Hacer los botones más grandes para móviles */
             .toggle-btn {
                 width: 2rem;
@@ -532,36 +557,36 @@
                 justify-content: center;
                 border-radius: 0.25rem;
             }
-            
+
             /* Ajustar el tamaño de los iconos */
             .toggle-btn i {
                 font-size: 1rem;
             }
-            
+
             /* Ajustar el espaciado entre elementos */
             .space-y-4 > * + * {
                 margin-top: 1rem;
             }
-            
+
             /* Ajustar el espaciado en subcategorías y seudocategorías */
             .ml-6 {
                 margin-left: 1rem;
             }
-            
+
             /* Hacer los toggles de estado más grandes */
             .relative.inline-block.w-10 {
                 width: 2.5rem;
             }
-            
+
             .relative.inline-block.w-10 label {
                 height: 1.5rem;
             }
-            
+
             .relative.inline-block.w-10 label span {
                 width: 1.5rem;
                 height: 1.5rem;
             }
-            
+
             /* Ajustar los botones de acción */
             button.p-2 {
                 width: 2.5rem;
@@ -570,7 +595,7 @@
                 align-items: center;
                 justify-content: center;
             }
-            
+
             button.p-1.5 {
                 width: 2.25rem;
                 height: 2.25rem;
@@ -578,104 +603,108 @@
                 align-items: center;
                 justify-content: center;
             }
-            
+
             /* Mejorar la visualización del texto en móviles */
             h4 {
                 font-size: 1.125rem;
                 line-height: 1.375rem;
             }
-            
+
             h6 {
                 font-size: 1rem;
                 line-height: 1.25rem;
             }
-            
+
             /* Ajustar el espaciado de los metadatos */
             .flex.items-center.mt-1.text-xs {
                 flex-wrap: wrap;
                 gap: 0.25rem;
             }
-            
+
             .flex.items-center.mt-1.text-xs span.mx-2 {
                 margin: 0 0.25rem;
             }
-            
+
             /* Ajustar la estructura de las tarjetas para móviles */
             .category-card > div > div.flex.justify-between.items-start {
                 flex-direction: column;
                 gap: 1rem;
             }
-            
+
             .category-card > div > div.flex.justify-between.items-start > div:first-child {
                 width: 100%;
             }
-            
+
             .category-card > div > div.flex.justify-between.items-start > div:last-child {
                 align-self: flex-end;
             }
-            
+
             /* Ajustar la estructura de las subcategorías para móviles */
-            .subcategory-card > div, .pseudocategory-card > div {
+            .subcategory-card > div,
+            .pseudocategory-card > div {
                 flex-direction: column;
                 gap: 0.75rem;
             }
-            
-            .subcategory-card > div > div:first-child, .pseudocategory-card > div > div:first-child {
+
+            .subcategory-card > div > div:first-child,
+            .pseudocategory-card > div > div:first-child {
                 width: 100%;
             }
-            
-            .subcategory-card > div > div:last-child, .pseudocategory-card > div > div:last-child {
+
+            .subcategory-card > div > div:last-child,
+            .pseudocategory-card > div > div:last-child {
                 align-self: flex-end;
             }
-            
+
             /* Ajustar el menú lateral para móviles */
             .filter-menu {
                 width: 100%;
                 max-width: 100%;
             }
-            
+
             /* Ajustar los tabs para móviles */
             nav.flex {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none; /* Firefox */
             }
-            
+
             nav.flex::-webkit-scrollbar {
                 display: none; /* Chrome, Safari, Edge */
             }
-            
+
             nav.flex > button {
                 flex-shrink: 0;
                 padding: 0.75rem 1rem;
                 font-size: 0.875rem;
             }
-            
+
             /* Ajustes para las tablas en móviles */
             .table-container {
                 margin: 0 -1rem;
                 padding: 0 1rem;
             }
-            
+
             .category-table {
                 font-size: 0.875rem;
             }
-            
-            .category-table th, .category-table td {
+
+            .category-table th,
+            .category-table td {
                 padding: 0.5rem;
             }
-            
+
             .action-button {
                 width: 1.75rem;
                 height: 1.75rem;
             }
         }
-        
+
         /* Clase para ocultar el botón de filtro */
         .hidden-filter {
             display: none;
         }
-        
+
         /* Estilos para los campos de filtro dinámicos */
         .filter-field {
             transition: all 0.3s ease;
@@ -683,7 +712,7 @@
         .filter-field.hidden {
             display: none;
         }
-        
+
         /* Estilos para el toggle de estado */
         .toggle-switch {
             position: relative;
@@ -691,13 +720,13 @@
             width: 50px;
             height: 24px;
         }
-        
+
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-        
+
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -706,10 +735,10 @@
             right: 0;
             bottom: 0;
             background-color: #ccc;
-            transition: .4s;
+            transition: 0.4s;
             border-radius: 24px;
         }
-        
+
         .toggle-slider:before {
             position: absolute;
             content: "";
@@ -718,18 +747,18 @@
             left: 4px;
             bottom: 4px;
             background-color: white;
-            transition: .4s;
+            transition: 0.4s;
             border-radius: 50%;
         }
-        
+
         input:checked + .toggle-slider {
             background-color: #10b981;
         }
-        
+
         input:checked + .toggle-slider:before {
             transform: translateX(26px);
         }
-        
+
         /* Estilos para notificaciones */
         .notification {
             position: fixed;
@@ -745,20 +774,20 @@
             transform: translateY(-20px);
             transition: opacity 0.3s, transform 0.3s;
         }
-        
+
         .notification.show {
             opacity: 1;
             transform: translateY(0);
         }
-        
+
         .notification.success {
             background-color: #10b981;
         }
-        
+
         .notification.error {
             background-color: #ef4444;
         }
-        
+
         /* Estilos para el loader */
         .loader {
             border: 4px solid #f3f3f3;
@@ -769,12 +798,16 @@
             animation: spin 1s linear infinite;
             margin: 0 auto;
         }
-        
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
         }
-        
+
         /* Estilos para la vista jerárquica */
         .hierarchical-view .category-card {
             margin-bottom: 1rem;
@@ -782,7 +815,7 @@
             border-radius: 0.5rem;
             overflow: hidden;
         }
-        
+
         .hierarchical-view .category-header {
             padding: 1rem;
             background-color: white;
@@ -790,33 +823,33 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .hierarchical-view .category-info {
             display: flex;
             align-items: flex-start;
         }
-        
+
         .hierarchical-view .category-toggle {
             margin-right: 0.75rem;
             cursor: pointer;
             color: #6b7280;
             transition: transform 0.2s;
         }
-        
+
         .hierarchical-view .category-toggle.open {
             transform: rotate(90deg);
         }
-        
+
         .hierarchical-view .category-details h4 {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-        
+
         .hierarchical-view .category-details p {
             color: #6b7280;
             font-size: 0.875rem;
         }
-        
+
         .hierarchical-view .category-meta {
             display: flex;
             flex-wrap: wrap;
@@ -825,31 +858,31 @@
             font-size: 0.75rem;
             color: #6b7280;
         }
-        
+
         .hierarchical-view .category-actions {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .hierarchical-view .subcategory-list {
             background-color: #f9fafb;
             padding: 1rem;
             border-top: 1px solid #e5e7eb;
             display: none;
         }
-        
+
         .hierarchical-view .subcategory-list.open {
             display: block;
         }
-        
+
         .hierarchical-view .subcategory-card {
             margin-bottom: 0.75rem;
             border: 1px solid #e5e7eb;
             border-radius: 0.375rem;
             overflow: hidden;
         }
-        
+
         .hierarchical-view .subcategory-header {
             padding: 0.75rem;
             background-color: white;
@@ -857,33 +890,33 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .hierarchical-view .subcategory-info {
             display: flex;
             align-items: flex-start;
         }
-        
+
         .hierarchical-view .subcategory-toggle {
             margin-right: 0.75rem;
             cursor: pointer;
             color: #6b7280;
             transition: transform 0.2s;
         }
-        
+
         .hierarchical-view .subcategory-toggle.open {
             transform: rotate(90deg);
         }
-        
+
         .hierarchical-view .subcategory-details h6 {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-        
+
         .hierarchical-view .subcategory-details p {
             color: #6b7280;
             font-size: 0.875rem;
         }
-        
+
         .hierarchical-view .subcategory-meta {
             display: flex;
             flex-wrap: wrap;
@@ -892,23 +925,23 @@
             font-size: 0.75rem;
             color: #6b7280;
         }
-        
+
         .hierarchical-view .subcategory-actions {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-        
+
         .hierarchical-view .pseudocategory-list {
             padding: 0.75rem;
             margin-left: 1.5rem;
             display: none;
         }
-        
+
         .hierarchical-view .pseudocategory-list.open {
             display: block;
         }
-        
+
         .hierarchical-view .pseudocategory-card {
             margin-bottom: 0.5rem;
             border: 1px solid #e5e7eb;
@@ -919,17 +952,17 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .hierarchical-view .pseudocategory-info h6 {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-        
+
         .hierarchical-view .pseudocategory-info p {
             color: #6b7280;
             font-size: 0.875rem;
         }
-        
+
         .hierarchical-view .pseudocategory-meta {
             display: flex;
             flex-wrap: wrap;
@@ -938,14 +971,14 @@
             font-size: 0.75rem;
             color: #6b7280;
         }
-        
+
         .hierarchical-view .pseudocategory-actions {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
     </style>
-    
+
     <script>
         // Objeto global para la aplicación de categorías
         const categoriesApp = {
@@ -953,13 +986,33 @@
             currentPage: 1,
             itemsPerPage: 10,
             isLoading: false,
-            
+            initialized: false,
+
             // Elementos del DOM
             elements: {},
-            
+
             // Inicializar la aplicación
-            init: function() {
+            init: function () { // Si ya está inicializado, reinicializar sin duplicar eventos
+                if (this.initialized) {
+                    this.reinitialize();
+                    return;
+                }
+
                 // Guardar referencias a elementos del DOM
+                this.cacheElements();
+
+                // Inicializar la vista
+                this.initializeView();
+
+                // Configurar eventos
+                this.setupEventListeners();
+
+                // Marcar como inicializado
+                this.initialized = true;
+            },
+
+            // Función para cachear elementos del DOM
+            cacheElements: function () {
                 this.elements.hierarchicalView = document.getElementById('hierarchicalView');
                 this.elements.mainCategoriesTableView = document.getElementById('mainCategoriesTableView');
                 this.elements.subCategoriesTableView = document.getElementById('subCategoriesTableView');
@@ -972,41 +1025,45 @@
                 this.elements.paginationContainer = document.getElementById('paginationContainer');
                 this.elements.showingTo = document.getElementById('showingTo');
                 this.elements.totalItems = document.getElementById('totalItems');
-                
+
                 // Campos de filtro
                 this.elements.nameFilterField = document.getElementById('nameFilterField');
                 this.elements.statusFilterField = document.getElementById('statusFilterField');
                 this.elements.mainCategoryFilterField = document.getElementById('mainCategoryFilterField');
                 this.elements.subCategoryFilterField = document.getElementById('subCategoryFilterField');
                 this.elements.sortFilterField = document.getElementById('sortFilterField');
-                
-                // Inicializar la vista
+            },
+
+            // Función para reinicializar cuando el contenido se recarga mediante SPA
+            reinitialize: function () { // Actualizar referencias a elementos del DOM que pueden haber cambiado
+                this.cacheElements();
+
+                // Reinicializar la vista
                 this.initializeView();
-                
-                // Configurar eventos
+
+                // Reconfigurar eventos
                 this.setupEventListeners();
             },
-            
+
             // Función para inicializar la vista
-            initializeView: function() {
-                // Obtener la vista actual de la URL
+            initializeView: function () { // Obtener la vista actual de la URL
                 const urlParams = new URLSearchParams(window.location.search);
                 this.currentView = urlParams.get('view') || 'all';
-                
+
                 // Establecer el tab activo
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
                     btn.classList.add('border-transparent', 'text-gray-500');
-                    
+
                     if (btn.getAttribute('data-level') === this.currentView) {
                         btn.classList.add('active', 'border-blue-500', 'text-blue-600');
                         btn.classList.remove('border-transparent', 'text-gray-500');
                     }
                 });
-                
+
                 // Mostrar la vista correspondiente
                 this.showView(this.currentView);
-                
+
                 // Cargar los datos iniciales
                 if (this.currentView === 'all') {
                     this.loadHierarchicalCategories();
@@ -1014,165 +1071,211 @@
                     this.loadTableData();
                 }
             },
-            
+
             // Función para mostrar la vista correspondiente
-            showView: function(viewType) {
-                // Ocultar todas las vistas
-                this.elements.hierarchicalView.classList.add('hidden');
-                this.elements.mainCategoriesTableView.classList.add('hidden');
-                this.elements.subCategoriesTableView.classList.add('hidden');
-                this.elements.pseudoCategoriesTableView.classList.add('hidden');
+            showView: function (viewType) { // Ocultar todas las vistas
+                if (this.elements.hierarchicalView) 
+                    this.elements.hierarchicalView.classList.add('hidden');
                 
+                if (this.elements.mainCategoriesTableView) 
+                    this.elements.mainCategoriesTableView.classList.add('hidden');
+                
+                if (this.elements.subCategoriesTableView) 
+                    this.elements.subCategoriesTableView.classList.add('hidden');
+                
+                if (this.elements.pseudoCategoriesTableView) 
+                    this.elements.pseudoCategoriesTableView.classList.add('hidden');
+                
+
                 // Controlar la visibilidad del botón de filtro y los campos de filtro
                 if (viewType === 'all') {
-                    this.elements.hierarchicalView.classList.remove('hidden');
-                    this.elements.filterFab.classList.add('hidden-filter');
+                    if (this.elements.hierarchicalView) 
+                        this.elements.hierarchicalView.classList.remove('hidden');
+                    
+                    if (this.elements.filterFab) 
+                        this.elements.filterFab.classList.add('hidden-filter');
+                    
                 } else if (viewType === 'main') {
-                    this.elements.mainCategoriesTableView.classList.remove('hidden');
-                    this.elements.filterFab.classList.remove('hidden-filter');
+                    if (this.elements.mainCategoriesTableView) 
+                        this.elements.mainCategoriesTableView.classList.remove('hidden');
+                    
+                    if (this.elements.filterFab) 
+                        this.elements.filterFab.classList.remove('hidden-filter');
+                    
                     this.updateFilterFields('main');
                 } else if (viewType === 'sub') {
-                    this.elements.subCategoriesTableView.classList.remove('hidden');
-                    this.elements.filterFab.classList.remove('hidden-filter');
+                    if (this.elements.subCategoriesTableView) 
+                        this.elements.subCategoriesTableView.classList.remove('hidden');
+                    
+                    if (this.elements.filterFab) 
+                        this.elements.filterFab.classList.remove('hidden-filter');
+                    
                     this.updateFilterFields('sub');
                 } else if (viewType === 'pseudo') {
-                    this.elements.pseudoCategoriesTableView.classList.remove('hidden');
-                    this.elements.filterFab.classList.remove('hidden-filter');
+                    if (this.elements.pseudoCategoriesTableView) 
+                        this.elements.pseudoCategoriesTableView.classList.remove('hidden');
+                    
+                    if (this.elements.filterFab) 
+                        this.elements.filterFab.classList.remove('hidden-filter');
+                    
                     this.updateFilterFields('pseudo');
                 }
             },
-            
+
             // Función para actualizar los campos de filtro según la vista actual
-            updateFilterFields: function(viewType) {
-                // Mostrar campos comunes
-                this.elements.nameFilterField.classList.remove('hidden');
-                this.elements.statusFilterField.classList.remove('hidden');
-                this.elements.sortFilterField.classList.remove('hidden');
+            updateFilterFields: function (viewType) { // Mostrar campos comunes
+                if (this.elements.nameFilterField) 
+                    this.elements.nameFilterField.classList.remove('hidden');
                 
+                if (this.elements.statusFilterField) 
+                    this.elements.statusFilterField.classList.remove('hidden');
+                
+                if (this.elements.sortFilterField) 
+                    this.elements.sortFilterField.classList.remove('hidden');
+                
+
                 // Ocultar campos específicos
-                this.elements.mainCategoryFilterField.classList.add('hidden');
-                this.elements.subCategoryFilterField.classList.add('hidden');
+                if (this.elements.mainCategoryFilterField) 
+                    this.elements.mainCategoryFilterField.classList.add('hidden');
                 
+                if (this.elements.subCategoryFilterField) 
+                    this.elements.subCategoryFilterField.classList.add('hidden');
+                
+
                 // Mostrar campos según el tipo de vista
-                if (viewType === 'sub') {
-                    // Para subcategorías: mostrar campo de categoría principal
-                    this.elements.mainCategoryFilterField.classList.remove('hidden');
+                if (viewType === 'sub') { // Para subcategorías: mostrar campo de categoría principal
+                    if (this.elements.mainCategoryFilterField) 
+                        this.elements.mainCategoryFilterField.classList.remove('hidden');
+                    
                     this.loadMainCategoriesForFilter();
-                } else if (viewType === 'pseudo') {
-                    // Para seudocategorías: mostrar campos de categoría principal y subcategoría
-                    this.elements.mainCategoryFilterField.classList.remove('hidden');
-                    this.elements.subCategoryFilterField.classList.remove('hidden');
+                } else if (viewType === 'pseudo') { // Para seudocategorías: mostrar campos de categoría principal y subcategoría
+                    if (this.elements.mainCategoryFilterField) 
+                        this.elements.mainCategoryFilterField.classList.remove('hidden');
+                    
+                    if (this.elements.subCategoryFilterField) 
+                        this.elements.subCategoryFilterField.classList.remove('hidden');
+                    
                     this.loadMainCategoriesForFilter();
                     this.loadSubcategoriesForFilter();
                 }
             },
-            
+
             // Función para cargar categorías principales para el filtro
-            loadMainCategoriesForFilter: function() {
+            loadMainCategoriesForFilter: function () {
                 const mainCategoryFilter = document.getElementById('mainCategoryFilter');
+                if (! mainCategoryFilter) 
+                    return;
                 
+
                 // Limpiar opciones actuales
                 mainCategoryFilter.innerHTML = '<option value="all">Todas las categorías principales</option>';
-                
+
                 // Obtener categorías principales del servidor
-                fetch('/admin/api/categorias-principales/filter?per_page=100')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success && data.categorias) {
-                            data.categorias.forEach(category => {
-                                const option = document.createElement('option');
-                                option.value = category.id;
-                                option.textContent = category.nombre;
-                                mainCategoryFilter.appendChild(option);
-                            });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al cargar categorías principales:', error);
-                        this.showNotification('Error al cargar categorías principales', 'error');
-                    });
+                fetch('/admin/api/categorias-principales/filter?per_page=100').then(response => response.json()).then(data => {
+                    if (data.success && data.categorias) {
+                        data.categorias.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.id;
+                            option.textContent = category.nombre;
+                            mainCategoryFilter.appendChild(option);
+                        });
+                    }
+                }).catch(error => {
+                    console.error('Error al cargar categorías principales:', error);
+                    this.showNotification('Error al cargar categorías principales', 'error');
+                });
             },
-            
+
             // Función para cargar subcategorías para el filtro
-            loadSubcategoriesForFilter: function() {
-                const mainCategoryId = document.getElementById('mainCategoryFilter').value;
+            loadSubcategoriesForFilter: function () {
+                const mainCategoryId = document.getElementById('mainCategoryFilter') ?. value;
                 const subCategoryFilter = document.getElementById('subCategoryFilter');
+                if (! subCategoryFilter) 
+                    return;
                 
+
                 // Limpiar opciones actuales
                 subCategoryFilter.innerHTML = '<option value="all">Todas las subcategorías</option>';
-                
-                if (mainCategoryId !== 'all') {
-                    // Obtener subcategorías del servidor
-                    fetch(`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`)
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.subcategorias) {
-                                data.subcategorias.forEach(subcategory => {
-                                    const option = document.createElement('option');
-                                    option.value = subcategory.id;
-                                    option.textContent = subcategory.nombre;
-                                    subCategoryFilter.appendChild(option);
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error al cargar subcategorías:', error);
-                            this.showNotification('Error al cargar subcategorías', 'error');
-                        });
+
+                if (mainCategoryId !== 'all') { // Obtener subcategorías del servidor
+                    fetch (`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`).then(response => response.json()).then(data => {
+                        if (data.success && data.subcategorias) {
+                            data.subcategorias.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.nombre;
+                                subCategoryFilter.appendChild(option);
+                            });
+                        }
+                    }).catch(error => {
+                        console.error('Error al cargar subcategorías:', error);
+                        this.showNotification('Error al cargar subcategorías', 'error');
+                    });
                 }
             },
-            
+
             // Función para cargar categorías jerárquicas
-            loadHierarchicalCategories: function() {
-                if (this.isLoading) return;
+            loadHierarchicalCategories: function () {
+                if (this.isLoading) 
+                    return;
+                
                 this.isLoading = true;
-                
+
                 // Mostrar loader
-                this.elements.categoriesContainer.innerHTML = '<div class="loader"></div>';
-                
+                if (this.elements.categoriesContainer) {
+                    this.elements.categoriesContainer.innerHTML = '<div class="loader"></div>';
+                }
+
                 // Obtener categorías principales del servidor
-                fetch('/admin/api/categorias-principales/filter?per_page=100')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success && data.categorias) {
-                            this.renderHierarchicalCategories(data.categorias);
-                        } else {
-                            this.elements.categoriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
-                        }
-                        
-                        this.isLoading = false;
-                    })
-                    .catch(error => {
-                        console.error('Error al cargar categorías jerárquicas:', error);
+                fetch('/admin/api/categorias-principales/filter?per_page=100').then(response => response.json()).then(data => {
+                    if (data.success && data.categorias && this.elements.categoriesContainer) {
+                        this.renderHierarchicalCategories(data.categorias);
+                    } else if (this.elements.categoriesContainer) {
+                        this.elements.categoriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
+                    }
+
+                    this.isLoading = false;
+                }).catch(error => {
+                    console.error('Error al cargar categorías jerárquicas:', error);
+                    if (this.elements.categoriesContainer) {
                         this.elements.categoriesContainer.innerHTML = '<p class="text-red-500 text-center py-4">Error al cargar categorías</p>';
-                        this.showNotification('Error al cargar categorías', 'error');
-                        this.isLoading = false;
-                    });
+                    }
+                    this.showNotification('Error al cargar categorías', 'error');
+                    this.isLoading = false;
+                });
             },
-            
+
             // Función para renderizar categorías jerárquicas
-            renderHierarchicalCategories: function(categories) {
-                let html = '';
+            renderHierarchicalCategories: function (categories) {
+                if (!this.elements.categoriesContainer) 
+                    return;
                 
+
+                let html = '';
+
                 if (categories && categories.length > 0) {
-                    categories.forEach(category => {
-                        // Contar subcategorías activas
-                        const activeSubcategories = category.subcategorias ? 
-                            category.subcategorias.filter(sub => sub.estado === 'activo').length : 0;
-                        
+                    categories.forEach(category => { // Contar subcategorías activas
+                        const activeSubcategories = category.subcategorias ? category.subcategorias.filter(sub => sub.estado === 'activo').length : 0;
+
                         // Usar el total de productos ya calculado por el backend
                         const totalProducts = category.total_productos || 0;
-                        
+
                         html += `
                             <div class="category-card">
                                 <div class="category-header">
                                     <div class="category-info">
-                                        <button class="category-toggle" data-target="sub-${category.id}">
+                                        <button class="category-toggle" data-target="sub-${
+                            category.id
+                        }">
                                             <i class="fas fa-chevron-right"></i>
                                         </button>
                                         <div class="category-details">
-                                            <h4>${category.nombre}</h4>
-                                            <p>${category.descripcion}</p>
+                                            <h4>${
+                            category.nombre
+                        }</h4>
+                                            <p>${
+                            category.descripcion
+                        }</p>
                                             <div class="category-meta">
                                                 <span class="inline-flex items-center mr-3">
                                                     <i class="fas fa-folder mr-1"></i> ${activeSubcategories} subcategorías
@@ -1181,36 +1284,50 @@
                                                     <i class="fas fa-tag mr-1"></i> ${totalProducts} productos
                                                 </span>
                                                 <span class="inline-flex items-center ml-3">
-                                                    <i class="fas fa-clock mr-1"></i> ${this.formatDate(category.created_at)}
+                                                    <i class="fas fa-clock mr-1"></i> ${
+                            this.formatDate(category.created_at)
+                        }
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
                                     <div class="category-actions">
                                         <label class="toggle-switch">
-                                            <input type="checkbox" class="main-category-status" data-id="${category.id}" 
-                                                   ${category.estado === 'activo' ? 'checked' : ''}>
+                                            <input type="checkbox" class="main-category-status" data-id="${
+                            category.id
+                        }" 
+                                                   ${
+                            category.estado === 'activo' ? 'checked' : ''
+                        }>
                                             <span class="toggle-slider"></span>
                                         </label>
                                         <button class="action-button view" title="Ver detalles" 
-                                                onclick="categoriesApp.viewCategory('${category.id}', 'main')">
+                                                onclick="categoriesApp.viewCategory('${
+                            category.id
+                        }', 'main')">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         <button class="action-button edit" title="Editar" 
-                                                onclick="categoriesApp.editCategory('${category.id}', 'main')">
+                                                onclick="categoriesApp.editCategory('${
+                            category.id
+                        }', 'main')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     </div>
                                 </div>
                                 
                                 <!-- Subcategorías -->
-                                <div class="subcategory-list" id="sub-${category.id}">
+                                <div class="subcategory-list" id="sub-${
+                            category.id
+                        }">
                                     <div class="mb-2">
                                         <h5 class="font-medium text-gray-700">Subcategorías</h5>
                                     </div>
                                     
                                     <div class="space-y-3 ml-4">
-                                        ${this.renderSubcategories(category.subcategorias || [], category.id)}
+                                        ${
+                            this.renderSubcategories(category.subcategorias || [], category.id)
+                        }
                                     </div>
                                 </div>
                             </div>
@@ -1219,36 +1336,40 @@
                 } else {
                     html = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
                 }
-                
+
                 this.elements.categoriesContainer.innerHTML = html;
-                
+
                 // Inicializar eventos para la vista jerárquica
                 this.initializeHierarchicalView();
             },
-            
+
             // Función para renderizar subcategorías
-            renderSubcategories: function(subcategories, mainCategoryId) {
+            renderSubcategories: function (subcategories, mainCategoryId) {
                 let html = '';
-                
+
                 if (subcategories && subcategories.length > 0) {
-                    subcategories.forEach(subcategory => {
-                        // Contar seudocategorías activas
-                        const activePseudocategories = subcategory.seudocategorias ? 
-                            subcategory.seudocategorias.filter(pseudo => pseudo.estado === 'activo').length : 0;
-                        
+                    subcategories.forEach(subcategory => { // Contar seudocategorías activas
+                        const activePseudocategories = subcategory.seudocategorias ? subcategory.seudocategorias.filter(pseudo => pseudo.estado === 'activo').length : 0;
+
                         // Usar el total de productos ya calculado por el backend
                         const totalProducts = subcategory.total_productos || 0;
-                        
+
                         html += `
                             <div class="subcategory-card">
                                 <div class="subcategory-header">
                                     <div class="subcategory-info">
-                                        <button class="subcategory-toggle" data-target="pseudo-${subcategory.id}">
+                                        <button class="subcategory-toggle" data-target="pseudo-${
+                            subcategory.id
+                        }">
                                             <i class="fas fa-chevron-right"></i>
                                         </button>
                                         <div class="subcategory-details">
-                                            <h6>${subcategory.nombre}</h6>
-                                            <p class="text-xs text-gray-500">${subcategory.descripcion}</p>
+                                            <h6>${
+                            subcategory.nombre
+                        }</h6>
+                                            <p class="text-xs text-gray-500">${
+                            subcategory.descripcion
+                        }</p>
                                             <div class="subcategory-meta">
                                                 <span class="inline-flex items-center mr-3">
                                                     <i class="fas fa-folder mr-1"></i> ${activePseudocategories} seudocategorías
@@ -1261,29 +1382,41 @@
                                     </div>
                                     <div class="subcategory-actions">
                                         <label class="toggle-switch">
-                                            <input type="checkbox" class="subcategory-status" data-id="${subcategory.id}" 
-                                                   ${subcategory.estado === 'activo' ? 'checked' : ''}>
+                                            <input type="checkbox" class="subcategory-status" data-id="${
+                            subcategory.id
+                        }" 
+                                                   ${
+                            subcategory.estado === 'activo' ? 'checked' : ''
+                        }>
                                             <span class="toggle-slider"></span>
                                         </label>
                                         <button class="action-button view" title="Ver detalles" 
-                                                onclick="categoriesApp.viewCategory('${subcategory.id}', 'sub')">
+                                                onclick="categoriesApp.viewCategory('${
+                            subcategory.id
+                        }', 'sub')">
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         <button class="action-button edit" title="Editar" 
-                                                onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
+                                                onclick="categoriesApp.editCategory('${
+                            subcategory.id
+                        }', 'sub')">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                     </div>
                                 </div>
                                 
                                 <!-- Seudocategorías -->
-                                <div class="pseudocategory-list" id="pseudo-${subcategory.id}">
+                                <div class="pseudocategory-list" id="pseudo-${
+                            subcategory.id
+                        }">
                                     <div class="mb-2">
                                         <h5 class="font-medium text-gray-700 text-sm">Seudocategorías</h5>
                                     </div>
                                     
                                     <div class="space-y-2 ml-4">
-                                        ${this.renderPseudocategories(subcategory.seudocategorias || [], subcategory.id)}
+                                        ${
+                            this.renderPseudocategories(subcategory.seudocategorias || [], subcategory.id)
+                        }
                                     </div>
                                 </div>
                             </div>
@@ -1292,24 +1425,27 @@
                 } else {
                     html = '<p class="text-gray-500 text-center py-2">No hay subcategorías</p>';
                 }
-                
+
                 return html;
             },
-            
+
             // Función para renderizar seudocategorías
-            renderPseudocategories: function(pseudocategories, subcategoryId) {
+            renderPseudocategories: function (pseudocategories, subcategoryId) {
                 let html = '';
-                
+
                 if (pseudocategories && pseudocategories.length > 0) {
-                    pseudocategories.forEach(pseudocategory => {
-                        // Usar el total de productos ya calculado por el backend
+                    pseudocategories.forEach(pseudocategory => { // Usar el total de productos ya calculado por el backend
                         const totalProducts = pseudocategory.total_productos || 0;
-                        
+
                         html += `
                             <div class="pseudocategory-card">
                                 <div class="pseudocategory-info">
-                                    <h6 class="font-medium text-gray-800 text-sm">${pseudocategory.nombre}</h6>
-                                    <p class="text-xs text-gray-500">${pseudocategory.descripcion}</p>
+                                    <h6 class="font-medium text-gray-800 text-sm">${
+                            pseudocategory.nombre
+                        }</h6>
+                                    <p class="text-xs text-gray-500">${
+                            pseudocategory.descripcion
+                        }</p>
                                     <div class="pseudocategory-meta">
                                         <span class="inline-flex items-center">
                                             <i class="fas fa-tag mr-1"></i> ${totalProducts} productos
@@ -1318,16 +1454,24 @@
                                 </div>
                                 <div class="pseudocategory-actions">
                                     <label class="toggle-switch">
-                                        <input type="checkbox" class="pseudocategory-status" data-id="${pseudocategory.id}" 
-                                               ${pseudocategory.estado === 'activo' ? 'checked' : ''}>
+                                        <input type="checkbox" class="pseudocategory-status" data-id="${
+                            pseudocategory.id
+                        }" 
+                                               ${
+                            pseudocategory.estado === 'activo' ? 'checked' : ''
+                        }>
                                         <span class="toggle-slider"></span>
                                     </label>
                                     <button class="action-button view" title="Ver detalles" 
-                                            onclick="categoriesApp.viewCategory('${pseudocategory.id}', 'pseudo')">
+                                            onclick="categoriesApp.viewCategory('${
+                            pseudocategory.id
+                        }', 'pseudo')">
                                         <i class="fas fa-eye"></i>
                                     </button>
                                     <button class="action-button edit" title="Editar" 
-                                            onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
+                                            onclick="categoriesApp.editCategory('${
+                            pseudocategory.id
+                        }', 'pseudo')">
                                         <i class="fas fa-edit"></i>
                                     </button>
                                 </div>
@@ -1337,19 +1481,18 @@
                 } else {
                     html = '<p class="text-gray-500 text-center py-2">No hay seudocategorías</p>';
                 }
-                
+
                 return html;
             },
-            
+
             // Función para inicializar la vista jerárquica
-            initializeHierarchicalView: function() {
-                // Toggle para expandir/colapsar categorías
+            initializeHierarchicalView: function () { // Toggle para expandir/colapsar categorías
                 document.querySelectorAll('.category-toggle').forEach(toggle => {
-                    toggle.addEventListener('click', function() {
+                    toggle.addEventListener('click', function () {
                         const targetId = this.getAttribute('data-target');
                         const targetElement = document.getElementById(targetId);
                         const icon = this.querySelector('i');
-                        
+
                         if (targetElement.classList.contains('open')) {
                             targetElement.classList.remove('open');
                             icon.classList.remove('fa-chevron-down');
@@ -1361,14 +1504,14 @@
                         }
                     });
                 });
-                
+
                 // Toggle para expandir/colapsar subcategorías
                 document.querySelectorAll('.subcategory-toggle').forEach(toggle => {
-                    toggle.addEventListener('click', function() {
+                    toggle.addEventListener('click', function () {
                         const targetId = this.getAttribute('data-target');
                         const targetElement = document.getElementById(targetId);
                         const icon = this.querySelector('i');
-                        
+
                         if (targetElement.classList.contains('open')) {
                             targetElement.classList.remove('open');
                             icon.classList.remove('fa-chevron-down');
@@ -1380,72 +1523,101 @@
                         }
                     });
                 });
-                
+
                 // Toggle de estado para categorías principales
                 document.querySelectorAll('.main-category-status').forEach(toggle => {
-                    toggle.addEventListener('change', function() {
+                    toggle.addEventListener('change', function () {
                         const categoryId = this.getAttribute('data-id');
                         const newStatus = this.checked ? 'activo' : 'inactivo';
                         categoriesApp.updateMainCategoryStatus(categoryId, newStatus);
                     });
                 });
-                
+
                 // Toggle de estado para subcategorías
                 document.querySelectorAll('.subcategory-status').forEach(toggle => {
-                    toggle.addEventListener('change', function() {
+                    toggle.addEventListener('change', function () {
                         const subcategoryId = this.getAttribute('data-id');
                         const newStatus = this.checked ? 'activo' : 'inactivo';
                         categoriesApp.updateSubcategoryStatus(subcategoryId, newStatus);
                     });
                 });
-                
+
                 // Toggle de estado para seudocategorías
                 document.querySelectorAll('.pseudocategory-status').forEach(toggle => {
-                    toggle.addEventListener('change', function() {
+                    toggle.addEventListener('change', function () {
                         const pseudocategoryId = this.getAttribute('data-id');
                         const newStatus = this.checked ? 'activo' : 'inactivo';
                         categoriesApp.updatePseudocategoryStatus(pseudocategoryId, newStatus);
                     });
                 });
             },
-            
+
             // Función para cargar datos de tabla
-            loadTableData: function(resetPage = true) {
-                if (this.isLoading) return;
-                this.isLoading = true;
+            loadTableData: function (resetPage = true) {
+                if (this.isLoading) 
+                    return;
                 
+                this.isLoading = true;
+
                 if (resetPage) {
                     this.currentPage = 1;
                 }
-                
+
                 // Obtener parámetros de filtro
-                const nameFilter = document.getElementById('nameFilter').value;
-                const statusFilter = document.getElementById('statusFilter').value;
-                const mainCategoryFilter = document.getElementById('mainCategoryFilter').value;
-                const subCategoryFilter = document.getElementById('subCategoryFilter').value;
-                const sortFilter = document.getElementById('sortFilter').value;
-                
+                const nameFilter = document.getElementById('nameFilter') ?. value || '';
+                const statusFilter = document.getElementById('statusFilter') ?. value || 'all';
+                const mainCategoryFilter = document.getElementById('mainCategoryFilter') ?. value || 'all';
+                const subCategoryFilter = document.getElementById('subCategoryFilter') ?. value || 'all';
+                const sortFilter = document.getElementById('sortFilter') ?. value || 'nombre';
+
                 // Construir URL de la API
                 let apiUrl = '';
-                let tableBody = '';
-                
+                let tableBody = null;
+
                 if (this.currentView === 'main') {
-                    apiUrl = `/admin/api/categorias-principales/filter?page=${this.currentPage}&per_page=${this.itemsPerPage}`;
+                    apiUrl = `/admin/api/categorias-principales/filter?page=${
+                        this.currentPage
+                    }&per_page=${
+                        this.itemsPerPage
+                    }`;
                     tableBody = this.elements.mainCategoriesTableBody;
                 } else if (this.currentView === 'sub') {
-                    apiUrl = `/admin/api/subcategorias/filter?page=${this.currentPage}&per_page=${this.itemsPerPage}`;
+                    apiUrl = `/admin/api/subcategorias/filter?page=${
+                        this.currentPage
+                    }&per_page=${
+                        this.itemsPerPage
+                    }`;
                     tableBody = this.elements.subCategoriesTableBody;
                 } else if (this.currentView === 'pseudo') {
-                    apiUrl = `/admin/api/seudocategorias/filter?page=${this.currentPage}&per_page=${this.itemsPerPage}`;
+                    apiUrl = `/admin/api/seudocategorias/filter?page=${
+                        this.currentPage
+                    }&per_page=${
+                        this.itemsPerPage
+                    }`;
                     tableBody = this.elements.pseudoCategoriesTableBody;
                 }
-                
+
+                if (! tableBody) {
+                    this.isLoading = false;
+                    return;
+                }
+
                 // Agregar parámetros de filtro
-                if (nameFilter) apiUrl += `&nombre=${encodeURIComponent(nameFilter)}`;
-                if (statusFilter !== 'all') apiUrl += `&estado=${statusFilter}`;
-                if (this.currentView === 'sub' && mainCategoryFilter !== 'all') apiUrl += `&categoria_id=${mainCategoryFilter}`;
-                if (this.currentView === 'pseudo' && subCategoryFilter !== 'all') apiUrl += `&subcategoria_id=${subCategoryFilter}`;
+                if (nameFilter) 
+                    apiUrl += `&nombre=${
+                        encodeURIComponent(nameFilter)
+                    }`;
                 
+                if (statusFilter !== 'all') 
+                    apiUrl += `&estado=${statusFilter}`;
+                
+                if (this.currentView === 'sub' && mainCategoryFilter !== 'all') 
+                    apiUrl += `&categoria_id=${mainCategoryFilter}`;
+                
+                if (this.currentView === 'pseudo' && subCategoryFilter !== 'all') 
+                    apiUrl += `&subcategoria_id=${subCategoryFilter}`;
+                
+
                 // Agregar parámetros de ordenamiento
                 if (sortFilter === 'nombre-desc') {
                     apiUrl += '&sort_by=nombre&sort_order=desc';
@@ -1456,62 +1628,74 @@
                 } else {
                     apiUrl += '&sort_by=nombre&sort_order=asc';
                 }
-                
+
                 // Mostrar loader
                 tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="loader"></div></td></tr>';
-                
+
                 // Obtener datos del servidor
-                fetch(apiUrl)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Actualizar tabla
-                            this.updateTable(data, tableBody);
-                            
-                            // Actualizar paginación
+                fetch(apiUrl).then(response => response.json()).then(data => {
+                    if (data.success) { // Actualizar tabla
+                        this.updateTable(data, tableBody);
+
+                        // Actualizar paginación
+                        if (data.pagination) {
                             this.updatePagination(data.pagination);
-                            
-                            // Actualizar información de paginación
                             this.updatePaginationInfo(data.pagination);
-                        } else {
-                            tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
-                            this.showNotification('Error al cargar datos', 'error');
                         }
-                        
-                        this.isLoading = false;
-                    })
-                    .catch(error => {
-                        console.error('Error al cargar datos de tabla:', error);
+                    } else {
                         tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
                         this.showNotification('Error al cargar datos', 'error');
-                        this.isLoading = false;
-                    });
+                    }
+
+                    this.isLoading = false;
+                }).catch(error => {
+                    console.error('Error al cargar datos de tabla:', error);
+                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
+                    this.showNotification('Error al cargar datos', 'error');
+                    this.isLoading = false;
+                });
             },
-            
+
             // Función para actualizar la tabla
-            updateTable: function(data, tableBody) {
+            updateTable: function (data, tableBody) {
                 let html = '';
-                
+
                 if (this.currentView === 'main') {
                     if (data.categorias && data.categorias.length > 0) {
                         data.categorias.forEach(category => {
                             html += `
                                 <tr>
-                                    <td>${category.nombre}</td>
-                                    <td>${category.slug}</td>
-                                    <td>${category.subcategorias ? category.subcategorias.length : 0}</td>
+                                    <td>${
+                                category.nombre
+                            }</td>
+                                    <td>${
+                                category.slug
+                            }</td>
+                                    <td>${
+                                category.subcategorias ? category.subcategorias.length : 0
+                            }</td>
                                     <td>
-                                        <span class="status-badge ${category.estado === 'activo' ? 'active' : 'inactive'}">
-                                            <i class="fas fa-circle mr-1"></i> ${category.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                        <span class="status-badge ${
+                                category.estado === 'activo' ? 'active' : 'inactive'
+                            }">
+                                            <i class="fas fa-circle mr-1"></i> ${
+                                category.estado === 'activo' ? 'Activo' : 'Inactivo'
+                            }
                                         </span>
                                     </td>
-                                    <td>${this.formatDate(category.created_at)}</td>
+                                    <td>${
+                                this.formatDate(category.created_at)
+                            }</td>
                                     <td>
                                         <div class="flex">
-                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${category.id}', 'main')">
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${
+                                category.id
+                            }', 'main')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${category.id}', 'main')">
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${
+                                category.id
+                            }', 'main')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </div>
@@ -1527,22 +1711,40 @@
                         data.subcategorias.forEach(subcategory => {
                             html += `
                                 <tr>
-                                    <td>${subcategory.nombre}</td>
-                                    <td>${subcategory.slug}</td>
-                                    <td>${subcategory.categoria_principal_nombre || '-'}</td>
-                                    <td>${subcategory.seudocategorias ? subcategory.seudocategorias.length : 0}</td>
+                                    <td>${
+                                subcategory.nombre
+                            }</td>
+                                    <td>${
+                                subcategory.slug
+                            }</td>
+                                    <td>${
+                                subcategory.categoria_principal_nombre || '-'
+                            }</td>
+                                    <td>${
+                                subcategory.seudocategorias ? subcategory.seudocategorias.length : 0
+                            }</td>
                                     <td>
-                                        <span class="status-badge ${subcategory.estado === 'activo' ? 'active' : 'inactive'}">
-                                            <i class="fas fa-circle mr-1"></i> ${subcategory.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                        <span class="status-badge ${
+                                subcategory.estado === 'activo' ? 'active' : 'inactive'
+                            }">
+                                            <i class="fas fa-circle mr-1"></i> ${
+                                subcategory.estado === 'activo' ? 'Activo' : 'Inactivo'
+                            }
                                         </span>
                                     </td>
-                                    <td>${this.formatDate(subcategory.created_at)}</td>
+                                    <td>${
+                                this.formatDate(subcategory.created_at)
+                            }</td>
                                     <td>
                                         <div class="flex">
-                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${subcategory.id}', 'sub')">
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${
+                                subcategory.id
+                            }', 'sub')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${
+                                subcategory.id
+                            }', 'sub')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </div>
@@ -1558,22 +1760,40 @@
                         data.seudocategorias.forEach(pseudocategory => {
                             html += `
                                 <tr>
-                                    <td>${pseudocategory.nombre}</td>
-                                    <td>${pseudocategory.slug}</td>
-                                    <td>${pseudocategory.subcategoria_nombre || '-'}</td>
-                                    <td>${pseudocategory.categoria_principal_nombre || '-'}</td>
+                                    <td>${
+                                pseudocategory.nombre
+                            }</td>
+                                    <td>${
+                                pseudocategory.slug
+                            }</td>
+                                    <td>${
+                                pseudocategory.subcategoria_nombre || '-'
+                            }</td>
+                                    <td>${
+                                pseudocategory.categoria_principal_nombre || '-'
+                            }</td>
                                     <td>
-                                        <span class="status-badge ${pseudocategory.estado === 'activo' ? 'active' : 'inactive'}">
-                                            <i class="fas fa-circle mr-1"></i> ${pseudocategory.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                        <span class="status-badge ${
+                                pseudocategory.estado === 'activo' ? 'active' : 'inactive'
+                            }">
+                                            <i class="fas fa-circle mr-1"></i> ${
+                                pseudocategory.estado === 'activo' ? 'Activo' : 'Inactivo'
+                            }
                                         </span>
                                     </td>
-                                    <td>${this.formatDate(pseudocategory.created_at)}</td>
+                                    <td>${
+                                this.formatDate(pseudocategory.created_at)
+                            }</td>
                                     <td>
                                         <div class="flex">
-                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${pseudocategory.id}', 'pseudo')">
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${
+                                pseudocategory.id
+                            }', 'pseudo')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${
+                                pseudocategory.id
+                            }', 'pseudo')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </div>
@@ -1585,236 +1805,253 @@
                         html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron seudocategorías</td></tr>';
                     }
                 }
-                
+
                 tableBody.innerHTML = html;
             },
-            
+
             // Función para actualizar la paginación
-            updatePagination: function(pagination) {
-                let html = '';
+            updatePagination: function (pagination) {
+                if (!this.elements.paginationContainer) 
+                    return;
                 
+
+                let html = '';
+
                 // Botón Anterior
                 html += `
-                    <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${pagination.has_prev ? '' : 'disabled'}" 
-                            onclick="categoriesApp.changePage(${pagination.prev_num})" ${!pagination.has_prev ? 'disabled' : ''}>
+                    <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${
+                    pagination.has_prev ? '' : 'disabled'
+                }" 
+                            onclick="categoriesApp.changePage(${
+                    pagination.prev_num
+                })" ${
+                    ! pagination.has_prev ? 'disabled' : ''
+                }>
                         <i class="fas fa-chevron-left mr-1"></i> Anterior
                     </button>
                 `;
-                
+
                 // Botones de página
                 const maxVisiblePages = 5;
                 let startPage = Math.max(1, pagination.page - Math.floor(maxVisiblePages / 2));
                 let endPage = Math.min(pagination.pages, startPage + maxVisiblePages - 1);
-                
+
                 if (endPage - startPage + 1 < maxVisiblePages) {
                     startPage = Math.max(1, endPage - maxVisiblePages + 1);
                 }
-                
+
                 if (startPage > 1) {
                     html += `<button class="pagination-button border border-gray-300 text-gray-700" onclick="categoriesApp.changePage(1)">1</button>`;
                     if (startPage > 2) {
                         html += `<span class="px-2 text-gray-500">...</span>`;
                     }
                 }
-                
+
                 for (let i = startPage; i <= endPage; i++) {
                     html += `
-                        <button class="pagination-button border border-gray-300 ${i === pagination.page ? 'active bg-blue-600 text-white' : 'text-gray-700'}" 
+                        <button class="pagination-button border border-gray-300 ${
+                        i === pagination.page ? 'active bg-blue-600 text-white' : 'text-gray-700'
+                    }" 
                                 onclick="categoriesApp.changePage(${i})">${i}</button>
                     `;
                 }
-                
+
                 if (endPage < pagination.pages) {
                     if (endPage < pagination.pages - 1) {
                         html += `<span class="px-2 text-gray-500">...</span>`;
                     }
-                    html += `<button class="pagination-button border border-gray-300 text-gray-700" onclick="categoriesApp.changePage(${pagination.pages})">${pagination.pages}</button>`;
+                    html += `<button class="pagination-button border border-gray-300 text-gray-700" onclick="categoriesApp.changePage(${
+                        pagination.pages
+                    })">${
+                        pagination.pages
+                    }</button>`;
                 }
-                
+
                 // Botón Siguiente
                 html += `
-                    <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${pagination.has_next ? '' : 'disabled'}" 
-                            onclick="categoriesApp.changePage(${pagination.next_num})" ${!pagination.has_next ? 'disabled' : ''}>
+                    <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${
+                    pagination.has_next ? '' : 'disabled'
+                }" 
+                            onclick="categoriesApp.changePage(${
+                    pagination.next_num
+                })" ${
+                    ! pagination.has_next ? 'disabled' : ''
+                }>
                         Siguiente <i class="fas fa-chevron-right ml-1"></i>
                     </button>
                 `;
-                
+
                 this.elements.paginationContainer.innerHTML = html;
             },
-            
+
             // Función para actualizar la información de paginación
-            updatePaginationInfo: function(pagination) {
+            updatePaginationInfo: function (pagination) {
                 const to = Math.min(pagination.page * pagination.per_page, pagination.total);
-                
+
                 if (this.elements.showingTo) {
                     this.elements.showingTo.textContent = to;
-                } else {
-                    console.error("Element with ID 'showingTo' not found.");
                 }
                 if (this.elements.totalItems) {
                     this.elements.totalItems.textContent = pagination.total;
-                } else {
-                    console.error("Element with ID 'totalItems' not found.");
                 }
             },
-            
+
             // Función para formatear fecha
-            formatDate: function(dateString) {
-                if (!dateString) return '-';
+            formatDate: function (dateString) {
+                if (! dateString) 
+                    return '-';
                 
+
                 const date = new Date(dateString);
                 const day = date.getDate().toString().padStart(2, '0');
                 const month = (date.getMonth() + 1).toString().padStart(2, '0');
                 const year = date.getFullYear();
-                
+
                 return `${day}/${month}/${year}`;
             },
-            
+
             // Función para mostrar notificación
-            showNotification: function(message, type) {
+            showNotification: function (message, type) {
                 const notification = document.getElementById('notification');
+                if (! notification) 
+                    return;
+                
+
                 notification.textContent = message;
                 notification.className = `notification ${type}`;
                 notification.classList.add('show');
-                
+
                 setTimeout(() => {
                     notification.classList.remove('show');
                 }, 3000);
             },
-            
+
             // Función para cambiar de página
-            changePage: function(page) {
+            changePage: function (page) {
                 this.currentPage = page;
                 this.loadTableData(false);
             },
-            
+
             // Función para actualizar el estado de una categoría principal
-            updateMainCategoryStatus: function(categoryId, newStatus) {
-                fetch(`/admin/api/categorias-principales/${categoryId}/status`, {
+            updateMainCategoryStatus: function (categoryId, newStatus) {
+                fetch (`/admin/api/categorias-principales/${categoryId}/status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]') ?. getAttribute('content') || ''
                     },
-                    body: JSON.stringify({ estado: newStatus })
-                })
-                .then(response => response.json())
-                .then(data => {
+                    body: JSON.stringify(
+                        {estado: newStatus}
+                    )
+                }).then(response => response.json()).then(data => {
                     if (data.success) {
                         this.showNotification(data.message, 'success');
-                    } else {
-                        // Revertir el toggle si hubo un error
-                        const toggle = document.querySelector(`.main-category-status[data-id="${categoryId}"]`);
+                    } else { // Revertir el toggle si hubo un error
+                        const toggle = document.querySelector (`.main-category-status[data-id="${categoryId}"]`);
                         if (toggle) {
                             toggle.checked = newStatus === 'inactivo';
                         }
                         this.showNotification(data.message || 'Error al actualizar estado', 'error');
                     }
-                })
-                .catch(error => {
+                }).catch(error => {
                     console.error('Error al actualizar estado de categoría principal:', error);
                     this.showNotification('Error al actualizar estado', 'error');
                 });
             },
-            
+
             // Función para actualizar el estado de una subcategoría
-            updateSubcategoryStatus: function(subcategoryId, newStatus) {
-                fetch(`/admin/api/subcategorias/${subcategoryId}/status`, {
+            updateSubcategoryStatus: function (subcategoryId, newStatus) {
+                fetch (`/admin/api/subcategorias/${subcategoryId}/status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]') ?. getAttribute('content') || ''
                     },
-                    body: JSON.stringify({ estado: newStatus })
-                })
-                .then(response => response.json())
-                .then(data => {
+                    body: JSON.stringify(
+                        {estado: newStatus}
+                    )
+                }).then(response => response.json()).then(data => {
                     if (data.success) {
                         this.showNotification(data.message, 'success');
-                    } else {
-                        // Revertir el toggle si hubo un error
-                        const toggle = document.querySelector(`.subcategory-status[data-id="${subcategoryId}"]`);
+                    } else { // Revertir el toggle si hubo un error
+                        const toggle = document.querySelector (`.subcategory-status[data-id="${subcategoryId}"]`);
                         if (toggle) {
                             toggle.checked = newStatus === 'inactivo';
                         }
                         this.showNotification(data.message || 'Error al actualizar estado', 'error');
                     }
-                })
-                .catch(error => {
+                }).catch(error => {
                     console.error('Error al actualizar estado de subcategoría:', error);
                     this.showNotification('Error al actualizar estado', 'error');
                 });
             },
-            
+
             // Función para actualizar el estado de una seudocategoría
-            updatePseudocategoryStatus: function(pseudocategoryId, newStatus) {
-                fetch(`/admin/api/seudocategorias/${pseudocategoryId}/status`, {
+            updatePseudocategoryStatus: function (pseudocategoryId, newStatus) {
+                fetch (`/admin/api/seudocategorias/${pseudocategoryId}/status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]') ?. getAttribute('content') || ''
                     },
-                    body: JSON.stringify({ estado: newStatus })
-                })
-                .then(response => response.json())
-                .then(data => {
+                    body: JSON.stringify(
+                        {estado: newStatus}
+                    )
+                }).then(response => response.json()).then(data => {
                     if (data.success) {
                         this.showNotification(data.message, 'success');
-                    } else {
-                        // Revertir el toggle si hubo un error
-                        const toggle = document.querySelector(`.pseudocategory-status[data-id="${pseudocategoryId}"]`);
+                    } else { // Revertir el toggle si hubo un error
+                        const toggle = document.querySelector (`.pseudocategory-status[data-id="${pseudocategoryId}"]`);
                         if (toggle) {
                             toggle.checked = newStatus === 'inactivo';
                         }
                         this.showNotification(data.message || 'Error al actualizar estado', 'error');
                     }
-                })
-                .catch(error => {
+                }).catch(error => {
                     console.error('Error al actualizar estado de seudocategoría:', error);
                     this.showNotification('Error al actualizar estado', 'error');
                 });
             },
-            
+
             // Función para ver detalles de una categoría
-            viewCategory: function(categoryId, categoryType) {
-                // Implementar la lógica para ver detalles
+            viewCategory: function (categoryId, categoryType) { // Implementar la lógica para ver detalles
                 console.log(`Ver detalles de ${categoryType} con ID: ${categoryId}`);
-                this.showNotification(`Ver detalles de ${categoryType}`, 'success');
+                this.showNotification (`Ver detalles de ${categoryType}`, 'success');
             },
-            
+
             // Función para editar una categoría
-            editCategory: function(categoryId, categoryType) {
-                // Implementar la lógica para editar
+            editCategory: function (categoryId, categoryType) { // Implementar la lógica para editar
                 console.log(`Editar ${categoryType} con ID: ${categoryId}`);
-                this.showNotification(`Editar ${categoryType}`, 'success');
+                this.showNotification (`Editar ${categoryType}`, 'success');
             },
-            
+
             // Configurar event listeners
-            setupEventListeners: function() {
-                // Tabs para niveles de categoría
+            setupEventListeners: function () { // Tabs para niveles de categoría
                 document.querySelectorAll('.tab-btn').forEach(button => {
-                    button.addEventListener('click', () => {
+                    button.addEventListener('click', (e) => {
+                        const btn = e.currentTarget;
+
                         // Remover clase activa de todos los tabs
-                        document.querySelectorAll('.tab-btn').forEach(btn => {
-                            btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
-                            btn.classList.add('border-transparent', 'text-gray-500');
+                        document.querySelectorAll('.tab-btn').forEach(b => {
+                            b.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                            b.classList.add('border-transparent', 'text-gray-500');
                         });
-                        
+
                         // Añadir clase activa al tab actual
-                        button.classList.add('active', 'border-blue-500', 'text-blue-600');
-                        button.classList.remove('border-transparent', 'text-gray-500');
-                        
+                        btn.classList.add('active', 'border-blue-500', 'text-blue-600');
+                        btn.classList.remove('border-transparent', 'text-gray-500');
+
                         // Actualizar la vista actual
-                        this.currentView = button.getAttribute('data-level');
-                        
+                        this.currentView = btn.getAttribute('data-level');
+
                         // Mostrar la vista correspondiente
                         this.showView(this.currentView);
-                        
+
                         // Actualizar la URL sin recargar la página
                         const url = new URL(window.location);
                         url.searchParams.set('view', this.currentView);
                         window.history.pushState({}, '', url);
-                        
+
                         // Cargar los datos según la vista
                         if (this.currentView === 'all') {
                             this.loadHierarchicalCategories();
@@ -1823,69 +2060,109 @@
                         }
                     });
                 });
-                
+
                 // Selector de elementos por página
-                document.getElementById('itemsPerPage').addEventListener('change', (e) => {
-                    this.itemsPerPage = parseInt(e.target.value);
-                    this.loadTableData();
-                });
-                
+                const itemsPerPageSelect = document.getElementById('itemsPerPage');
+                if (itemsPerPageSelect) {
+                    itemsPerPageSelect.addEventListener('change', (e) => {
+                        this.itemsPerPage = parseInt(e.target.value);
+                        this.loadTableData();
+                    });
+                }
+
                 // Menú lateral de filtros
                 const filterMenu = document.getElementById('filterMenu');
                 const filterOverlay = document.getElementById('filterOverlay');
                 const closeFilterMenu = document.getElementById('closeFilterMenu');
                 const applyFilters = document.getElementById('applyFilters');
                 const clearFilters = document.getElementById('clearFilters');
-                
+
                 // Abrir menú de filtros
-                this.elements.filterFab.addEventListener('click', () => {
-                    filterMenu.classList.add('open');
-                    filterOverlay.classList.add('active');
-                    document.body.style.overflow = 'hidden'; // Evitar scroll en el body
-                });
-                
+                if (this.elements.filterFab) {
+                    this.elements.filterFab.addEventListener('click', () => {
+                        if (filterMenu) 
+                            filterMenu.classList.add('open');
+                        
+                        if (filterOverlay) 
+                            filterOverlay.classList.add('active');
+                        
+                        document.body.style.overflow = 'hidden'; // Evitar scroll en el body
+                    });
+                }
+
                 // Cerrar menú de filtros
                 const closeFilterMenuFunc = () => {
-                    filterMenu.classList.remove('open');
-                    filterOverlay.classList.remove('active');
+                    if (filterMenu) 
+                        filterMenu.classList.remove('open');
+                    
+                    if (filterOverlay) 
+                        filterOverlay.classList.remove('active');
+                    
                     document.body.style.overflow = ''; // Restaurar scroll
                 };
-                
-                closeFilterMenu.addEventListener('click', closeFilterMenuFunc);
-                filterOverlay.addEventListener('click', closeFilterMenuFunc);
-                
+
+                if (closeFilterMenu) {
+                    closeFilterMenu.addEventListener('click', closeFilterMenuFunc);
+                }
+                if (filterOverlay) {
+                    filterOverlay.addEventListener('click', closeFilterMenuFunc);
+                }
+
                 // Aplicar filtros
-                applyFilters.addEventListener('click', () => {
-                    this.loadTableData();
-                    closeFilterMenuFunc();
-                    this.showNotification('Filtros aplicados correctamente', 'success');
-                });
-                
+                if (applyFilters) {
+                    applyFilters.addEventListener('click', () => {
+                        this.loadTableData();
+                        closeFilterMenuFunc();
+                        this.showNotification('Filtros aplicados correctamente', 'success');
+                    });
+                }
+
                 // Limpiar filtros
-                clearFilters.addEventListener('click', () => {
-                    document.getElementById('nameFilter').value = '';
-                    document.getElementById('statusFilter').value = 'all';
-                    document.getElementById('mainCategoryFilter').value = 'all';
-                    document.getElementById('subCategoryFilter').value = 'all';
-                    document.getElementById('sortFilter').value = 'nombre';
-                    
-                    // Si estamos en la vista de seudocategorías, recargar las subcategorías
-                    if (this.currentView === 'pseudo') {
-                        this.loadSubcategoriesForFilter();
-                    }
-                    
-                    this.loadTableData();
-                    closeFilterMenuFunc();
-                    this.showNotification('Filtros limpiados correctamente', 'success');
-                });
-                
+                if (clearFilters) {
+                    clearFilters.addEventListener('click', () => {
+                        const nameFilter = document.getElementById('nameFilter');
+                        const statusFilter = document.getElementById('statusFilter');
+                        const mainCategoryFilter = document.getElementById('mainCategoryFilter');
+                        const subCategoryFilter = document.getElementById('subCategoryFilter');
+                        const sortFilter = document.getElementById('sortFilter');
+
+                        if (nameFilter) 
+                            nameFilter.value = '';
+                        
+                        if (statusFilter) 
+                            statusFilter.value = 'all';
+                        
+                        if (mainCategoryFilter) 
+                            mainCategoryFilter.value = 'all';
+                        
+                        if (subCategoryFilter) 
+                            subCategoryFilter.value = 'all';
+                        
+                        if (sortFilter) 
+                            sortFilter.value = 'nombre';
+                        
+
+                        // Si estamos en la vista de seudocategorías, recargar las subcategorías
+                        if (this.currentView === 'pseudo') {
+                            this.loadSubcategoriesForFilter();
+                        }
+
+                        this.loadTableData();
+                        closeFilterMenuFunc();
+                        this.showNotification('Filtros limpiados correctamente', 'success');
+                    });
+                }
+
                 // Evento para cargar subcategorías cuando cambia la categoría principal
-                document.getElementById('mainCategoryFilter').addEventListener('change', () => {
-                    if (this.currentView === 'pseudo') {
-                        this.loadSubcategoriesForFilter();
-                    }
-                });
-                
+                const mainCategoryFilter = document.getElementById('mainCategoryFilter');
+                if (mainCategoryFilter) {
+                    mainCategoryFilter.addEventListener('change', () => {
+                        if (this.currentView === 'pseudo') {
+                            this.loadSubcategoriesForFilter();
+                        }
+                    });
+                }
+
                 // Modal para añadir/editar categoría
                 const modal = document.getElementById('categoryModal');
                 const addCategoryBtn = document.getElementById('addCategoryBtn');
@@ -1893,171 +2170,217 @@
                 const cancelBtn = document.getElementById('cancelBtn');
                 const categoryForm = document.getElementById('categoryForm');
                 const categoryLevel = document.getElementById('categoryLevel');
+
+                if (addCategoryBtn) {
+                    addCategoryBtn.addEventListener('click', () => {
+                        if (modal) {
+                            modal.classList.remove('hidden');
+                            const modalTitle = document.getElementById('modalTitle');
+                            if (modalTitle) 
+                                modalTitle.textContent = 'Agregar Nueva Categoría';
+                            
+                            if (categoryForm) 
+                                categoryForm.reset();
+                            
+                            this.updateDynamicFields();
+                        }
+                    });
+                }
+
+                if (closeModal) {
+                    closeModal.addEventListener('click', () => {
+                        if (modal) 
+                            modal.classList.add('hidden');
+                        
+                    });
+                }
+
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => {
+                        if (modal) 
+                            modal.classList.add('hidden');
+                        
+                    });
+                }
+
+                if (categoryLevel) {
+                    categoryLevel.addEventListener('change', () => this.updateDynamicFields());
+                }
+
+                if (categoryForm) {
+                    categoryForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+
+                        // Obtener datos del formulario
+                        const categoryName = document.getElementById('categoryName');
+                        const categoryDescription = document.getElementById('categoryDescription');
+                        const categoryStatus = document.getElementById('categoryStatus');
+                        const mainCategory = document.getElementById('mainCategory');
+                        const subCategory = document.getElementById('subCategory');
+
+                        const formData = {
+                            nombre: categoryName ? categoryName.value : '',
+                            descripcion: categoryDescription ? categoryDescription.value : '',
+                            nivel: categoryLevel ? categoryLevel.value : 'main',
+                            estado: categoryStatus && categoryStatus.checked ? 'activo' : 'inactivo'
+                        };
+
+                        // Agregar campos según el nivel
+                        if (formData.nivel === 'sub' && mainCategory) {
+                            formData.categoria_principal_id = mainCategory.value;
+                        } else if (formData.nivel === 'pseudo' && mainCategory && subCategory) {
+                            formData.categoria_principal_id = mainCategory.value;
+                            formData.subcategoria_id = subCategory.value;
+                        }
+
+                        // Aquí iría la lógica para guardar la categoría
+                        console.log('Guardando categoría:', formData);
+
+                        // Cerrar modal
+                        if (modal) 
+                            modal.classList.add('hidden');
+                        
+
+                        // Mostrar mensaje de éxito
+                        this.showNotification('Categoría guardada correctamente', 'success');
+
+                        // Recargar los datos según la vista actual
+                        if (this.currentView === 'all') {
+                            this.loadHierarchicalCategories();
+                        } else {
+                            this.loadTableData();
+                        }
+                    });
+                }
+            },
+
+            // Función para actualizar campos dinámicos
+            updateDynamicFields: function () {
+                const categoryLevel = document.getElementById('categoryLevel');
                 const dynamicFields = document.getElementById('dynamicFields');
+
+                if (! categoryLevel || ! dynamicFields) 
+                    return;
                 
-                addCategoryBtn.addEventListener('click', () => {
-                    modal.classList.remove('hidden');
-                    document.getElementById('modalTitle').textContent = 'Agregar Nueva Categoría';
-                    categoryForm.reset();
-                    this.updateDynamicFields();
-                });
-                
-                closeModal.addEventListener('click', () => {
-                    modal.classList.add('hidden');
-                });
-                
-                cancelBtn.addEventListener('click', () => {
-                    modal.classList.add('hidden');
-                });
-                
-                // Actualizar campos dinámicos según el nivel seleccionado
-                categoryLevel.addEventListener('change', () => this.updateDynamicFields());
-                
-                // Función para actualizar campos dinámicos
-                this.updateDynamicFields = function() {
-                    const level = categoryLevel.value;
-                    dynamicFields.innerHTML = '';
-                    
-                    if (level === 'sub') {
-                        // Para subcategoría: mostrar campo para seleccionar categoría principal
-                        dynamicFields.innerHTML = `
-                            <div>
-                                <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
-                                <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                    <option value="">Seleccionar categoría principal</option>
-                                </select>
-                            </div>
-                        `;
-                        
-                        // Cargar categorías principales
-                        this.loadMainCategoriesForModal();
-                    } else if (level === 'pseudo') {
-                        // Para seudocategoría: mostrar campos para categoría principal y subcategoría
-                        dynamicFields.innerHTML = `
-                            <div>
-                                <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
-                                <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                    <option value="">Seleccionar categoría principal</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label for="subCategory" class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
-                                <select id="subCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                    <option value="">Seleccionar subcategoría</option>
-                                </select>
-                            </div>
-                        `;
-                        
-                        // Cargar categorías principales
-                        this.loadMainCategoriesForModal();
-                        
-                        // Agregar evento para cargar subcategorías cuando se seleccione una categoría principal
-                        document.getElementById('mainCategory').addEventListener('change', () => this.loadSubcategoriesForModal());
-                    }
-                };
-                
-                // Función para cargar categorías principales para el modal
-                this.loadMainCategoriesForModal = function() {
+
+                const level = categoryLevel.value;
+                dynamicFields.innerHTML = '';
+
+                if (level === 'sub') { // Para subcategoría: mostrar campo para seleccionar categoría principal
+                    dynamicFields.innerHTML = `
+                        <div>
+                            <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
+                            <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Seleccionar categoría principal</option>
+                            </select>
+                        </div>
+                    `;
+
+                    // Cargar categorías principales
+                    this.loadMainCategoriesForModal();
+                } else if (level === 'pseudo') { // Para seudocategoría: mostrar campos para categoría principal y subcategoría
+                    dynamicFields.innerHTML = `
+                        <div>
+                            <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
+                            <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Seleccionar categoría principal</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="subCategory" class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
+                            <select id="subCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                                <option value="">Seleccionar subcategoría</option>
+                            </select>
+                        </div>
+                    `;
+
+                    // Cargar categorías principales
+                    this.loadMainCategoriesForModal();
+
+                    // Agregar evento para cargar subcategorías cuando se seleccione una categoría principal
                     const mainCategorySelect = document.getElementById('mainCategory');
-                    
-                    // Limpiar opciones actuales
-                    mainCategorySelect.innerHTML = '<option value="">Seleccionar categoría principal</option>';
-                    
-                    // Obtener categorías principales del servidor
-                    fetch('/admin/api/categorias-principales/filter?per_page=100&estado=activo')
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success && data.categorias) {
-                                data.categorias.forEach(category => {
-                                    const option = document.createElement('option');
-                                    option.value = category.id;
-                                    option.textContent = category.nombre;
-                                    mainCategorySelect.appendChild(option);
-                                });
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error al cargar categorías principales:', error);
-                            this.showNotification('Error al cargar categorías principales', 'error');
+                    if (mainCategorySelect) {
+                        mainCategorySelect.addEventListener('change', () => this.loadSubcategoriesForModal());
+                    }
+                }
+            },
+
+            // Función para cargar categorías principales para el modal
+            loadMainCategoriesForModal: function () {
+                const mainCategorySelect = document.getElementById('mainCategory');
+                if (! mainCategorySelect) 
+                    return;
+                
+
+                // Limpiar opciones actuales
+                mainCategorySelect.innerHTML = '<option value="">Seleccionar categoría principal</option>';
+
+                // Obtener categorías principales del servidor
+                fetch('/admin/api/categorias-principales/filter?per_page=100&estado=activo').then(response => response.json()).then(data => {
+                    if (data.success && data.categorias) {
+                        data.categorias.forEach(category => {
+                            const option = document.createElement('option');
+                            option.value = category.id;
+                            option.textContent = category.nombre;
+                            mainCategorySelect.appendChild(option);
                         });
-                };
-                
-                // Función para cargar subcategorías para el modal
-                this.loadSubcategoriesForModal = function() {
-                    const mainCategoryId = document.getElementById('mainCategory').value;
-                    const subCategorySelect = document.getElementById('subCategory');
-                    
-                    // Limpiar opciones actuales
-                    subCategorySelect.innerHTML = '<option value="">Seleccionar subcategoría</option>';
-                    
-                    if (mainCategoryId) {
-                        // Obtener subcategorías del servidor
-                        fetch(`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`)
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success && data.subcategorias) {
-                                    data.subcategorias.forEach(subcategory => {
-                                        const option = document.createElement('option');
-                                        option.value = subcategory.id;
-                                        option.textContent = subcategory.nombre;
-                                        subCategorySelect.appendChild(option);
-                                    });
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error al cargar subcategorías:', error);
-                                this.showNotification('Error al cargar subcategorías', 'error');
-                            });
                     }
-                };
-                
-                // Envío del formulario
-                categoryForm.addEventListener('submit', (e) => {
-                    e.preventDefault();
-                    
-                    // Obtener datos del formulario
-                    const formData = {
-                        nombre: document.getElementById('categoryName').value,
-                        descripcion: document.getElementById('categoryDescription').value,
-                        nivel: document.getElementById('categoryLevel').value,
-                        estado: document.getElementById('categoryStatus').checked ? 'activo' : 'inactivo'
-                    };
-                    
-                    // Agregar campos según el nivel
-                    if (formData.nivel === 'sub') {
-                        formData.categoria_principal_id = document.getElementById('mainCategory').value;
-                    } else if (formData.nivel === 'pseudo') {
-                        formData.categoria_principal_id = document.getElementById('mainCategory').value;
-                        formData.subcategoria_id = document.getElementById('subCategory').value;
-                    }
-                    
-                    // Aquí iría la lógica para guardar la categoría
-                    console.log('Guardando categoría:', formData);
-                    
-                    // Cerrar modal
-                    modal.classList.add('hidden');
-                    
-                    // Mostrar mensaje de éxito
-                    this.showNotification('Categoría guardada correctamente', 'success');
-                    
-                    // Recargar los datos según la vista actual
-                    if (this.currentView === 'all') {
-                        this.loadHierarchicalCategories();
-                    } else {
-                        this.loadTableData();
-                    }
+                }).catch(error => {
+                    console.error('Error al cargar categorías principales:', error);
+                    this.showNotification('Error al cargar categorías principales', 'error');
                 });
+            },
+
+            // Función para cargar subcategorías para el modal
+            loadSubcategoriesForModal: function () {
+                const mainCategoryId = document.getElementById('mainCategory') ?. value;
+                const subCategorySelect = document.getElementById('subCategory');
+                if (! subCategorySelect) 
+                    return;
+                
+
+                // Limpiar opciones actuales
+                subCategorySelect.innerHTML = '<option value="">Seleccionar subcategoría</option>';
+
+                if (mainCategoryId) { // Obtener subcategorías del servidor
+                    fetch (`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`).then(response => response.json()).then(data => {
+                        if (data.success && data.subcategorias) {
+                            data.subcategorias.forEach(subcategory => {
+                                const option = document.createElement('option');
+                                option.value = subcategory.id;
+                                option.textContent = subcategory.nombre;
+                                subCategorySelect.appendChild(option);
+                            });
+                        }
+                    }).catch(error => {
+                        console.error('Error al cargar subcategorías:', error);
+                        this.showNotification('Error al cargar subcategorías', 'error');
+                    });
+                }
             }
         };
-    
+
         // Función global para cambiar de página (para compatibilidad con botones generados dinámicamente)
         function changePage(page) {
             categoriesApp.changePage(page);
         }
-    
-        // Inicializar la aplicación cuando el DOM esté listo
-        document.addEventListener('DOMContentLoaded', function() {
+
+        // Función para inicializar la aplicación
+        function initializeCategoriesApp() {
             categoriesApp.init();
+        }
+
+        // Inicializar la aplicación cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', initializeCategoriesApp);
+
+        // También inicializar cuando se dispare el evento de contenido cargado (para SPA)
+        document.addEventListener('content-loaded', function (e) { // Verificar si el contenedor principal de la página es el de categorías
+            if (e.detail.container && e.detail.container.querySelector('#categoriesContainer')) {
+                initializeCategoriesApp();
+            }
         });
+
+        // Exponer globalmente la función de inicialización para poder llamarla manualmente si es necesario
+        window.initializeCategoriesApp = initializeCategoriesApp;
     </script>
 {% endblock %}

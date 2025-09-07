@@ -2,35 +2,32 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainContentContainer = document.getElementById('main-content-container');
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
     const loadingOverlay = document.getElementById('loading-overlay');
-
+    
     function showLoadingOverlay() {
         loadingOverlay.classList.remove('hidden');
         setTimeout(() => {
             loadingOverlay.classList.add('opacity-100');
         }, 10);
     }
-
+    
     function hideLoadingOverlay() {
         loadingOverlay.classList.remove('opacity-100');
         setTimeout(() => {
             loadingOverlay.classList.add('hidden');
         }, 300);
     }
-
+    
     function loadContent(url, pushState = true) {
         showLoadingOverlay();
-
         fetch(url, {
             headers: {
-                'X-Requested-With': 'XMLHttpRequest' // Indicate an AJAX request
+                'X-Requested-With': 'XMLHttpRequest'
             }
         })
         .then(response => {
             if (response.redirected) {
-                // If the request was redirected, it's likely an auth failure.
-                // Reload the page to the redirected location (e.g., the login page).
                 window.location.href = response.url;
-                return null; // Return null to stop the promise chain
+                return null;
             }
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -38,45 +35,55 @@ document.addEventListener('DOMContentLoaded', function() {
             return response.text();
         })
         .then(html => {
-            if (!html) return; // Do nothing if the response was a redirect
-
-            // Parse the HTML response
+            if (!html) return;
+            
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const mainContent = doc.getElementById('main-content-container');
-
+            
             if (!mainContent) {
-                // This can happen if the fetched page is not what we expect (e.g., an error page)
-                // but wasn't a redirect. We can try to reload or show an error.
                 console.error('Error: #main-content-container not found in fetched content.');
-                // For simplicity, let's just reload the page to handle unexpected states.
                 window.location.reload();
                 return;
             }
+            
             const newContent = mainContent.innerHTML;
-
-
-            // Update the main content area
             mainContentContainer.innerHTML = newContent;
-
-            // Update the document title
+            
             const newTitle = doc.querySelector('title')?.textContent;
             if (newTitle) {
                 document.title = newTitle;
             }
-
-            // Dispatch a custom event to signal that new content has been loaded
-            document.dispatchEvent(new CustomEvent('content-loaded', { detail: { container: mainContentContainer } }));
-
-            // Update URL in browser history
+            
+            // Ejecutar scripts de la página cargada
+            const scripts = doc.querySelectorAll('script');
+            scripts.forEach(script => {
+                if (script.src) {
+                    // Script externo
+                    const newScript = document.createElement('script');
+                    newScript.src = script.src;
+                    document.body.appendChild(newScript);
+                } else {
+                    // Script inline
+                    try {
+                        eval(script.innerText);
+                    } catch (e) {
+                        console.error('Error executing script:', e);
+                    }
+                }
+            });
+            
+            // Disparar evento personalizado
+            document.dispatchEvent(new CustomEvent('content-loaded', { 
+                detail: { container: mainContentContainer, url: url } 
+            }));
+            
             if (pushState) {
                 history.pushState({ path: url }, '', url);
             }
-
-            // Update active link in sidebar
+            
             updateActiveLink(url);
-
-            // Close mobile sidebar if open
+            
             const mobileSidebar = document.getElementById('mobile-sidebar');
             const mobileSidebarContent = mobileSidebar.querySelector('.sidebar-transition');
             if (!mobileSidebar.classList.contains('hidden')) {
@@ -85,6 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     mobileSidebar.classList.add('hidden');
                 }, 300);
             }
+            
             hideLoadingOverlay();
         })
         .catch(e => {
@@ -93,79 +101,68 @@ document.addEventListener('DOMContentLoaded', function() {
             hideLoadingOverlay();
         });
     }
-
-    // Exponer loadContent globalmente para que otros scripts puedan usarla
+    
     window.loadAdminContent = loadContent;
-
+    
     function updateActiveLink(currentUrl) {
-        // Normalize current URL pathname (remove trailing slash if present, unless it's just '/')
         let currentPathname = new URL(currentUrl, window.location.origin).pathname;
         if (currentPathname.length > 1 && currentPathname.endsWith('/')) {
             currentPathname = currentPathname.slice(0, -1);
         }
-
+        
         sidebarLinks.forEach(link => {
-            // Normalize link URL pathname
             let linkPathname = new URL(link.href, window.location.origin).pathname;
             if (linkPathname.length > 1 && linkPathname.endsWith('/')) {
                 linkPathname = linkPathname.slice(0, -1);
             }
-
-            // Always reset to default state first
+            
             link.classList.remove('active', 'bg-blue-800', 'text-white');
             link.classList.add('text-blue-200', 'hover:bg-blue-800', 'hover:text-white');
-
-            // Then apply active state if it matches and it's not a placeholder link
+            
             if (linkPathname === currentPathname && link.getAttribute('href') !== '#') {
                 link.classList.add('active', 'bg-blue-800', 'text-white');
                 link.classList.remove('text-blue-200', 'hover:bg-blue-800', 'hover:text-white');
             }
         });
     }
-
-    // Handle initial page load and popstate events
+    
     window.addEventListener('popstate', function(event) {
         if (event.state && event.state.path) {
-            loadContent(event.state.path, false); // Don't push state again
+            loadContent(event.state.path, false);
         }
     });
-
-    // Intercept clicks on sidebar links
+    
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
-            if (href && href.startsWith('/admin/') && href !== '/admin/producto/crear') { // Only intercept admin links
+            if (href && href.startsWith('/admin/') && href !== '/admin/producto/crear') {
                 e.preventDefault();
                 loadContent(href);
             }
         });
     });
-
-    // Intercept clicks on back links
+    
     document.addEventListener('click', function(e) {
         const targetLink = e.target.closest('.spa-back-link');
         if (targetLink) {
             const href = targetLink.getAttribute('href');
-            // Intercepta cualquier enlace con la clase spa-back-link
             if (href) {
                 e.preventDefault();
                 loadContent(href);
             }
         }
     });
-
-    // Intercept clicks on general SPA links
+    
     document.addEventListener('click', function(e) {
         const targetLink = e.target.closest('.spa-link');
         if (targetLink) {
             const href = targetLink.getAttribute('href');
-            if (href && href.startsWith('/admin/') && href !== '/admin/producto/crear') { // Only intercept admin links
+            if (href && href.startsWith('/admin/') && href !== '/admin/producto/crear') {
                 e.preventDefault();
                 loadContent(href);
             }
         }
     });
-
-    // Initial load to set active link and handle direct access
+    
     updateActiveLink(window.location.pathname + window.location.search);
 });

@@ -18,7 +18,7 @@ def get_all_categories(admin_user):
     subcategorias_data = []
     seudocategorias_data = []
     pagination_data = None
-    current_view = request.args.get('view', 'all')
+    current_view = request.args.get('view', 'main')
     
     try:
         # Obtener parámetros de filtro
@@ -93,6 +93,9 @@ def get_all_categories(admin_user):
             pagination_data = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
+            # Add total_general for initial load
+            pagination_data.total_general = db.session.query(Subcategorias.id).count()
+                
             # Serializar datos
             subcategorias_data = [subcategoria_to_dict(
                 sub) for sub in pagination_data.items]
@@ -131,6 +134,9 @@ def get_all_categories(admin_user):
             pagination_data = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
+            # Add total_general for initial load
+            pagination_data.total_general = db.session.query(Seudocategorias.id).count()
+                
             # Serializar datos
             seudocategorias_data = [seudocategoria_to_dict(
                 seudo) for seudo in pagination_data.items]
@@ -145,9 +151,30 @@ def get_all_categories(admin_user):
                 
         else:  # Vista 'all' - jerárquica
             # Obtener todas las categorías principales con sus relaciones
-            categorias_principales = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos)).all()
+            query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos))
+
+            # Apply sorting (if needed for 'all' view, using 'nombre' as default)
+            if sort_by == 'nombre':
+                order_field = CategoriasPrincipales.nombre
+            elif sort_by == 'created_at':
+                order_field = CategoriasPrincipales.created_at
+            else:
+                order_field = CategoriasPrincipales.nombre
+                
+            if sort_order == 'asc':
+                query = query.order_by(order_field.asc())
+            else:
+                query = query.order_by(order_field.desc())
+
+            # Paginación
+            pagination_data = query.paginate(
+                page=page, per_page=per_page, error_out=False)
+            
+            # Add total_general for initial load (total count of main categories)
+            pagination_data.total_general = db.session.query(CategoriasPrincipales.id).count()
+
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in categorias_principales]
+                cat) for cat in pagination_data.items]
     
     except Exception as e:
         current_app.logger.error(
@@ -672,3 +699,131 @@ def get_subcategories_for_category(admin_user, categoria_id):
             'success': False,
             'message': 'Error al obtener subcategorías'
         }), 500
+
+# Endpoint para crear una nueva categoría principal
+@admin_lista_categorias_bp.route('/api/categorias-principales', methods=['POST'])
+@admin_jwt_required
+def create_main_category(admin_user):
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre')
+        descripcion = data.get('descripcion')
+        estado = data.get('estado', 'activo')  # Default to 'activo'
+
+        if not nombre or not descripcion:
+            return jsonify({'success': False, 'message': 'Nombre y descripción son obligatorios'}), 400
+
+        # Basic validation for estado
+        if estado not in ['activo', 'inactivo']:
+            return jsonify({'success': False, 'message': 'Estado no válido'}), 400
+
+        # Check if category with same name already exists
+        if CategoriasPrincipales.query.filter_by(nombre=nombre).first():
+            return jsonify({'success': False, 'message': 'Ya existe una categoría principal con este nombre'}), 409
+
+        new_category = CategoriasPrincipales(
+            nombre=nombre,
+            descripcion=descripcion,
+            estado=estado
+        )
+        db.session.add(new_category)
+        db.session.commit()
+
+        current_app.logger.info(
+            f"Categoría principal '{nombre}' creada por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        return jsonify({'success': True, 'message': 'Categoría principal creada correctamente', 'category': categoria_principal_to_dict(new_category)}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al crear categoría principal: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor al crear categoría principal'}), 500
+
+# Endpoint para crear una nueva subcategoría
+@admin_lista_categorias_bp.route('/api/subcategorias', methods=['POST'])
+@admin_jwt_required
+def create_subcategory(admin_user):
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre')
+        descripcion = data.get('descripcion')
+        categoria_principal_id = data.get('categoria_principal_id')
+        estado = data.get('estado', 'activo')
+
+        if not nombre or not descripcion or not categoria_principal_id:
+            return jsonify({'success': False, 'message': 'Nombre, descripción y categoría principal son obligatorios'}), 400
+        
+        if estado not in ['activo', 'inactivo']:
+            return jsonify({'success': False, 'message': 'Estado no válido'}), 400
+
+        main_category = CategoriasPrincipales.query.get(categoria_principal_id)
+        if not main_category:
+            return jsonify({'success': False, 'message': 'Categoría principal no encontrada'}), 404
+        
+        if Subcategorias.query.filter_by(nombre=nombre, categoria_principal_id=categoria_principal_id).first():
+            return jsonify({'success': False, 'message': 'Ya existe una subcategoría con este nombre en la categoría principal seleccionada'}), 409
+
+        new_subcategory = Subcategorias(
+            nombre=nombre,
+            descripcion=descripcion,
+            categoria_principal_id=categoria_principal_id,
+            estado=estado
+        )
+        db.session.add(new_subcategory)
+        db.session.commit()
+
+        current_app.logger.info(
+            f"Subcategoría '{nombre}' creada en categoría principal '{main_category.nombre}' por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        return jsonify({'success': True, 'message': 'Subcategoría creada correctamente', 'subcategory': subcategoria_to_dict(new_subcategory)}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al crear subcategoría: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor al crear subcategoría'}), 500
+
+# Endpoint para crear una nueva seudocategoría
+@admin_lista_categorias_bp.route('/api/seudocategorias', methods=['POST'])
+@admin_jwt_required
+def create_pseudocategory(admin_user):
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre')
+        descripcion = data.get('descripcion')
+        subcategoria_id = data.get('subcategoria_id')
+        estado = data.get('estado', 'activo')
+
+        if not nombre or not descripcion or not subcategoria_id:
+            return jsonify({'success': False, 'message': 'Nombre, descripción y subcategoría son obligatorios'}), 400
+        
+        if estado not in ['activo', 'inactivo']:
+            return jsonify({'success': False, 'message': 'Estado no válido'}), 400
+
+        sub_category = Subcategorias.query.get(subcategoria_id)
+        if not sub_category:
+            return jsonify({'success': False, 'message': 'Subcategoría no encontrada'}), 404
+        
+        if Seudocategorias.query.filter_by(nombre=nombre, subcategoria_id=subcategoria_id).first():
+            return jsonify({'success': False, 'message': 'Ya existe una seudocategoría con este nombre en la subcategoría seleccionada'}), 409
+
+        new_pseudocategory = Seudocategorias(
+            nombre=nombre,
+            descripcion=descripcion,
+            subcategoria_id=subcategoria_id,
+            estado=estado
+        )
+        db.session.add(new_pseudocategory)
+        db.session.commit()
+
+        current_app.logger.info(
+            f"Seudocategoría '{nombre}' creada en subcategoría '{sub_category.nombre}' por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        return jsonify({'success': True, 'message': 'Seudocategoría creada correctamente', 'pseudocategory': seudocategoria_to_dict(new_pseudocategory)}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al crear seudocategoría: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor al crear seudocategoría'}), 500

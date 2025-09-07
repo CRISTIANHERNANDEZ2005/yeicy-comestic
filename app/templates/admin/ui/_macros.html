@@ -1,0 +1,29 @@
+{% macro render_pagination(pagination, endpoint, filter_params) %}
+    {% if pagination and pagination.pages > 1 %}
+        <div class="flex flex-wrap justify-center items-center gap-2">
+            <!-- Botón Anterior -->
+            <a href="{{ url_for(endpoint, page=pagination.prev_num, **filter_params) }}" 
+               class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md {{ 'disabled' if not pagination.has_prev }}">
+                <i class="fas fa-chevron-left mr-1"></i> Anterior
+            </a>
+
+            <!-- Botones de página -->
+            {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    <a href="{{ url_for(endpoint, page=page_num, **filter_params) }}" 
+                       class="pagination-button border border-gray-300 {{ 'active bg-blue-600 text-white' if page_num == pagination.page else 'text-gray-700' }}">
+                        {{ page_num }}
+                    </a>
+                {% else %}
+                    <span class="px-2 text-gray-500">...</span>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Botón Siguiente -->
+            <a href="{{ url_for(endpoint, page=pagination.next_num, **filter_params) }}" 
+               class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md {{ 'disabled' if not pagination.has_next }}">
+                Siguiente <i class="fas fa-chevron-right ml-1"></i>
+            </a>
+        </div>
+    {% endif %}
+{% endmacro %}

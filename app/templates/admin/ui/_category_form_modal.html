@@ -1,0 +1,60 @@
+    <!-- Modal para añadir/editar categoría -->
+    <div id="categoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 modal-backdrop">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Agregar Nueva Categoría</h3>
+                    <button id="closeModal" class="text-gray-400 hover:text-gray-500 transition-colors">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form id="categoryForm">
+                    <div
+                        class="space-y-5">
+                        <!-- Campo: Nombre -->
+                        <div>
+                            <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                            <input type="text" id="categoryName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+                        </div>
+
+                        <!-- Campo: Descripción -->
+                        <div>
+                            <label for="categoryDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+                            <textarea id="categoryDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required></textarea>
+                        </div>
+
+                        <!-- Campo: Nivel -->
+                        <div>
+                            <label for="categoryLevel" class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
+                            <select id="categoryLevel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                                <option value="main">Categoría Principal</option>
+                                <option value="sub">Subcategoría</option>
+                                <option value="pseudo">Seudocategoría</option>
+                            </select>
+                        </div>
+
+                        <!-- Campos dinámicos según el nivel -->
+                        <div
+                            id="dynamicFields"><!-- Se llenarán dinámicamente según el nivel seleccionado -->
+                        </div>
+
+                        <!-- Campo: Estado -->
+                        <div class="flex items-center">
+                            <input type="checkbox" id="categoryStatus" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                            <label for="categoryStatus" class="ml-2 text-sm text-gray-700">Activo</label>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-8">
+                        <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>

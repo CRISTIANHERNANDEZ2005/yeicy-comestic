@@ -18,6 +18,24 @@
                 </button>
             </div>
 
+            <!-- Información de resultados y paginación superior (se muestra en vistas de tabla) -->
+            <div id="pagination-top-controls" class="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
+                <div class="mb-3 sm:mb-0">
+                    <p class="text-sm text-gray-600">
+                        Mostrando <span class="font-semibold text-blue-600" id="pagination-showing-top">{{ pagination.items | length }}</span> de <span class="font-semibold text-blue-600" id="pagination-total-top">{{ pagination.total_general }}</span> categorías
+                    </p>
+                </div>
+                <div class="flex items-center">
+                    <span class="text-sm text-gray-600 mr-2">Categorías por página:</span>
+                    <select id="itemsPerPage" class="text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Contenido principal -->
             <div
                 class="bg-white rounded-xl shadow-md overflow-hidden">
@@ -183,37 +201,21 @@
                     </div>
                 </div>
 
-                {% import 'admin/componentes/categoria/_category_tables.html' as tables %}
+                {% import 'admin/ui/_category_tables.html' as tables %}
                 {{ tables.render_main_category_table(categorias, current_view) }}
                 {{ tables.render_subcategory_table(subcategorias, current_view) }}
                 {{ tables.render_pseudocategory_table(seudocategorias, current_view) }}
             </div>
 
             <!-- Paginación como bloque independiente -->
-            <div class="pagination-container">
-                <div class="pagination-info text-center sm:text-left">
-                    Mostrando
-                    <span class="font-medium" id="showingTo">10</span>
-                    de
-                    <span class="font-medium" id="totalItems">0</span>
-                    categorías
+            <div id="pagination-bottom-controls" class="mt-8 flex-col items-center bg-white rounded-lg p-4 shadow-sm border border-gray-200 {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
+                <div class="text-sm text-gray-700 mb-4">
+                    Mostrando página <span class="font-semibold text-blue-600" id="pagination-current-page">{{ pagination.page }}</span> de <span class="font-semibold text-blue-600" id="pagination-total-pages">{{ pagination.pages }}</span>
                 </div>
-
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="pagination-per-page">
-                        <span class="text-sm text-gray-700">Mostrar:</span>
-                        <select id="itemsPerPage" class="border border-gray-300 rounded-md text-sm">
-                            <option value="5">5</option>
-                            <option value="10" selected>10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                        </select>
-                        <span class="text-sm text-gray-700">por página</span>
-                    </div>
-
-                    <div
-                        class="pagination-buttons" id="paginationContainer"><!-- Los botones de paginación se cargarán dinámicamente aquí -->
-                    </div>
+                
+                <div id="paginationContainer" class="flex flex-wrap justify-center gap-2">
+                    {% from 'admin/ui/_macros.html' import render_pagination as macros_render_pagination %}
+                    {{ macros_render_pagination(pagination, 'admin_categorias.get_all_categories', filter_params) }}
                 </div>
             </div>
         </main>
@@ -300,66 +302,7 @@
         <i class="fas fa-filter"></i>
     </button>
 
-    <!-- Modal para añadir/editar categoría -->
-    <div id="categoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50 modal-backdrop">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Agregar Nueva Categoría</h3>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-500 transition-colors">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-
-                <form id="categoryForm">
-                    <div
-                        class="space-y-5">
-                        <!-- Campo: Nombre -->
-                        <div>
-                            <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                            <input type="text" id="categoryName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                        </div>
-
-                        <!-- Campo: Descripción -->
-                        <div>
-                            <label for="categoryDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                            <textarea id="categoryDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required></textarea>
-                        </div>
-
-                        <!-- Campo: Nivel -->
-                        <div>
-                            <label for="categoryLevel" class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
-                            <select id="categoryLevel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
-                                <option value="main">Categoría Principal</option>
-                                <option value="sub">Subcategoría</option>
-                                <option value="pseudo">Seudocategoría</option>
-                            </select>
-                        </div>
-
-                        <!-- Campos dinámicos según el nivel -->
-                        <div
-                            id="dynamicFields"><!-- Se llenarán dinámicamente según el nivel seleccionado -->
-                        </div>
-
-                        <!-- Campo: Estado -->
-                        <div class="flex items-center">
-                            <input type="checkbox" id="categoryStatus" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
-                            <label for="categoryStatus" class="ml-2 text-sm text-gray-700">Activo</label>
-                        </div>
-                    </div>
-
-                    <div class="flex justify-end space-x-3 mt-8">
-                        <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                            Guardar
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    {% include 'admin/ui/_category_form_modal.html' %}
 
     <!-- Notificación -->
     <div id="notification" class="notification"></div>
@@ -1071,8 +1014,8 @@
                 this.elements.subCategoriesTableBody = document.getElementById('subCategoriesTableBody');
                 this.elements.pseudoCategoriesTableBody = document.getElementById('pseudoCategoriesTableBody');
                 this.elements.paginationContainer = document.getElementById('paginationContainer');
-                this.elements.showingTo = document.getElementById('showingTo');
-                this.elements.totalItems = document.getElementById('totalItems');
+                this.elements.showingTo = document.getElementById('pagination-showing-top');
+                this.elements.totalItems = document.getElementById('pagination-total-top');
 
                 // Campos de filtro
                 this.elements.nameFilterField = document.getElementById('nameFilterField');
@@ -1939,13 +1882,17 @@
 
             // Función para actualizar la información de paginación
             updatePaginationInfo: function (pagination) {
+                const from = (pagination.page - 1) * pagination.per_page + 1;
                 const to = Math.min(pagination.page * pagination.per_page, pagination.total);
 
                 if (this.elements.showingTo) {
-                    this.elements.showingTo.textContent = to;
+                    this.elements.showingTo.textContent = `${from}-${to}`;
                 }
                 if (this.elements.totalItems) {
                     this.elements.totalItems.textContent = pagination.total;
+                }
+                if (this.elements.totalGeneralItems) {
+                    this.elements.totalGeneralItems.textContent = pagination.total_general;
                 }
             },
 
@@ -2286,23 +2233,52 @@
                             formData.subcategoria_id = subCategory.value;
                         }
 
-                        // Aquí iría la lógica para guardar la categoría
-                        console.log('Guardando categoría:', formData);
+                        // Lógica para guardar la categoría
+                        let apiUrl = '';
+                        let successMessage = '';
+                        let errorMessage = 'Error al guardar la categoría';
 
-                        // Cerrar modal
-                        if (modal) 
-                            modal.classList.add('hidden');
-                        
-
-                        // Mostrar mensaje de éxito
-                        this.showNotification('Categoría guardada correctamente', 'success');
-
-                        // Recargar los datos según la vista actual
-                        if (this.currentView === 'all') {
-                            this.loadHierarchicalCategories();
-                        } else {
-                            this.loadTableData();
+                        if (formData.nivel === 'main') {
+                            apiUrl = '/admin/api/categorias-principales';
+                            successMessage = 'Categoría principal creada correctamente';
+                        } else if (formData.nivel === 'sub') {
+                            apiUrl = '/admin/api/subcategorias';
+                            successMessage = 'Subcategoría creada correctamente';
+                        } else if (formData.nivel === 'pseudo') {
+                            apiUrl = '/admin/api/seudocategorias';
+                            successMessage = 'Seudocategoría creada correctamente';
                         }
+
+                        fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').getAttribute('content') : ''
+                            },
+                            body: JSON.stringify(formData)
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                this.showNotification(successMessage, 'success');
+                                // Recargar los datos según la vista actual
+                                if (this.currentView === 'all') {
+                                    this.loadHierarchicalCategories();
+                                } else {
+                                    this.loadTableData();
+                                }
+                                // Cerrar modal
+                                if (modal) 
+                                    modal.classList.add('hidden');
+                                
+                            } else {
+                                this.showNotification(data.message || errorMessage, 'error');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error al guardar categoría:', error);
+                            this.showNotification(errorMessage, 'error');
+                        });
                     });
                 }
             },

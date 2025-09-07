@@ -158,6 +158,23 @@ def create_app(config_class=Config):
         return s.lower().replace(" ", "-").replace("_", "-")
     app.jinja_env.filters['slugify'] = slugify_filter
 
+    def format_date_filter(value):
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            # Try to parse ISO format string
+            if value.endswith('Z'):
+                value = value[:-1] + '+00:00'
+            try:
+                value = datetime.fromisoformat(value)
+            except ValueError:
+                return value # Return original string if parsing fails
+        if isinstance(value, datetime):
+            return value.strftime('%d/%m/%Y')
+        return value
+
+    app.jinja_env.filters['format_date'] = format_date_filter
+
     # Dictionary for Spanish month names
     SPANISH_MONTHS = {
         1: "enero", 2: "febrero", 3: "marzo", 4: "abril",

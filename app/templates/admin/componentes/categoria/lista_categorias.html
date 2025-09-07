@@ -49,96 +49,144 @@
                     </div>
 
                     <!-- Contenedor para las categorías -->
-                    <div
-                        id="categoriesContainer" class="space-y-4"><!-- Las categorías se cargarán dinámicamente aquí -->
+                    <div id="categoriesContainer" class="space-y-4">
+                        {% if categorias %}
+                            {% for category in categorias %}
+                                <div class="category-card">
+                                    <div class="category-header">
+                                        <div class="category-info">
+                                            <button class="category-toggle" data-target="sub-{{ category.id }}">
+                                                <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                            <div class="category-details">
+                                                <h4>{{ category.nombre }}</h4>
+                                                <p>{{ category.descripcion }}</p>
+                                                <div class="category-meta">
+                                                    <span class="inline-flex items-center mr-3">
+                                                        <i class="fas fa-folder mr-1"></i> {{ category.subcategorias | selectattr('estado', 'equalto', 'activo') | list | length }} subcategorías
+                                                    </span>
+                                                    <span class="inline-flex items-center">
+                                                        <i class="fas fa-tag mr-1"></i> {{ category.total_productos or 0 }} productos
+                                                    </span>
+                                                    <span class="inline-flex items-center ml-3">
+                                                        <i class="fas fa-clock mr-1"></i> {{ category.created_at | format_date }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="category-actions">
+                                            <label class="toggle-switch">
+                                                <input type="checkbox" class="main-category-status" data-id="{{ category.id }}" {% if category.estado == 'activo' %}checked{% endif %}>
+                                                <span class="toggle-slider"></span>
+                                            </label>
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('{{ category.id }}', 'main')">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ category.id }}', 'main')">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Subcategorías -->
+                                    <div class="subcategory-list" id="sub-{{ category.id }}">
+                                        <div class="mb-2">
+                                            <h5 class="font-medium text-gray-700">Subcategorías</h5>
+                                        </div>
+                                        
+                                        <div class="space-y-3 ml-4">
+                                            {% if category.subcategorias %}
+                                                {% for subcategory in category.subcategorias %}
+                                                    <div class="subcategory-card">
+                                                        <div class="subcategory-header">
+                                                            <div class="subcategory-info">
+                                                                <button class="subcategory-toggle" data-target="pseudo-{{ subcategory.id }}">
+                                                                    <i class="fas fa-chevron-right"></i>
+                                                                </button>
+                                                                <div class="subcategory-details">
+                                                                    <h6>{{ subcategory.nombre }}</h6>
+                                                                    <p class="text-xs text-gray-500">{{ subcategory.descripcion }}</p>
+                                                                    <div class="subcategory-meta">
+                                                                        <span class="inline-flex items-center mr-3">
+                                                                            <i class="fas fa-folder mr-1"></i> {{ subcategory.seudocategorias | selectattr('estado', 'equalto', 'activo') | list | length }} seudocategorías
+                                                                        </span>
+                                                                        <span class="inline-flex items-center">
+                                                                            <i class="fas fa-tag mr-1"></i> {{ subcategory.total_productos or 0 }} productos
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="subcategory-actions">
+                                                                <label class="toggle-switch">
+                                                                    <input type="checkbox" class="subcategory-status" data-id="{{ subcategory.id }}" {% if subcategory.estado == 'activo' %}checked{% endif %}>
+                                                                    <span class="toggle-slider"></span>
+                                                                </label>
+                                                                <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('{{ subcategory.id }}', 'sub')">
+                                                                    <i class="fas fa-eye"></i>
+                                                                </button>
+                                                                <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ subcategory.id }}', 'sub')">
+                                                                    <i class="fas fa-edit"></i>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Seudocategorías -->
+                                                        <div class="pseudocategory-list" id="pseudo-{{ subcategory.id }}">
+                                                            <div class="mb-2">
+                                                                <h5 class="font-medium text-gray-700 text-sm">Seudocategorías</h5>
+                                                            </div>
+                                                            
+                                                            <div class="space-y-2 ml-4">
+                                                                {% if subcategory.seudocategorias %}
+                                                                    {% for pseudocategory in subcategory.seudocategorias %}
+                                                                        <div class="pseudocategory-card">
+                                                                            <div class="pseudocategory-info">
+                                                                                <h6 class="font-medium text-gray-800 text-sm">{{ pseudocategory.nombre }}</h6>
+                                                                                <p class="text-xs text-gray-500">{{ pseudocategory.descripcion }}</p>
+                                                                                <div class="pseudocategory-meta">
+                                                                                    <span class="inline-flex items-center">
+                                                                                        <i class="fas fa-tag mr-1"></i> {{ pseudocategory.total_productos or 0 }} productos
+                                                                                    </span>
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="pseudocategory-actions">
+                                                                                <label class="toggle-switch">
+                                                                                    <input type="checkbox" class="pseudocategory-status" data-id="{{ pseudocategory.id }}" {% if pseudocategory.estado == 'activo' %}checked{% endif %}>
+                                                                                    <span class="toggle-slider"></span>
+                                                                                </label>
+                                                                                <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('{{ pseudocategory.id }}', 'pseudo')">
+                                                                                    <i class="fas fa-eye"></i>
+                                                                                </button>
+                                                                                <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ pseudocategory.id }}', 'pseudo')">
+                                                                                    <i class="fas fa-edit"></i>
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    {% endfor %}
+                                                                {% else %}
+                                                                    <p class="text-gray-500 text-center py-2">No hay seudocategorías</p>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <p class="text-gray-500 text-center py-2">No hay subcategorías</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-gray-500 text-center py-4">No se encontraron categorías</p>
+                        {% endif %}
                     </div>
                 </div>
 
-                <!-- Vista de Tablas para Categorías Principales -->
-                <div id="mainCategoriesTableView" class="p-4 sm:p-6 hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-800">Categorías Principales</h3>
-                            <p class="text-sm text-gray-500">Lista de todas las categorías principales del inventario</p>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table class="category-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Slug</th>
-                                    <th>Subcategorías</th>
-                                    <th>Estado</th>
-                                    <th>Fecha de Creación</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                id="mainCategoriesTableBody"><!-- Las filas se cargarán dinámicamente aquí -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Vista de Tablas para Subcategorías -->
-                <div id="subCategoriesTableView" class="p-4 sm:p-6 hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-800">Subcategorías</h3>
-                            <p class="text-sm text-gray-500">Lista de todas las subcategorías del inventario</p>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table class="category-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Slug</th>
-                                    <th>Categoría Principal</th>
-                                    <th>Seudocategorías</th>
-                                    <th>Estado</th>
-                                    <th>Fecha de Creación</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                id="subCategoriesTableBody"><!-- Las filas se cargarán dinámicamente aquí -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Vista de Tablas para Seudocategorías -->
-                <div id="pseudoCategoriesTableView" class="p-4 sm:p-6 hidden">
-                    <div class="flex justify-between items-center mb-4">
-                        <div>
-                            <h3 class="text-lg font-medium text-gray-800">Seudocategorías</h3>
-                            <p class="text-sm text-gray-500">Lista de todas las seudocategorías del inventario</p>
-                        </div>
-                    </div>
-
-                    <div class="table-container">
-                        <table class="category-table">
-                            <thead>
-                                <tr>
-                                    <th>Nombre</th>
-                                    <th>Slug</th>
-                                    <th>Subcategoría</th>
-                                    <th>Categoría Principal</th>
-                                    <th>Estado</th>
-                                    <th>Fecha de Creación</th>
-                                    <th>Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody
-                                id="pseudoCategoriesTableBody"><!-- Las filas se cargarán dinámicamente aquí -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                {% import 'admin/componentes/categoria/_category_tables.html' as tables %}
+                {{ tables.render_main_category_table(categorias, current_view) }}
+                {{ tables.render_subcategory_table(subcategorias, current_view) }}
+                {{ tables.render_pseudocategory_table(seudocategorias, current_view) }}
             </div>
 
             <!-- Paginación como bloque independiente -->
@@ -1066,7 +1114,12 @@
 
                 // Cargar los datos iniciales
                 if (this.currentView === 'all') {
-                    this.loadHierarchicalCategories();
+                    // Los datos ya están cargados desde el servidor.
+                    // Solo necesitamos inicializar los eventos de la vista jerárquica.
+                    this.initializeHierarchicalView();
+                } else if (this.currentView === 'main') {
+                    // Los datos de la tabla principal ya están cargados desde el servidor.
+                    // No es necesario llamar a loadTableData() en la carga inicial.
                 } else {
                     this.loadTableData();
                 }

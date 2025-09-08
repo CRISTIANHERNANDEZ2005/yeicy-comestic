@@ -66,19 +66,6 @@ def get_all_categories(admin_user):
             categorias_data = [categoria_principal_to_dict(
                 cat) for cat in pagination_data.items]
                 
-            # Convert pagination_data to a JSON-serializable dictionary
-            pagination_info = {
-                'page': pagination_data.page,
-                'pages': pagination_data.pages,
-                'per_page': pagination_data.per_page,
-                'total': pagination_data.total,
-                'total_general': getattr(pagination_data, 'total_general', pagination_data.total),
-                'has_next': pagination_data.has_next,
-                'has_prev': pagination_data.has_prev,
-                'next_num': pagination_data.next_num,
-                'prev_num': pagination_data.prev_num
-            }
-
         elif current_view == 'sub':
             # Vista de subcategorías
             query = Subcategorias.query.options(joinedload(Subcategorias.categoria_principal), subqueryload(Subcategorias.seudocategorias))
@@ -116,23 +103,10 @@ def get_all_categories(admin_user):
             subcategorias_data = [subcategoria_to_dict(
                 sub) for sub in pagination_data.items]
             
-            # Convert pagination_data to a JSON-serializable dictionary
-            pagination_info = {
-                'page': pagination_data.page,
-                'pages': pagination_data.pages,
-                'per_page': pagination_data.per_page,
-                'total': pagination_data.total,
-                'total_general': getattr(pagination_data, 'total_general', pagination_data.total),
-                'has_next': pagination_data.has_next,
-                'has_prev': pagination_data.has_prev,
-                'next_num': pagination_data.next_num,
-                'prev_num': pagination_data.prev_num
-            }
-
             # Obtener categorías principales para el filtro
             categorias_data = [categoria_principal_to_dict(
                 cat) for cat in CategoriasPrincipales.query.filter_by(estado='activo').all()]
-                
+            
         elif current_view == 'pseudo':
             # Vista de seudocategorías
             query = Seudocategorias.query.options(joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal), subqueryload(Seudocategorias.productos))
@@ -170,19 +144,6 @@ def get_all_categories(admin_user):
             seudocategorias_data = [seudocategoria_to_dict(
                 seudo) for seudo in pagination_data.items]
             
-            # Convert pagination_data to a JSON-serializable dictionary
-            pagination_info = {
-                'page': pagination_data.page,
-                'pages': pagination_data.pages,
-                'per_page': pagination_data.per_page,
-                'total': pagination_data.total,
-                'total_general': getattr(pagination_data, 'total_general', pagination_data.total),
-                'has_next': pagination_data.has_next,
-                'has_prev': pagination_data.has_prev,
-                'next_num': pagination_data.next_num,
-                'prev_num': pagination_data.prev_num
-            }
-
             # Obtener subcategorías para el filtro
             subcategorias_data = [subcategoria_to_dict(
                 sub) for sub in Subcategorias.query.filter_by(estado='activo').all()]

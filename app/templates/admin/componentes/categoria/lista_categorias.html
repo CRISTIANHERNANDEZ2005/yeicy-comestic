@@ -22,7 +22,7 @@
             <div id="pagination-top-controls" class="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
                 <div class="mb-3 sm:mb-0">
                     <p class="text-sm text-gray-600">
-                        Mostrando <span class="font-semibold text-blue-600" id="pagination-showing-top">{{ pagination.items | length }}</span> de <span class="font-semibold text-blue-600" id="pagination-total-top">{{ pagination.total }}</span> categorías
+                        Mostrando <span class="font-semibold text-blue-600" id="pagination-showing-top"></span> de <span class="font-semibold text-blue-600" id="pagination-total-top"></span> categorías
                     </p>
                 </div>
                 <div class="flex items-center">
@@ -210,7 +210,7 @@
             <!-- Paginación como bloque independiente -->
             <div id="pagination-bottom-controls" class="mt-8 flex-col items-center bg-white rounded-lg p-4 shadow-sm border border-gray-200 {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
                 <div class="text-sm text-gray-700 mb-4">
-                    Mostrando página <span class="font-semibold text-blue-600" id="pagination-current-page">{{ pagination.page }}</span> de <span class="font-semibold text-blue-600" id="pagination-total-pages">{{ pagination.pages }}</span>
+                    Mostrando página <span class="font-semibold text-blue-600" id="pagination-current-page"></span> de <span class="font-semibold text-blue-600" id="pagination-total-pages"></span>
                 </div>
                 
                 <div id="paginationContainer" class="flex flex-wrap justify-center gap-2">
@@ -983,7 +983,8 @@
             elements: {},
 
             // Inicializar la aplicación
-            init: function () { // Si ya está inicializado, reinicializar sin duplicar eventos
+            // Función para inicializar la aplicación
+            init: function (initialPaginationData) { // Si ya está inicializado, reinicializar sin duplicar eventos
                 if (this.initialized) {
                     this.reinitialize();
                     return;
@@ -1000,6 +1001,11 @@
 
                 // Marcar como inicializado
                 this.initialized = true;
+
+                // Actualizar la información de paginación con los datos iniciales
+                if (initialPaginationData) {
+                    this.updatePaginationInfo({ pagination: initialPaginationData });
+                }
             },
 
             // Función para cachear elementos del DOM
@@ -1016,6 +1022,8 @@
                 this.elements.paginationContainer = document.getElementById('paginationContainer');
                 this.elements.showingTo = document.getElementById('pagination-showing-top');
                 this.elements.totalItems = document.getElementById('pagination-total-top');
+                this.elements.currentPageDisplay = document.getElementById('pagination-current-page');
+                this.elements.totalPagesDisplay = document.getElementById('pagination-total-pages');
 
                 // Campos de filtro
                 this.elements.nameFilterField = document.getElementById('nameFilterField');
@@ -1887,23 +1895,30 @@
 
             // Función para actualizar la información de paginación
             updatePaginationInfo: function (data) {
-                // Determine the correct array based on the current view
-                let itemsArray = [];
-                if (this.currentView === 'main' || this.currentView === 'all') { // 'all' view also uses data.categorias
-                    itemsArray = data.categorias;
-                } else if (this.currentView === 'sub') {
-                    itemsArray = data.subcategorias;
-                } else if (this.currentView === 'pseudo') {
-                    itemsArray = data.seudocategorias;
+                const pagination = data.pagination;
+                // Use total_general for the overall total count
+                const totalOverall = pagination.total_general !== undefined ? pagination.total_general : pagination.total;
+                const currentPage = pagination.page;
+                const perPage = pagination.per_page;
+
+                let itemsDisplayed = 0;
+
+                if (totalOverall > 0) {
+                    itemsDisplayed = Math.min(currentPage * perPage, totalOverall);
                 }
 
                 if (this.elements.showingTo) {
-                    this.elements.showingTo.textContent = itemsArray.length;
+                    this.elements.showingTo.textContent = itemsDisplayed;
                 }
                 if (this.elements.totalItems) {
-                    this.elements.totalItems.textContent = data.pagination.total;
+                    this.elements.totalItems.textContent = totalOverall;
                 }
-                // Removed the line for totalGeneralItems as it's no longer needed for the display.
+                if (this.elements.currentPageDisplay) {
+                    this.elements.currentPageDisplay.textContent = currentPage;
+                }
+                if (this.elements.totalPagesDisplay) {
+                    this.elements.totalPagesDisplay.textContent = pagination.pages;
+                }
             },
 
             // Función para formatear fecha
@@ -2414,7 +2429,7 @@
 
         // Función para inicializar la aplicación
         function initializeCategoriesApp() {
-            categoriesApp.init();
+            categoriesApp.init({{ pagination | tojson }});
         }
 
         // Inicializar la aplicación cuando el DOM esté listo

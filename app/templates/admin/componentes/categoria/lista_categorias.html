@@ -939,7 +939,7 @@
             gap: 0.5rem;
         }
     </style>
-
+    <script src="{{ url_for('static', filename='js/admin/category_status_toggle.js') }}"></script>
     <script>
         // Objeto global para la aplicación de categorías
         const categoriesApp = {
@@ -1684,37 +1684,36 @@
                         data.categorias.forEach(category => {
                             html += `
                                 <tr>
-                                    <td>${
-                                category.nombre
-                            }</td>
-                                    <td>${
-                                category.slug
-                            }</td>
-                                    <td>${
-                                category.subcategorias ? category.subcategorias.length : 0
-                            }</td>
+                                    <td>${category.nombre}</td>
+                                    <td>${category.slug}</td>
+                                    <td>${category.subcategorias ? category.subcategorias.length : 0}</td>
                                     <td>
-                                        <span class="status-badge ${
-                                category.estado === 'activo' ? 'active' : 'inactive'
-                            }">
-                                            <i class="fas fa-circle mr-1"></i> ${
-                                category.estado === 'activo' ? 'Activo' : 'Inactivo'
-                            }
-                                        </span>
+                                        <div class="flex items-center">
+                                            <div class="relative inline-block w-14 h-7 mr-2 align-middle select-none">
+                                                <input type="checkbox" id="toggle-main-${category.id}" class="sr-only" ${category.estado === 'activo' ? 'checked' : ''} onchange="toggleCategoryStatus('${category.id}', 'main', this.checked)">
+                                                <label for="toggle-main-${category.id}" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out ${category.estado === 'activo' ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg' : 'bg-gray-300'}" title="Cambiar estado de la categoría">
+                                                    <span class="absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ease-in-out ${category.estado === 'activo' ? 'transform translate-x-7' : 'transform translate-x-0'} flex items-center justify-center">
+                                                        ${category.estado === 'activo' ? `
+                                                            <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        ` : `
+                                                            <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        `}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>${
-                                this.formatDate(category.created_at)
-                            }</td>
+                                    <td>${this.formatDate(category.created_at)}</td>
                                     <td>
                                         <div class="flex">
-                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${
-                                category.id
-                            }', 'main')">
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${category.id}', 'main')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${
-                                category.id
-                            }', 'main')">
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${category.id}', 'main')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </div>
@@ -1730,40 +1729,37 @@
                         data.subcategorias.forEach(subcategory => {
                             html += `
                                 <tr>
-                                    <td>${
-                                subcategory.nombre
-                            }</td>
-                                    <td>${
-                                subcategory.slug
-                            }</td>
-                                    <td>${
-                                subcategory.categoria_principal_nombre || '-'
-                            }</td>
-                                    <td>${
-                                subcategory.seudocategorias ? subcategory.seudocategorias.length : 0
-                            }</td>
+                                    <td>${subcategory.nombre}</td>
+                                    <td>${subcategory.slug}</td>
+                                    <td>${subcategory.categoria_principal_nombre || '-'}</td>
+                                    <td>${subcategory.seudocategorias ? subcategory.seudocategorias.length : 0}</td>
                                     <td>
-                                        <span class="status-badge ${
-                                subcategory.estado === 'activo' ? 'active' : 'inactive'
-                            }">
-                                            <i class="fas fa-circle mr-1"></i> ${
-                                subcategory.estado === 'activo' ? 'Activo' : 'Inactivo'
-                            }
-                                        </span>
+                                        <div class="flex items-center">
+                                            <div class="relative inline-block w-14 h-7 mr-2 align-middle select-none">
+                                                <input type="checkbox" id="toggle-sub-${subcategory.id}" class="sr-only" ${subcategory.estado === 'activo' ? 'checked' : ''} onchange="toggleCategoryStatus('${subcategory.id}', 'sub', this.checked)">
+                                                <label for="toggle-sub-${subcategory.id}" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out ${subcategory.estado === 'activo' ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg' : 'bg-gray-300'}" title="Cambiar estado de la subcategoría">
+                                                    <span class="absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ease-in-out ${subcategory.estado === 'activo' ? 'transform translate-x-7' : 'transform translate-x-0'} flex items-center justify-center">
+                                                        ${subcategory.estado === 'activo' ? `
+                                                            <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        ` : `
+                                                            <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        `}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>${
-                                this.formatDate(subcategory.created_at)
-                            }</td>
+                                    <td>${this.formatDate(subcategory.created_at)}</td>
                                     <td>
                                         <div class="flex">
-                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${
-                                subcategory.id
-                            }', 'sub')">
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${subcategory.id}', 'sub')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${
-                                subcategory.id
-                            }', 'sub')">
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </div>
@@ -1779,40 +1775,37 @@
                         data.seudocategorias.forEach(pseudocategory => {
                             html += `
                                 <tr>
-                                    <td>${
-                                pseudocategory.nombre
-                            }</td>
-                                    <td>${
-                                pseudocategory.slug
-                            }</td>
-                                    <td>${
-                                pseudocategory.subcategoria_nombre || '-'
-                            }</td>
-                                    <td>${
-                                pseudocategory.categoria_principal_nombre || '-'
-                            }</td>
+                                    <td>${pseudocategory.nombre}</td>
+                                    <td>${pseudocategory.slug}</td>
+                                    <td>${pseudocategory.subcategoria_nombre || '-'}</td>
+                                    <td>${pseudocategory.categoria_principal_nombre || '-'}</td>
                                     <td>
-                                        <span class="status-badge ${
-                                pseudocategory.estado === 'activo' ? 'active' : 'inactive'
-                            }">
-                                            <i class="fas fa-circle mr-1"></i> ${
-                                pseudocategory.estado === 'activo' ? 'Activo' : 'Inactivo'
-                            }
-                                        </span>
+                                        <div class="flex items-center">
+                                            <div class="relative inline-block w-14 h-7 mr-2 align-middle select-none">
+                                                <input type="checkbox" id="toggle-pseudo-${pseudocategory.id}" class="sr-only" ${pseudocategory.estado === 'activo' ? 'checked' : ''} onchange="toggleCategoryStatus('${pseudocategory.id}', 'pseudo', this.checked)">
+                                                <label for="toggle-pseudo-${pseudocategory.id}" class="block h-7 w-14 rounded-full cursor-pointer transition-colors duration-300 ease-in-out ${pseudocategory.estado === 'activo' ? 'bg-gradient-to-r from-green-400 to-emerald-500 shadow-lg' : 'bg-gray-300'}" title="Cambiar estado de la seudocategoría">
+                                                    <span class="absolute left-1 top-1 bg-white w-5 h-5 rounded-full shadow-md transition-transform duration-300 ease-in-out ${pseudocategory.estado === 'activo' ? 'transform translate-x-7' : 'transform translate-x-0'} flex items-center justify-center">
+                                                        ${pseudocategory.estado === 'activo' ? `
+                                                            <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        ` : `
+                                                            <svg class="w-3 h-3 text-gray-500" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+                                                            </svg>
+                                                        `}
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>${
-                                this.formatDate(pseudocategory.created_at)
-                            }</td>
+                                    <td>${this.formatDate(pseudocategory.created_at)}</td>
                                     <td>
                                         <div class="flex">
-                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${
-                                pseudocategory.id
-                            }', 'pseudo')">
+                                            <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('${pseudocategory.id}', 'pseudo')">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${
-                                pseudocategory.id
-                            }', 'pseudo')">
+                                            <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </div>
@@ -2165,7 +2158,7 @@
                         this.loadTableData();
                     });
                 }
-                
+
                 const mainCategoryFilter = document.getElementById('mainCategoryFilter');
                 if (mainCategoryFilter) {
                     mainCategoryFilter.addEventListener('change', () => {

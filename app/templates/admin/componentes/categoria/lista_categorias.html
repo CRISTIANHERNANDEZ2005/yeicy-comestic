@@ -38,7 +38,11 @@
 
             <!-- Contenido principal -->
             <div
-                class="bg-white rounded-xl shadow-md overflow-hidden">
+                class="bg-white rounded-xl shadow-md overflow-hidden relative">
+                <!-- Overlay de carga para la lista de categorías -->
+                <div id="categoryListLoaderOverlay" class="absolute inset-0 bg-white bg-opacity-75 flex justify-center items-center z-10 hidden">
+                    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                </div>
                 <!-- Tabs para niveles de categoría -->
                 <div class="border-b border-gray-200">
                     <nav class="flex -mb-px">
@@ -310,6 +314,9 @@
     <!-- Notificación -->
     <div id="notification" class="notification"></div>
     <style>
+        .initial-load > tr {
+            display: none;
+        }
         /* Animaciones personalizadas */
         .fade-in {
             animation: fadeIn 0.3s ease-in-out;
@@ -782,25 +789,7 @@
             background-color: #ef4444;
         }
 
-        /* Estilos para el loader */
-        .loader {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3b82f6;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+        
 
         /* Estilos para la vista jerárquica */
         .hierarchical-view .category-card {
@@ -1027,6 +1016,7 @@
                 this.elements.totalItems = document.getElementById('pagination-total-top');
                 this.elements.currentPageDisplay = document.getElementById('pagination-current-page');
                 this.elements.totalPagesDisplay = document.getElementById('pagination-total-pages');
+                this.elements.categoryListLoaderOverlay = document.getElementById('categoryListLoaderOverlay');
 
                 // Campos de filtro
                 this.elements.nameFilterField = document.getElementById('nameFilterField');
@@ -1242,9 +1232,9 @@
                 
                 this.isLoading = true;
 
-                // Mostrar loader
-                if (this.elements.categoriesContainer) {
-                    this.elements.categoriesContainer.innerHTML = '<div class="flex justify-center items-center h-48"><div class="loader"></div></div>';
+                // Mostrar overlay de carga
+                if (this.elements.categoryListLoaderOverlay) {
+                    this.elements.categoryListLoaderOverlay.classList.remove('hidden');
                 }
 
                 // Obtener categorías principales del servidor
@@ -1261,6 +1251,10 @@
                     }
 
                     this.isLoading = false;
+                    // Ocultar overlay de carga
+                    if (this.elements.categoryListLoaderOverlay) {
+                        this.elements.categoryListLoaderOverlay.classList.add('hidden');
+                    }
                 }).catch(error => {
                     console.error('Error al cargar categorías jerárquicas:', error);
                     if (this.elements.categoriesContainer) {
@@ -1268,6 +1262,10 @@
                     }
                     this.showNotification('Error al cargar categorías', 'error');
                     this.isLoading = false;
+                    // Ocultar overlay de carga
+                    if (this.elements.categoryListLoaderOverlay) {
+                        this.elements.categoryListLoaderOverlay.classList.add('hidden');
+                    }
                 });
             },
 
@@ -1585,6 +1583,11 @@
                 
                 this.isLoading = true;
 
+                // Mostrar overlay de carga
+                if (this.elements.categoryListLoaderOverlay) {
+                    this.elements.categoryListLoaderOverlay.classList.remove('hidden');
+                }
+
                 if (resetPage) {
                     this.currentPage = 1;
                 }
@@ -1655,8 +1658,7 @@
                     apiUrl += '&sort_by=nombre&sort_order=asc';
                 }
 
-                // Mostrar loader
-                tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4"><div class="loader"></div></td></tr>';
+                
 
                 // Obtener datos del servidor
                 fetch(apiUrl).then(response => response.json()).then(data => {
@@ -1674,6 +1676,10 @@
                     }
 
                     this.isLoading = false;
+                    // Ocultar overlay de carga
+                    if (this.elements.categoryListLoaderOverlay) {
+                        this.elements.categoryListLoaderOverlay.classList.add('hidden');
+                    }
                 }).catch(error => {
                     console.error('Error al cargar datos de tabla:', error);
                     tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
@@ -1833,6 +1839,7 @@
                 }
 
                 tableBody.innerHTML = html;
+                tableBody.classList.remove('initial-load');
             },
 
             // Función para actualizar la paginación

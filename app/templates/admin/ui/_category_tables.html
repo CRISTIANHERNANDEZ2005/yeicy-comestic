@@ -75,7 +75,7 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="subCategoriesTableBody">
+            <tbody id="subCategoriesTableBody" class="initial-load">
                 {% if subcategories %}
                     {% for subcategory in subcategories %}
                         <tr>
@@ -133,7 +133,7 @@
                     <th>Acciones</th>
                 </tr>
             </thead>
-            <tbody id="pseudoCategoriesTableBody">
+            <tbody id="pseudoCategoriesTableBody" class="initial-load">
                 {% if pseudocategories %}
                     {% for pseudo in pseudocategories %}
                         <tr>

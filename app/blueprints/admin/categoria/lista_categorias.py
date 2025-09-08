@@ -11,14 +11,26 @@ from flask_wtf.csrf import generate_csrf
 admin_lista_categorias_bp = Blueprint('admin_categorias', __name__, url_prefix='/admin')
 
 @admin_lista_categorias_bp.route('/lista-categorias', methods=['GET'])
+@admin_lista_categorias_bp.route('/lista-categorias/<string:view_type>', methods=['GET'])
 @admin_jwt_required
-def get_all_categories(admin_user):
+def get_all_categories(admin_user, view_type=None):
     error_message = None
     categorias_data = []
     subcategorias_data = []
     seudocategorias_data = []
     pagination_data = None
-    current_view = request.args.get('view', 'main')
+    
+    if view_type == 'principales':
+        current_view = 'main'
+    elif view_type == 'subcategorias':
+        current_view = 'sub'
+    elif view_type == 'seudocategorias':
+        current_view = 'pseudo'
+    else:
+        current_view = 'all' # Default view if no specific view_type is provided or recognized
+
+    # Override with query parameter if present (for backward compatibility or specific use cases)
+    current_view = request.args.get('view', current_view)
     
     try:
         # Obtener parámetros de filtro

@@ -1049,8 +1049,22 @@
 
             // Función para inicializar la vista
             initializeView: function () { // Obtener la vista actual de la URL
+                const path = window.location.pathname;
+                if (path.endsWith('/principales')) {
+                    this.currentView = 'main';
+                } else if (path.endsWith('/subcategorias')) {
+                    this.currentView = 'sub';
+                } else if (path.endsWith('/seudocategorias')) {
+                    this.currentView = 'pseudo';
+                } else {
+                    this.currentView = 'all';
+                }
+
+                // También verificar si hay un parámetro de vista en la URL (para compatibilidad o si se usa en otros lugares)
                 const urlParams = new URLSearchParams(window.location.search);
-                this.currentView = urlParams.get('view') || 'all';
+                if (urlParams.has('view')) {
+                    this.currentView = urlParams.get('view');
+                }
 
                 // Establecer el tab activo
                 document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -2080,9 +2094,15 @@
                         this.showView(this.currentView);
 
                         // Actualizar la URL sin recargar la página
-                        const url = new URL(window.location);
-                        url.searchParams.set('view', this.currentView);
-                        window.history.pushState({}, '', url);
+                        let newPath = '/admin/lista-categorias';
+                        if (this.currentView === 'main') {
+                            newPath += '/principales';
+                        } else if (this.currentView === 'sub') {
+                            newPath += '/subcategorias';
+                        } else if (this.currentView === 'pseudo') {
+                            newPath += '/seudocategorias';
+                        }
+                        window.history.pushState({}, '', newPath);
 
                         // Cargar los datos según la vista
                         if (this.currentView === 'all') {

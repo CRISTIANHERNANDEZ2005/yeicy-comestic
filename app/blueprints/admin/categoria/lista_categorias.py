@@ -3,7 +3,7 @@ from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
 from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict
 from app.extensions import db
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import joinedload, subqueryload
 from datetime import datetime
 from flask_wtf.csrf import generate_csrf
@@ -40,8 +40,8 @@ def get_all_categories(admin_user, view_type=None):
         estado = request.args.get('estado', '')
         categoria_id = request.args.get('categoria_id', '')
         subcategoria_id = request.args.get('subcategoria_id', '')
-        sort_by = request.args.get('sort_by', 'nombre')
-        sort_order = request.args.get('sort_order', 'asc')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
         
         # Cargar datos según la vista actual
         if current_view == 'main':
@@ -56,16 +56,16 @@ def get_all_categories(admin_user, view_type=None):
             
             # Aplicar ordenamiento
             if sort_by == 'nombre':
-                order_field = CategoriasPrincipales.nombre
+                order_expression = func.lower(CategoriasPrincipales.nombre)
             elif sort_by == 'created_at':
-                order_field = CategoriasPrincipales.created_at
+                order_expression = CategoriasPrincipales.created_at
             else:
-                order_field = CategoriasPrincipales.nombre
+                order_expression = func.lower(CategoriasPrincipales.nombre)
                 
             if sort_order == 'asc':
-                query = query.order_by(order_field.asc())
+                query = query.order_by(order_expression.asc())
             else:
-                query = query.order_by(order_field.desc())
+                query = query.order_by(order_expression.desc())
             
             # Paginación
             pagination_data = query.paginate(
@@ -93,16 +93,16 @@ def get_all_categories(admin_user, view_type=None):
             
             # Aplicar ordenamiento
             if sort_by == 'nombre':
-                order_field = Subcategorias.nombre
+                order_expression = func.lower(Subcategorias.nombre)
             elif sort_by == 'created_at':
-                order_field = Subcategorias.created_at
+                order_expression = Subcategorias.created_at
             else:
-                order_field = Subcategorias.nombre
+                order_expression = func.lower(Subcategorias.nombre)
                 
             if sort_order == 'asc':
-                query = query.order_by(order_field.asc())
+                query = query.order_by(order_expression.asc())
             else:
-                query = query.order_by(order_field.desc())
+                query = query.order_by(order_expression.desc())
             
             # Paginación
             pagination_data = query.paginate(
@@ -134,16 +134,16 @@ def get_all_categories(admin_user, view_type=None):
             
             # Aplicar ordenamiento
             if sort_by == 'nombre':
-                order_field = Seudocategorias.nombre
+                order_expression = func.lower(Seudocategorias.nombre)
             elif sort_by == 'created_at':
-                order_field = Seudocategorias.created_at
+                order_expression = Seudocategorias.created_at
             else:
-                order_field = Seudocategorias.nombre
+                order_expression = func.lower(Seudocategorias.nombre)
                 
             if sort_order == 'asc':
-                query = query.order_by(order_field.asc())
+                query = query.order_by(order_expression.asc())
             else:
-                query = query.order_by(order_field.desc())
+                query = query.order_by(order_expression.desc())
             
             # Paginación
             pagination_data = query.paginate(
@@ -169,17 +169,7 @@ def get_all_categories(admin_user, view_type=None):
             query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos))
 
             # Apply sorting (if needed for 'all' view, using 'nombre' as default)
-            if sort_by == 'nombre':
-                order_field = CategoriasPrincipales.nombre
-            elif sort_by == 'created_at':
-                order_field = CategoriasPrincipales.created_at
-            else:
-                order_field = CategoriasPrincipales.nombre
-                
-            if sort_order == 'asc':
-                query = query.order_by(order_field.asc())
-            else:
-                query = query.order_by(order_field.desc())
+            query = query.order_by(CategoriasPrincipales.created_at.desc())
 
             # Paginación
             pagination_data = query.paginate(
@@ -484,8 +474,8 @@ def filter_main_categories_api(admin_user):
         per_page = request.args.get('per_page', 20, type=int)
         nombre = request.args.get('nombre', '')
         estado = request.args.get('estado', '')
-        sort_by = request.args.get('sort_by', 'nombre')
-        sort_order = request.args.get('sort_order', 'asc')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
 
         # Construir consulta base
         query = CategoriasPrincipales.query
@@ -499,16 +489,16 @@ def filter_main_categories_api(admin_user):
 
         # Aplicar ordenamiento
         if sort_by == 'nombre':
-            order_field = CategoriasPrincipales.nombre
+            order_expression = func.lower(CategoriasPrincipales.nombre)
         elif sort_by == 'created_at':
-            order_field = CategoriasPrincipales.created_at
+            order_expression = CategoriasPrincipales.created_at
         else:
-            order_field = CategoriasPrincipales.nombre
+            order_expression = func.lower(CategoriasPrincipales.nombre)
 
         if sort_order == 'asc':
-            query = query.order_by(order_field.asc())
+            query = query.order_by(order_expression.asc())
         else:
-            query = query.order_by(order_field.desc())
+            query = query.order_by(order_expression.desc())
 
         # Contar el total general de categorías en la base de datos
         total_general = db.session.query(CategoriasPrincipales.id).count()
@@ -559,8 +549,8 @@ def filter_subcategories_api(admin_user):
         nombre = request.args.get('nombre', '')
         estado = request.args.get('estado', '')
         categoria_id = request.args.get('categoria_id', '')
-        sort_by = request.args.get('sort_by', 'nombre')
-        sort_order = request.args.get('sort_order', 'asc')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
 
         # Construir consulta base
         query = Subcategorias.query
@@ -577,16 +567,16 @@ def filter_subcategories_api(admin_user):
 
         # Aplicar ordenamiento
         if sort_by == 'nombre':
-            order_field = Subcategorias.nombre
+            order_expression = func.lower(Subcategorias.nombre)
         elif sort_by == 'created_at':
-            order_field = Subcategorias.created_at
+            order_expression = Subcategorias.created_at
         else:
-            order_field = Subcategorias.nombre
+            order_expression = func.lower(Subcategorias.nombre)
 
         if sort_order == 'asc':
-            query = query.order_by(order_field.asc())
+            query = query.order_by(order_expression.asc())
         else:
-            query = query.order_by(order_field.desc())
+            query = query.order_by(order_expression.desc())
 
         # Contar el total general de subcategorías en la base de datos
         total_general = db.session.query(Subcategorias.id).count()
@@ -637,8 +627,8 @@ def filter_pseudocategories_api(admin_user):
         nombre = request.args.get('nombre', '')
         estado = request.args.get('estado', '')
         subcategoria_id = request.args.get('subcategoria_id', '')
-        sort_by = request.args.get('sort_by', 'nombre')
-        sort_order = request.args.get('sort_order', 'asc')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
 
         # Construir consulta base
         query = Seudocategorias.query
@@ -655,16 +645,16 @@ def filter_pseudocategories_api(admin_user):
 
         # Aplicar ordenamiento
         if sort_by == 'nombre':
-            order_field = Seudocategorias.nombre
+            order_expression = func.lower(Seudocategorias.nombre)
         elif sort_by == 'created_at':
-            order_field = Seudocategorias.created_at
+            order_expression = Seudocategorias.created_at
         else:
-            order_field = Seudocategorias.nombre
+            order_expression = func.lower(Seudocategorias.nombre)
 
         if sort_order == 'asc':
-            query = query.order_by(order_field.asc())
+            query = query.order_by(order_expression.asc())
         else:
-            query = query.order_by(order_field.desc())
+            query = query.order_by(order_expression.desc())
 
         # Contar el total general de seudocategorías en la base de datos
         total_general = db.session.query(Seudocategorias.id).count()

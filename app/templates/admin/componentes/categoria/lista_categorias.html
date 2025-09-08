@@ -228,32 +228,58 @@
         </main>
     </div>
 
+    <!-- ################################################################################# -->
+    <!-- ######################## INICIO: NUEVO FILTRO LATERAL ########################### -->
+    <!-- ################################################################################# -->
+
+    <!-- Botón flotante para abrir filtros -->
+    <button id="filterFab" onclick="toggleFilters()" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-xl flex items-center justify-center z-30 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 animate-pulse-slow hidden-filter">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+        </svg>
+    </button>
+
+    <!-- Overlay para móvil y desktop -->
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden transition-opacity duration-300"  onclick="toggleFilters()"></div>
+
     <!-- Menú lateral de filtros -->
-    <div id="filterMenu" class="filter-menu fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-xl z-50 overflow-y-auto">
-        <div class="p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-xl font-bold text-gray-800">Filtros Avanzados</h2>
-                <button id="closeFilterMenu" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-times text-xl"></i>
+    <div id="filtersPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+        <div class="p-6 bg-gradient-to-b from-white to-gray-50 h-full">
+            <!-- Encabezado del menú -->
+            <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-800 flex items-center">
+                        <svg class="w-6 h-6 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
+                        </svg>
+                        Filtros de Búsqueda
+                    </h2>
+                    <p class="text-gray-500 text-sm mt-1">Refina tus resultados</p>
+                </div>
+                <button onclick="toggleFilters()" class="text-gray-500 hover:text-gray-700 focus:outline-none rounded-full p-2 hover:bg-gray-100 transition-colors duration-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
                 </button>
             </div>
-
-            <div
-                class="space-y-6">
+            
+            <!-- Formulario de filtros -->
+            <form id="filterForm" class="space-y-6" onsubmit="return false;">
                 <!-- Búsqueda por nombre (común para todos los niveles) -->
                 <div class="filter-field" id="nameFilterField">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                    <div class="relative">
-                        <input type="text" id="nameFilter" placeholder="Buscar por nombre..." class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <i class="fas fa-search text-gray-400"></i>
-                        </div>
-                    </div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                        Nombre
+                    </label>
+                    <input type="text" id="nameFilter" placeholder="Buscar por nombre..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
                 </div>
 
                 <!-- Estado (común para todos los niveles) -->
                 <div class="filter-field" id="statusFilterField">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Estado
+                    </label>
                     <select id="statusFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="all">Todos</option>
                         <option value="activo">Activos</option>
@@ -279,35 +305,27 @@
 
                 <!-- Ordenamiento (común para todos los niveles) -->
                 <div class="filter-field" id="sortFilterField">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Ordenar por</label>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"></path></svg>
+                        Ordenar por
+                    </label>
                     <select id="sortFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option value="nombre">Nombre (A-Z)</option>
                         <option value="nombre-desc">Nombre (Z-A)</option>
-                        <option value="created_at">Fecha (más recientes primero)</option>
+                        <option value="created_at" selected>Fecha (más recientes primero)</option>
                         <option value="created_at-desc">Fecha (más antiguos primero)</option>
                     </select>
                 </div>
 
                 <!-- Botones de acción -->
-                <div class="flex flex-col sm:flex-row gap-3 pt-4">
-                    <button id="applyFilters" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200">
-                        Aplicar filtros
-                    </button>
-                    <button id="clearFilters" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-200">
-                        Limpiar filtros
+                <div class="pt-6 border-t border-gray-200 mt-8 flex">
+                    <button id="clearFilters" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-3 px-4 rounded-lg transition duration-200 shadow-md">
+                        Limpiar Filtros
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
-
-    <!-- Overlay para el menú de filtros -->
-    <div id="filterOverlay" class="filter-overlay"></div>
-
-    <!-- Botón flotante para abrir filtros - inicialmente oculto -->
-    <button id="filterFab" class="fab bg-blue-600 text-white hover:bg-blue-700 hidden-filter">
-        <i class="fas fa-filter"></i>
-    </button>
 
     {% include 'admin/ui/_category_form_modal.html' %}
 
@@ -348,50 +366,24 @@
         .modal-backdrop {
             backdrop-filter: blur(4px);
         }
-        /* Estilos para el menú lateral */
-        .filter-menu {
-            transform: translateX(100%);
-            transition: transform 0.3s ease-in-out;
+        
+        /* Animación de pulso lenta para el botón flotante */
+        @keyframes pulse-slow {
+            0% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+            }
         }
-        .filter-menu.open {
-            transform: translateX(0);
+        
+        .animate-pulse-slow {
+            animation: pulse-slow 3s infinite;
         }
-        /* Botón flotante */
-        .fab {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            z-index: 40;
-            transition: all 0.3s ease;
-        }
-        .fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
-        }
-        /* Overlay para el menú de filtros */
-        .filter-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            z-index: 45;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.3s ease, visibility 0.3s ease;
-        }
-        .filter-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
+        
         /* Estilos para la paginación */
         .pagination-container {
             background-color: white;
@@ -658,7 +650,7 @@
             }
 
             /* Ajustar el menú lateral para móviles */
-            .filter-menu {
+            #filtersPanel {
                 width: 100%;
                 max-width: 100%;
             }
@@ -703,7 +695,7 @@
 
         /* Clase para ocultar el botón de filtro */
         .hidden-filter {
-            display: none;
+            display: none !important;
         }
 
         /* Estilos para los campos de filtro dinámicos */
@@ -1648,15 +1640,24 @@
                 
 
                 // Agregar parámetros de ordenamiento
+                let sortBy = 'nombre';
+                let sortOrder = 'asc';
+
                 if (sortFilter === 'nombre-desc') {
-                    apiUrl += '&sort_by=nombre&sort_order=desc';
+                    sortBy = 'nombre';
+                    sortOrder = 'desc';
                 } else if (sortFilter === 'created_at') {
-                    apiUrl += '&sort_by=created_at&sort_order=asc';
+                    sortBy = 'created_at';
+                    sortOrder = 'desc'; // Recientes = DESC
                 } else if (sortFilter === 'created_at-desc') {
-                    apiUrl += '&sort_by=created_at&sort_order=desc';
-                } else {
-                    apiUrl += '&sort_by=nombre&sort_order=asc';
+                    sortBy = 'created_at';
+                    sortOrder = 'asc'; // Antiguos = ASC
+                } else if (sortFilter === 'nombre') {
+                    sortBy = 'nombre';
+                    sortOrder = 'asc';
                 }
+
+                apiUrl += `&sort_by=${sortBy}&sort_order=${sortOrder}`;
 
                 
 
@@ -2079,7 +2080,16 @@
             },
 
             // Configurar event listeners
-            setupEventListeners: function () { // Tabs para niveles de categoría
+            setupEventListeners: function () { 
+                let debounceTimeout;
+                const debounceLoadData = () => {
+                    clearTimeout(debounceTimeout);
+                    debounceTimeout = setTimeout(() => {
+                        this.loadTableData();
+                    }, 500);
+                };
+
+                // Tabs para niveles de categoría
                 document.querySelectorAll('.tab-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const btn = e.currentTarget;
@@ -2133,98 +2143,62 @@
                     });
                 }
 
-                // Menú lateral de filtros
-                const filterMenu = document.getElementById('filterMenu');
-                const filterOverlay = document.getElementById('filterOverlay');
-                const closeFilterMenu = document.getElementById('closeFilterMenu');
-                const applyFilters = document.getElementById('applyFilters');
-                const clearFilters = document.getElementById('clearFilters');
-
-                // Abrir menú de filtros
-                if (this.elements.filterFab) {
-                    this.elements.filterFab.addEventListener('click', () => {
-                        if (filterMenu) 
-                            filterMenu.classList.add('open');
-                        
-                        if (filterOverlay) 
-                            filterOverlay.classList.add('active');
-                        
-                        document.body.style.overflow = 'hidden'; // Evitar scroll en el body
-                    });
+                // --- INICIO: Event Listeners para el NUEVO filtro ---
+                const nameFilterInput = document.getElementById('nameFilter');
+                if (nameFilterInput) {
+                    nameFilterInput.addEventListener('keyup', debounceLoadData);
                 }
 
-                // Cerrar menú de filtros
-                const closeFilterMenuFunc = () => {
-                    if (filterMenu) 
-                        filterMenu.classList.remove('open');
-                    
-                    if (filterOverlay) 
-                        filterOverlay.classList.remove('active');
-                    
-                    document.body.style.overflow = ''; // Restaurar scroll
-                };
-
-                if (closeFilterMenu) {
-                    closeFilterMenu.addEventListener('click', closeFilterMenuFunc);
-                }
-                if (filterOverlay) {
-                    filterOverlay.addEventListener('click', closeFilterMenuFunc);
+                const statusFilterInput = document.getElementById('statusFilter');
+                if(statusFilterInput) {
+                    statusFilterInput.addEventListener('change', () => this.loadTableData());
                 }
 
-                // Aplicar filtros
-                if (applyFilters) {
-                    applyFilters.addEventListener('click', () => {
-                        this.loadTableData();
-                        closeFilterMenuFunc();
-                        this.showNotification('Filtros aplicados correctamente', 'success');
-                    });
+                const sortFilterInput = document.getElementById('sortFilter');
+                if(sortFilterInput) {
+                    sortFilterInput.addEventListener('change', () => this.loadTableData());
                 }
 
-                // Limpiar filtros
-                if (clearFilters) {
-                    clearFilters.addEventListener('click', () => {
+                const subCategoryFilterInput = document.getElementById('subCategoryFilter');
+                if(subCategoryFilterInput) {
+                    subCategoryFilterInput.addEventListener('change', () => this.loadTableData());
+                }
+
+                const clearFiltersBtn = document.getElementById('clearFilters');
+                if (clearFiltersBtn) {
+                    clearFiltersBtn.addEventListener('click', () => {
                         const nameFilter = document.getElementById('nameFilter');
                         const statusFilter = document.getElementById('statusFilter');
                         const mainCategoryFilter = document.getElementById('mainCategoryFilter');
                         const subCategoryFilter = document.getElementById('subCategoryFilter');
                         const sortFilter = document.getElementById('sortFilter');
 
-                        if (nameFilter) 
-                            nameFilter.value = '';
-                        
-                        if (statusFilter) 
-                            statusFilter.value = 'all';
-                        
-                        if (mainCategoryFilter) 
-                            mainCategoryFilter.value = 'all';
-                        
-                        if (subCategoryFilter) 
-                            subCategoryFilter.value = 'all';
-                        
-                        if (sortFilter) 
-                            sortFilter.value = 'nombre';
-                        
+                        if (nameFilter) nameFilter.value = '';
+                        if (statusFilter) statusFilter.value = 'all';
+                        if (mainCategoryFilter) mainCategoryFilter.value = 'all';
+                        if (subCategoryFilter) subCategoryFilter.value = 'all';
+                        if (sortFilter) sortFilter.value = 'nombre';
 
-                        // Si estamos en la vista de seudocategorías, recargar las subcategorías
                         if (this.currentView === 'pseudo') {
                             this.loadSubcategoriesForFilter();
                         }
 
                         this.loadTableData();
-                        closeFilterMenuFunc();
                         this.showNotification('Filtros limpiados correctamente', 'success');
                     });
                 }
-
-                // Evento para cargar subcategorías cuando cambia la categoría principal
+                
                 const mainCategoryFilter = document.getElementById('mainCategoryFilter');
                 if (mainCategoryFilter) {
                     mainCategoryFilter.addEventListener('change', () => {
                         if (this.currentView === 'pseudo') {
                             this.loadSubcategoriesForFilter();
                         }
+                        this.loadTableData();
                     });
                 }
+                // --- FIN: Event Listeners para el NUEVO filtro ---
+
 
                 // Modal para añadir/editar categoría
                 const modal = document.getElementById('categoryModal');
@@ -2455,6 +2429,21 @@
         // Función global para cambiar de página (para compatibilidad con botones generados dinámicamente)
         function changePage(page) {
             categoriesApp.changePage(page);
+        }
+
+        // Función para mostrar/ocultar el panel de filtros
+        function toggleFilters() {
+            const panel = document.getElementById("filtersPanel");
+            const overlay = document.getElementById("overlay");
+
+            panel.classList.toggle("translate-x-full");
+            overlay.classList.toggle("hidden");
+
+            if (!panel.classList.contains("translate-x-full")) {
+                document.body.classList.add("overflow-hidden");
+            } else {
+                document.body.classList.remove("overflow-hidden");
+            }
         }
 
         // Función para inicializar la aplicación

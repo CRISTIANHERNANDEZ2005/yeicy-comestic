@@ -342,6 +342,15 @@ def update_subcategory_status(admin_user, subcategoria_id):
         # Actualizar el estado de la subcategoría
         subcategoria.estado = new_status
 
+        # Asegurar que categoria_principal_id no se establezca en None, ya que es una columna NOT NULL.
+        # Esta es una medida defensiva contra la anulación implícita durante el autoflush.
+        if subcategoria.categoria_principal_id is None and subcategoria.categoria_principal:
+            subcategoria.categoria_principal_id = subcategoria.categoria_principal.id
+
+        # Llamar explícitamente a check_and_update_status para propagar los cambios de estado
+        # Esto agregará los objetos padre modificados a la sesión.
+        subcategoria.check_and_update_status()
+
         # Guardar cambios en la base de datos
         db.session.commit()
 
@@ -425,6 +434,15 @@ def update_pseudocategory_status(admin_user, seudocategoria_id):
 
         # Actualizar el estado de la seudocategoría
         seudocategoria.estado = new_status
+
+        # Asegurar que subcategoria_id no se establezca en None, ya que es una columna NOT NULL.
+        # Esta es una medida defensiva contra la anulación implícita durante el autoflush.
+        if seudocategoria.subcategoria_id is None and seudocategoria.subcategoria:
+            seudocategoria.subcategoria_id = seudocategoria.subcategoria.id
+
+        # Llamar explícitamente a check_and_update_status para propagar los cambios de estado
+        # Esto agregará los objetos padre modificados a la sesión.
+        seudocategoria.check_and_update_status()
 
         # Guardar cambios en la base de datos
         db.session.commit()

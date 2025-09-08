@@ -59,15 +59,16 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
             estado=EstadoEnum.ACTIVO.value
         ).count()
 
-        if active_subcategories_count == 0:
-            # Si no hay subcategorías activas, desactivar la categoría principal
-            if self.estado != EstadoEnum.INACTIVO.value:
-                self.estado = EstadoEnum.INACTIVO.value
-                db.session.add(self)
-        else:
-            # Si hay subcategorías activas, asegurar que la categoría principal esté activa
-            if self.estado != EstadoEnum.ACTIVO.value:
-                self.estado = EstadoEnum.ACTIVO.value
+        with db.session.no_autoflush:
+            original_estado = self.estado # Store original state
+            if active_subcategories_count == 0:
+                if self.estado != EstadoEnum.INACTIVO.value:
+                    self.estado = EstadoEnum.INACTIVO.value
+            else:
+                if self.estado != EstadoEnum.ACTIVO.value:
+                    self.estado = EstadoEnum.ACTIVO.value
+
+            if self.estado != original_estado: # Only add if status changed
                 db.session.add(self)
 
     def __init__(self, nombre, descripcion, estado='activo', id=None):
@@ -117,22 +118,22 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
             estado=EstadoEnum.ACTIVO.value
         ).count()
 
-        if active_pseudocategories_count == 0:
-            # Si no hay pseudocategorías activas, desactivar la subcategoría
-            if self.estado != EstadoEnum.INACTIVO.value:
-                self.estado = EstadoEnum.INACTIVO.value
+        with db.session.no_autoflush:
+            original_estado = self.estado # Store original state
+            if active_pseudocategories_count == 0:
+                if self.estado != EstadoEnum.INACTIVO.value:
+                    self.estado = EstadoEnum.INACTIVO.value
+            else:
+                if self.estado != EstadoEnum.ACTIVO.value:
+                    self.estado = EstadoEnum.ACTIVO.value
+
+            if self.estado != original_estado: # Only add if status changed
                 db.session.add(self)
-                # Después de actualizar la subcategoría, verificar el estado de la categoría principal
-                if self.categoria_principal:
-                    self.categoria_principal.check_and_update_status()
-        else:
-            # Si hay pseudocategorías activas, asegurar que la subcategoría esté activa
-            if self.estado != EstadoEnum.ACTIVO.value:
-                self.estado = EstadoEnum.ACTIVO.value
-                db.session.add(self)
-                # Después de actualizar la subcategoría, verificar el estado de la categoría principal
-                if self.categoria_principal:
-                    self.categoria_principal.check_and_update_status()
+            
+            # Always check parent status, regardless of own status change
+            # The parent\'s check_and_update_status will handle its own status change logic
+            if self.categoria_principal:
+                self.categoria_principal.check_and_update_status()
 
     def __init__(self, nombre, descripcion, categoria_principal_id, estado='activo', id=None):
         if not nombre or not nombre.strip():
@@ -183,22 +184,22 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
             estado=EstadoEnum.ACTIVO.value
         ).count()
 
-        if active_products_count == 0:
-            # Si no hay productos activos, desactivar la pseudocategoría
-            if self.estado != EstadoEnum.INACTIVO.value:
-                self.estado = EstadoEnum.INACTIVO.value
+        with db.session.no_autoflush:
+            original_estado = self.estado # Store original state
+            if active_products_count == 0:
+                if self.estado != EstadoEnum.INACTIVO.value:
+                    self.estado = EstadoEnum.INACTIVO.value
+            else:
+                if self.estado != EstadoEnum.ACTIVO.value:
+                    self.estado = EstadoEnum.ACTIVO.value
+
+            if self.estado != original_estado: # Only add if status changed
                 db.session.add(self)
-                # Después de actualizar la pseudocategoría, verificar el estado de la subcategoría
-                if self.subcategoria:
-                    self.subcategoria.check_and_update_status()
-        else:
-            # Si hay productos activos, asegurar que la pseudocategoría esté activa
-            if self.estado != EstadoEnum.ACTIVO.value:
-                self.estado = EstadoEnum.ACTIVO.value
-                db.session.add(self)
-                # Después de actualizar la pseudocategoría, verificar el estado de la subcategoría
-                if self.subcategoria:
-                    self.subcategoria.check_and_update_status()
+            
+            # Always check parent status, regardless of own status change
+            # The parent\'s check_and_update_status will handle its own status change logic
+            if self.subcategoria:
+                self.subcategoria.check_and_update_status()
 
     def __init__(self, nombre, descripcion, subcategoria_id, estado='activo', id=None):
         if not nombre or not nombre.strip():
@@ -345,3 +346,20 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         if id:
             self.id = id
         self.calificacion_promedio_almacenada = 0.0 # Inicializar la nueva columna
+
+    def __init__(self, nombre, descripcion, subcategoria_id, estado='activo', id=None):
+        if not nombre or not nombre.strip():
+            raise ValueError("El nombre no puede estar vacío")
+        if not descripcion or not descripcion.strip():
+            raise ValueError("La descripción no puede estar vacía")
+        if not subcategoria_id:
+            raise ValueError("Debe indicar la subcategoría")
+        if estado not in EstadoEnum._value2member_map_:
+            raise ValueError("El estado debe ser 'activo' o 'inactivo'")
+        self.nombre = nombre
+        self.slug = slugify(nombre) # Generar slug automáticamente
+        self.descripcion = descripcion
+        self.subcategoria_id = subcategoria_id
+        self.estado = estado
+        if id:
+            self.id = id

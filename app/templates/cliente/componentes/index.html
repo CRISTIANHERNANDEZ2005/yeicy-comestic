@@ -36,7 +36,14 @@
     </div>
 
     <!-- Carrusel de productos - VERSIÓN ULTRA PROFESIONAL CON CORRECCIONES -->
-    {% include 'cliente/ui/carrusel_productos.html' %}
+    {% if productos %}
+      {% include 'cliente/ui/carrusel_productos.html' %}
+    {% else %}
+      <div class="text-center py-10">
+        <p class="text-xl text-gray-600">No hay productos de {{ categoria_actual }} disponibles en este momento.</p>
+        <p class="text-md text-gray-500 mt-2">Vuelve pronto para descubrir nuestras novedades.</p>
+      </div>
+    {% endif %}
   </div>
 </div>
 

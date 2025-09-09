@@ -20,8 +20,8 @@ def index():
     o todos los productos si no existe la categoría
     """
     # Obtener categorías principales (sin cambios - ya está perfecto)
-    categorias = CategoriasPrincipales.query \
-        .filter(CategoriasPrincipales.estado == 'activo') \
+    categorias = CategoriasPrincipales.query\
+        .filter(CategoriasPrincipales.estado == 'activo')\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
@@ -34,38 +34,35 @@ def index():
         CategoriasPrincipales.estado == 'activo'
     ).first()
 
-    # Obtener productos de la categoría "Maquillaje" o productos destacados si no existe
+    # Inicializar productos como una lista vacía por defecto
+    productos = []
+    categoria_actual_nombre = ''
+
+    # Obtener productos de la categoría "Maquillaje"
     if categoria_maquillaje:
+        categoria_actual_nombre = categoria_maquillaje.nombre
         # Obtener IDs de todas las seudocategorías bajo "Maquillaje"
         seudocategoria_ids = db.session.query(Seudocategorias.id)\
             .join(Subcategorias)\
             .filter(
                 Subcategorias.categoria_principal_id == categoria_maquillaje.id,
+                Subcategorias.estado == 'activo', # Asegurarse de que la subcategoría también esté activa
                 Seudocategorias.estado == 'activo'
         ).all()
 
         seudocategoria_ids = [id[0] for id in seudocategoria_ids]
 
-        # Filtrar productos de esta categoría
-        productos = Productos.query\
-            .filter(
-                Productos.seudocategoria_id.in_(seudocategoria_ids),
-                Productos.estado == 'activo',
-                Productos._existencia  > 0
-            )\
-            .order_by(func.random())\
-            .limit(12)\
-            .all()
-    else:
-        # Fallback: productos destacados si no existe "Maquillaje"
-        productos = Productos.query\
-            .filter(
-                Productos.estado == 'activo',
-                Productos._existencia  > 0
-            )\
-            .order_by(func.random())\
-            .limit(12)\
-            .all()
+        if seudocategoria_ids: # Solo buscar productos si hay seudocategorías activas
+            # Filtrar productos de esta categoría
+            productos = Productos.query\
+                .filter(
+                    Productos.seudocategoria_id.in_(seudocategoria_ids),
+                    Productos.estado == 'activo',
+                    Productos._existencia  > 0
+                )\
+                .order_by(func.random())\
+                .limit(12)\
+                .all()
 
     # Preparar datos para JavaScript con lógica de "nuevo"
     productos_data = [producto_to_dict(p) for p in productos]
@@ -86,8 +83,9 @@ def index():
         total_productos=total_productos,
         cart_items=cart_items,
         total_price=total_price,
-        categoria_actual=categoria_maquillaje.nombre if categoria_maquillaje else 'Destacados'
+        categoria_actual=categoria_actual_nombre
     )
+
 
 @products_bp.route('/productos')
 def productos_page():
@@ -139,6 +137,7 @@ def productos_por_categoria(slug_categoria):
         .join(Subcategorias)\
         .filter(
             Subcategorias.categoria_principal_id == categoria_principal.id,
+            Subcategorias.estado == 'activo', # Asegurarse de que la subcategoría también esté activa
             Seudocategorias.estado == 'activo'
         ).all()
     seudocategoria_ids = [id[0] for id in seudocategoria_ids]

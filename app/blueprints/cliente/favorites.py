@@ -525,16 +525,7 @@ def favoritos(usuario):
         app.logger.info(f"Buscando favoritos para el usuario ID: {user_id}")
 
         # Obtener los objetos 'Like' de los favoritos, asegurando que el producto esté activo
-        likes = Likes.query.filter_by(usuario_id=user_id, estado='activo')\
-            .join(Likes.producto)\
-            .filter(Productos.estado == 'activo')\
-            .options(\
-                joinedload(Likes.producto).joinedload(\
-                    Productos.seudocategoria)\
-                .joinedload(Seudocategorias.subcategoria)\
-                .joinedload(Subcategorias.categoria_principal)\
-            )\
-            .all()
+        likes = Likes.query.filter_by(usuario_id=user_id, estado='activo')            .join(Likes.producto)            .filter(Productos.estado == 'activo')            .join(Productos.seudocategoria)            .filter(Seudocategorias.estado == 'activo')            .join(Seudocategorias.subcategoria)            .filter(Subcategorias.estado == 'activo')            .join(Subcategorias.categoria_principal)            .filter(CategoriasPrincipales.estado == 'activo')            .options(                joinedload(Likes.producto).joinedload(                    Productos.seudocategoria)                .joinedload(Seudocategorias.subcategoria)                .joinedload(Subcategorias.categoria_principal)            )            .all()
         app.logger.info(
             f"Se encontraron {len(likes)} registros de 'likes' activos.")
 
@@ -545,8 +536,8 @@ def favoritos(usuario):
         # Obtener categorías para el menú (se mantiene por si se usa en la base.html)
         categorias = CategoriasPrincipales.query.filter_by(estado='activo')\
             .options(
-                joinedload(CategoriasPrincipales.subcategorias).joinedload(
-                    Subcategorias.seudocategorias)
+                joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo')).joinedload(
+                    Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
         ).all()
 
         if not categorias:

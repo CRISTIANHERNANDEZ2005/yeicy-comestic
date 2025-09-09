@@ -5,7 +5,7 @@ from app.models.domains.review_models import Reseñas, Likes
 from app.models.domains.search_models import BusquedaTermino
 from app.models.serializers import producto_to_dict, categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, busqueda_termino_to_dict
 from app.extensions import db
-from sqlalchemy import func
+from sqlalchemy import func, and_
 from sqlalchemy.orm import joinedload
 from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 from app.utils.jwt_utils import jwt_required
@@ -21,19 +21,12 @@ def index():
     """
     # Obtener categorías principales (sin cambios - ya está perfecto)
     categorias = CategoriasPrincipales.query \
-        .filter_by(estado='activo') \
+        .filter(CategoriasPrincipales.estado == 'activo') \
         .options(
-            joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
+            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
+            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
         )\
         .all()
-
-    # Filtrar subcategorías y seudocategorías activas
-    for categoria in categorias:
-        categoria.subcategorias = [
-            sub for sub in getattr(categoria, 'subcategorias', []) if sub.estado == 'activo']
-        for subcategoria in categoria.subcategorias:
-            subcategoria.seudocategorias = [
-                seudo for seudo in getattr(subcategoria, 'seudocategorias', []) if seudo.estado == 'activo']
 
     # Buscar la categoría principal "Maquillaje"
     categoria_maquillaje = CategoriasPrincipales.query.filter(
@@ -101,6 +94,16 @@ def productos_page():
     """
     Renderiza la página de productos, pasando las categorías, subcategorías y pseudocategorías para los filtros.
     """
+    # Obtener categorías principales con subcategorías y pseudocategorías activas para el navbar
+    categorias_para_navbar = CategoriasPrincipales.query \
+        .filter(CategoriasPrincipales.estado == 'activo') \
+        .options(
+            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
+            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
+        )\
+        .all()
+
+    # Estas son para el sidebar de filtros, ya están filtradas por estado
     categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
     subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
     seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
@@ -110,15 +113,17 @@ def productos_page():
     seudocategorias = []
     for s in seudocategorias_obj:
         s_dict = seudocategoria_to_dict(s)
-        if s_dict is not None:  # Add this check
+        if s_dict is not None:
             s_dict['subcategoria_id'] = s.subcategoria_id
             seudocategorias.append(s_dict)
+
     return render_template(
         'cliente/componentes/todos_productos.html',
-        categorias=categorias,
+        categorias=[categoria_principal_to_dict(c) for c in categorias_para_navbar], # Serializar para JSON
         subcategorias=subcategorias,
         seudocategorias=seudocategorias
     )
+
 
 @products_bp.route('/<slug_categoria>')
 def productos_por_categoria(slug_categoria):
@@ -167,28 +172,15 @@ def productos_por_categoria(slug_categoria):
 
     # Obtener todas las categorías principales para el navbar (siempre necesarias)
     categorias_obj_all = CategoriasPrincipales.query \
-        .filter_by(estado='activo') \
+        .filter(CategoriasPrincipales.estado == 'activo') \
         .options(
-            joinedload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.seudocategorias)
+            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
+            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
         )\
         .all()
 
-    # Filtrar subcategorías y seudocategorías activas para el navbar
-    categorias = []
-    for cat in categorias_obj_all:
-        cat_dict = categoria_principal_to_dict(cat)
-        if cat_dict is not None:
-            cat_dict['subcategorias'] = []
-            for sub in getattr(cat, 'subcategorias', []):
-                if sub.estado == 'activo':
-                    sub_dict = subcategoria_to_dict(sub)
-                    if sub_dict is not None:
-                        sub_dict['seudocategorias'] = []
-                        for seudo in getattr(sub, 'seudocategorias', []):
-                            if seudo.estado == 'activo':
-                                sub_dict['seudocategorias'].append(seudocategoria_to_dict(seudo))
-                        cat_dict['subcategorias'].append(sub_dict)
-            categorias.append(cat_dict)
+    # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
+    categorias = [categoria_principal_to_dict(c) for c in categorias_obj_all]
     subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
     seudocategorias = []
     for s in seudocategorias_obj:
@@ -226,9 +218,13 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
     ).filter(
         Productos.slug == slug_producto,
+        Productos.estado == 'activo', # Add this filter
         Seudocategorias.slug == slug_seudocategoria,
+        Seudocategorias.estado == 'activo', # Add this filter
         Subcategorias.slug == slug_subcategoria,
-        CategoriasPrincipales.slug == slug_categoria_principal
+        Subcategorias.estado == 'activo', # Add this filter
+        CategoriasPrincipales.slug == slug_categoria_principal,
+        CategoriasPrincipales.estado == 'activo' # Add this filter
     ).first_or_404()
     
     # Verificar si el producto está activo
@@ -429,13 +425,14 @@ def _extraer_terminos_de_producto(product_id, query):
         terminos.add(producto.marca)
 
     # 3. Comparar con las categorías
-    if producto.seudocategoria:
+    if producto.seudocategoria and producto.seudocategoria.estado == 'activo': # Add estado check
         if query in producto.seudocategoria.nombre.lower():
             terminos.add(producto.seudocategoria.nombre)
-        if producto.seudocategoria.subcategoria:
+        if producto.seudocategoria.subcategoria and producto.seudocategoria.subcategoria.estado == 'activo': # Add estado check
             if query in producto.seudocategoria.subcategoria.nombre.lower():
                 terminos.add(producto.seudocategoria.subcategoria.nombre)
             if producto.seudocategoria.subcategoria.categoria_principal and \
+               producto.seudocategoria.subcategoria.categoria_principal.estado == 'activo' and \
                query in producto.seudocategoria.subcategoria.categoria_principal.nombre.lower():
                 terminos.add(producto.seudocategoria.subcategoria.categoria_principal.nombre)
                 
@@ -458,11 +455,11 @@ def filter_products():
     # Start with the base query, joining all tables needed for any filter.
     # This is slightly less efficient if no filters are applied, but much more robust.
     query = db.session.query(Productos).select_from(Productos).join(
-        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+        Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == 'activo')
     ).join(
-        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+        Subcategorias, and_(Seudocategorias.subcategoria_id == Subcategorias.id, Subcategorias.estado == 'activo')
     ).join(
-        CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
+        CategoriasPrincipales, and_(Subcategorias.categoria_principal_id == CategoriasPrincipales.id, CategoriasPrincipales.estado == 'activo')
     )
 
     # Always filter by product status and availability
@@ -555,17 +552,17 @@ def get_price_range():
     query = db.session.query(Productos).filter(Productos.estado == 'activo', Productos._existencia  > 0)
 
     if main_category_name:
-        query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales).filter(
+        query = query.join(Seudocategorias, and_(Seudocategorias.estado == 'activo')).join(Subcategorias, and_(Subcategorias.estado == 'activo')).join(CategoriasPrincipales, and_(CategoriasPrincipales.estado == 'activo')).filter(
             func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name)
         )
     
     if subcategory_name:
-        query = query.join(Seudocategorias).join(Subcategorias).filter(
+        query = query.join(Seudocategorias, and_(Seudocategorias.estado == 'activo')).join(Subcategorias, and_(Subcategorias.estado == 'activo')).filter(
             func.lower(Subcategorias.nombre) == func.lower(subcategory_name)
         )
 
     if pseudocategory_name:
-        query = query.join(Seudocategorias).filter(
+        query = query.join(Seudocategorias, and_(Seudocategorias.estado == 'activo')).filter(
             func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name)
         )
 

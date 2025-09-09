@@ -1,6 +1,6 @@
 # app/blueprints/cart.py
 from flask import Blueprint, request, jsonify, session, render_template, current_app
-from app.models.domains.product_models import Productos
+from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.cart_models import CartItem
 from app.models.serializers import producto_to_dict, cart_item_to_dict
 from app.extensions import db
@@ -27,10 +27,28 @@ def get_cart_items(cart_info):
     """Obtiene los items del carrito con datos completos de productos"""
     if 'user_id' in cart_info:
         # Usuario autenticado - obtener de BD
-        items = CartItem.query.filter_by(user_id=cart_info['user_id']).all()
+        items = CartItem.query.filter_by(user_id=cart_info['user_id'])\
+            .join(CartItem.product)\
+            .filter(Productos.estado == 'activo')\
+            .join(Productos.seudocategoria)\
+            .filter(Seudocategorias.estado == 'activo')\
+            .join(Seudocategorias.subcategoria)\
+            .filter(Subcategorias.estado == 'activo')\
+            .join(Subcategorias.categoria_principal)\
+            .filter(CategoriasPrincipales.estado == 'activo')\
+            .all()
     else:
         # Usuario no autenticado - obtener de BD por session_id
-        items = CartItem.query.filter_by(session_id=cart_info['session_id']).all()
+        items = CartItem.query.filter_by(session_id=cart_info['session_id'])\
+            .join(CartItem.product)\
+            .filter(Productos.estado == 'activo')\
+            .join(Productos.seudocategoria)\
+            .filter(Seudocategorias.estado == 'activo')\
+            .join(Seudocategorias.subcategoria)\
+            .filter(Subcategorias.estado == 'activo')\
+            .join(Subcategorias.categoria_principal)\
+            .filter(CategoriasPrincipales.estado == 'activo')\
+            .all()
     return [item.to_dict() for item in items]
 
 
@@ -322,7 +340,16 @@ def load_cart(usuario):
     """Carga el carrito del usuario desde la BD para hidratar el frontend"""
     try:
         user_id = usuario.id
-        items = CartItem.query.filter_by(user_id=user_id).all()
+        items = CartItem.query.filter_by(user_id=user_id)\
+            .join(CartItem.product)\
+            .filter(Productos.estado == 'activo')\
+            .join(Productos.seudocategoria)\
+            .filter(Seudocategorias.estado == 'activo')\
+            .join(Seudocategorias.subcategoria)\
+            .filter(Subcategorias.estado == 'activo')\
+            .join(Subcategorias.categoria_principal)\
+            .filter(CategoriasPrincipales.estado == 'activo')\
+            .all()
         cart_items_response = [item.to_dict() for item in items]
 
         total_items = sum(item['quantity'] for item in cart_items_response)

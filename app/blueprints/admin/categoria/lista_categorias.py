@@ -342,14 +342,7 @@ def update_subcategory_status(admin_user, subcategoria_id):
         # Actualizar el estado de la subcategoría
         subcategoria.estado = new_status
 
-        # Asegurar que categoria_principal_id no se establezca en None, ya que es una columna NOT NULL.
-        # Esta es una medida defensiva contra la anulación implícita durante el autoflush.
-        if subcategoria.categoria_principal_id is None and subcategoria.categoria_principal:
-            subcategoria.categoria_principal_id = subcategoria.categoria_principal.id
-
-        # Llamar explícitamente a check_and_update_status para propagar los cambios de estado
-        # Esto agregará los objetos padre modificados a la sesión.
-        subcategoria.check_and_update_status()
+        
 
         # Guardar cambios en la base de datos
         db.session.commit()
@@ -360,25 +353,21 @@ def update_subcategory_status(admin_user, subcategoria_id):
             f"por administrador {admin_user.id} ('{admin_user.nombre}')"
         )
 
-        # Respuesta exitosa
+        # Respuesta exitosa (simplificada)
         return jsonify({
             'success': True,
-            'message': f'La subcategoría ha sido {"activada" if new_status == "activo" else "desactivada"} correctamente',
+            'message': f'Estado de subcategoría actualizado correctamente a {new_status}',
             'subcategory_id': subcategoria_id,
-            'subcategory_name': subcategoria.nombre,
-            'old_status': old_status,
-            'new_status': new_status,
-            'timestamp': datetime.utcnow().isoformat()
+            'new_status': new_status
         })
 
     except Exception as e:
         # Revertir cambios en caso de error
         db.session.rollback()
 
-        # Registrar el error
-        current_app.logger.error(
-            f"Error al cambiar estado de la subcategoría {subcategoria_id}: {str(e)}",
-            exc_info=True
+        # Registrar el error con traceback completo
+        current_app.logger.exception(
+            f"Error al cambiar estado de la subcategoría {subcategoria_id}: {str(e)}"
         )
 
         # Respuesta de error
@@ -435,14 +424,7 @@ def update_pseudocategory_status(admin_user, seudocategoria_id):
         # Actualizar el estado de la seudocategoría
         seudocategoria.estado = new_status
 
-        # Asegurar que subcategoria_id no se establezca en None, ya que es una columna NOT NULL.
-        # Esta es una medida defensiva contra la anulación implícita durante el autoflush.
-        if seudocategoria.subcategoria_id is None and seudocategoria.subcategoria:
-            seudocategoria.subcategoria_id = seudocategoria.subcategoria.id
-
-        # Llamar explícitamente a check_and_update_status para propagar los cambios de estado
-        # Esto agregará los objetos padre modificados a la sesión.
-        seudocategoria.check_and_update_status()
+        
 
         # Guardar cambios en la base de datos
         db.session.commit()
@@ -453,15 +435,12 @@ def update_pseudocategory_status(admin_user, seudocategoria_id):
             f"por administrador {admin_user.id} ('{admin_user.nombre}')"
         )
 
-        # Respuesta exitosa
+        # Respuesta exitosa (simplificada)
         return jsonify({
             'success': True,
-            'message': f'La seudocategoría ha sido {"activada" if new_status == "activo" else "desactivada"} correctamente',
+            'message': f'Estado de seudocategoría actualizado correctamente a {new_status}',
             'pseudocategory_id': seudocategoria_id,
-            'pseudocategory_name': seudocategoria.nombre,
-            'old_status': old_status,
-            'new_status': new_status,
-            'timestamp': datetime.utcnow().isoformat()
+            'new_status': new_status
         })
 
     except Exception as e:

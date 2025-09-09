@@ -156,7 +156,7 @@ from datetime import datetime
 
 def producto_to_dict(prod):
     """Convierte un objeto Producto a un diccionario con datos enriquecidos."""
-    if not prod:
+    if not prod or prod.estado != 'activo':
         return None
 
     # --- Navegación de categorías ---

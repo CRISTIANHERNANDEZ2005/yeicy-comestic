@@ -119,10 +119,10 @@ def create_app(config_class=Config):
         
         # Obtener categorías activas
         categorias_obj = CategoriasPrincipales.query\
-            .filter_by(estado='activo')\
-            .options(
-                joinedload(CategoriasPrincipales.subcategorias)
-                .joinedload(Subcategorias.seudocategorias)
+            .filter(CategoriasPrincipales.estado == 'activo')\
+            .options(\
+                joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))\
+                .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))\
             )\
             .all()
 
@@ -143,7 +143,11 @@ def create_app(config_class=Config):
         usuario_autenticado = 'user_id' in session
         total_favoritos = 0
         if usuario_autenticado:
-            total_favoritos = Likes.query.filter_by(usuario_id=session['user_id'], estado='activo').count()
+            total_favoritos = Likes.query.join(Productos).filter(
+                Likes.usuario_id == session['user_id'],
+                Likes.estado == 'activo',
+                Productos.estado == 'activo'
+            ).count()
         return {
             'cart_items': items,
             'total_price': total_price,

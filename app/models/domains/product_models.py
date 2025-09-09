@@ -64,12 +64,13 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
             if active_subcategories_count == 0:
                 if self.estado != EstadoEnum.INACTIVO.value:
                     self.estado = EstadoEnum.INACTIVO.value
-            else:
-                if self.estado != EstadoEnum.ACTIVO.value:
-                    self.estado = EstadoEnum.ACTIVO.value
+            # No activar si ya está inactivo por una acción explícita del usuario
+            # Solo se activa si estaba inactivo y ahora tiene subcategorías activas
+            elif self.estado == EstadoEnum.INACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
 
             if self.estado != original_estado: # Only add if status changed
-                db.session.add(self)
+                pass
 
     def __init__(self, nombre, descripcion, estado='activo', id=None):
         if not nombre or not nombre.strip():
@@ -123,15 +124,18 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
             if active_pseudocategories_count == 0:
                 if self.estado != EstadoEnum.INACTIVO.value:
                     self.estado = EstadoEnum.INACTIVO.value
-            else:
-                if self.estado != EstadoEnum.ACTIVO.value:
-                    self.estado = EstadoEnum.ACTIVO.value
+            # No activar si ya está inactivo por una acción explícita del usuario
+            # Solo se activa si estaba inactivo y ahora tiene seudocategorías activas
+            elif self.estado == EstadoEnum.INACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
 
             if self.estado != original_estado: # Only add if status changed
-                db.session.add(self)
+                pass
+            
+            
             
             # Always check parent status, regardless of own status change
-            # The parent\'s check_and_update_status will handle its own status change logic
+            # The parent's check_and_update_status will handle its own status change logic
             if self.categoria_principal:
                 self.categoria_principal.check_and_update_status()
 
@@ -189,15 +193,17 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
             if active_products_count == 0:
                 if self.estado != EstadoEnum.INACTIVO.value:
                     self.estado = EstadoEnum.INACTIVO.value
-            else:
-                if self.estado != EstadoEnum.ACTIVO.value:
-                    self.estado = EstadoEnum.ACTIVO.value
+            # No activar si ya está inactivo por una acción explícita del usuario
+            # Solo se activa si estaba inactivo y ahora tiene productos activos
+            elif self.estado == EstadoEnum.INACTIVO.value:
+                self.estado = EstadoEnum.ACTIVO.value
 
             if self.estado != original_estado: # Only add if status changed
-                db.session.add(self)
+                pass
             
+
             # Always check parent status, regardless of own status change
-            # The parent\'s check_and_update_status will handle its own status change logic
+            # The parent's check_and_update_status will handle its own status change logic
             if self.subcategoria:
                 self.subcategoria.check_and_update_status()
 

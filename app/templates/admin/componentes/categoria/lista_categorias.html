@@ -942,7 +942,7 @@
     <script src="{{ url_for('static', filename='js/admin/category_status_toggle.js') }}"></script>
     <script>
         // Objeto global para la aplicación de categorías
-        const categoriesApp = {
+        window.categoriesApp = {
             currentView: 'all',
             currentPage: 1,
             itemsPerPage: 10,

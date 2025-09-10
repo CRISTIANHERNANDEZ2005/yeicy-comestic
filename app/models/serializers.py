@@ -135,6 +135,7 @@ def seudocategoria_to_dict(seudo):
             categoria_principal_nombre = seudo.subcategoria.categoria_principal.nombre
     
     if hasattr(seudo, 'productos') and seudo.productos is not None:
+        print(f"Type of seudo.productos: {type(seudo.productos)}, Value of seudo.productos: {seudo.productos}") # Debug print
         total_products_in_pseudocategory = len(seudo.productos)
 
     return {
@@ -357,4 +358,61 @@ def busqueda_termino_to_dict(busq):
         'created_at': busq.created_at.isoformat() if busq.created_at else None,
         'updated_at': busq.updated_at.isoformat() if busq.updated_at else None,
         'ultima_busqueda': busq.ultima_busqueda.isoformat() if busq.ultima_busqueda else None
+    }
+
+def pedido_to_dict(pedido):
+    """Convierte un objeto Pedido a un diccionario."""
+    if not pedido:
+        return None
+        
+    usuario_nombre = None
+    if pedido.usuario:
+        usuario_nombre = f"{pedido.usuario.nombre} {pedido.usuario.apellido}"
+
+    return {
+        'id': pedido.id,
+        'usuario_id': pedido.usuario_id,
+        'usuario_nombre': usuario_nombre,
+        'total': pedido.total,
+        'estado_pedido': pedido.estado_pedido,
+        'estado': pedido.estado,
+        'created_at': pedido.created_at.isoformat() if pedido.created_at else None,
+        'updated_at': pedido.updated_at.isoformat() if pedido.updated_at else None,
+        'productos_count': len(pedido.productos) if pedido.productos else 0
+    }
+
+def pedido_detalle_to_dict(pedido):
+    """Convierte un objeto Pedido a un diccionario con detalles completos."""
+    if not pedido:
+        return None
+        
+    usuario_info = None
+    if pedido.usuario:
+        usuario_info = {
+            'id': pedido.usuario.id,
+            'nombre': pedido.usuario.nombre,
+            'apellido': pedido.usuario.apellido,
+            'numero': pedido.usuario.numero
+        }
+
+    productos_info = []
+    if pedido.productos:
+        for pp in pedido.productos:
+            productos_info.append({
+                'producto_id': pp.producto_id,
+                'producto_nombre': pp.producto.nombre if pp.producto else 'Producto no disponible',
+                'cantidad': pp.cantidad,
+                'precio_unitario': pp.precio_unitario,
+                'subtotal': pp.cantidad * pp.precio_unitario
+            })
+
+    return {
+        'id': pedido.id,
+        'usuario': usuario_info,
+        'total': pedido.total,
+        'estado_pedido': pedido.estado_pedido,
+        'estado': pedido.estado,
+        'created_at': pedido.created_at.isoformat() if pedido.created_at else None,
+        'updated_at': pedido.updated_at.isoformat() if pedido.updated_at else None,
+        'productos': productos_info
     }

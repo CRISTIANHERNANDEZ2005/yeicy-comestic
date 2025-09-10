@@ -8,6 +8,8 @@ from slugify import slugify
 
 if TYPE_CHECKING:
     from app.models.domains.review_models import Likes, Reseñas
+    from app.models.domains.order_models import PedidoProducto
+
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
 from app.models.enums import EstadoEnum
 
@@ -269,6 +271,7 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     likes: Mapped[List['Likes']] = relationship('Likes', back_populates='producto', lazy=True)
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='producto', lazy=True)
     seudocategoria: Mapped['Seudocategorias'] = relationship('Seudocategorias', back_populates='productos')
+    pedidos: Mapped[List['PedidoProducto']] = relationship(back_populates='producto', lazy=True)
 
     calificacion_promedio_almacenada: Mapped[float] = mapped_column(db.Float, default=0.0) # Nueva columna para almacenar el promedio
     # Propiedad para calcular la calificación promedio (se mantiene para compatibilidad o acceso directo)

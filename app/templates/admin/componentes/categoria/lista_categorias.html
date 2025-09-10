@@ -938,6 +938,71 @@
             align-items: center;
             gap: 0.5rem;
         }
+
+        /* Estilos para los botones de paginación */
+.pagination-nav-button,
+.pagination-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.25rem;
+    border-radius: 0.375rem;
+    border: 1px solid #d1d5db;
+    background-color: #ffffff;
+    color: #374151;
+    transition: all 0.15s ease-in-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.pagination-nav-button:hover,
+.pagination-button:hover {
+    background-color: #f3f4f6;
+    border-color: #9ca3af;
+    color: #1f2937;
+    text-decoration: none;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+}
+
+.pagination-nav-button:active,
+.pagination-button:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.pagination-nav-button.disabled,
+.pagination-button.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-button.active {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.pagination-button.active:hover {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+}
+
+/* Estilo para elipsis en paginación */
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 0.5rem;
+    color: #6b7280;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
     </style>
     <script src="{{ url_for('static', filename='js/admin/category_status_toggle.js') }}"></script>
     <script>

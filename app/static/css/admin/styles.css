@@ -21,6 +21,11 @@ main {
     z-index: 1000; /* Asegura que esté por encima de otros elementos */
 }
 
+/* Estilo para modales que deben estar por encima de todo */
+.z-modal-top {
+    z-index: 1050;
+}
+
 /* Ajuste para el contenido principal para que no quede oculto detrás del sidebar */
 /* Esto asume que el sidebar tiene un ancho de w-64 (256px) */
 @media (min-width: 1024px) { /* lg breakpoint en Tailwind CSS */

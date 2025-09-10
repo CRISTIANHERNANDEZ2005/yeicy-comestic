@@ -3,6 +3,7 @@ from flask import Flask, render_template, session, request
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
+from .models.domains.order_models import Pedido, PedidoProducto
 from app.models.serializers import categoria_principal_to_dict
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
@@ -76,6 +77,8 @@ def create_app(config_class=Config):
     from app.blueprints.admin.product.crear_product import admin_crear_product_bp
     from app.blueprints.admin.product.editar_product import admin_editar_product_bp
     from app.blueprints.admin.categoria.lista_categorias import admin_lista_categorias_bp
+    from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
+    from app.blueprints.admin.pedido.api import admin_api_bp
 
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -89,6 +92,9 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_crear_product_bp)
     app.register_blueprint(admin_editar_product_bp)
     app.register_blueprint(admin_lista_categorias_bp)
+    app.register_blueprint(admin_lista_pedidos_bp, url_prefix='/admin')
+    app.register_blueprint(admin_api_bp)
+
 
     # Register the /perfil route directly with the app
     @app.route('/perfil')

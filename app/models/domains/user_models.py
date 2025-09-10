@@ -6,6 +6,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.domains.review_models import Likes, Reseñas
+    from app.models.domains.order_models import Pedido
 from flask_login import UserMixin
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
 from app.models.enums import EstadoEnum
@@ -102,6 +103,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     # estado ya está en el mixin
     likes: Mapped[List['Likes']] = relationship('Likes', back_populates='usuario', lazy=True)
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='usuario', lazy=True)
+    pedidos: Mapped[List['Pedido']] = relationship(back_populates='usuario', lazy=True)
 
     # Restricciones
     __table_args__ = (

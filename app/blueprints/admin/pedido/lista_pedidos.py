@@ -149,79 +149,7 @@ def get_pedido_detalle(admin_user, pedido_id):
             'message': 'Error al obtener detalle del pedido'
         }), 500
 
-@admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/estado', methods=['POST'])
-@admin_jwt_required
-def update_pedido_estado(admin_user, pedido_id):
-    try:
-        pedido = Pedido.query.get(pedido_id)
-        if not pedido:
-            return jsonify({
-                'success': False,
-                'message': 'Pedido no encontrado'
-            }), 404
 
-        data = request.get_json()
-        if not data or 'estado' not in data:
-            return jsonify({
-                'success': False,
-                'message': 'Datos incompletos'
-            }), 400
-
-        nuevo_estado = data.get('estado')
-        if nuevo_estado not in ['completado', 'cancelado']:
-            return jsonify({
-                'success': False,
-                'message': 'Estado no válido'
-            }), 400
-
-        # Verificar si el estado ya es el mismo
-        if pedido.estado_pedido == nuevo_estado:
-            return jsonify({
-                'success': True,
-                'message': f'El pedido ya estaba {nuevo_estado}',
-                'status_unchanged': True,
-                'current_status': nuevo_estado
-            }), 200
-
-        # Guardar estado anterior para logging
-        old_status = pedido.estado_pedido
-
-        # Actualizar el estado del pedido
-        pedido.estado_pedido = nuevo_estado
-        pedido.updated_at = datetime.utcnow()
-
-        # Si se cancela el pedido, restablecer el stock de productos
-        if nuevo_estado == 'cancelado':
-            for item in pedido.productos:
-                producto = Productos.query.get(item.producto_id)
-                if producto:
-                    producto.existencia += item.cantidad
-
-        # Guardar cambios
-        db.session.commit()
-
-        # Registrar la acción
-        current_app.logger.info(
-            f"Pedido {pedido_id} cambiado de estado de {old_status} a {nuevo_estado} "
-            f"por administrador {admin_user.id} ('{admin_user.nombre}')"
-        )
-
-        return jsonify({
-            'success': True,
-            'message': f'El pedido ha sido marcado como {nuevo_estado} correctamente',
-            'pedido_id': pedido_id,
-            'old_status': old_status,
-            'new_status': nuevo_estado,
-            'timestamp': datetime.utcnow().isoformat()
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Error al cambiar el estado del pedido'
-        }), 500
 
 @admin_lista_pedidos_bp.route('/api/pedidos/filter', methods=['GET'])
 @admin_jwt_required
@@ -562,3 +490,85 @@ def update_pedido(admin_user, pedido_id):
         db.session.rollback()
         current_app.logger.error(f"Error al actualizar pedido: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Error interno al actualizar el pedido'}), 500
+
+@admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/estado', methods=['POST'])
+@admin_jwt_required
+def update_pedido_estado(admin_user, pedido_id):
+    try:
+        pedido = Pedido.query.get(pedido_id)
+        if not pedido:
+            return jsonify({
+                'success': False,
+                'message': 'Pedido no encontrado'
+            }), 404
+
+        # Verificar si el pedido está inactivo
+        if pedido.estado == 'inactivo':
+            return jsonify({
+                'success': False,
+                'message': 'No se puede cambiar el estado de un pedido inactivo',
+                'inactive_order': True
+            }), 400
+
+        data = request.get_json()
+        if not data or 'estado' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos incompletos'
+            }), 400
+
+        nuevo_estado = data.get('estado')
+        if nuevo_estado not in ['completado', 'cancelado']:
+            return jsonify({
+                'success': False,
+                'message': 'Estado no válido'
+            }), 400
+
+        # Verificar si el estado ya es el mismo
+        if pedido.estado_pedido == nuevo_estado:
+            return jsonify({
+                'success': True,
+                'message': f'El pedido ya estaba {nuevo_estado}',
+                'status_unchanged': True,
+                'current_status': nuevo_estado
+            }), 200
+
+        # Guardar estado anterior para logging
+        old_status = pedido.estado_pedido
+
+        # Actualizar el estado del pedido
+        pedido.estado_pedido = nuevo_estado
+        pedido.updated_at = datetime.utcnow()
+
+        # Si se cancela el pedido, restablecer el stock de productos
+        if nuevo_estado == 'cancelado':
+            for item in pedido.productos:
+                producto = Productos.query.get(item.producto_id)
+                if producto:
+                    producto.existencia += item.cantidad
+
+        # Guardar cambios
+        db.session.commit()
+
+        # Registrar la acción
+        current_app.logger.info(
+            f"Pedido {pedido_id} cambiado de estado de {old_status} a {nuevo_estado} "
+            f"por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        return jsonify({
+            'success': True,
+            'message': f'El pedido ha sido marcado como {nuevo_estado} correctamente',
+            'pedido_id': pedido_id,
+            'old_status': old_status,
+            'new_status': nuevo_estado,
+            'timestamp': datetime.utcnow().isoformat()
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al cambiar el estado del pedido'
+        }), 500

@@ -89,8 +89,13 @@
                             <tbody id="pedidosTableBody">
                                 {% if pedidos %}
                                     {% for pedido in pedidos %}
-                                        <tr class="border-t border-gray-100 hover:bg-gray-50">
-                                            <td class="py-4 px-4">{{ pedido.usuario_nombre or 'N/A' }}</td>
+                                        <tr class="border-t border-gray-100 hover:bg-gray-50 {% if pedido.estado == 'inactivo' %}bg-gray-50 opacity-75{% endif %}" data-estado="{{ pedido.estado }}">
+                                            <td class="py-4 px-4">
+                                                {{ pedido.usuario_nombre or 'N/A' }}
+                                                {% if pedido.estado == 'inactivo' %}
+                                                    <span class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">Inactivo</span>
+                                                {% endif %}
+                                            </td>
                                             <td class="py-4 px-4">{{ pedido.productos_count }}</td>
                                             <td class="py-4 px-4">$ {{ "{:,.0f}".format(pedido.total) }}</td>
                                             <td class="py-4 px-4">{{ pedido.created_at[:10] }}</td>
@@ -108,14 +113,20 @@
                                                     <button class="action-button view text-blue-600 hover:text-blue-800" title="Ver detalles" onclick="pedidosApp.viewPedido('{{ pedido.id }}')">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    {% if pedido.estado_pedido == 'en proceso' %}
-                                                        <button class="action-button edit text-yellow-600 hover:text-yellow-800" title="Editar pedido" onclick="pedidosApp.editPedido('{{ pedido.id }}')">
+                                                    {% if pedido.estado != 'inactivo' and pedido.estado_pedido == 'en proceso' %}
+                                                        <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
+                                                                title="Editar pedido" 
+                                                                onclick="pedidosApp.editPedido('{{ pedido.id }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="action-button complete text-green-600 hover:text-green-800" title="Marcar como completado" onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
+                                                        <button class="action-button complete text-green-600 hover:text-green-800" 
+                                                                title="Marcar como completado" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
                                                             <i class="fas fa-check-circle"></i>
                                                         </button>
-                                                        <button class="action-button cancel text-red-600 hover:text-red-800" title="Cancelar pedido" onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
+                                                        <button class="action-button cancel text-red-600 hover:text-red-800" 
+                                                                title="Cancelar pedido" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
                                                             <i class="fas fa-times-circle"></i>
                                                         </button>
                                                     {% endif %}
@@ -822,6 +833,72 @@
         .producto-detalles {
             margin-left: 0.75rem;
         }
+        
+        /* Estilos para pedidos inactivos */
+        tr[data-estado="inactivo"] {
+            background-color: #f9fafb;
+            opacity: 0.7;
+        }
+        
+        tr[data-estado="inactivo"] td {
+            color: #6b7280;
+        }
+        
+        /* Etiqueta para pedidos inactivos */
+        .inactive-badge {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background-color: #e5e7eb;
+            color: #6b7280;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 0.5rem;
+        }
+        
+        /* Mejoras en las notificaciones */
+        .notification {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            max-width: 24rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification.warning {
+            background-color: #fffbeb;
+            border-left: 4px solid #f59e0b;
+            color: #92400e;
+        }
+        
+        .notification.error {
+            background-color: #fef2f2;
+            border-left: 4px solid #ef4444;
+            color: #b91c1c;
+        }
+        
+        .notification.success {
+            background-color: #ecfdf5;
+            border-left: 4px solid #10b981;
+            color: #065f46;
+        }
     </style>
     
     <script src="{{ url_for('static', filename='js/admin/pedido_status_toggle.js') }}"></script>
@@ -885,7 +962,7 @@
                 this.hasActiveFilters = !!(cliente || fechaInicio || fechaFin || sortFilter !== 'created_at');
             },
             
-            // Función corregida para cambiar estado del pedido
+            // Función para cambiar estado del pedido
             togglePedidoEstado: function (pedidoId, nuevoEstadoBool) {
                 const nuevoEstado = nuevoEstadoBool ? 'activo' : 'inactivo';
                 fetch(`/admin/api/pedidos/${pedidoId}/estado-activo`, {
@@ -898,6 +975,8 @@
                 }).then(res => res.json()).then(data => {
                     if (data.success) {
                         this.showNotification(`Pedido ${nuevoEstado} correctamente`, 'success');
+                        // Recargar la lista de pedidos para reflejar los cambios
+                        this.loadPedidos();
                     } else {
                         this.showNotification(data.message || 'Error al cambiar estado', 'error');
                     }
@@ -909,6 +988,22 @@
             
             // Mostrar modal de confirmación para cambiar estado
             showConfirmEstadoModal: function (pedidoId, nuevoEstado) {
+                // Obtener la fila del pedido para verificar su estado
+                const pedidoRow = document.querySelector(`#toggle-pedido-${pedidoId}`)?.closest('tr');
+                if (!pedidoRow) {
+                    this.showNotification('No se encontró el pedido', 'error');
+                    return;
+                }
+                
+                // Verificar si el pedido está inactivo
+                const toggleInput = document.getElementById(`toggle-pedido-${pedidoId}`);
+                if (toggleInput && !toggleInput.checked) {
+                    this.showNotification(
+                        'No se puede cambiar el estado de un pedido inactivo. Por favor, actívelo primero.', 
+                        'warning'
+                    );
+                    return;
+                }
                 this.pedidoParaConfirmar = pedidoId;
                 this.nuevoEstadoParaConfirmar = nuevoEstado;
                 
@@ -1204,9 +1299,15 @@
                 
                 if (pedidos && pedidos.length > 0) {
                     pedidos.forEach(pedido => {
+                        const isInactive = pedido.estado === 'inactivo';
+                        const rowClass = isInactive ? 'border-t border-gray-100 bg-gray-50 opacity-75' : 'border-t border-gray-100 hover:bg-gray-50';
+                        
                         html += `
-                            <tr class="border-t border-gray-100 hover:bg-gray-50">
-                                <td class="py-4 px-4">${pedido.usuario_nombre || 'N/A'}</td>
+                            <tr class="${rowClass}" data-estado="${pedido.estado}">
+                                <td class="py-4 px-4">
+                                    ${pedido.usuario_nombre || 'N/A'}
+                                    ${isInactive ? '<span class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">Inactivo</span>' : ''}
+                                </td>
                                 <td class="py-4 px-4">${pedido.productos_count || 0}</td>
                                 <td class="py-4 px-4">$ ${pedido.total ? pedido.total.toLocaleString() : '0'}</td>
                                 <td class="py-4 px-4">${pedido.created_at ? pedido.created_at.substring(0, 10) : 'N/A'}</td>
@@ -1228,14 +1329,20 @@
                                         <button class="action-button view text-blue-600 hover:text-blue-800" title="Ver detalles" onclick="pedidosApp.viewPedido('${pedido.id}')">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        ${this.currentEstado === 'en-proceso' ? `
-                                            <button class="action-button edit text-yellow-600 hover:text-yellow-800" title="Editar pedido" onclick="pedidosApp.editPedido('${pedido.id}')">
+                                        ${!isInactive && this.currentEstado === 'en-proceso' ? `
+                                            <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
+                                                    title="Editar pedido" 
+                                                    onclick="pedidosApp.editPedido('${pedido.id}')">
                                                 <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="action-button complete text-green-600 hover:text-green-800" title="Marcar como completado" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                                            <button class="action-button complete text-green-600 hover:text-green-800" 
+                                                    title="Marcar como completado" 
+                                                    onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
                                                 <i class="fas fa-check-circle"></i>
                                             </button>
-                                            <button class="action-button cancel text-red-600 hover:text-red-800" title="Cancelar pedido" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                                            <button class="action-button cancel text-red-600 hover:text-red-800" 
+                                                    title="Cancelar pedido" 
+                                                    onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
                                                 <i class="fas fa-times-circle"></i>
                                             </button>
                                         ` : ''}
@@ -1498,7 +1605,7 @@
                 
                 // Construir el HTML para las acciones del modal
                 let accionesHtml = '';
-                if (pedido.estado_pedido === 'en proceso') {
+                if (pedido.estado_pedido === 'en proceso' && pedido.estado === 'activo') {
                     accionesHtml = `
                         <button class="modal-action-btn success" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1526,6 +1633,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
                     ${pedido.estado_pedido.charAt(0).toUpperCase() + pedido.estado_pedido.slice(1)}
+                    ${pedido.estado === 'inactivo' ? '<span class="ml-2 px-2 py-1 text-xs bg-gray-200 text-gray-700 rounded-full">Inactivo</span>' : ''}
                 `;
                 document.getElementById('pedidoFecha').textContent = `Fecha: ${fechaFormateada}`;
                 document.getElementById('pedidoId').textContent = pedido.id;
@@ -1592,13 +1700,41 @@
                 this.loadPedidos();
             },
             
-            // Mostrar notificación
-            showNotification: function (message, type) {
-                if (window.toast) {
-                    window.toast[type](message);
-                } else {
-                    alert(message);
-                }
+            // Mostrar notificación - MEJORADA
+            showNotification: function (message, type = 'info') {
+                // Crear un elemento de notificación
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="py-1"><i class="fas ${
+                            type === 'warning' ? 'fa-exclamation-triangle' :
+                            type === 'error' ? 'fa-times-circle' :
+                            type === 'success' ? 'fa-check-circle' :
+                            'fa-info-circle'
+                        } mr-2"></i></div>
+                        <div>${message}</div>
+                        <button class="ml-4 text-lg leading-none" onclick="this.parentElement.parentElement.remove()">×</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Eliminar la notificación después de 5 segundos
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            },
+            
+            // Mostrar mensaje de pedido inactivo
+            showInactiveOrderMessage: function() {
+                this.showNotification(
+                    'No se puede realizar esta acción en un pedido inactivo. Por favor, actívelo primero.', 
+                    'warning'
+                );
             },
             
             // Configurar event listeners
@@ -2263,12 +2399,7 @@ const crearPedidoApp = {
     showNotification: function(message, type = 'info') {
         // Crear un elemento de notificación
         const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-            type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
-            type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
-            type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
-            'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
-        }`;
+        notification.className = `notification ${type}`;
         
         notification.innerHTML = `
             <div class="flex items-center">

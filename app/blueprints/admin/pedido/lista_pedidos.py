@@ -491,6 +491,7 @@ def update_pedido(admin_user, pedido_id):
         current_app.logger.error(f"Error al actualizar pedido: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Error interno al actualizar el pedido'}), 500
 
+
 @admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/estado', methods=['POST'])
 @admin_jwt_required
 def update_pedido_estado(admin_user, pedido_id):
@@ -518,7 +519,7 @@ def update_pedido_estado(admin_user, pedido_id):
             }), 400
 
         nuevo_estado = data.get('estado')
-        if nuevo_estado not in ['completado', 'cancelado']:
+        if nuevo_estado not in ['completado', 'cancelado', 'en proceso']:
             return jsonify({
                 'success': False,
                 'message': 'Estado no válido'
@@ -533,19 +534,32 @@ def update_pedido_estado(admin_user, pedido_id):
                 'current_status': nuevo_estado
             }), 200
 
-        # Guardar estado anterior para logging
+        # Guardar estado anterior para logging y manejo de stock
         old_status = pedido.estado_pedido
 
         # Actualizar el estado del pedido
         pedido.estado_pedido = nuevo_estado
         pedido.updated_at = datetime.utcnow()
 
-        # Si se cancela el pedido, restablecer el stock de productos
-        if nuevo_estado == 'cancelado':
+        # Manejo de stock según el cambio de estado
+        if nuevo_estado == 'cancelado' and old_status != 'cancelado':
+            # Si se cancela el pedido, devolver el stock de productos
             for item in pedido.productos:
                 producto = Productos.query.get(item.producto_id)
                 if producto:
                     producto.existencia += item.cantidad
+                    db.session.add(producto)
+        elif nuevo_estado == 'en proceso' and old_status == 'cancelado':
+            # Si se reactiva un pedido cancelado, volver a restar el stock
+            for item in pedido.productos:
+                producto = Productos.query.get(item.producto_id)
+                if producto and producto.existencia >= item.cantidad:
+                    producto.existencia -= item.cantidad
+                    db.session.add(producto)
+                elif producto:
+                    # Si no hay stock suficiente, marcar como inactivo
+                    pedido.estado = 'inactivo'
+                    db.session.add(pedido)
 
         # Guardar cambios
         db.session.commit()

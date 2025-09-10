@@ -259,7 +259,7 @@
                                     <!-- Estado se llenará dinámicamente -->
                                 </span>
                             </div>
-                            <h2 class="text-2xl font-bold mb-1">Confirmar Cambio de Estado</h2>
+                            <h2 class="text-2xl font-bold mb-1" id="confirmEstadoModalTitle">Confirmar Cambio de Estado</h2>
                             <p class="text-blue-100">¿Está seguro que desea cambiar el estado de este pedido?</p>
                         </div>
                         <button id="closeConfirmEstadoModal" class="text-white hover:text-blue-200 transition-colors">
@@ -492,6 +492,11 @@
             color: #ef4444;
             background-color: #fef2f2;
             border: 1px solid #fecaca;
+        }
+        .action-button.process:hover {
+            color: #3b82f6;
+            background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
         }
         
         /* Estilos para la tabla */
@@ -899,6 +904,31 @@
             border-left: 4px solid #10b981;
             color: #065f46;
         }
+        
+        /* Estilos para badges de estado */
+        .estado-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .estado-badge.en-proceso {
+            background-color: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .estado-badge.completado {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .estado-badge.cancelado {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
     </style>
     
     <script src="{{ url_for('static', filename='js/admin/pedido_status_toggle.js') }}"></script>
@@ -1004,6 +1034,7 @@
                     );
                     return;
                 }
+                
                 this.pedidoParaConfirmar = pedidoId;
                 this.nuevoEstadoParaConfirmar = nuevoEstado;
                 
@@ -1035,19 +1066,27 @@
                 
                 if (!modal || !modalContent) return;
                 
-                // Determinar el color del estado
+                // Determinar el color y texto del estado
                 let estadoColor = 'blue';
                 let estadoIcon = 'clock';
                 let estadoText = 'En Proceso';
+                let modalTitle = 'Confirmar Cambio de Estado';
                 
                 if (nuevoEstado === 'completado') {
                     estadoColor = 'green';
                     estadoIcon = 'check-circle';
                     estadoText = 'Completado';
+                    modalTitle = 'Marcar como Completado';
                 } else if (nuevoEstado === 'cancelado') {
                     estadoColor = 'red';
                     estadoIcon = 'times-circle';
                     estadoText = 'Cancelado';
+                    modalTitle = 'Cancelar Pedido';
+                } else if (nuevoEstado === 'en proceso') {
+                    estadoColor = 'blue';
+                    estadoIcon = 'sync-alt';
+                    estadoText = 'En Proceso';
+                    modalTitle = 'Poner en Proceso';
                 }
                 
                 // Formatear la fecha
@@ -1101,12 +1140,27 @@
                 // Mensaje de confirmación según el estado
                 let confirmMessage = '';
                 if (nuevoEstado === 'completado') {
-                    confirmMessage = 'Está a punto de marcar este pedido como completado. El cliente recibirá una notificación y se procesará el envío.';
+                    if (pedido.estado_pedido === 'en proceso') {
+                        confirmMessage = 'Está a punto de marcar este pedido como completado. El cliente recibirá una notificación y se procesará el envío.';
+                    } else if (pedido.estado_pedido === 'cancelado') {
+                        confirmMessage = 'Está a punto de cambiar este pedido de cancelado a completado. El stock se ajustará automáticamente.';
+                    }
                 } else if (nuevoEstado === 'cancelado') {
-                    confirmMessage = 'Está a punto de cancelar este pedido. El stock de los productos será devuelto al inventario y el cliente recibirá una notificación.';
+                    if (pedido.estado_pedido === 'en proceso') {
+                        confirmMessage = 'Está a punto de cancelar este pedido. El stock de los productos será devuelto al inventario y el cliente recibirá una notificación.';
+                    } else if (pedido.estado_pedido === 'completado') {
+                        confirmMessage = 'Está a punto de cambiar este pedido de completado a cancelado. El stock será devuelto al inventario.';
+                    }
+                } else if (nuevoEstado === 'en proceso') {
+                    if (pedido.estado_pedido === 'completado') {
+                        confirmMessage = 'Está a punto de cambiar este pedido de completado a en proceso. El estado del pedido se actualizará pero no se afectará el stock.';
+                    } else if (pedido.estado_pedido === 'cancelado') {
+                        confirmMessage = 'Está a punto de reactivar este pedido cancelado. El stock se ajustará automáticamente y el pedido volverá a estar en proceso.';
+                    }
                 }
                 
                 // Actualizar el contenido del modal
+                document.getElementById('confirmEstadoModalTitle').textContent = modalTitle;
                 document.getElementById('confirmEstadoBadge').innerHTML = `
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
@@ -1329,23 +1383,7 @@
                                         <button class="action-button view text-blue-600 hover:text-blue-800" title="Ver detalles" onclick="pedidosApp.viewPedido('${pedido.id}')">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        ${!isInactive && this.currentEstado === 'en-proceso' ? `
-                                            <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
-                                                    title="Editar pedido" 
-                                                    onclick="pedidosApp.editPedido('${pedido.id}')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            <button class="action-button complete text-green-600 hover:text-green-800" 
-                                                    title="Marcar como completado" 
-                                                    onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
-                                                <i class="fas fa-check-circle"></i>
-                                            </button>
-                                            <button class="action-button cancel text-red-600 hover:text-red-800" 
-                                                    title="Cancelar pedido" 
-                                                    onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
-                                                <i class="fas fa-times-circle"></i>
-                                            </button>
-                                        ` : ''}
+                                        ${!isInactive ? this.renderActionButtons(pedido) : ''}
                                     </div>
                                 </td>
                             </tr>
@@ -1380,6 +1418,56 @@
                 if (this.elements.pedidosTableBody) {
                     this.elements.pedidosTableBody.innerHTML = html;
                 }
+            },
+            
+            // Nueva función para renderizar botones de acción según estado
+            renderActionButtons: function(pedido) {
+                if (pedido.estado_pedido === 'en proceso') {
+                    return `
+                        <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
+                                title="Editar pedido" 
+                                onclick="pedidosApp.editPedido('${pedido.id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-button complete text-green-600 hover:text-green-800" 
+                                title="Marcar como completado" 
+                                onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                        <button class="action-button cancel text-red-600 hover:text-red-800" 
+                                title="Cancelar pedido" 
+                                onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    `;
+                } else if (pedido.estado_pedido === 'completado') {
+                    return `
+                        <button class="action-button process text-blue-600 hover:text-blue-800" 
+                                title="Poner en proceso" 
+                                onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="action-button cancel text-red-600 hover:text-red-800" 
+                                title="Cancelar pedido" 
+                                onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    `;
+                } else if (pedido.estado_pedido === 'cancelado') {
+                    return `
+                        <button class="action-button process text-blue-600 hover:text-blue-800" 
+                                title="Poner en proceso" 
+                                onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="action-button complete text-green-600 hover:text-green-800" 
+                                title="Marcar como completado" 
+                                onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                            <i class="fas fa-check-circle"></i>
+                        </button>
+                    `;
+                }
+                return '';
             },
             
             // Obtener estado para API desde la vista actual
@@ -1620,7 +1708,38 @@
                             Cancelar Pedido
                         </button>
                     `;
+                } else if (pedido.estado_pedido === 'completado' && pedido.estado === 'activo') {
+                    accionesHtml = `
+                        <button class="modal-action-btn primary" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Poner en Proceso
+                        </button>
+                        <button class="modal-action-btn danger" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Cancelar Pedido
+                        </button>
+                    `;
+                } else if (pedido.estado_pedido === 'cancelado' && pedido.estado === 'activo') {
+                    accionesHtml = `
+                        <button class="modal-action-btn primary" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Poner en Proceso
+                        </button>
+                        <button class="modal-action-btn success" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Marcar como Completado
+                        </button>
+                    `;
                 }
+                
                 accionesHtml += `
                     <button class="modal-action-btn secondary" onclick="pedidosApp.closePedidoModal()">
                         Cerrar

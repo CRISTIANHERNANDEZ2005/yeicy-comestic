@@ -134,25 +134,6 @@
                 <!-- Paginación -->
             </div>
             
-            <!-- Contenedor para mensajes de "no resultados" -->
-            <div id="noResultsContainer" class="hidden mt-6 bg-white rounded-xl shadow-md p-8 text-center">
-                <div class="flex justify-center mb-4">
-                    <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                </div>
-                <h3 class="text-xl font-semibold text-gray-700 mb-2">No se encontraron pedidos</h3>
-                <p class="text-gray-500 mb-6" id="noResultsMessage">
-                    No hay pedidos que coincidan con los filtros aplicados.
-                </p>
-                <button id="resetFiltersBtn" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg hover:from-blue-700 hover:to-indigo-800 flex items-center mx-auto transition-all duration-300 transform hover:scale-105 shadow-md">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    Limpiar filtros
-                </button>
-            </div>
-            
             <div id="pagination-bottom-controls" class="mt-8 flex-col items-center bg-white rounded-lg p-4 shadow-sm border border-gray-200 {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
                 <div class="text-sm text-gray-700 mb-4">
                     Mostrando página <span class="font-semibold text-blue-600" id="pagination-current-page"></span> de <span class="font-semibold text-blue-600" id="pagination-total-pages"></span>
@@ -420,6 +401,54 @@
             font-size: 0.875rem;
             font-weight: 500;
         }
+        
+        /* Estilos para el mensaje de no resultados dentro de la tabla */
+        .no-results-row {
+            background-color: #f9fafb;
+        }
+        
+        .no-results-row td {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.95rem;
+        }
+        
+        .no-results-row .no-results-icon {
+            display: block;
+            margin: 0 auto 1rem;
+            width: 3rem;
+            height: 3rem;
+            color: #d1d5db;
+        }
+        
+        .no-results-row .no-results-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.5rem;
+        }
+        
+        .no-results-row .no-results-actions {
+            margin-top: 1rem;
+        }
+        
+        .no-results-row .no-results-actions button {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background-color: #f3f4f6;
+            color: #374151;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease-in-out;
+        }
+        
+        .no-results-row .no-results-actions button:hover {
+            background-color: #e5e7eb;
+            border-color: #d1d5db;
+        }
     </style>
     
     <script src="{{ url_for('static', filename='js/admin/pedido_status_toggle.js') }}"></script>
@@ -470,32 +499,6 @@
                 }
             },
             
-            // Mostrar u ocultar el mensaje de "no resultados"
-            showHideNoResultsMessage: function(show, customMessage = null) {
-                const noResultsContainer = document.getElementById('noResultsContainer');
-                const noResultsMessage = document.getElementById('noResultsMessage');
-                const tableContainer = document.querySelector('.bg-white.rounded-xl.shadow-md.overflow-hidden.relative');
-                
-                if (show) {
-                    if (noResultsContainer) {
-                        noResultsContainer.classList.remove('hidden');
-                        if (customMessage) {
-                            noResultsMessage.textContent = customMessage;
-                        }
-                    }
-                    if (tableContainer) {
-                        tableContainer.classList.add('hidden');
-                    }
-                } else {
-                    if (noResultsContainer) {
-                        noResultsContainer.classList.add('hidden');
-                    }
-                    if (tableContainer) {
-                        tableContainer.classList.remove('hidden');
-                    }
-                }
-            },
-            
             // Verificar si hay filtros activos
             checkActiveFilters: function() {
                 const cliente = document.getElementById('clienteFilter')?.value || '';
@@ -540,9 +543,6 @@
                 this.elements.pedidosListLoaderOverlay = document.getElementById('pedidosListLoaderOverlay');
                 this.elements.pedidoModal = document.getElementById('pedidoModal');
                 this.elements.pedidoModalContent = document.getElementById('pedidoModalContent');
-                this.elements.noResultsContainer = document.getElementById('noResultsContainer');
-                this.elements.noResultsMessage = document.getElementById('noResultsMessage');
-                this.elements.resetFiltersBtn = document.getElementById('resetFiltersBtn');
             },
             
             // Inicializar la vista
@@ -620,39 +620,40 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            this.updateTable(data.pedidos);
+                            // Construir mensaje personalizado si no hay resultados
+                            let customMessage = null;
+                            if (!data.pedidos || data.pedidos.length === 0) {
+                                if (this.hasActiveFilters) {
+                                    customMessage = 'No hay pedidos que coincidan con los filtros aplicados.';
+                                    
+                                    // Mensajes más específicos según los filtros aplicados
+                                    if (cliente && !fechaInicio && !fechaFin) {
+                                        customMessage = `No se encontraron pedidos para el cliente "${cliente}".`;
+                                    } else if (!cliente && fechaInicio && !fechaFin) {
+                                        customMessage = `No se encontraron pedidos desde la fecha ${fechaInicio}.`;
+                                    } else if (!cliente && !fechaInicio && fechaFin) {
+                                        customMessage = `No se encontraron pedidos hasta la fecha ${fechaFin}.`;
+                                    } else if (cliente && fechaInicio && fechaFin) {
+                                        customMessage = `No se encontraron pedidos para el cliente "${cliente}" en el rango de fechas seleccionado.`;
+                                    } else if (cliente && fechaInicio) {
+                                        customMessage = `No se encontraron pedidos para el cliente "${cliente}" desde la fecha ${fechaInicio}.`;
+                                    } else if (cliente && fechaFin) {
+                                        customMessage = `No se encontraron pedidos para el cliente "${cliente}" hasta la fecha ${fechaFin}.`;
+                                    } else if (fechaInicio && fechaFin) {
+                                        customMessage = `No se encontraron pedidos en el rango de fechas ${fechaInicio} a ${fechaFin}.`;
+                                    }
+                                } else {
+                                    customMessage = `No hay pedidos ${this.getEstadoText()}`;
+                                }
+                            }
+                            
+                            this.updateTable(data.pedidos, customMessage);
                             this.updatePagination(data.pagination);
                             this.updatePaginationInfo(data);
                             
                             // Mostrar u ocultar elementos según si hay resultados
                             const hasResults = data.pedidos && data.pedidos.length > 0;
                             this.showHidePaginationControls(hasResults && data.pagination.total > 0);
-                            
-                            // Mostrar mensaje personalizado si no hay resultados
-                            if (!hasResults) {
-                                let message = 'No hay pedidos que coincidan con los filtros aplicados.';
-                                
-                                // Mensajes más específicos según los filtros aplicados
-                                if (cliente && !fechaInicio && !fechaFin) {
-                                    message = `No se encontraron pedidos para el cliente "${cliente}".`;
-                                } else if (!cliente && fechaInicio && !fechaFin) {
-                                    message = `No se encontraron pedidos desde la fecha ${fechaInicio}.`;
-                                } else if (!cliente && !fechaInicio && fechaFin) {
-                                    message = `No se encontraron pedidos hasta la fecha ${fechaFin}.`;
-                                } else if (cliente && fechaInicio && fechaFin) {
-                                    message = `No se encontraron pedidos para el cliente "${cliente}" en el rango de fechas seleccionado.`;
-                                } else if (cliente && fechaInicio) {
-                                    message = `No se encontraron pedidos para el cliente "${cliente}" desde la fecha ${fechaInicio}.`;
-                                } else if (cliente && fechaFin) {
-                                    message = `No se encontraron pedidos para el cliente "${cliente}" hasta la fecha ${fechaFin}.`;
-                                } else if (fechaInicio && fechaFin) {
-                                    message = `No se encontraron pedidos en el rango de fechas ${fechaInicio} a ${fechaFin}.`;
-                                }
-                                
-                                this.showHideNoResultsMessage(true, message);
-                            } else {
-                                this.showHideNoResultsMessage(false);
-                            }
                         } else {
                             this.showNotification('Error al cargar pedidos', 'error');
                         }
@@ -672,7 +673,7 @@
             },
             
             // Actualizar tabla con datos de pedidos
-            updateTable: function (pedidos) {
+            updateTable: function (pedidos, customMessage) {
                 let html = '';
                 
                 if (pedidos && pedidos.length > 0) {
@@ -715,10 +716,26 @@
                         `;
                     });
                 } else {
+                    // Mostrar una fila con el mensaje de no resultados
+                    const message = customMessage || `No hay pedidos ${this.getEstadoText()}`;
                     html = `
-                        <tr>
+                        <tr class="no-results-row">
                             <td colspan="6" class="text-center py-8 text-gray-500">
-                                No hay pedidos ${this.getEstadoText()}
+                                <svg class="no-results-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <div class="no-results-title">No se encontraron pedidos</div>
+                                <div>${message}</div>
+                                ${this.hasActiveFilters ? `
+                                    <div class="no-results-actions">
+                                        <button type="button" onclick="pedidosApp.clearFilters()">
+                                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                            </svg>
+                                            Limpiar filtros
+                                        </button>
+                                    </div>
+                                ` : ''}
                             </td>
                         </tr>
                     `;
@@ -968,6 +985,15 @@
                 });
             },
             
+            // Limpiar filtros
+            clearFilters: function() {
+                document.getElementById('clienteFilter').value = '';
+                document.getElementById('fechaInicioFilter').value = '';
+                document.getElementById('fechaFinFilter').value = '';
+                document.getElementById('sortFilter').value = 'created_at';
+                this.loadPedidos();
+            },
+            
             // Mostrar notificación
             showNotification: function (message, type) {
                 if (window.toast) {
@@ -1045,30 +1071,14 @@
                 const clearFiltersBtn = document.getElementById('clearFilters');
                 if (clearFiltersBtn) {
                     clearFiltersBtn.addEventListener('click', () => {
-                        document.getElementById('clienteFilter').value = '';
-                        document.getElementById('fechaInicioFilter').value = '';
-                        document.getElementById('fechaFinFilter').value = '';
-                        document.getElementById('sortFilter').value = 'created_at';
-                        this.loadPedidos();
+                        this.clearFilters();
                     });
                 }
                 
                 const clearFiltersViewBtn = document.getElementById('clearFiltersViewBtn');
                 if (clearFiltersViewBtn) {
                     clearFiltersViewBtn.addEventListener('click', () => {
-                        document.getElementById('clearFilters').click();
-                    });
-                }
-                
-                // Botón para resetear filtros desde el mensaje de "no resultados"
-                const resetFiltersBtn = document.getElementById('resetFiltersBtn');
-                if (resetFiltersBtn) {
-                    resetFiltersBtn.addEventListener('click', () => {
-                        document.getElementById('clienteFilter').value = '';
-                        document.getElementById('fechaInicioFilter').value = '';
-                        document.getElementById('fechaFinFilter').value = '';
-                        document.getElementById('sortFilter').value = 'created_at';
-                        this.loadPedidos();
+                        this.clearFilters();
                     });
                 }
                 
@@ -1100,7 +1110,7 @@
             // Datos del pedido en construcción
             pedido: {
                 usuario_id: null,
-                productos: [] // Array de {id, nombre, precio, cantidad}
+                productos: [] // Array de {id, nombre, precio, existencia, cantidad}
             },
             
             // Elementos del DOM
@@ -1289,6 +1299,7 @@
                              data-id="${producto.id}" 
                              data-nombre="${producto.nombre}" 
                              data-precio="${producto.precio}"
+                             data-existencia="${producto.existencia || 0}"
                              data-imagen="${producto.imagen_url || ''}">
                             <div class="search-result-image">
                                 ${producto.imagen_url ? 
@@ -1297,7 +1308,7 @@
                             </div>
                             <div class="search-result-info">
                                 <div class="search-result-name">${producto.nombre}</div>
-                                <div class="search-result-detail">$ ${producto.precio.toLocaleString()}</div>
+                                <div class="search-result-detail">$ ${producto.precio.toLocaleString()} - Stock: ${producto.existencia || 0}</div>
                             </div>
                         </div>
                     `;
@@ -1316,18 +1327,20 @@
                 const id = item.getAttribute('data-id');
                 const nombre = item.getAttribute('data-nombre');
                 const precio = parseFloat(item.getAttribute('data-precio'));
+                const existencia = parseInt(item.getAttribute('data-existencia')) || 0;
                 
                 // Verificar si el producto ya está en el pedido
                 const existingItem = this.pedido.productos.find(p => p.id === id);
                 if (existingItem) {
-                    // Si ya existe, incrementar la cantidad
-                    existingItem.cantidad += 1;
+                    // Si ya existe, incrementar la cantidad pero sin superar el stock
+                    existingItem.cantidad = Math.min(existingItem.cantidad + 1, existencia);
                 } else {
-                    // Si no existe, agregarlo
+                    // Si no existe, agregarlo con cantidad 1
                     this.pedido.productos.push({
                         id: id,
                         nombre: nombre,
                         precio: precio,
+                        existencia: existencia, // Guardamos el stock disponible
                         cantidad: 1
                     });
                 }
@@ -1358,12 +1371,13 @@
                         row.innerHTML = `
                             <td class="px-4 py-3">
                                 <div class="font-medium">${producto.nombre}</div>
+                                <div class="text-xs text-gray-500">Stock disponible: ${producto.existencia}</div>
                             </td>
                             <td class="px-4 py-3">
                                 $ ${producto.precio.toLocaleString()}
                             </td>
                             <td class="px-4 py-3">
-                                <input type="number" min="1" value="${producto.cantidad}" 
+                                <input type="number" min="1" max="${producto.existencia}" value="${producto.cantidad}" 
                                        class="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
                                        data-index="${index}" onchange="crearPedidoApp.updateCantidad(${index}, this.value)">
                             </td>
@@ -1386,13 +1400,23 @@
             // Actualizar la cantidad de un producto
             updateCantidad: function(index, newCantidad) {
                 const cantidad = parseInt(newCantidad);
+                const producto = this.pedido.productos[index];
+                
                 if (isNaN(cantidad) || cantidad < 1) {
                     // Restaurar el valor anterior
                     this.renderPedidoItems();
                     return;
                 }
                 
-                this.pedido.productos[index].cantidad = cantidad;
+                // Verificar que no exceda el stock disponible
+                if (cantidad > producto.existencia) {
+                    // Ajustar al máximo disponible y mostrar mensaje
+                    producto.cantidad = producto.existencia;
+                    this.showNotification(`La cantidad máxima disponible para ${producto.nombre} es ${producto.existencia}`, 'warning');
+                } else {
+                    producto.cantidad = cantidad;
+                }
+                
                 this.renderPedidoItems();
             },
             
@@ -1417,13 +1441,13 @@
                 
                 // Validar que haya un cliente seleccionado
                 if (!this.pedido.usuario_id) {
-                    alert('Por favor, selecciona un cliente');
+                    this.showNotification('Por favor, selecciona un cliente', 'error');
                     return;
                 }
                 
                 // Validar que haya productos
                 if (this.pedido.productos.length === 0) {
-                    alert('Por favor, agrega al menos un producto');
+                    this.showNotification('Por favor, agrega al menos un producto', 'error');
                     return;
                 }
                 
@@ -1449,7 +1473,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('Pedido creado exitosamente');
+                        this.showNotification('Pedido creado exitosamente', 'success');
                         this.closeModal();
                         // Recargar la lista de pedidos
                         if (window.pedidosApp) {
@@ -1459,12 +1483,12 @@
                             window.location.reload();
                         }
                     } else {
-                        alert(data.message || 'Error al crear el pedido');
+                        this.showNotification(data.message || 'Error al crear el pedido', 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Error al crear pedido:', error);
-                    alert('Error al crear el pedido');
+                    this.showNotification('Error al crear el pedido', 'error');
                 });
             },
             
@@ -1485,6 +1509,40 @@
             // Abrir modal
             openModal: function() {
                 this.elements.modal.classList.remove('hidden');
+            },
+            
+            // Mostrar notificación
+            showNotification: function(message, type = 'info') {
+                // Crear un elemento de notificación
+                const notification = document.createElement('div');
+                notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                    type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
+                    type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
+                    type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
+                    'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
+                }`;
+                
+                notification.innerHTML = `
+                    <div class="flex items-center">
+                        <div class="py-1"><i class="fas ${
+                            type === 'warning' ? 'fa-exclamation-triangle' :
+                            type === 'error' ? 'fa-times-circle' :
+                            type === 'success' ? 'fa-check-circle' :
+                            'fa-info-circle'
+                        } mr-2"></i></div>
+                        <div>${message}</div>
+                        <button class="ml-4 text-lg leading-none" onclick="this.parentElement.parentElement.remove()">×</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Eliminar la notificación después de 5 segundos
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
             },
             
             // Función debounce para limitar la frecuencia de las búsquedas

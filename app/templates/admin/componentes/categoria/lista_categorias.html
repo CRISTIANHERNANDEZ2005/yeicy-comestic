@@ -33,7 +33,6 @@
                 </button>
             </div>
         </div>
-
             <!-- Información de resultados y paginación superior (se muestra en vistas de tabla) -->
             <div id="pagination-top-controls" class="mb-6 bg-white rounded-lg p-4 shadow-sm border border-gray-200 flex flex-col sm:flex-row justify-between items-start sm:items-center {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
                 <div class="mb-3 sm:mb-0">
@@ -51,7 +50,6 @@
                     </select>
                 </div>
             </div>
-
             <!-- Contenido principal -->
             <div
                 class="bg-white rounded-xl shadow-md overflow-hidden relative">
@@ -76,7 +74,6 @@
                         </button>
                     </nav>
                 </div>
-
                 <!-- Lista de categorías (Vista Jerárquica) -->
                 <div id="hierarchicalView" class="p-4 sm:p-6 hierarchical-view hidden">
                     <div class="flex justify-between items-center mb-4">
@@ -85,7 +82,6 @@
                             <p class="text-sm text-gray-500">Gestiona la jerarquía de categorías de tu inventario</p>
                         </div>
                     </div>
-
                     <!-- Contenedor para las categorías -->
                     <div id="categoriesContainer" class="space-y-4">
                         {% if categorias %}
@@ -220,13 +216,11 @@
                         {% endif %}
                     </div>
                 </div>
-
                 {% import 'admin/ui/_category_tables.html' as tables %}
                 {{ tables.render_main_category_table(categorias, current_view) }}
                 {{ tables.render_subcategory_table(subcategorias, current_view) }}
                 {{ tables.render_pseudocategory_table(seudocategorias, current_view) }}
             </div>
-
             <!-- Paginación como bloque independiente -->
             <div id="pagination-bottom-controls" class="mt-8 flex-col items-center bg-white rounded-lg p-4 shadow-sm border border-gray-200 {% if not pagination or pagination.total == 0 %}hidden{% endif %}">
                 <div class="text-sm text-gray-700 mb-4">
@@ -243,21 +237,17 @@
             </div>
         </main>
     </div>
-
     <!-- ################################################################################# -->
     <!-- ######################## INICIO: NUEVO FILTRO LATERAL ########################### -->
     <!-- ################################################################################# -->
-
     <!-- Botón flotante para abrir filtros -->
     <button id="filterFab" onclick="toggleFilters()" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-xl flex items-center justify-center z-30 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 animate-pulse-slow hidden-filter">
         <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
         </svg>
     </button>
-
     <!-- Overlay para móvil y desktop -->
     <div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden transition-opacity duration-300"  onclick="toggleFilters()"></div>
-
     <!-- Menú lateral de filtros -->
     <div id="filtersPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
         <div class="p-6 bg-gradient-to-b from-white to-gray-50 h-full">
@@ -289,7 +279,6 @@
                     </label>
                     <input type="text" id="nameFilter" placeholder="Buscar por nombre..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
                 </div>
-
                 <!-- Estado (común para todos los niveles) -->
                 <div class="filter-field" id="statusFilterField">
                     <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -302,7 +291,6 @@
                         <option value="inactivo">Inactivos</option>
                     </select>
                 </div>
-
                 <!-- Categoría Principal (solo para subcategorías y seudocategorías) -->
                 <div class="filter-field hidden" id="mainCategoryFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
@@ -310,7 +298,6 @@
                         <option value="all">Todas las categorías principales</option>
                     </select>
                 </div>
-
                 <!-- Subcategoría (solo para seudocategorías) -->
                 <div class="filter-field hidden" id="subCategoryFilterField">
                     <label class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
@@ -318,7 +305,6 @@
                         <option value="all">Todas las subcategorías</option>
                     </select>
                 </div>
-
                 <!-- Ordenamiento (común para todos los niveles) -->
                 <div class="filter-field" id="sortFilterField">
                     <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -332,7 +318,6 @@
                         <option value="created_at-desc">Fecha (más antiguos primero)</option>
                     </select>
                 </div>
-
                 <!-- Botones de acción -->
                 <div class="pt-2 border-t border-gray-200 mt-8 flex justify-center">
                     <button type="button" id="clearFilters" class="px-4 py-2 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-800 rounded-xl hover:from-gray-300 hover:to-gray-400 flex items-center transition-all duration-300 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold" title="Limpiar todos los filtros de búsqueda de categorías">
@@ -345,9 +330,7 @@
             </form>
         </div>
     </div>
-
     {% include 'admin/ui/_category_form_modal.html' %}
-
     <style>
         .initial-load > tr {
             display: none;
@@ -476,7 +459,6 @@
             font-size: 0.875rem;
             line-height: 1.25rem;
         }
-
         /* Estilos para las tablas */
         .table-container {
             overflow-x: auto;
@@ -541,7 +523,6 @@
             color: #ef4444;
             background-color: #fef2f2;
         }
-
         /* Mejoras para móviles */
         @media(max-width: 768px) {
             /* Ajustes generales */
@@ -550,14 +531,12 @@
             .pseudocategory-card {
                 border-radius: 0.5rem;
             }
-
             /* Ajustes para las tarjetas de categorías */
             .category-card > div,
             .subcategory-card > div,
             .pseudocategory-card > div {
                 padding: 0.75rem;
             }
-
             /* Hacer los botones más grandes para móviles */
             .toggle-btn {
                 width: 2rem;
@@ -567,36 +546,29 @@
                 justify-content: center;
                 border-radius: 0.25rem;
             }
-
             /* Ajustar el tamaño de los iconos */
             .toggle-btn i {
                 font-size: 1rem;
             }
-
             /* Ajustar el espaciado entre elementos */
             .space-y-4 > * + * {
                 margin-top: 1rem;
             }
-
             /* Ajustar el espaciado en subcategorías y seudocategorías */
             .ml-6 {
                 margin-left: 1rem;
             }
-
             /* Hacer los toggles de estado más grandes */
             .relative.inline-block.w-10 {
                 width: 2.5rem;
             }
-
             .relative.inline-block.w-10 label {
                 height: 1.5rem;
             }
-
             .relative.inline-block.w-10 label span {
                 width: 1.5rem;
                 height: 1.5rem;
             }
-
             /* Ajustar los botones de acción */
             button.p-2 {
                 width: 2.5rem;
@@ -605,7 +577,6 @@
                 align-items: center;
                 justify-content: center;
             }
-
             button.p-1.5 {
                 width: 2.25rem;
                 height: 2.25rem;
@@ -613,108 +584,88 @@
                 align-items: center;
                 justify-content: center;
             }
-
             /* Mejorar la visualización del texto en móviles */
             h4 {
                 font-size: 1.125rem;
                 line-height: 1.375rem;
             }
-
             h6 {
                 font-size: 1rem;
                 line-height: 1.25rem;
             }
-
             /* Ajustar el espaciado de los metadatos */
             .flex.items-center.mt-1.text-xs {
                 flex-wrap: wrap;
                 gap: 0.25rem;
             }
-
             .flex.items-center.mt-1.text-xs span.mx-2 {
                 margin: 0 0.25rem;
             }
-
             /* Ajustar la estructura de las tarjetas para móviles */
             .category-card > div > div.flex.justify-between.items-start {
                 flex-direction: column;
                 gap: 1rem;
             }
-
             .category-card > div > div.flex.justify-between.items-start > div:first-child {
                 width: 100%;
             }
-
             .category-card > div > div.flex.justify-between.items-start > div:last-child {
                 align-self: flex-end;
             }
-
             /* Ajustar la estructura de las subcategorías para móviles */
             .subcategory-card > div,
             .pseudocategory-card > div {
                 flex-direction: column;
                 gap: 0.75rem;
             }
-
             .subcategory-card > div > div:first-child,
             .pseudocategory-card > div > div:first-child {
                 width: 100%;
             }
-
             .subcategory-card > div > div:last-child,
             .pseudocategory-card > div > div:last-child {
                 align-self: flex-end;
             }
-
             /* Ajustar el menú lateral para móviles */
             #filtersPanel {
                 width: 90%;
                 max-width: 320px;
             }
-
             /* Ajustar los tabs para móviles */
             nav.flex {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
                 scrollbar-width: none; /* Firefox */
             }
-
             nav.flex::-webkit-scrollbar {
                 display: none; /* Chrome, Safari, Edge */
             }
-
             nav.flex > button {
                 flex-shrink: 0;
                 padding: 0.75rem 1rem;
                 font-size: 0.875rem;
             }
-
             /* Ajustes para las tablas en móviles */
             .table-container {
                 margin: 0 -1rem;
                 padding: 0 1rem;
             }
-
             .category-table {
                 font-size: 0.875rem;
             }
-
             .category-table th,
             .category-table td {
                 padding: 0.5rem;
             }
-
             .action-button {
                 width: 1.75rem;
                 height: 1.75rem;
             }
         }
-
         /* Clase para ocultar el botón de filtro */
         .hidden-filter {
             display: none !important;
         }
-
         /* Estilos para los campos de filtro dinámicos */
         .filter-field {
             transition: all 0.3s ease;
@@ -722,7 +673,6 @@
         .filter-field.hidden {
             display: none;
         }
-
         /* Estilos para el toggle de estado */
         .toggle-switch {
             position: relative;
@@ -730,13 +680,11 @@
             width: 50px;
             height: 24px;
         }
-
         .toggle-switch input {
             opacity: 0;
             width: 0;
             height: 0;
         }
-
         .toggle-slider {
             position: absolute;
             cursor: pointer;
@@ -748,7 +696,6 @@
             transition: 0.4s;
             border-radius: 24px;
         }
-
         .toggle-slider:before {
             position: absolute;
             content: "";
@@ -760,15 +707,12 @@
             transition: 0.4s;
             border-radius: 50%;
         }
-
         input:checked + .toggle-slider {
             background-color: #10b981;
         }
-
         input:checked + .toggle-slider:before {
             transform: translateX(26px);
         }
-
         /* Estilos para la vista jerárquica */
         .hierarchical-view .category-card {
             margin-bottom: 1rem;
@@ -776,7 +720,6 @@
             border-radius: 0.5rem;
             overflow: hidden;
         }
-
         .hierarchical-view .category-header {
             padding: 1rem;
             background-color: white;
@@ -784,33 +727,27 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .hierarchical-view .category-info {
             display: flex;
             align-items: flex-start;
         }
-
         .hierarchical-view .category-toggle {
             margin-right: 0.75rem;
             cursor: pointer;
             color: #6b7280;
             transition: transform 0.2s;
         }
-
         .hierarchical-view .category-toggle.open {
             transform: rotate(90deg);
         }
-
         .hierarchical-view .category-details h4 {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
         .hierarchical-view .category-details p {
             color: #6b7280;
             font-size: 0.875rem;
         }
-
         .hierarchical-view .category-meta {
             display: flex;
             flex-wrap: wrap;
@@ -819,31 +756,26 @@
             font-size: 0.75rem;
             color: #6b7280;
         }
-
         .hierarchical-view .category-actions {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-
         .hierarchical-view .subcategory-list {
             background-color: #f9fafb;
             padding: 1rem;
             border-top: 1px solid #e5e7eb;
             display: none;
         }
-
         .hierarchical-view .subcategory-list.open {
             display: block;
         }
-
         .hierarchical-view .subcategory-card {
             margin-bottom: 0.75rem;
             border: 1px solid #e5e7eb;
             border-radius: 0.375rem;
             overflow: hidden;
         }
-
         .hierarchical-view .subcategory-header {
             padding: 0.75rem;
             background-color: white;
@@ -851,33 +783,27 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .hierarchical-view .subcategory-info {
             display: flex;
             align-items: flex-start;
         }
-
         .hierarchical-view .subcategory-toggle {
             margin-right: 0.75rem;
             cursor: pointer;
             color: #6b7280;
             transition: transform 0.2s;
         }
-
         .hierarchical-view .subcategory-toggle.open {
             transform: rotate(90deg);
         }
-
         .hierarchical-view .subcategory-details h6 {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
         .hierarchical-view .subcategory-details p {
             color: #6b7280;
             font-size: 0.875rem;
         }
-
         .hierarchical-view .subcategory-meta {
             display: flex;
             flex-wrap: wrap;
@@ -886,23 +812,19 @@
             font-size: 0.75rem;
             color: #6b7280;
         }
-
         .hierarchical-view .subcategory-actions {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-
         .hierarchical-view .pseudocategory-list {
             padding: 0.75rem;
             margin-left: 1.5rem;
             display: none;
         }
-
         .hierarchical-view .pseudocategory-list.open {
             display: block;
         }
-
         .hierarchical-view .pseudocategory-card {
             margin-bottom: 0.5rem;
             border: 1px solid #e5e7eb;
@@ -913,17 +835,14 @@
             justify-content: space-between;
             align-items: center;
         }
-
         .hierarchical-view .pseudocategory-info h6 {
             font-weight: 600;
             margin-bottom: 0.25rem;
         }
-
         .hierarchical-view .pseudocategory-info p {
             color: #6b7280;
             font-size: 0.875rem;
         }
-
         .hierarchical-view .pseudocategory-meta {
             display: flex;
             flex-wrap: wrap;
@@ -932,13 +851,11 @@
             font-size: 0.75rem;
             color: #6b7280;
         }
-
         .hierarchical-view .pseudocategory-actions {
             display: flex;
             align-items: center;
             gap: 0.5rem;
         }
-
         /* Estilos para los botones de paginación */
 .pagination-nav-button,
 .pagination-button {
@@ -957,7 +874,6 @@
     transition: all 0.15s ease-in-out;
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
-
 .pagination-nav-button:hover,
 .pagination-button:hover {
     background-color: #f3f4f6;
@@ -967,32 +883,27 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     transform: translateY(-1px);
 }
-
 .pagination-nav-button:active,
 .pagination-button:active {
     transform: translateY(0);
     box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
-
 .pagination-nav-button.disabled,
 .pagination-button.disabled {
     opacity: 0.5;
     cursor: not-allowed;
     pointer-events: none;
 }
-
 .pagination-button.active {
     background-color: #2563eb;
     border-color: #2563eb;
     color: #ffffff;
     font-weight: 600;
 }
-
 .pagination-button.active:hover {
     background-color: #1d4ed8;
     border-color: #1d4ed8;
 }
-
 /* Estilo para elipsis en paginación */
 .pagination-ellipsis {
     display: inline-flex;
@@ -1013,10 +924,8 @@
             itemsPerPage: 10,
             isLoading: false,
             initialized: false,
-
             // Elementos del DOM
             elements: {},
-
             // Inicializar la aplicación
             // Función para inicializar la aplicación
             init: function (initialPaginationData) { // Si ya está inicializado, reinicializar sin duplicar eventos
@@ -1024,25 +933,19 @@
                     this.reinitialize();
                     return;
                 }
-
                 // Guardar referencias a elementos del DOM
                 this.cacheElements();
-
                 // Inicializar la vista
                 this.initializeView();
-
                 // Configurar eventos
                 this.setupEventListeners();
-
                 // Marcar como inicializado
                 this.initialized = true;
-
                 // Actualizar la información de paginación con los datos iniciales
                 if (initialPaginationData) {
                     this.updatePaginationInfo({ pagination: initialPaginationData });
                 }
             },
-
             // Función para cachear elementos del DOM
             cacheElements: function () {
                 this.elements.hierarchicalView = document.getElementById('hierarchicalView');
@@ -1060,7 +963,6 @@
                 this.elements.currentPageDisplay = document.getElementById('pagination-current-page');
                 this.elements.totalPagesDisplay = document.getElementById('pagination-total-pages');
                 this.elements.categoryListLoaderOverlay = document.getElementById('categoryListLoaderOverlay');
-
                 // Campos de filtro
                 this.elements.nameFilterField = document.getElementById('nameFilterField');
                 this.elements.statusFilterField = document.getElementById('statusFilterField');
@@ -1068,18 +970,14 @@
                 this.elements.subCategoryFilterField = document.getElementById('subCategoryFilterField');
                 this.elements.sortFilterField = document.getElementById('sortFilterField');
             },
-
             // Función para reinicializar cuando el contenido se recarga mediante SPA
             reinitialize: function () { // Actualizar referencias a elementos del DOM que pueden haber cambiado
                 this.cacheElements();
-
                 // Reinicializar la vista
                 this.initializeView();
-
                 // Reconfigurar eventos
                 this.setupEventListeners();
             },
-
             // Función para inicializar la vista
             initializeView: function () { // Obtener la vista actual de la URL
                 const path = window.location.pathname;
@@ -1092,27 +990,22 @@
                 } else {
                     this.currentView = 'all';
                 }
-
                 // También verificar si hay un parámetro de vista en la URL (para compatibilidad o si se usa en otros lugares)
                 const urlParams = new URLSearchParams(window.location.search);
                 if (urlParams.has('view')) {
                     this.currentView = urlParams.get('view');
                 }
-
                 // Establecer el tab activo
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
                     btn.classList.add('border-transparent', 'text-gray-500');
-
                     if (btn.getAttribute('data-level') === this.currentView) {
                         btn.classList.add('active', 'border-blue-500', 'text-blue-600');
                         btn.classList.remove('border-transparent', 'text-gray-500');
                     }
                 });
-
                 // Mostrar la vista correspondiente
                 this.showView(this.currentView);
-
                 // Cargar los datos iniciales
                 if (this.currentView === 'all') {
                     // Los datos ya están cargados desde el servidor.
@@ -1125,7 +1018,6 @@
                     this.loadTableData();
                 }
             },
-
             // Función para mostrar la vista correspondiente
             showView: function (viewType) { // Ocultar todas las vistas
                 if (this.elements.hierarchicalView) 
@@ -1140,7 +1032,6 @@
                 if (this.elements.pseudoCategoriesTableView) 
                     this.elements.pseudoCategoriesTableView.classList.add('hidden');
                 
-
                 // Controlar la visibilidad del botón de filtro y los campos de filtro
                 if (viewType === 'all') {
                     if (this.elements.hierarchicalView) 
@@ -1175,7 +1066,6 @@
                     this.updateFilterFields('pseudo');
                 }
             },
-
             // Función para actualizar los campos de filtro según la vista actual
             updateFilterFields: function (viewType) { // Mostrar campos comunes
                 if (this.elements.nameFilterField) 
@@ -1187,7 +1077,6 @@
                 if (this.elements.sortFilterField) 
                     this.elements.sortFilterField.classList.remove('hidden');
                 
-
                 // Ocultar campos específicos
                 if (this.elements.mainCategoryFilterField) 
                     this.elements.mainCategoryFilterField.classList.add('hidden');
@@ -1195,7 +1084,6 @@
                 if (this.elements.subCategoryFilterField) 
                     this.elements.subCategoryFilterField.classList.add('hidden');
                 
-
                 // Mostrar campos según el tipo de vista
                 if (viewType === 'sub') { // Para subcategorías: mostrar campo de categoría principal
                     if (this.elements.mainCategoryFilterField) 
@@ -1213,17 +1101,14 @@
                     this.loadSubcategoriesForFilter();
                 }
             },
-
             // Función para cargar categorías principales para el filtro
             loadMainCategoriesForFilter: function () {
                 const mainCategoryFilter = document.getElementById('mainCategoryFilter');
                 if (! mainCategoryFilter) 
                     return;
                 
-
                 // Limpiar opciones actuales
                 mainCategoryFilter.innerHTML = '<option value="all">Todas las categorías principales</option>';
-
                 // Obtener categorías principales del servidor
                 fetch('/admin/api/categorias-principales/filter?per_page=100').then(response => response.json()).then(data => {
                     if (data.success && data.categorias) {
@@ -1239,7 +1124,6 @@
                     this.showNotification('Error al cargar categorías principales', 'error');
                 });
             },
-
             // Función para cargar subcategorías para el filtro
             loadSubcategoriesForFilter: function () {
                 const mainCategoryId = document.getElementById('mainCategoryFilter') ?. value;
@@ -1247,10 +1131,8 @@
                 if (! subCategoryFilter) 
                     return;
                 
-
                 // Limpiar opciones actuales
                 subCategoryFilter.innerHTML = '<option value="all">Todas las subcategorías</option>';
-
                 if (mainCategoryId !== 'all') { // Obtener subcategorías del servidor
                     fetch (`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`).then(response => response.json()).then(data => {
                         if (data.success && data.subcategorias) {
@@ -1267,19 +1149,16 @@
                     });
                 }
             },
-
             // Función para cargar categorías jerárquicas
             loadHierarchicalCategories: function () {
                 if (this.isLoading) 
                     return;
                 
                 this.isLoading = true;
-
                 // Mostrar overlay de carga
                 if (this.elements.categoryListLoaderOverlay) {
                     this.elements.categoryListLoaderOverlay.classList.remove('hidden');
                 }
-
                 // Obtener categorías principales del servidor
                 fetch(`/admin/api/categorias-principales/filter?page=${this.currentPage}&per_page=${this.itemsPerPage}`).then(response => response.json()).then(data => {
                     if (data.success && data.categorias && this.elements.categoriesContainer) {
@@ -1292,7 +1171,6 @@
                     } else if (this.elements.categoriesContainer) {
                         this.elements.categoriesContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
                     }
-
                     this.isLoading = false;
                     // Ocultar overlay de carga
                     if (this.elements.categoryListLoaderOverlay) {
@@ -1311,22 +1189,17 @@
                     }
                 });
             },
-
             // Función para renderizar categorías jerárquicas
             renderHierarchicalCategories: function (categories) {
                 if (!this.elements.categoriesContainer) 
                     return;
                 
-
                 let html = '';
-
                 if (categories && categories.length > 0) {
                     categories.forEach(category => { // Contar subcategorías activas
                         const activeSubcategories = category.subcategorias ? category.subcategorias.filter(sub => sub.estado === 'activo').length : 0;
-
                         // Usar el total de productos ya calculado por el backend
                         const totalProducts = category.total_productos || 0;
-
                         html += `
                             <div class="category-card">
                                 <div class="category-header">
@@ -1403,24 +1276,18 @@
                 } else {
                     html = '<p class="text-gray-500 text-center py-4">No se encontraron categorías</p>';
                 }
-
                 this.elements.categoriesContainer.innerHTML = html;
-
                 // Inicializar eventos para la vista jerárquica
                 this.initializeHierarchicalView();
             },
-
             // Función para renderizar subcategorías
             renderSubcategories: function (subcategories, mainCategoryId) {
                 let html = '';
-
                 if (subcategories && subcategories.length > 0) {
                     subcategories.forEach(subcategory => { // Contar seudocategorías activas
                         const activePseudocategories = subcategory.seudocategorias ? subcategory.seudocategorias.filter(pseudo => pseudo.estado === 'activo').length : 0;
-
                         // Usar el total de productos ya calculado por el backend
                         const totalProducts = subcategory.total_productos || 0;
-
                         html += `
                             <div class="subcategory-card">
                                 <div class="subcategory-header">
@@ -1492,18 +1359,14 @@
                 } else {
                     html = '<p class="text-gray-500 text-center py-2">No hay subcategorías</p>';
                 }
-
                 return html;
             },
-
             // Función para renderizar seudocategorías
             renderPseudocategories: function (pseudocategories, subcategoryId) {
                 let html = '';
-
                 if (pseudocategories && pseudocategories.length > 0) {
                     pseudocategories.forEach(pseudocategory => { // Usar el total de productos ya calculado por el backend
                         const totalProducts = pseudocategory.total_productos || 0;
-
                         html += `
                             <div class="pseudocategory-card">
                                 <div class="pseudocategory-info">
@@ -1548,10 +1411,8 @@
                 } else {
                     html = '<p class="text-gray-500 text-center py-2">No hay seudocategorías</p>';
                 }
-
                 return html;
             },
-
             // Función para inicializar la vista jerárquica
             initializeHierarchicalView: function () { // Toggle para expandir/colapsar categorías
                 document.querySelectorAll('.category-toggle').forEach(toggle => {
@@ -1559,7 +1420,6 @@
                         const targetId = this.getAttribute('data-target');
                         const targetElement = document.getElementById(targetId);
                         const icon = this.querySelector('i');
-
                         if (targetElement.classList.contains('open')) {
                             targetElement.classList.remove('open');
                             icon.classList.remove('fa-chevron-down');
@@ -1571,14 +1431,12 @@
                         }
                     });
                 });
-
                 // Toggle para expandir/colapsar subcategorías
                 document.querySelectorAll('.subcategory-toggle').forEach(toggle => {
                     toggle.addEventListener('click', function () {
                         const targetId = this.getAttribute('data-target');
                         const targetElement = document.getElementById(targetId);
                         const icon = this.querySelector('i');
-
                         if (targetElement.classList.contains('open')) {
                             targetElement.classList.remove('open');
                             icon.classList.remove('fa-chevron-down');
@@ -1590,7 +1448,6 @@
                         }
                     });
                 });
-
                 // Toggle de estado para categorías principales
                 document.querySelectorAll('.main-category-status').forEach(toggle => {
                     toggle.addEventListener('change', function () {
@@ -1599,7 +1456,6 @@
                         categoriesApp.updateMainCategoryStatus(categoryId, newStatus);
                     });
                 });
-
                 // Toggle de estado para subcategorías
                 document.querySelectorAll('.subcategory-status').forEach(toggle => {
                     toggle.addEventListener('change', function () {
@@ -1608,7 +1464,6 @@
                         categoriesApp.updateSubcategoryStatus(subcategoryId, newStatus);
                     });
                 });
-
                 // Toggle de estado para seudocategorías
                 document.querySelectorAll('.pseudocategory-status').forEach(toggle => {
                     toggle.addEventListener('change', function () {
@@ -1618,34 +1473,28 @@
                     });
                 });
             },
-
             // Función para cargar datos de tabla
             loadTableData: function (resetPage = true) {
                 if (this.isLoading) 
                     return;
                 
                 this.isLoading = true;
-
                 // Mostrar overlay de carga
                 if (this.elements.categoryListLoaderOverlay) {
                     this.elements.categoryListLoaderOverlay.classList.remove('hidden');
                 }
-
                 if (resetPage) {
                     this.currentPage = 1;
                 }
-
                 // Obtener parámetros de filtro
                 const nameFilter = document.getElementById('nameFilter') ?. value || '';
                 const statusFilter = document.getElementById('statusFilter') ?. value || 'all';
                 const mainCategoryFilter = document.getElementById('mainCategoryFilter') ?. value || 'all';
                 const subCategoryFilter = document.getElementById('subCategoryFilter') ?. value || 'all';
                 const sortFilter = document.getElementById('sortFilter') ?. value || 'nombre';
-
                 // Construir URL de la API
                 let apiUrl = '';
                 let tableBody = null;
-
                 if (this.currentView === 'main') {
                     apiUrl = `/admin/api/categorias-principales/filter?page=${
                         this.currentPage
@@ -1668,12 +1517,10 @@
                     }`;
                     tableBody = this.elements.pseudoCategoriesTableBody;
                 }
-
                 if (! tableBody) {
                     this.isLoading = false;
                     return;
                 }
-
                 // Agregar parámetros de filtro
                 if (nameFilter) 
                     apiUrl += `&nombre=${
@@ -1689,11 +1536,9 @@
                 if (this.currentView === 'pseudo' && subCategoryFilter !== 'all') 
                     apiUrl += `&subcategoria_id=${subCategoryFilter}`;
                 
-
                 // Agregar parámetros de ordenamiento
                 let sortBy = 'nombre';
                 let sortOrder = 'asc';
-
                 if (sortFilter === 'nombre-desc') {
                     sortBy = 'nombre';
                     sortOrder = 'desc';
@@ -1707,16 +1552,12 @@
                     sortBy = 'nombre';
                     sortOrder = 'asc';
                 }
-
                 apiUrl += `&sort_by=${sortBy}&sort_order=${sortOrder}`;
-
                 
-
                 // Obtener datos del servidor
                 fetch(apiUrl).then(response => response.json()).then(data => {
                     if (data.success) { // Actualizar tabla
                         this.updateTable(data, tableBody);
-
                         // Actualizar paginación
                         if (data.pagination) {
                             this.updatePagination(data.pagination);
@@ -1726,7 +1567,6 @@
                         tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
                         this.showNotification('Error al cargar datos', 'error');
                     }
-
                     this.isLoading = false;
                     // Ocultar overlay de carga
                     if (this.elements.categoryListLoaderOverlay) {
@@ -1739,11 +1579,9 @@
                     this.isLoading = false;
                 });
             },
-
             // Función para actualizar la tabla
             updateTable: function (data, tableBody) {
                 let html = '';
-
                 if (this.currentView === 'main') {
                     if (data.categorias && data.categorias.length > 0) {
                         data.categorias.forEach(category => {
@@ -1787,7 +1625,7 @@
                             `;
                         });
                     } else {
-                        html = '<tr><td colspan="6" class="text-center py-4 text-gray-500">No se encontraron categorías principales</td></tr>';
+                        html = '<tr><td colspan="6" class="text-center py-4 text-gray-500">No se encontraron categorías principales que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva categoría principal.</td></tr>';
                     }
                 } else if (this.currentView === 'sub') {
                     if (data.subcategorias && data.subcategorias.length > 0) {
@@ -1833,7 +1671,7 @@
                             `;
                         });
                     } else {
-                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron subcategorías</td></tr>';
+                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron subcategorías que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva subcategoría.</td></tr>';
                     }
                 } else if (this.currentView === 'pseudo') {
                     if (data.seudocategorias && data.seudocategorias.length > 0) {
@@ -1879,22 +1717,18 @@
                             `;
                         });
                     } else {
-                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron seudocategorías</td></tr>';
+                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron seudocategorías que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva seudocategoría.</td></tr>';
                     }
                 }
-
                 tableBody.innerHTML = html;
                 tableBody.classList.remove('initial-load');
             },
-
             // Función para actualizar la paginación
             updatePagination: function (pagination) {
                 if (!this.elements.paginationContainer) 
                     return;
                 
-
                 let html = '';
-
                 // Botón Anterior
                 html += `
                     <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${
@@ -1908,23 +1742,19 @@
                         <i class="fas fa-chevron-left mr-1"></i> Anterior
                     </button>
                 `;
-
                 // Botones de página
                 const maxVisiblePages = 5;
                 let startPage = Math.max(1, pagination.page - Math.floor(maxVisiblePages / 2));
                 let endPage = Math.min(pagination.pages, startPage + maxVisiblePages - 1);
-
                 if (endPage - startPage + 1 < maxVisiblePages) {
                     startPage = Math.max(1, endPage - maxVisiblePages + 1);
                 }
-
                 if (startPage > 1) {
                     html += `<button class="pagination-button border border-gray-300 text-gray-700" onclick="categoriesApp.changePage(1)">1</button>`;
                     if (startPage > 2) {
                         html += `<span class="px-2 text-gray-500">...</span>`;
                     }
                 }
-
                 for (let i = startPage; i <= endPage; i++) {
                     html += `
                         <button class="pagination-button border border-gray-300 ${
@@ -1933,7 +1763,6 @@
                                 onclick="categoriesApp.changePage(${i})">${i}</button>
                     `;
                 }
-
                 if (endPage < pagination.pages) {
                     if (endPage < pagination.pages - 1) {
                         html += `<span class="px-2 text-gray-500">...</span>`;
@@ -1944,7 +1773,6 @@
                         pagination.pages
                     }</button>`;
                 }
-
                 // Botón Siguiente
                 html += `
                     <button class="pagination-nav-button border border-gray-300 text-gray-700 rounded-md ${
@@ -1958,10 +1786,8 @@
                         Siguiente <i class="fas fa-chevron-right ml-1"></i>
                     </button>
                 `;
-
                 this.elements.paginationContainer.innerHTML = html;
             },
-
             // Función para actualizar la información de paginación
             updatePaginationInfo: function (data) {
                 const pagination = data.pagination;
@@ -1969,13 +1795,10 @@
                 const totalOverall = pagination.total_general !== undefined ? pagination.total_general : pagination.total;
                 const currentPage = pagination.page;
                 const perPage = pagination.per_page;
-
                 let itemsDisplayed = 0;
-
                 if (totalOverall > 0) {
                     itemsDisplayed = Math.min(currentPage * perPage, totalOverall);
                 }
-
                 if (this.elements.showingTo) {
                     this.elements.showingTo.textContent = itemsDisplayed;
                 }
@@ -1989,21 +1812,17 @@
                     this.elements.totalPagesDisplay.textContent = pagination.pages;
                 }
             },
-
             // Función para formatear fecha
             formatDate: function (dateString) {
                 if (! dateString) 
                     return '-';
                 
-
                 const date = new Date(dateString);
                 const day = date.getDate().toString().padStart(2, '0');
                 const month = (date.getMonth() + 1).toString().padStart(2, '0');
                 const year = date.getFullYear();
-
                 return `${day}/${month}/${year}`;
             },
-
             // Función para mostrar notificación
             showNotification: function (message, type) {
                 if (window.toast) {
@@ -2012,7 +1831,6 @@
                     console.warn('window.toast no está disponible. No se puede mostrar la notificación.');
                 }
             },
-
             // Función para cambiar de página
             changePage: function (page) {
                 this.currentPage = page;
@@ -2022,7 +1840,6 @@
                     this.loadTableData(false);
                 }
             },
-
             // Función para actualizar el estado de una categoría principal
             updateMainCategoryStatus: function (categoryId, newStatus) {
                 fetch (`/admin/api/categorias-principales/${categoryId}/status`, {
@@ -2049,7 +1866,6 @@
                     this.showNotification('Error al actualizar estado', 'error');
                 });
             },
-
             // Función para actualizar el estado de una subcategoría
             updateSubcategoryStatus: function (subcategoryId, newStatus) {
                 fetch (`/admin/api/subcategorias/${subcategoryId}/status`, {
@@ -2076,7 +1892,6 @@
                     this.showNotification('Error al actualizar estado', 'error');
                 });
             },
-
             // Función para actualizar el estado de una seudocategoría
             updatePseudocategoryStatus: function (pseudocategoryId, newStatus) {
                 fetch (`/admin/api/seudocategorias/${pseudocategoryId}/status`, {
@@ -2103,19 +1918,16 @@
                     this.showNotification('Error al actualizar estado', 'error');
                 });
             },
-
             // Función para ver detalles de una categoría
             viewCategory: function (categoryId, categoryType) { // Implementar la lógica para ver detalles
                 console.log(`Ver detalles de ${categoryType} con ID: ${categoryId}`);
                 this.showNotification (`Ver detalles de ${categoryType}`, 'success');
             },
-
             // Función para editar una categoría
             editCategory: function (categoryId, categoryType) { // Implementar la lógica para editar
                 console.log(`Editar ${categoryType} con ID: ${categoryId}`);
                 this.showNotification (`Editar ${categoryType}`, 'success');
             },
-
             // Configurar event listeners
             setupEventListeners: function () { 
                 let debounceTimeout;
@@ -2125,28 +1937,22 @@
                         this.loadTableData();
                     }, 500);
                 };
-
                 // Tabs para niveles de categoría
                 document.querySelectorAll('.tab-btn').forEach(button => {
                     button.addEventListener('click', (e) => {
                         const btn = e.currentTarget;
-
                         // Remover clase activa de todos los tabs
                         document.querySelectorAll('.tab-btn').forEach(b => {
                             b.classList.remove('active', 'border-blue-500', 'text-blue-600');
                             b.classList.add('border-transparent', 'text-gray-500');
                         });
-
                         // Añadir clase activa al tab actual
                         btn.classList.add('active', 'border-blue-500', 'text-blue-600');
                         btn.classList.remove('border-transparent', 'text-gray-500');
-
                         // Actualizar la vista actual
                         this.currentView = btn.getAttribute('data-level');
-
                         // Mostrar la vista correspondiente
                         this.showView(this.currentView);
-
                         // Actualizar la URL sin recargar la página
                         let newPath = '/admin/lista-categorias';
                         if (this.currentView === 'main') {
@@ -2157,7 +1963,6 @@
                             newPath += '/seudocategorias';
                         }
                         window.history.pushState({}, '', newPath);
-
                         // Cargar los datos según la vista
                         if (this.currentView === 'all') {
                             this.loadHierarchicalCategories();
@@ -2166,7 +1971,6 @@
                         }
                     });
                 });
-
                 // Selector de elementos por página
                 const itemsPerPageSelect = document.getElementById('itemsPerPage');
                 if (itemsPerPageSelect) {
@@ -2179,28 +1983,23 @@
                         }
                     });
                 }
-
                 // --- INICIO: Event Listeners para el NUEVO filtro ---
                 const nameFilterInput = document.getElementById('nameFilter');
                 if (nameFilterInput) {
                     nameFilterInput.addEventListener('keyup', debounceLoadData);
                 }
-
                 const statusFilterInput = document.getElementById('statusFilter');
                 if(statusFilterInput) {
                     statusFilterInput.addEventListener('change', () => this.loadTableData());
                 }
-
                 const sortFilterInput = document.getElementById('sortFilter');
                 if(sortFilterInput) {
                     sortFilterInput.addEventListener('change', () => this.loadTableData());
                 }
-
                 const subCategoryFilterInput = document.getElementById('subCategoryFilter');
                 if(subCategoryFilterInput) {
                     subCategoryFilterInput.addEventListener('change', () => this.loadTableData());
                 }
-
                 const clearFiltersBtn = document.getElementById('clearFilters');
                 if (clearFiltersBtn) {
                     clearFiltersBtn.addEventListener('click', () => {
@@ -2209,21 +2008,17 @@
                         const mainCategoryFilter = document.getElementById('mainCategoryFilter');
                         const subCategoryFilter = document.getElementById('subCategoryFilter');
                         const sortFilter = document.getElementById('sortFilter');
-
                         if (nameFilter) nameFilter.value = '';
                         if (statusFilter) statusFilter.value = 'all';
                         if (mainCategoryFilter) mainCategoryFilter.value = 'all';
                         if (subCategoryFilter) subCategoryFilter.value = 'all';
                         if (sortFilter) sortFilter.value = 'nombre';
-
                         if (this.currentView === 'pseudo') {
                             this.loadSubcategoriesForFilter();
                         }
-
                         this.loadTableData();
                     });
                 }
-
                 const mainCategoryFilter = document.getElementById('mainCategoryFilter');
                 if (mainCategoryFilter) {
                     mainCategoryFilter.addEventListener('change', () => {
@@ -2233,7 +2028,6 @@
                         this.loadTableData();
                     });
                 }
-
                 const clearFiltersViewBtn = document.getElementById('clearFiltersViewBtn');
                 if (clearFiltersViewBtn) {
                     clearFiltersViewBtn.addEventListener('click', () => {
@@ -2244,8 +2038,6 @@
                     });
                 }
                 // --- FIN: Event Listeners para el NUEVO filtro ---
-
-
                 // Modal para añadir/editar categoría
                 const modal = document.getElementById('categoryModal');
                 const addCategoryBtn = document.getElementById('addCategoryBtn');
@@ -2253,7 +2045,6 @@
                 const cancelBtn = document.getElementById('cancelBtn');
                 const categoryForm = document.getElementById('categoryForm');
                 const categoryLevel = document.getElementById('categoryLevel');
-
                 if (addCategoryBtn) {
                     addCategoryBtn.addEventListener('click', () => {
                         if (modal) {
@@ -2269,7 +2060,6 @@
                         }
                     });
                 }
-
                 if (closeModal) {
                     closeModal.addEventListener('click', () => {
                         if (modal) 
@@ -2277,7 +2067,6 @@
                         
                     });
                 }
-
                 if (cancelBtn) {
                     cancelBtn.addEventListener('click', () => {
                         if (modal) 
@@ -2285,29 +2074,24 @@
                         
                     });
                 }
-
                 if (categoryLevel) {
                     categoryLevel.addEventListener('change', () => this.updateDynamicFields());
                 }
-
                 if (categoryForm) {
                     categoryForm.addEventListener('submit', (e) => {
                         e.preventDefault();
-
                         // Obtener datos del formulario
                         const categoryName = document.getElementById('categoryName');
                         const categoryDescription = document.getElementById('categoryDescription');
                         const categoryStatus = document.getElementById('categoryStatus');
                         const mainCategory = document.getElementById('mainCategory');
                         const subCategory = document.getElementById('subCategory');
-
                         const formData = {
                             nombre: categoryName ? categoryName.value : '',
                             descripcion: categoryDescription ? categoryDescription.value : '',
                             nivel: categoryLevel ? categoryLevel.value : 'main',
                             estado: categoryStatus && categoryStatus.checked ? 'activo' : 'inactivo'
                         };
-
                         // Agregar campos según el nivel
                         if (formData.nivel === 'sub' && mainCategory) {
                             formData.categoria_principal_id = mainCategory.value;
@@ -2315,12 +2099,10 @@
                             formData.categoria_principal_id = mainCategory.value;
                             formData.subcategoria_id = subCategory.value;
                         }
-
                         // Lógica para guardar la categoría
                         let apiUrl = '';
                         let successMessage = '';
                         let errorMessage = 'Error al guardar la categoría';
-
                         if (formData.nivel === 'main') {
                             apiUrl = '/admin/api/categorias-principales';
                             successMessage = 'Categoría principal creada correctamente';
@@ -2331,7 +2113,6 @@
                             apiUrl = '/admin/api/seudocategorias';
                             successMessage = 'Seudocategoría creada correctamente';
                         }
-
                         fetch(apiUrl, {
                             method: 'POST',
                             headers: {
@@ -2365,19 +2146,15 @@
                     });
                 }
             },
-
             // Función para actualizar campos dinámicos
             updateDynamicFields: function () {
                 const categoryLevel = document.getElementById('categoryLevel');
                 const dynamicFields = document.getElementById('dynamicFields');
-
                 if (! categoryLevel || ! dynamicFields) 
                     return;
                 
-
                 const level = categoryLevel.value;
                 dynamicFields.innerHTML = '';
-
                 if (level === 'sub') { // Para subcategoría: mostrar campo para seleccionar categoría principal
                     dynamicFields.innerHTML = `
                         <div>
@@ -2387,7 +2164,6 @@
                             </select>
                         </div>
                     `;
-
                     // Cargar categorías principales
                     this.loadMainCategoriesForModal();
                 } else if (level === 'pseudo') { // Para seudocategoría: mostrar campos para categoría principal y subcategoría
@@ -2405,10 +2181,8 @@
                             </select>
                         </div>
                     `;
-
                     // Cargar categorías principales
                     this.loadMainCategoriesForModal();
-
                     // Agregar evento para cargar subcategorías cuando se seleccione una categoría principal
                     const mainCategorySelect = document.getElementById('mainCategory');
                     if (mainCategorySelect) {
@@ -2416,17 +2190,14 @@
                     }
                 }
             },
-
             // Función para cargar categorías principales para el modal
             loadMainCategoriesForModal: function () {
                 const mainCategorySelect = document.getElementById('mainCategory');
                 if (! mainCategorySelect) 
                     return;
                 
-
                 // Limpiar opciones actuales
                 mainCategorySelect.innerHTML = '<option value="">Seleccionar categoría principal</option>';
-
                 // Obtener categorías principales del servidor
                 fetch('/admin/api/categorias-principales/filter?per_page=100&estado=activo').then(response => response.json()).then(data => {
                     if (data.success && data.categorias) {
@@ -2442,7 +2213,6 @@
                     this.showNotification('Error al cargar categorías principales', 'error');
                 });
             },
-
             // Función para cargar subcategorías para el modal
             loadSubcategoriesForModal: function () {
                 const mainCategoryId = document.getElementById('mainCategory') ?. value;
@@ -2450,10 +2220,8 @@
                 if (! subCategorySelect) 
                     return;
                 
-
                 // Limpiar opciones actuales
                 subCategorySelect.innerHTML = '<option value="">Seleccionar subcategoría</option>';
-
                 if (mainCategoryId) { // Obtener subcategorías del servidor
                     fetch (`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`).then(response => response.json()).then(data => {
                         if (data.success && data.subcategorias) {
@@ -2471,42 +2239,34 @@
                 }
             }
         };
-
         // Función global para cambiar de página (para compatibilidad con botones generados dinámicamente)
         function changePage(page) {
             categoriesApp.changePage(page);
         }
-
         // Función para mostrar/ocultar el panel de filtros
         function toggleFilters() {
             const panel = document.getElementById("filtersPanel");
             const overlay = document.getElementById("overlay");
-
             panel.classList.toggle("translate-x-full");
             overlay.classList.toggle("hidden");
-
             if (!panel.classList.contains("translate-x-full")) {
                 document.body.classList.add("overflow-hidden");
             } else {
                 document.body.classList.remove("overflow-hidden");
             }
         }
-
         // Función para inicializar la aplicación
         function initializeCategoriesApp() {
             categoriesApp.init({{ pagination | tojson }});
         }
-
         // Inicializar la aplicación cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', initializeCategoriesApp);
-
         // También inicializar cuando se dispare el evento de contenido cargado (para SPA)
         document.addEventListener('content-loaded', function (e) { // Verificar si el contenedor principal de la página es el de categorías
             if (e.detail.container && e.detail.container.querySelector('#categoriesContainer')) {
                 initializeCategoriesApp();
             }
         });
-
         // Exponer globalmente la función de inicialización para poder llamarla manualmente si es necesario
         window.initializeCategoriesApp = initializeCategoriesApp;
     </script>

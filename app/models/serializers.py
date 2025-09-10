@@ -154,7 +154,6 @@ def seudocategoria_to_dict(seudo):
 
 from datetime import datetime
 
-
 def producto_to_dict(prod):
     """Convierte un objeto Producto a un diccionario con datos enriquecidos."""
     if not prod or prod.estado != 'activo':
@@ -205,7 +204,7 @@ def producto_to_dict(prod):
         'precio': prod.precio,
         'costo': prod.costo,
         'imagen_url': prod.imagen_url,
-        'existencia': prod.existencia,
+        'existencia': prod.existencia,  # Asegurar que el stock esté incluido
         'stock_minimo': prod.stock_minimo,
         'stock_maximo': prod.stock_maximo,
         'seudocategoria_id': prod.seudocategoria_id,

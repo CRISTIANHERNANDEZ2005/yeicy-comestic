@@ -370,7 +370,6 @@ def update_pedido_estado_activo(admin_user, pedido_id):
             'success': False,
             'message': 'Error al cambiar el estado del pedido'
         }), 500
-
 @admin_lista_pedidos_bp.route('/api/pedidos', methods=['POST'])
 @admin_jwt_required
 def create_pedido(admin_user):
@@ -404,8 +403,12 @@ def create_pedido(admin_user):
             if not producto:
                 return jsonify({'success': False, 'message': f'Producto con ID {producto_id} no encontrado'}), 404
             
+            # Modificación: Validar stock con mensaje más detallado
             if producto.existencia < cantidad:
-                return jsonify({'success': False, 'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}'}), 400
+                return jsonify({
+                    'success': False, 
+                    'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado: {cantidad}'
+                }), 400
 
             subtotal = producto.precio * cantidad
             total_pedido += subtotal
@@ -420,7 +423,7 @@ def create_pedido(admin_user):
         nuevo_pedido = Pedido(
             usuario_id=usuario_id,
             total=total_pedido,
-            estado_pedido='en proceso', # O el estado inicial que se prefiera
+            estado_pedido='en proceso',
             estado='activo'
         )
         db.session.add(nuevo_pedido)

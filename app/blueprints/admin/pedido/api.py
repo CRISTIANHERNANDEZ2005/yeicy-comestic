@@ -61,7 +61,13 @@ def search_products(admin_user):
             Productos.estado == 'ACTIVO'
         ).limit(20).all()
         
-        productos_data = [producto_to_dict(p) for p in productos]
+        # Modificación: Incluir información de stock en la respuesta
+        productos_data = []
+        for p in productos:
+            producto_dict = producto_to_dict(p)
+            # Asegurarnos de incluir el stock disponible
+            producto_dict['existencia'] = p.existencia
+            productos_data.append(producto_dict)
         
         return jsonify({
             'success': True,

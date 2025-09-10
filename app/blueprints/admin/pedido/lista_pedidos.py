@@ -370,6 +370,8 @@ def update_pedido_estado_activo(admin_user, pedido_id):
             'success': False,
             'message': 'Error al cambiar el estado del pedido'
         }), 500
+
+
 @admin_lista_pedidos_bp.route('/api/pedidos', methods=['POST'])
 @admin_jwt_required
 def create_pedido(admin_user):
@@ -456,3 +458,107 @@ def create_pedido(admin_user):
         db.session.rollback()
         current_app.logger.error(f"Error al crear pedido: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Error interno al crear el pedido'}), 500
+
+
+@admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>', methods=['PUT'])
+@admin_jwt_required
+def update_pedido(admin_user, pedido_id):
+    try:
+        pedido = Pedido.query.get(pedido_id)
+        if not pedido:
+            return jsonify({
+                'success': False,
+                'message': 'Pedido no encontrado'
+            }), 404
+
+        # Verificar que el pedido esté en proceso
+        if pedido.estado_pedido != 'en proceso':
+            return jsonify({
+                'success': False,
+                'message': 'Solo se pueden editar pedidos en proceso'
+            }), 400
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No se recibieron datos'}), 400
+
+        usuario_id = data.get('usuario_id')
+        productos_payload = data.get('productos')
+
+        if not usuario_id or not productos_payload:
+            return jsonify({'success': False, 'message': 'Faltan datos: se requiere usuario_id y productos'}), 400
+
+        # Validar que el usuario exista
+        usuario = Usuarios.query.get(usuario_id)
+        if not usuario:
+            return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
+
+        # Si el usuario cambió, actualizarlo
+        if pedido.usuario_id != usuario_id:
+            pedido.usuario_id = usuario_id
+
+        # Procesar los productos
+        # Primero, eliminamos todos los productos actuales del pedido para reemplazarlos
+        PedidoProducto.query.filter_by(pedido_id=pedido.id).delete()
+
+        total_pedido = 0
+        productos_a_procesar = []
+
+        for item in productos_payload:
+            producto_id = item.get('id')
+            cantidad = item.get('cantidad')
+
+            if not producto_id or not isinstance(cantidad, int) or cantidad <= 0:
+                return jsonify({'success': False, 'message': f'Datos de producto inválidos: {item}'}), 400
+
+            producto = Productos.query.get(producto_id)
+            if not producto:
+                return jsonify({'success': False, 'message': f'Producto con ID {producto_id} no encontrado'}), 404
+
+            # Validar stock disponible
+            if producto.existencia < cantidad:
+                return jsonify({
+                    'success': False,
+                    'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado: {cantidad}'
+                }), 400
+
+            subtotal = producto.precio * cantidad
+            total_pedido += subtotal
+
+            productos_a_procesar.append({
+                'producto_obj': producto,
+                'cantidad': cantidad,
+                'precio_unitario': producto.precio
+            })
+
+        # Actualizar el total del pedido
+        pedido.total = total_pedido
+        pedido.updated_at = datetime.utcnow()
+
+        # Añadir productos al pedido y actualizar stock
+        for item in productos_a_procesar:
+            pedido_producto = PedidoProducto(
+                pedido_id=pedido.id,
+                producto_id=item['producto_obj'].id,
+                cantidad=item['cantidad'],
+                precio_unitario=item['precio_unitario']
+            )
+            db.session.add(pedido_producto)
+
+            # Actualizar stock (restar la diferencia entre el stock anterior y el nuevo)
+            item['producto_obj'].existencia -= item['cantidad']
+
+        db.session.commit()
+
+        current_app.logger.info(f"Pedido {pedido.id} actualizado por administrador {admin_user.id} para el usuario {usuario.nombre}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Pedido actualizado exitosamente',
+            'pedido_id': pedido.id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al actualizar pedido: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno al actualizar el pedido'}), 500

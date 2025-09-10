@@ -400,6 +400,7 @@ def pedido_detalle_to_dict(pedido):
             productos_info.append({
                 'producto_id': pp.producto_id,
                 'producto_nombre': pp.producto.nombre if pp.producto else 'Producto no disponible',
+                'producto_existencia': pp.producto.existencia if pp.producto else 0,
                 'cantidad': pp.cantidad,
                 'precio_unitario': pp.precio_unitario,
                 'subtotal': pp.cantidad * pp.precio_unitario

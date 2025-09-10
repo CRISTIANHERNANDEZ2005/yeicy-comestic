@@ -109,11 +109,14 @@
                                                         <i class="fas fa-eye"></i>
                                                     </button>
                                                     {% if pedido.estado_pedido == 'en proceso' %}
-                                                        <button class="action-button complete text-green-600 hover:text-green-800" title="Marcar como completado" onclick="pedidosApp.updateEstado('{{ pedido.id }}', 'completado')">
-                                                            <i class="fas fa-check"></i>
+                                                        <button class="action-button edit text-yellow-600 hover:text-yellow-800" title="Editar pedido" onclick="pedidosApp.editPedido('{{ pedido.id }}')">
+                                                            <i class="fas fa-edit"></i>
                                                         </button>
-                                                        <button class="action-button cancel text-red-600 hover:text-red-800" title="Cancelar pedido" onclick="pedidosApp.updateEstado('{{ pedido.id }}', 'cancelado')">
-                                                            <i class="fas fa-times"></i>
+                                                        <button class="action-button complete text-green-600 hover:text-green-800" title="Marcar como completado" onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
+                                                            <i class="fas fa-check-circle"></i>
+                                                        </button>
+                                                        <button class="action-button cancel text-red-600 hover:text-red-800" title="Cancelar pedido" onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
+                                                            <i class="fas fa-times-circle"></i>
                                                         </button>
                                                     {% endif %}
                                                 </div>
@@ -147,17 +150,198 @@
     </div>
     
     <!-- Modal de detalles del pedido -->
-    <div id="pedidoModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 max-h-screen overflow-y-auto">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-900">Detalles del Pedido</h3>
-                    <button id="closePedidoModal" class="text-gray-400 hover:text-gray-500">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
+    <div id="pedidoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-modal-top">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="pedidoModalContent">
+            <!-- Cabecera con estado del pedido -->
+            <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-90"></div>
+                <div class="relative px-6 py-8 text-white">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center mb-2">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20" id="pedidoEstadoBadge">
+                                    <!-- Estado se llenará dinámicamente -->
+                                </span>
+                            </div>
+                            <h2 class="text-2xl font-bold mb-1">Detalles del Pedido</h2>
+                            <p class="text-blue-100" id="pedidoFecha">Fecha: --</p>
+                        </div>
+                        <button id="closePedidoModal" class="text-white hover:text-blue-200 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div id="pedidoModalContent">
-                    <!-- Contenido cargado dinámicamente -->
+            </div>
+            
+            <!-- Contenido principal -->
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <!-- Información principal del pedido -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- ID del pedido -->
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                        <div class="text-gray-500 text-sm mb-1">ID del Pedido</div>
+                        <div class="text-xl font-bold text-gray-800" id="pedidoId">--</div>
+                    </div>
+                    
+                    <!-- Cliente -->
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                        <div class="text-gray-500 text-sm mb-1">Cliente</div>
+                        <div class="text-lg font-semibold text-gray-800" id="pedidoCliente">--</div>
+                        <div class="text-sm text-gray-600" id="pedidoClienteContacto">--</div>
+                    </div>
+                    
+                    <!-- Total -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                        <div class="text-blue-700 text-sm mb-1">Total del Pedido</div>
+                        <div class="text-2xl font-bold text-blue-800" id="pedidoTotal">--</div>
+                    </div>
+                </div>
+                
+                <!-- Productos del pedido -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        Productos del Pedido
+                    </h3>
+                    <div class="bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Producto</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Cantidad</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Precio Unitario</th>
+                                        <th class="text-right py-3 px-4 text-sm font-medium text-gray-700">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="pedidoProductosTable">
+                                    <!-- Los productos se llenarán dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Acciones disponibles según el estado -->
+                <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200" id="pedidoAcciones">
+                    <!-- Las acciones se llenarán dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal de confirmación de cambio de estado -->
+    <div id="confirmEstadoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-modal-top">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="confirmEstadoModalContent">
+            <!-- Cabecera con estado del pedido -->
+            <div class="relative">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-700 opacity-90"></div>
+                <div class="relative px-6 py-8 text-white">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center mb-2">
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-white bg-opacity-20" id="confirmEstadoBadge">
+                                    <!-- Estado se llenará dinámicamente -->
+                                </span>
+                            </div>
+                            <h2 class="text-2xl font-bold mb-1">Confirmar Cambio de Estado</h2>
+                            <p class="text-blue-100">¿Está seguro que desea cambiar el estado de este pedido?</p>
+                        </div>
+                        <button id="closeConfirmEstadoModal" class="text-white hover:text-blue-200 transition-colors">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contenido principal -->
+            <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+                <!-- Información principal del pedido -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <!-- ID del pedido -->
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                        <div class="text-gray-500 text-sm mb-1">ID del Pedido</div>
+                        <div class="text-xl font-bold text-gray-800" id="confirmPedidoId">--</div>
+                    </div>
+                    
+                    <!-- Cliente -->
+                    <div class="bg-gray-50 rounded-xl p-5 border border-gray-200">
+                        <div class="text-gray-500 text-sm mb-1">Cliente</div>
+                        <div class="text-lg font-semibold text-gray-800" id="confirmPedidoCliente">--</div>
+                        <div class="text-sm text-gray-600" id="confirmPedidoClienteContacto">--</div>
+                    </div>
+                    
+                    <!-- Total -->
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                        <div class="text-blue-700 text-sm mb-1">Total del Pedido</div>
+                        <div class="text-2xl font-bold text-blue-800" id="confirmPedidoTotal">--</div>
+                    </div>
+                </div>
+                
+                <!-- Productos del pedido -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                        Productos del Pedido
+                    </h3>
+                    <div class="bg-gray-50 rounded-xl overflow-hidden border border-gray-200">
+                        <div class="overflow-x-auto">
+                            <table class="w-full">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Producto</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Cantidad</th>
+                                        <th class="text-left py-3 px-4 text-sm font-medium text-gray-700">Precio Unitario</th>
+                                        <th class="text-right py-3 px-4 text-sm font-medium text-gray-700">Subtotal</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="confirmPedidoProductosTable">
+                                    <!-- Los productos se llenarán dinámicamente -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Mensaje de confirmación -->
+                <div class="mb-6 p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-yellow-800">Confirmación requerida</h3>
+                            <div class="mt-2 text-sm text-yellow-700">
+                                <p id="confirmEstadoMessage">Está a punto de cambiar el estado de este pedido. Esta acción no se puede deshacer.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Acciones disponibles -->
+                <div class="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-3 pt-4 border-t border-gray-200">
+                    <button id="cancelConfirmEstado" class="modal-action-btn secondary">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                        Cancelar
+                    </button>
+                    <button id="confirmUpdateEstado" class="modal-action-btn primary">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Confirmar
+                    </button>
                 </div>
             </div>
         </div>
@@ -268,26 +452,37 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 2rem;
-            height: 2rem;
-            border-radius: 0.375rem;
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 0.5rem;
             transition: all 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .action-button:hover {
-            background-color: #f3f4f6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
         .action-button.view:hover {
             color: #3b82f6;
             background-color: #eff6ff;
+            border: 1px solid #bfdbfe;
+        }
+        .action-button.edit:hover {
+            color: #d97706;
+            background-color: #fffbeb;
+            border: 1px solid #fde68a;
         }
         .action-button.complete:hover {
             color: #10b981;
             background-color: #ecfdf5;
+            border: 1px solid #a7f3d0;
         }
         .action-button.cancel:hover {
             color: #ef4444;
             background-color: #fef2f2;
+            border: 1px solid #fecaca;
         }
+        
         /* Estilos para la tabla */
         .table-container {
             overflow-x: auto;
@@ -326,15 +521,49 @@
         .animate-pulse-slow {
             animation: pulse-slow 3s infinite;
         }
+        
         /* Estilos para el modal de detalles */
-        .producto-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #f3f4f6;
+        .modal-backdrop {
+            transition: opacity 0.3s ease;
         }
-        .producto-item:last-child {
-            border-bottom: none;
+        
+        .modal-backdrop.hidden {
+            opacity: 0;
+        }
+        
+        .modal-backdrop:not(.hidden) {
+            opacity: 1;
+        }
+        
+        /* Animación para el modal */
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes modalFadeOut {
+            from {
+                opacity: 1;
+                transform: scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+        }
+        
+        #pedidoModalContent, #confirmEstadoModalContent {
+            animation: modalFadeIn 0.3s ease-out forwards;
+        }
+        
+        #pedidoModalContent.closing, #confirmEstadoModalContent.closing {
+            animation: modalFadeOut 0.3s ease-out forwards;
         }
         
         /* Estilos para los botones de paginación */
@@ -449,6 +678,150 @@
             background-color: #e5e7eb;
             border-color: #d1d5db;
         }
+        
+        /* Estilos para la tabla de productos en el modal */
+        #pedidoProductosTable tr, #confirmPedidoProductosTable tr {
+            border-bottom: 1px solid #e5e7eb;
+        }
+        
+        #pedidoProductosTable tr:last-child, #confirmPedidoProductosTable tr:last-child {
+            border-bottom: none;
+        }
+        
+        #pedidoProductosTable td, #confirmPedidoProductosTable td {
+            padding: 1rem;
+        }
+        
+        /* Estilos para los botones de acción en el modal */
+        .modal-action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            width: 100%;
+        }
+        
+        .modal-action-btn.primary {
+            background-color: #3b82f6;
+            color: white;
+        }
+        
+        .modal-action-btn.primary:hover {
+            background-color: #2563eb;
+        }
+        
+        .modal-action-btn.success {
+            background-color: #10b981;
+            color: white;
+        }
+        
+        .modal-action-btn.success:hover {
+            background-color: #059669;
+        }
+        
+        .modal-action-btn.danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        
+        .modal-action-btn.danger:hover {
+            background-color: #dc2626;
+        }
+        
+        .modal-action-btn.secondary {
+            background-color: white;
+            color: #6b7280;
+            border-color: #e5e7eb;
+        }
+        
+        .modal-action-btn.secondary:hover {
+            background-color: #f9fafb;
+        }
+        
+        /* Mejoras de responsividad para móviles */
+        @media (max-width: 640px) {
+            /* Ajustes para la modal en móviles */
+            #pedidoModalContent, #confirmEstadoModalContent {
+                width: 95%;
+                max-height: 95vh;
+                margin: 10px auto;
+            }
+            
+            #pedidoModal .p-6, #confirmEstadoModal .p-6 {
+                padding: 1rem;
+            }
+            
+            #pedidoModal .grid, #confirmEstadoModal .grid {
+                gap: 1rem;
+            }
+            
+            #pedidoModal .text-2xl, #confirmEstadoModal .text-2xl {
+                font-size: 1.5rem;
+            }
+            
+            #pedidoModal .text-xl, #confirmEstadoModal .text-xl {
+                font-size: 1.25rem;
+            }
+            
+            #pedidoModal .text-lg, #confirmEstadoModal .text-lg {
+                font-size: 1.125rem;
+            }
+            
+            /* Ajustes para la tabla de productos en móviles */
+            #pedidoProductosTable td, #confirmPedidoProductosTable td {
+                padding: 0.5rem;
+                font-size: 0.875rem;
+            }
+            
+            #pedidoProductosTable th, #confirmPedidoProductosTable th {
+                padding: 0.5rem;
+                font-size: 0.75rem;
+            }
+            
+            /* Ajustes para los botones de acción en móviles */
+            .modal-action-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.813rem;
+            }
+            
+            /* Ajustes para la tabla principal en móviles */
+            .table-container {
+                font-size: 0.875rem;
+            }
+            
+            th, td {
+                padding: 0.5rem;
+            }
+            
+            /* Ajustes para los botones de acción */
+            .action-button {
+                width: 2rem;
+                height: 2rem;
+            }
+        }
+        
+        /* Estilos para las imágenes de productos en la modal */
+        .producto-imagen {
+            width: 50px;
+            height: 50px;
+            object-fit: cover;
+            border-radius: 0.375rem;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .producto-info {
+            display: flex;
+            align-items: center;
+        }
+        
+        .producto-detalles {
+            margin-left: 0.75rem;
+        }
     </style>
     
     <script src="{{ url_for('static', filename='js/admin/pedido_status_toggle.js') }}"></script>
@@ -462,6 +835,8 @@
             initialized: false,
             elements: {},
             hasActiveFilters: false,
+            pedidoParaConfirmar: null,
+            nuevoEstadoParaConfirmar: null,
             
             // Inicializar la aplicación
             init: function (initialPaginationData) {
@@ -532,6 +907,155 @@
                 });
             },
             
+            // Mostrar modal de confirmación para cambiar estado
+            showConfirmEstadoModal: function (pedidoId, nuevoEstado) {
+                this.pedidoParaConfirmar = pedidoId;
+                this.nuevoEstadoParaConfirmar = nuevoEstado;
+                
+                // Cerrar la modal de detalles si está abierta
+                if (this.elements.pedidoModal && !this.elements.pedidoModal.classList.contains('hidden')) {
+                    this.closePedidoModal();
+                }
+                
+                // Cargar los datos del pedido
+                fetch(`/admin/api/pedidos/${pedidoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.showConfirmEstadoModalContent(data.pedido, nuevoEstado);
+                        } else {
+                            this.showNotification('Error al cargar detalles del pedido', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar detalles del pedido:', error);
+                        this.showNotification('Error al cargar detalles del pedido', 'error');
+                    });
+            },
+            
+            // Mostrar contenido del modal de confirmación
+            showConfirmEstadoModalContent: function (pedido, nuevoEstado) {
+                const modal = document.getElementById('confirmEstadoModal');
+                const modalContent = document.getElementById('confirmEstadoModalContent');
+                
+                if (!modal || !modalContent) return;
+                
+                // Determinar el color del estado
+                let estadoColor = 'blue';
+                let estadoIcon = 'clock';
+                let estadoText = 'En Proceso';
+                
+                if (nuevoEstado === 'completado') {
+                    estadoColor = 'green';
+                    estadoIcon = 'check-circle';
+                    estadoText = 'Completado';
+                } else if (nuevoEstado === 'cancelado') {
+                    estadoColor = 'red';
+                    estadoIcon = 'times-circle';
+                    estadoText = 'Cancelado';
+                }
+                
+                // Formatear la fecha
+                const fecha = new Date(pedido.created_at);
+                const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                // Construir el HTML para la tabla de productos con imágenes
+                let productosHtml = '';
+                if (pedido.productos && pedido.productos.length > 0) {
+                    productosHtml = pedido.productos.map(producto => {
+                        // Usar una imagen por defecto si no hay imagen disponible
+                        const imagenSrc = producto.producto_imagen || 'https://via.placeholder.com/50';
+                        
+                        return `
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="producto-info">
+                                        <img src="${imagenSrc}" alt="${producto.producto_nombre}" class="producto-imagen">
+                                        <div class="producto-detalles">
+                                            <div class="font-medium">${producto.producto_nombre}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    ${producto.cantidad}
+                                </td>
+                                <td class="py-3 px-4">
+                                    $ ${producto.precio_unitario.toLocaleString()}
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    $ ${producto.subtotal.toLocaleString()}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    productosHtml = `
+                        <tr>
+                            <td colspan="4" class="py-4 px-4 text-center text-gray-500">
+                                No hay productos en este pedido
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Mensaje de confirmación según el estado
+                let confirmMessage = '';
+                if (nuevoEstado === 'completado') {
+                    confirmMessage = 'Está a punto de marcar este pedido como completado. El cliente recibirá una notificación y se procesará el envío.';
+                } else if (nuevoEstado === 'cancelado') {
+                    confirmMessage = 'Está a punto de cancelar este pedido. El stock de los productos será devuelto al inventario y el cliente recibirá una notificación.';
+                }
+                
+                // Actualizar el contenido del modal
+                document.getElementById('confirmEstadoBadge').innerHTML = `
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    ${estadoText}
+                `;
+                document.getElementById('confirmPedidoId').textContent = pedido.id;
+                document.getElementById('confirmPedidoCliente').textContent = pedido.usuario ? pedido.usuario.nombre + ' ' + pedido.usuario.apellido : 'N/A';
+                document.getElementById('confirmPedidoClienteContacto').textContent = pedido.usuario ? pedido.usuario.numero : 'N/A';
+                document.getElementById('confirmPedidoTotal').textContent = `$ ${pedido.total.toLocaleString()}`;
+                document.getElementById('confirmPedidoProductosTable').innerHTML = productosHtml;
+                document.getElementById('confirmEstadoMessage').textContent = confirmMessage;
+                
+                // Mostrar el modal
+                modal.classList.remove('hidden');
+                
+                // Forzar reflow para que la animación se ejecute correctamente
+                modalContent.offsetHeight;
+            },
+            
+            // Cerrar modal de confirmación
+            closeConfirmEstadoModal: function() {
+                const modal = document.getElementById('confirmEstadoModal');
+                const modalContent = document.getElementById('confirmEstadoModalContent');
+                
+                if (modal && modalContent) {
+                    modalContent.classList.add('closing');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        modalContent.classList.remove('closing');
+                        this.pedidoParaConfirmar = null;
+                        this.nuevoEstadoParaConfirmar = null;
+                    }, 300);
+                }
+            },
+            
+            // Confirmar actualización de estado
+            confirmUpdateEstado: function() {
+                if (!this.pedidoParaConfirmar || !this.nuevoEstadoParaConfirmar) return;
+                
+                this.updateEstado(this.pedidoParaConfirmar, this.nuevoEstadoParaConfirmar);
+                this.closeConfirmEstadoModal();
+            },
+            
             // Cachear elementos del DOM
             cacheElements: function () {
                 this.elements.pedidosTableBody = document.getElementById('pedidosTableBody');
@@ -543,6 +1067,8 @@
                 this.elements.pedidosListLoaderOverlay = document.getElementById('pedidosListLoaderOverlay');
                 this.elements.pedidoModal = document.getElementById('pedidoModal');
                 this.elements.pedidoModalContent = document.getElementById('pedidoModalContent');
+                this.elements.confirmEstadoModal = document.getElementById('confirmEstadoModal');
+                this.elements.confirmEstadoModalContent = document.getElementById('confirmEstadoModalContent');
             },
             
             // Inicializar la vista
@@ -703,11 +1229,14 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
                                         ${this.currentEstado === 'en-proceso' ? `
-                                            <button class="action-button complete text-green-600 hover:text-green-800" title="Marcar como completado" onclick="pedidosApp.updateEstado('${pedido.id}', 'completado')">
-                                                <i class="fas fa-check"></i>
+                                            <button class="action-button edit text-yellow-600 hover:text-yellow-800" title="Editar pedido" onclick="pedidosApp.editPedido('${pedido.id}')">
+                                                <i class="fas fa-edit"></i>
                                             </button>
-                                            <button class="action-button cancel text-red-600 hover:text-red-800" title="Cancelar pedido" onclick="pedidosApp.updateEstado('${pedido.id}', 'cancelado')">
-                                                <i class="fas fa-times"></i>
+                                            <button class="action-button complete text-green-600 hover:text-green-800" title="Marcar como completado" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                                                <i class="fas fa-check-circle"></i>
+                                            </button>
+                                            <button class="action-button cancel text-red-600 hover:text-red-800" title="Cancelar pedido" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                                                <i class="fas fa-times-circle"></i>
                                             </button>
                                         ` : ''}
                                     </div>
@@ -872,81 +1401,150 @@
                     });
             },
             
-            // Mostrar modal con detalles del pedido
-            showPedidoModal: function (pedido) {
-                if (!this.elements.pedidoModal || !this.elements.pedidoModalContent) return;
-                
-                let html = `
-                    <div class="space-y-6">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <h4 class="text-sm font-medium text-gray-500">ID del Pedido</h4>
-                                <p class="text-lg font-semibold">${pedido.id}</p>
-                            </div>
-                            <div>
-                                <h4 class="text-sm font-medium text-gray-500">Estado</h4>
-                                <p class="text-lg font-semibold capitalize">${pedido.estado_pedido}</p>
-                            </div>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Cliente</h4>
-                            <p class="text-lg">${pedido.usuario ? pedido.usuario.nombre + ' ' + pedido.usuario.apellido : 'N/A'}</p>
-                            <p class="text-sm text-gray-500">${pedido.usuario ? pedido.usuario.numero : 'N/A'}</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500">Fecha</h4>
-                            <p class="text-lg">${new Date(pedido.created_at).toLocaleDateString()}</p>
-                        </div>
-                        
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-500 mb-3">Productos</h4>
-                            <div class="space-y-2">
-                `;
-                
-                if (pedido.productos && pedido.productos.length > 0) {
-                    pedido.productos.forEach(producto => {
-                        html += `
-                            <div class="producto-item">
-                                <div>
-                                    <p class="font-medium">${producto.producto_nombre}</p>
-                                    <p class="text-sm text-gray-500">Cantidad: ${producto.cantidad}</p>
-                                </div>
-                                <div class="text-right">
-                                    <p class="font-medium">$ ${producto.precio_unitario.toLocaleString()}</p>
-                                    <p class="text-sm text-gray-500">Subtotal: $ ${producto.subtotal.toLocaleString()}</p>
-                                </div>
-                            </div>
-                        `;
+            // Editar un pedido en proceso
+            editPedido: function (pedidoId) {
+                // Cargar los datos del pedido
+                fetch(`/admin/api/pedidos/${pedidoId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const pedido = data.pedido;
+                            
+                            // Abrir el modal de creación/edición
+                            crearPedidoApp.openModalForEdit(pedido);
+                        } else {
+                            this.showNotification('Error al cargar detalles del pedido', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error al cargar detalles del pedido:', error);
+                        this.showNotification('Error al cargar detalles del pedido', 'error');
                     });
-                } else {
-                    html += `<p class="text-gray-500">No hay productos en este pedido</p>`;
+            },
+            
+            // Mostrar modal con detalles del pedido - MEJORADO
+            showPedidoModal: function (pedido) {
+                const modal = this.elements.pedidoModal;
+                const modalContent = this.elements.pedidoModalContent;
+    
+                if (!modal || !modalContent) return;
+                
+                // Cerrar la modal de confirmación si está abierta
+                if (this.elements.confirmEstadoModal && !this.elements.confirmEstadoModal.classList.contains('hidden')) {
+                    this.closeConfirmEstadoModal();
+                }
+    
+                
+                if (!modal || !modalContent) return;
+                
+                // Determinar el color del estado
+                let estadoColor = 'blue';
+                let estadoIcon = 'clock';
+                if (pedido.estado_pedido === 'completado') {
+                    estadoColor = 'green';
+                    estadoIcon = 'check-circle';
+                } else if (pedido.estado_pedido === 'cancelado') {
+                    estadoColor = 'red';
+                    estadoIcon = 'times-circle';
                 }
                 
-                html += `
-                            </div>
-                        </div>
+                // Formatear la fecha
+                const fecha = new Date(pedido.created_at);
+                const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                
+                // Construir el HTML para la tabla de productos con imágenes
+                let productosHtml = '';
+                if (pedido.productos && pedido.productos.length > 0) {
+                    productosHtml = pedido.productos.map(producto => {
+                        // Usar una imagen por defecto si no hay imagen disponible
+                        const imagenSrc = producto.producto_imagen || 'https://via.placeholder.com/50';
                         
-                        <div class="border-t pt-4">
-                            <div class="flex justify-between items-center">
-                                <h4 class="text-lg font-medium">Total</h4>
-                                <p class="text-2xl font-bold">$ ${pedido.total.toLocaleString()}</p>
-                            </div>
-                        </div>
-                    </div>
+                        return `
+                            <tr>
+                                <td class="py-3 px-4">
+                                    <div class="producto-info">
+                                        <img src="${imagenSrc}" alt="${producto.producto_nombre}" class="producto-imagen">
+                                        <div class="producto-detalles">
+                                            <div class="font-medium">${producto.producto_nombre}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4">
+                                    ${producto.cantidad}
+                                </td>
+                                <td class="py-3 px-4">
+                                    $ ${producto.precio_unitario.toLocaleString()}
+                                </td>
+                                <td class="py-3 px-4 text-right">
+                                    $ ${producto.subtotal.toLocaleString()}
+                                </td>
+                            </tr>
+                        `;
+                    }).join('');
+                } else {
+                    productosHtml = `
+                        <tr>
+                            <td colspan="4" class="py-4 px-4 text-center text-gray-500">
+                                No hay productos en este pedido
+                            </td>
+                        </tr>
+                    `;
+                }
+                
+                // Construir el HTML para las acciones del modal
+                let accionesHtml = '';
+                if (pedido.estado_pedido === 'en proceso') {
+                    accionesHtml = `
+                        <button class="modal-action-btn success" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            Marcar como Completado
+                        </button>
+                        <button class="modal-action-btn danger" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            Cancelar Pedido
+                        </button>
+                    `;
+                }
+                accionesHtml += `
+                    <button class="modal-action-btn secondary" onclick="pedidosApp.closePedidoModal()">
+                        Cerrar
+                    </button>
                 `;
                 
-                this.elements.pedidoModalContent.innerHTML = html;
-                this.elements.pedidoModal.classList.remove('hidden');
+                // Actualizar el contenido del modal
+                document.getElementById('pedidoEstadoBadge').innerHTML = `
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    ${pedido.estado_pedido.charAt(0).toUpperCase() + pedido.estado_pedido.slice(1)}
+                `;
+                document.getElementById('pedidoFecha').textContent = `Fecha: ${fechaFormateada}`;
+                document.getElementById('pedidoId').textContent = pedido.id;
+                document.getElementById('pedidoCliente').textContent = pedido.usuario ? pedido.usuario.nombre + ' ' + pedido.usuario.apellido : 'N/A';
+                document.getElementById('pedidoClienteContacto').textContent = pedido.usuario ? pedido.usuario.numero : 'N/A';
+                document.getElementById('pedidoTotal').textContent = `$ ${pedido.total.toLocaleString()}`;
+                document.getElementById('pedidoProductosTable').innerHTML = productosHtml;
+                document.getElementById('pedidoAcciones').innerHTML = accionesHtml;
+                
+                // Mostrar el modal
+                modal.classList.remove('hidden');
+                
+                // Forzar reflow para que la animación se ejecute correctamente
+                modalContent.offsetHeight;
             },
             
             // Actualizar estado de un pedido (completado o cancelado)
             updateEstado: function (pedidoId, nuevoEstado) {
                 if (this.isLoading) return;
-                
-                const confirmMessage = nuevoEstado === 'completado' ? '¿Marcar este pedido como completado?' : '¿Cancelar este pedido?';
-                if (!confirm(confirmMessage)) return;
                 
                 this.isLoading = true;
                 
@@ -1086,8 +1684,65 @@
                 const closePedidoModal = document.getElementById('closePedidoModal');
                 if (closePedidoModal) {
                     closePedidoModal.addEventListener('click', () => {
-                        this.elements.pedidoModal.classList.add('hidden');
+                        this.closePedidoModal();
                     });
+                }
+                
+                // Cerrar modal de confirmación
+                const closeConfirmEstadoModal = document.getElementById('closeConfirmEstadoModal');
+                if (closeConfirmEstadoModal) {
+                    closeConfirmEstadoModal.addEventListener('click', () => {
+                        this.closeConfirmEstadoModal();
+                    });
+                }
+                
+                // Confirmar actualización de estado
+                const confirmUpdateEstado = document.getElementById('confirmUpdateEstado');
+                if (confirmUpdateEstado) {
+                    confirmUpdateEstado.addEventListener('click', () => {
+                        this.confirmUpdateEstado();
+                    });
+                }
+                
+                // Cancelar confirmación de estado
+                const cancelConfirmEstado = document.getElementById('cancelConfirmEstado');
+                if (cancelConfirmEstado) {
+                    cancelConfirmEstado.addEventListener('click', () => {
+                        this.closeConfirmEstadoModal();
+                    });
+                }
+                
+                // Cerrar modal al hacer clic fuera
+                const modal = this.elements.pedidoModal;
+                if (modal) {
+                    modal.addEventListener('click', (e) => {
+                        if (e.target === modal) {
+                            this.closePedidoModal();
+                        }
+                    });
+                }
+                
+                const confirmModal = this.elements.confirmEstadoModal;
+                if (confirmModal) {
+                    confirmModal.addEventListener('click', (e) => {
+                        if (e.target === confirmModal) {
+                            this.closeConfirmEstadoModal();
+                        }
+                    });
+                }
+            },
+            
+            // Cerrar modal con animación
+            closePedidoModal: function() {
+                const modal = this.elements.pedidoModal;
+                const modalContent = this.elements.pedidoModalContent;
+                
+                if (modal && modalContent) {
+                    modalContent.classList.add('closing');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        modalContent.classList.remove('closing');
+                    }, 300);
                 }
             }
         };
@@ -1105,456 +1760,549 @@
             }
         }
         
-        // Objeto para manejar la creación de pedidos
-        const crearPedidoApp = {
-            // Datos del pedido en construcción
-            pedido: {
-                usuario_id: null,
-                productos: [] // Array de {id, nombre, precio, existencia, cantidad}
-            },
-            
-            // Elementos del DOM
-            elements: {},
-            
-            // Inicializar
-            init: function() {
-                this.cacheElements();
-                this.setupEventListeners();
-            },
-            
-            // Cachear elementos del DOM
-            cacheElements: function() {
-                this.elements.modal = document.getElementById('crearPedidoModal');
-                this.elements.customerSearchInput = document.getElementById('customerSearchInput');
-                this.elements.customerSearchResults = document.getElementById('customerSearchResults');
-                this.elements.selectedCustomer = document.getElementById('selectedCustomer');
-                this.elements.selectedCustomerName = document.getElementById('selectedCustomerName');
-                this.elements.selectedCustomerId = document.getElementById('selectedCustomerId');
-                this.elements.removeSelectedCustomer = document.getElementById('removeSelectedCustomer');
-                this.elements.productSearchInput = document.getElementById('productSearchInput');
-                this.elements.productSearchResults = document.getElementById('productSearchResults');
-                this.elements.pedidoItemsTableBody = document.getElementById('pedidoItemsTableBody');
-                this.elements.noItemsRow = document.getElementById('noItemsRow');
-                this.elements.pedidoTotal = document.getElementById('pedidoTotal');
-                this.elements.pedidoForm = document.getElementById('pedidoForm');
-                this.elements.savePedidoBtn = document.getElementById('savePedidoBtn');
-                this.elements.cancelPedidoBtn = document.getElementById('cancelPedidoBtn');
-                this.elements.closePedidoModalBtn = document.getElementById('closePedidoModalBtn');
-            },
-            
-            // Configurar event listeners
-            setupEventListeners: function() {
-                // Búsqueda de clientes
-                this.elements.customerSearchInput.addEventListener('input', this.debounce(this.searchCustomers.bind(this), 300));
-                
-                // Seleccionar un cliente de los resultados
-                this.elements.customerSearchResults.addEventListener('click', this.selectCustomer.bind(this));
-                
-                // Remover cliente seleccionado
-                this.elements.removeSelectedCustomer.addEventListener('click', this.removeSelectedCustomer.bind(this));
-                
-                // Búsqueda de productos
-                this.elements.productSearchInput.addEventListener('input', this.debounce(this.searchProducts.bind(this), 300));
-                
-                // Seleccionar un producto de los resultados
-                this.elements.productSearchResults.addEventListener('click', this.selectProduct.bind(this));
-                
-                // Enviar formulario
-                this.elements.pedidoForm.addEventListener('submit', this.submitPedido.bind(this));
-                
-                // Cancelar y cerrar modal
-                this.elements.cancelPedidoBtn.addEventListener('click', this.closeModal.bind(this));
-                this.elements.closePedidoModalBtn.addEventListener('click', this.closeModal.bind(this));
-                
-                // Cerrar dropdowns al hacer clic fuera
-                document.addEventListener('click', this.handleOutsideClick.bind(this));
-            },
-            
-            // Manejar clics fuera de los dropdowns para cerrarlos
-            handleOutsideClick: function(event) {
-                // Cerrar dropdown de clientes si se hace clic fuera
-                if (!this.elements.customerSearchInput.contains(event.target) && 
-                    !this.elements.customerSearchResults.contains(event.target)) {
-                    this.elements.customerSearchResults.classList.add('hidden');
-                }
-                
-                // Cerrar dropdown de productos si se hace clic fuera
-                if (!this.elements.productSearchInput.contains(event.target) && 
-                    !this.elements.productSearchResults.contains(event.target)) {
-                    this.elements.productSearchResults.classList.add('hidden');
-                }
-            },
-            
-            // Búsqueda de clientes
-            searchCustomers: function() {
-                const query = this.elements.customerSearchInput.value.trim();
-                if (query.length < 2) {
-                    this.elements.customerSearchResults.classList.add('hidden');
-                    return;
-                }
-                
-                fetch(`/admin/api/usuarios-registrados?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success && data.usuarios) {
-                            this.renderCustomerResults(data.usuarios);
-                        } else {
-                            this.showNoResultsMessage(this.elements.customerSearchResults, 'No se encontraron clientes que coincidan con la búsqueda');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al buscar clientes:', error);
-                        this.showNoResultsMessage(this.elements.customerSearchResults, 'Error al buscar clientes');
-                    });
-            },
-            
-            // Renderizar resultados de búsqueda de clientes
-            renderCustomerResults: function(usuarios) {
-                if (!usuarios || usuarios.length === 0) {
-                    this.showNoResultsMessage(this.elements.customerSearchResults, 'No se encontraron clientes que coincidan con la búsqueda');
-                    return;
-                }
-                
-                let html = '';
-                usuarios.forEach(usuario => {
-                    html += `
-                        <div class="search-result-item customer-result-item" data-id="${usuario.id}" data-name="${usuario.nombre} ${usuario.apellido}">
-                            <div class="search-result-info">
-                                <div class="search-result-name">${usuario.nombre} ${usuario.apellido}</div>
-                                <div class="search-result-detail">${usuario.numero}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                this.elements.customerSearchResults.innerHTML = html;
-                this.elements.customerSearchResults.classList.remove('hidden');
-                this.elements.customerSearchResults.classList.add('search-dropdown');
-            },
-            
-            // Mostrar mensaje de no resultados
-            showNoResultsMessage: function(container, message) {
-                container.innerHTML = `<div class="no-results">${message}</div>`;
-                container.classList.remove('hidden');
-                container.classList.add('search-dropdown');
-            },
-            
-            // Seleccionar un cliente
-            selectCustomer: function(event) {
-                const item = event.target.closest('.customer-result-item');
-                if (!item) return;
-                
-                const id = item.getAttribute('data-id');
-                const name = item.getAttribute('data-name');
-                
-                this.pedido.usuario_id = id;
-                this.elements.selectedCustomerId.value = id;
-                this.elements.selectedCustomerName.textContent = name;
-                this.elements.selectedCustomer.classList.remove('hidden');
-                this.elements.customerSearchResults.classList.add('hidden');
-                this.elements.customerSearchInput.value = '';
-            },
-            
-            // Remover cliente seleccionado
-            removeSelectedCustomer: function() {
-                this.pedido.usuario_id = null;
-                this.elements.selectedCustomerId.value = '';
-                this.elements.selectedCustomer.classList.add('hidden');
-            },
-            
-            // Búsqueda de productos
-            searchProducts: function() {
-                const query = this.elements.productSearchInput.value.trim();
-                if (query.length < 2) {
-                    this.elements.productSearchResults.classList.add('hidden');
-                    return;
-                }
-                
-                fetch(`/admin/api/productos/search?q=${encodeURIComponent(query)}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success && data.productos) {
-                            this.renderProductResults(data.productos);
-                        } else {
-                            this.showNoResultsMessage(this.elements.productSearchResults, 'No se encontraron productos que coincidan con la búsqueda');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error al buscar productos:', error);
-                        this.showNoResultsMessage(this.elements.productSearchResults, 'Error al buscar productos');
-                    });
-            },
-            
-            // Renderizar resultados de búsqueda de productos
-            renderProductResults: function(productos) {
-                if (!productos || productos.length === 0) {
-                    this.showNoResultsMessage(this.elements.productSearchResults, 'No se encontraron productos que coincidan con la búsqueda');
-                    return;
-                }
-                
-                let html = '';
-                productos.forEach(producto => {
-                    html += `
-                        <div class="search-result-item product-result-item" 
-                             data-id="${producto.id}" 
-                             data-nombre="${producto.nombre}" 
-                             data-precio="${producto.precio}"
-                             data-existencia="${producto.existencia || 0}"
-                             data-imagen="${producto.imagen_url || ''}">
-                            <div class="search-result-image">
-                                ${producto.imagen_url ? 
-                                    `<img class="h-10 w-10 rounded-full object-cover" src="${producto.imagen_url}" alt="${producto.nombre}">` : 
-                                    '<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center"><span class="text-xs text-gray-500">IMG</span></div>'}
-                            </div>
-                            <div class="search-result-info">
-                                <div class="search-result-name">${producto.nombre}</div>
-                                <div class="search-result-detail">$ ${producto.precio.toLocaleString()} - Stock: ${producto.existencia || 0}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-                
-                this.elements.productSearchResults.innerHTML = html;
-                this.elements.productSearchResults.classList.remove('hidden');
-                this.elements.productSearchResults.classList.add('search-dropdown');
-            },
-            
-            // Seleccionar un producto
-            selectProduct: function(event) {
-                const item = event.target.closest('.product-result-item');
-                if (!item) return;
-                
-                const id = item.getAttribute('data-id');
-                const nombre = item.getAttribute('data-nombre');
-                const precio = parseFloat(item.getAttribute('data-precio'));
-                const existencia = parseInt(item.getAttribute('data-existencia')) || 0;
-                
-                // Verificar si el producto ya está en el pedido
-                const existingItem = this.pedido.productos.find(p => p.id === id);
-                if (existingItem) {
-                    // Si ya existe, incrementar la cantidad pero sin superar el stock
-                    existingItem.cantidad = Math.min(existingItem.cantidad + 1, existencia);
-                } else {
-                    // Si no existe, agregarlo con cantidad 1
-                    this.pedido.productos.push({
-                        id: id,
-                        nombre: nombre,
-                        precio: precio,
-                        existencia: existencia, // Guardamos el stock disponible
-                        cantidad: 1
-                    });
-                }
-                
-                this.renderPedidoItems();
-                this.elements.productSearchResults.classList.add('hidden');
-                this.elements.productSearchInput.value = '';
-            },
-            
-            // Renderizar los items del pedido en la tabla
-            renderPedidoItems: function() {
-                if (this.pedido.productos.length === 0) {
-                    this.elements.noItemsRow.classList.remove('hidden');
-                    // Eliminar todas las filas excepto la de "no items"
-                    const rows = this.elements.pedidoItemsTableBody.querySelectorAll('tr:not(#noItemsRow)');
-                    rows.forEach(row => row.remove());
-                } else {
-                    this.elements.noItemsRow.classList.add('hidden');
-                    
-                    // Eliminar todas las filas excepto la de "no items"
-                    const rows = this.elements.pedidoItemsTableBody.querySelectorAll('tr:not(#noItemsRow)');
-                    rows.forEach(row => row.remove());
-                    
-                    // Agregar cada producto como una fila
-                    this.pedido.productos.forEach((producto, index) => {
-                        const subtotal = producto.precio * producto.cantidad;
-                        const row = document.createElement('tr');
-                        row.innerHTML = `
-                            <td class="px-4 py-3">
-                                <div class="font-medium">${producto.nombre}</div>
-                                <div class="text-xs text-gray-500">Stock disponible: ${producto.existencia}</div>
-                            </td>
-                            <td class="px-4 py-3">
-                                $ ${producto.precio.toLocaleString()}
-                            </td>
-                            <td class="px-4 py-3">
-                                <input type="number" min="1" max="${producto.existencia}" value="${producto.cantidad}" 
-                                       class="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-                                       data-index="${index}" onchange="crearPedidoApp.updateCantidad(${index}, this.value)">
-                            </td>
-                            <td class="px-4 py-3">
-                                $ ${subtotal.toLocaleString()}
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <button type="button" class="text-red-500 hover:text-red-700" onclick="crearPedidoApp.removeProducto(${index})">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        `;
-                        this.elements.pedidoItemsTableBody.appendChild(row);
-                    });
-                }
-                
-                this.updateTotal();
-            },
-            
-            // Actualizar la cantidad de un producto
-            updateCantidad: function(index, newCantidad) {
-                const cantidad = parseInt(newCantidad);
-                const producto = this.pedido.productos[index];
-                
-                if (isNaN(cantidad) || cantidad < 1) {
-                    // Restaurar el valor anterior
-                    this.renderPedidoItems();
-                    return;
-                }
-                
-                // Verificar que no exceda el stock disponible
-                if (cantidad > producto.existencia) {
-                    // Ajustar al máximo disponible y mostrar mensaje
-                    producto.cantidad = producto.existencia;
-                    this.showNotification(`La cantidad máxima disponible para ${producto.nombre} es ${producto.existencia}`, 'warning');
-                } else {
-                    producto.cantidad = cantidad;
-                }
-                
-                this.renderPedidoItems();
-            },
-            
-            // Eliminar un producto del pedido
-            removeProducto: function(index) {
-                this.pedido.productos.splice(index, 1);
-                this.renderPedidoItems();
-            },
-            
-            // Actualizar el total del pedido
-            updateTotal: function() {
-                const total = this.pedido.productos.reduce((sum, producto) => {
-                    return sum + (producto.precio * producto.cantidad);
-                }, 0);
-                
-                this.elements.pedidoTotal.textContent = `$ ${total.toLocaleString()}`;
-            },
-            
-            // Enviar el pedido
-            submitPedido: function(event) {
-                event.preventDefault();
-                
-                // Validar que haya un cliente seleccionado
-                if (!this.pedido.usuario_id) {
-                    this.showNotification('Por favor, selecciona un cliente', 'error');
-                    return;
-                }
-                
-                // Validar que haya productos
-                if (this.pedido.productos.length === 0) {
-                    this.showNotification('Por favor, agrega al menos un producto', 'error');
-                    return;
-                }
-                
-                // Preparar datos para enviar
-                const data = {
-                    usuario_id: this.pedido.usuario_id,
-                    productos: this.pedido.productos.map(p => ({
-                        id: p.id,
-                        cantidad: p.cantidad,
-                        precio: p.precio
-                    }))
-                };
-                
-                // Enviar al backend
-                fetch('/admin/api/pedidos', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        this.showNotification('Pedido creado exitosamente', 'success');
-                        this.closeModal();
-                        // Recargar la lista de pedidos
-                        if (window.pedidosApp) {
-                            window.pedidosApp.loadPedidos();
-                        } else {
-                            // Si pedidosApp no está disponible, recargar la página
-                            window.location.reload();
-                        }
-                    } else {
-                        this.showNotification(data.message || 'Error al crear el pedido', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error al crear pedido:', error);
-                    this.showNotification('Error al crear el pedido', 'error');
-                });
-            },
-            
-            // Cerrar modal
-            closeModal: function() {
-                this.elements.modal.classList.add('hidden');
-                // Resetear el formulario
-                this.pedido = {
-                    usuario_id: null,
-                    productos: []
-                };
-                this.elements.customerSearchInput.value = '';
-                this.elements.productSearchInput.value = '';
-                this.elements.selectedCustomer.classList.add('hidden');
-                this.renderPedidoItems();
-            },
-            
-            // Abrir modal
-            openModal: function() {
-                this.elements.modal.classList.remove('hidden');
-            },
-            
-            // Mostrar notificación
-            showNotification: function(message, type = 'info') {
-                // Crear un elemento de notificación
-                const notification = document.createElement('div');
-                notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
-                    type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
-                    type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
-                    type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
-                    'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
-                }`;
-                
-                notification.innerHTML = `
-                    <div class="flex items-center">
-                        <div class="py-1"><i class="fas ${
-                            type === 'warning' ? 'fa-exclamation-triangle' :
-                            type === 'error' ? 'fa-times-circle' :
-                            type === 'success' ? 'fa-check-circle' :
-                            'fa-info-circle'
-                        } mr-2"></i></div>
-                        <div>${message}</div>
-                        <button class="ml-4 text-lg leading-none" onclick="this.parentElement.parentElement.remove()">×</button>
-                    </div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Eliminar la notificación después de 5 segundos
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 5000);
-            },
-            
-            // Función debounce para limitar la frecuencia de las búsquedas
-            debounce: function(func, wait) {
-                let timeout;
-                return function(...args) {
-                    const context = this;
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => func.apply(context, args), wait);
-                };
+       // Objeto para manejar la creación y edición de pedidos
+const crearPedidoApp = {
+    // Datos del pedido en construcción
+    pedido: {
+        usuario_id: null,
+        productos: [] // Array de {id, nombre, precio, existencia, cantidad}
+    },
+    
+    // Elementos del DOM
+    elements: {},
+    
+    // Modo de edición
+    isEditMode: false,
+    editingPedidoId: null,
+    
+    // Inicializar
+    init: function() {
+        this.cacheElements();
+        this.setupEventListeners();
+    },
+    
+    // Cachear elementos del DOM
+    cacheElements: function() {
+        this.elements.modal = document.getElementById('crearPedidoModal');
+        this.elements.modalContent = this.elements.modal.querySelector('.bg-white');
+        this.elements.customerSearchInput = document.getElementById('customerSearchInput');
+        this.elements.customerSearchResults = document.getElementById('customerSearchResults');
+        this.elements.selectedCustomer = document.getElementById('selectedCustomer');
+        this.elements.selectedCustomerName = document.getElementById('selectedCustomerName');
+        this.elements.selectedCustomerId = document.getElementById('selectedCustomerId');
+        this.elements.removeSelectedCustomer = document.getElementById('removeSelectedCustomer');
+        this.elements.productSearchInput = document.getElementById('productSearchInput');
+        this.elements.productSearchResults = document.getElementById('productSearchResults');
+        this.elements.pedidoItemsTableBody = document.getElementById('pedidoItemsTableBody');
+        this.elements.noItemsRow = document.getElementById('noItemsRow');
+        this.elements.pedidoTotal = document.getElementById('crearPedidoTotal'); 
+        this.elements.pedidoForm = document.getElementById('pedidoForm');
+        this.elements.savePedidoBtn = document.getElementById('savePedidoBtn');
+        this.elements.cancelPedidoBtn = document.getElementById('cancelPedidoBtn');
+        this.elements.closePedidoModalBtn = document.getElementById('closePedidoModalBtn');
+        this.elements.pedidoModalTitle = document.getElementById('pedidoModalTitle');
+    },
+    
+    // Configurar event listeners
+    setupEventListeners: function() {
+        // Búsqueda de clientes
+        this.elements.customerSearchInput.addEventListener('input', this.debounce(this.searchCustomers.bind(this), 300));
+        
+        // Seleccionar un cliente de los resultados
+        this.elements.customerSearchResults.addEventListener('click', this.selectCustomer.bind(this));
+        
+        // Remover cliente seleccionado
+        this.elements.removeSelectedCustomer.addEventListener('click', this.removeSelectedCustomer.bind(this));
+        
+        // Búsqueda de productos
+        this.elements.productSearchInput.addEventListener('input', this.debounce(this.searchProducts.bind(this), 300));
+        
+        // Seleccionar un producto de los resultados
+        this.elements.productSearchResults.addEventListener('click', this.selectProduct.bind(this));
+        
+        // Enviar formulario
+        this.elements.pedidoForm.addEventListener('submit', this.submitPedido.bind(this));
+        
+        // Cancelar y cerrar modal
+        this.elements.cancelPedidoBtn.addEventListener('click', this.closeModal.bind(this));
+        this.elements.closePedidoModalBtn.addEventListener('click', this.closeModal.bind(this));
+        
+        // Cerrar modal al hacer clic fuera del contenido
+        this.elements.modal.addEventListener('click', (e) => {
+            if (e.target === this.elements.modal) {
+                this.closeModal();
             }
+        });
+        
+        // Cerrar dropdowns al hacer clic fuera
+        document.addEventListener('click', this.handleOutsideClick.bind(this));
+    },
+    
+    // Manejar clics fuera de los dropdowns para cerrarlos
+    handleOutsideClick: function(event) {
+        // Cerrar dropdown de clientes si se hace clic fuera
+        if (!this.elements.customerSearchInput.contains(event.target) && 
+            !this.elements.customerSearchResults.contains(event.target)) {
+            this.elements.customerSearchResults.classList.add('hidden');
+        }
+        
+        // Cerrar dropdown de productos si se hace clic fuera
+        if (!this.elements.productSearchInput.contains(event.target) && 
+            !this.elements.productSearchResults.contains(event.target)) {
+            this.elements.productSearchResults.classList.add('hidden');
+        }
+    },
+    
+    // Abrir modal en modo creación
+    openModal: function() {
+        this.isEditMode = false;
+        this.editingPedidoId = null;
+        
+        // Resetear el formulario
+        this.pedido = {
+            usuario_id: null,
+            productos: []
         };
+        this.elements.customerSearchInput.value = '';
+        this.elements.productSearchInput.value = '';
+        this.elements.selectedCustomer.classList.add('hidden');
+        this.renderPedidoItems();
+        this.updateTotal();
+        
+        // Cambiar el título del modal
+        this.elements.pedidoModalTitle.textContent = 'Crear Nuevo Pedido';
+        
+        // Cambiar el texto del botón de guardar
+        this.elements.savePedidoBtn.textContent = 'Guardar Pedido';
+        
+        // Mostrar el modal
+        this.elements.modal.classList.remove('hidden');
+    },
+    
+    // Abrir modal en modo edición
+    openModalForEdit: function(pedido) {
+        this.isEditMode = true;
+        this.editingPedidoId = pedido.id;
+        
+        // Establecer el cliente
+        this.pedido.usuario_id = pedido.usuario.id;
+        this.elements.selectedCustomerId.value = pedido.usuario.id;
+        this.elements.selectedCustomerName.textContent = pedido.usuario ? pedido.usuario.nombre + ' ' + pedido.usuario.apellido : 'N/A';
+        this.elements.selectedCustomer.classList.remove('hidden');
+        
+        // Cargar los productos del pedido
+        this.pedido.productos = [];
+        if (pedido.productos && pedido.productos.length > 0) {
+            pedido.productos.forEach(item => {
+                this.pedido.productos.push({
+                    id: item.producto_id,
+                    nombre: item.producto_nombre,
+                    precio: item.precio_unitario,
+                    existencia: item.producto_existencia || 0,
+                    cantidad: item.cantidad
+                });
+            });
+        }
+        
+        // Renderizar los productos
+        this.renderPedidoItems();
+        this.updateTotal();
+        
+        // Cambiar el título del modal
+        this.elements.pedidoModalTitle.textContent = 'Editar Pedido';
+        
+        // Cambiar el texto del botón de guardar
+        this.elements.savePedidoBtn.textContent = 'Actualizar Pedido';
+        
+        // Mostrar el modal
+        this.elements.modal.classList.remove('hidden');
+    },
+    
+    // Búsqueda de clientes
+    searchCustomers: function() {
+        const query = this.elements.customerSearchInput.value.trim();
+        if (query.length < 2) {
+            this.elements.customerSearchResults.classList.add('hidden');
+            return;
+        }
+        
+        fetch(`/admin/api/usuarios-registrados?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.usuarios) {
+                    this.renderCustomerResults(data.usuarios);
+                } else {
+                    this.showNoResultsMessage(this.elements.customerSearchResults, 'No se encontraron clientes que coincidan con la búsqueda');
+                }
+            })
+            .catch(error => {
+                console.error('Error al buscar clientes:', error);
+                this.showNoResultsMessage(this.elements.customerSearchResults, 'Error al buscar clientes');
+            });
+    },
+    
+    // Renderizar resultados de búsqueda de clientes
+    renderCustomerResults: function(usuarios) {
+        if (!usuarios || usuarios.length === 0) {
+            this.showNoResultsMessage(this.elements.customerSearchResults, 'No se encontraron clientes que coincidan con la búsqueda');
+            return;
+        }
+        
+        let html = '';
+        usuarios.forEach(usuario => {
+            html += `
+                <div class="search-result-item customer-result-item" data-id="${usuario.id}" data-name="${usuario.nombre} ${usuario.apellido}">
+                    <div class="search-result-info">
+                        <div class="search-result-name">${usuario.nombre} ${usuario.apellido}</div>
+                        <div class="search-result-detail">${usuario.numero}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        this.elements.customerSearchResults.innerHTML = html;
+        this.elements.customerSearchResults.classList.remove('hidden');
+        this.elements.customerSearchResults.classList.add('search-dropdown');
+    },
+    
+    // Mostrar mensaje de no resultados
+    showNoResultsMessage: function(container, message) {
+        container.innerHTML = `<div class="no-results">${message}</div>`;
+        container.classList.remove('hidden');
+        container.classList.add('search-dropdown');
+    },
+    
+    // Seleccionar un cliente
+    selectCustomer: function(event) {
+        const item = event.target.closest('.customer-result-item');
+        if (!item) return;
+        
+        const id = item.getAttribute('data-id');
+        const name = item.getAttribute('data-name');
+        
+        this.pedido.usuario_id = id;
+        this.elements.selectedCustomerId.value = id;
+        this.elements.selectedCustomerName.textContent = name;
+        this.elements.selectedCustomer.classList.remove('hidden');
+        this.elements.customerSearchResults.classList.add('hidden');
+        this.elements.customerSearchInput.value = '';
+    },
+    
+    // Remover cliente seleccionado
+    removeSelectedCustomer: function() {
+        this.pedido.usuario_id = null;
+        this.elements.selectedCustomerId.value = '';
+        this.elements.selectedCustomer.classList.add('hidden');
+    },
+    
+    // Búsqueda de productos
+    searchProducts: function() {
+        const query = this.elements.productSearchInput.value.trim();
+        if (query.length < 2) {
+            this.elements.productSearchResults.classList.add('hidden');
+            return;
+        }
+        
+        fetch(`/admin/api/productos/search?q=${encodeURIComponent(query)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.productos) {
+                    this.renderProductResults(data.productos);
+                } else {
+                    this.showNoResultsMessage(this.elements.productSearchResults, 'No se encontraron productos que coincidan con la búsqueda');
+                }
+            })
+            .catch(error => {
+                console.error('Error al buscar productos:', error);
+                this.showNoResultsMessage(this.elements.productSearchResults, 'Error al buscar productos');
+            });
+    },
+    
+    // Renderizar resultados de búsqueda de productos
+    renderProductResults: function(productos) {
+        if (!productos || productos.length === 0) {
+            this.showNoResultsMessage(this.elements.productSearchResults, 'No se encontraron productos que coincidan con la búsqueda');
+            return;
+        }
+        
+        let html = '';
+        productos.forEach(producto => {
+            html += `
+                <div class="search-result-item product-result-item" 
+                     data-id="${producto.id}" 
+                     data-nombre="${producto.nombre}" 
+                     data-precio="${producto.precio}"
+                     data-existencia="${producto.existencia || 0}"
+                     data-imagen="${producto.imagen_url || ''}">
+                    <div class="search-result-image">
+                        ${producto.imagen_url ? 
+                            `<img class="h-10 w-10 rounded-full object-cover" src="${producto.imagen_url}" alt="${producto.nombre}">` : 
+                            '<div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center"><span class="text-xs text-gray-500">IMG</span></div>'}
+                    </div>
+                    <div class="search-result-info">
+                        <div class="search-result-name">${producto.nombre}</div>
+                        <div class="search-result-detail">$ ${producto.precio.toLocaleString()} - Stock: ${producto.existencia || 0}</div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        this.elements.productSearchResults.innerHTML = html;
+        this.elements.productSearchResults.classList.remove('hidden');
+        this.elements.productSearchResults.classList.add('search-dropdown');
+    },
+    
+    // Seleccionar un producto
+    selectProduct: function(event) {
+        const item = event.target.closest('.product-result-item');
+        if (!item) return;
+        
+        const id = item.getAttribute('data-id');
+        const nombre = item.getAttribute('data-nombre');
+        const precio = parseFloat(item.getAttribute('data-precio'));
+        const existencia = parseInt(item.getAttribute('data-existencia')) || 0;
+        
+        // Verificar si el producto ya está en el pedido
+        const existingItem = this.pedido.productos.find(p => p.id === id);
+        if (existingItem) {
+            // Si ya existe, incrementar la cantidad pero sin superar el stock
+            existingItem.cantidad = Math.min(existingItem.cantidad + 1, existencia);
+        } else {
+            // Si no existe, agregarlo con cantidad 1
+            this.pedido.productos.push({
+                id: id,
+                nombre: nombre,
+                precio: precio,
+                existencia: existencia, // Guardamos el stock disponible
+                cantidad: 1
+            });
+        }
+        
+        this.renderPedidoItems();
+        this.updateTotal();
+        this.elements.productSearchResults.classList.add('hidden');
+        this.elements.productSearchInput.value = '';
+    },
+    
+    // Renderizar los items del pedido en la tabla
+    renderPedidoItems: function() {
+        if (this.pedido.productos.length === 0) {
+            this.elements.noItemsRow.classList.remove('hidden');
+            // Eliminar todas las filas excepto la de "no items"
+            const rows = this.elements.pedidoItemsTableBody.querySelectorAll('tr:not(#noItemsRow)');
+            rows.forEach(row => row.remove());
+        } else {
+            this.elements.noItemsRow.classList.add('hidden');
+            
+            // Eliminar todas las filas excepto la de "no items"
+            const rows = this.elements.pedidoItemsTableBody.querySelectorAll('tr:not(#noItemsRow)');
+            rows.forEach(row => row.remove());
+            
+            // Agregar cada producto como una fila
+            this.pedido.productos.forEach((producto, index) => {
+                const subtotal = producto.precio * producto.cantidad;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-4 py-3">
+                        <div class="font-medium">${producto.nombre}</div>
+                        <div class="text-xs text-gray-500">Stock disponible: ${producto.existencia}</div>
+                    </td>
+                    <td class="px-4 py-3">
+                        $ ${producto.precio.toLocaleString()}
+                    </td>
+                    <td class="px-4 py-3">
+                        <input type="number" min="1" max="${producto.existencia}" value="${producto.cantidad}" 
+                               class="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
+                               data-index="${index}" onchange="crearPedidoApp.updateCantidad(${index}, this.value)">
+                    </td>
+                    <td class="px-4 py-3">
+                        $ ${subtotal.toLocaleString()}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                        <button type="button" class="text-red-500 hover:text-red-700" onclick="crearPedidoApp.removeProducto(${index})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                this.elements.pedidoItemsTableBody.appendChild(row);
+            });
+        }
+        
+        this.updateTotal();
+    },
+    
+    // Actualizar la cantidad de un producto
+    updateCantidad: function(index, newCantidad) {
+        const cantidad = parseInt(newCantidad);
+        const producto = this.pedido.productos[index];
+        
+        if (isNaN(cantidad) || cantidad < 1) {
+            // Restaurar el valor anterior
+            this.renderPedidoItems();
+            return;
+        }
+        
+        // Verificar que no exceda el stock disponible
+        if (cantidad > producto.existencia) {
+            // Ajustar al máximo disponible y mostrar mensaje
+            producto.cantidad = producto.existencia;
+            this.showNotification(`La cantidad máxima disponible para ${producto.nombre} es ${producto.existencia}`, 'warning');
+        } else {
+            producto.cantidad = cantidad;
+        }
+        
+        this.renderPedidoItems(); // Volver a renderizar para actualizar los subtotales
+        this.updateTotal();
+    },
+    
+    // Eliminar un producto del pedido
+    removeProducto: function(index) {
+        this.pedido.productos.splice(index, 1);
+        this.renderPedidoItems();
+        this.updateTotal();
+    },
+    
+    // Actualizar el total del pedido
+    updateTotal: function() {
+        const total = this.pedido.productos.reduce((sum, producto) => {
+            return sum + (producto.precio * producto.cantidad);
+        }, 0);
+        
+        // Asegurémonos de que el elemento del DOM exista y actualizarlo
+        if (this.elements.pedidoTotal) {
+            this.elements.pedidoTotal.textContent = `$ ${total.toLocaleString()}`;
+        }
+    },
+    
+    // Enviar el pedido (crear o editar)
+    submitPedido: function(event) {
+        event.preventDefault();
+        
+        // Validar que haya un cliente seleccionado
+        if (!this.pedido.usuario_id) {
+            this.showNotification('Por favor, selecciona un cliente', 'error');
+            return;
+        }
+        
+        // Validar que haya productos
+        if (this.pedido.productos.length === 0) {
+            this.showNotification('Por favor, agrega al menos un producto', 'error');
+            return;
+        }
+        
+        // Preparar datos para enviar
+        const data = {
+            usuario_id: this.pedido.usuario_id,
+            productos: this.pedido.productos.map(p => ({
+                id: p.id,
+                cantidad: p.cantidad,
+                precio: p.precio
+            }))
+        };
+        
+        let url = '/admin/api/pedidos';
+        let method = 'POST';
+        let successMessage = 'Pedido creado exitosamente';
+        
+        // Si estamos en modo edición, cambiar la URL y el método
+        if (this.isEditMode) {
+            url = `/admin/api/pedidos/${this.editingPedidoId}`;
+            method = 'PUT';
+            successMessage = 'Pedido actualizado exitosamente';
+        }
+        
+        // Enviar al backend
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                this.showNotification(successMessage, 'success');
+                this.closeModal();
+                // Recargar la lista de pedidos
+                if (window.pedidosApp) {
+                    window.pedidosApp.loadPedidos();
+                } else {
+                    // Si pedidosApp no está disponible, recargar la página
+                    window.location.reload();
+                }
+            } else {
+                this.showNotification(data.message || 'Error al procesar el pedido', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error al procesar el pedido:', error);
+            this.showNotification('Error al procesar el pedido', 'error');
+        });
+    },
+    
+    // Cerrar modal
+    closeModal: function() {
+        this.elements.modal.classList.add('hidden');
+        // Resetear el formulario y el modo
+        this.isEditMode = false;
+        this.editingPedidoId = null;
+        this.pedido = {
+            usuario_id: null,
+            productos: []
+        };
+        this.elements.customerSearchInput.value = '';
+        this.elements.productSearchInput.value = '';
+        this.elements.selectedCustomer.classList.add('hidden');
+        this.renderPedidoItems();
+        this.updateTotal();
+    },
+    
+    // Mostrar notificación
+    showNotification: function(message, type = 'info') {
+        // Crear un elemento de notificación
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'warning' ? 'bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500' :
+            type === 'error' ? 'bg-red-100 text-red-800 border-l-4 border-red-500' :
+            type === 'success' ? 'bg-green-100 text-green-800 border-l-4 border-green-500' :
+            'bg-blue-100 text-blue-800 border-l-4 border-blue-500'
+        }`;
+        
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <div class="py-1"><i class="fas ${
+                    type === 'warning' ? 'fa-exclamation-triangle' :
+                    type === 'error' ? 'fa-times-circle' :
+                    type === 'success' ? 'fa-check-circle' :
+                    'fa-info-circle'
+                } mr-2"></i></div>
+                <div>${message}</div>
+                <button class="ml-4 text-lg leading-none" onclick="this.parentElement.parentElement.remove()">×</button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Eliminar la notificación después de 5 segundos
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
+    },
+    
+    // Función debounce para limitar la frecuencia de las búsquedas
+    debounce: function(func, wait) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), wait);
+        };
+    }
+};
         
         // Función de inicialización para SPA
         function initializePedidosApp() {

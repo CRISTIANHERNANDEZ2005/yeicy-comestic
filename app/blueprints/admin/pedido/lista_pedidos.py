@@ -134,6 +134,11 @@ def get_pedido_detalle(admin_user, pedido_id):
                 'success': False,
                 'message': 'Pedido no encontrado'
             }), 404
+        
+        # Ajustar el stock de los productos en el pedido para la edición
+        for item in pedido.productos:
+            if item.producto:
+                item.producto.existencia += item.cantidad
             
         pedido_data = pedido_detalle_to_dict(pedido)
         
@@ -392,14 +397,13 @@ def create_pedido(admin_user):
 @admin_jwt_required
 def update_pedido(admin_user, pedido_id):
     try:
-        pedido = Pedido.query.get(pedido_id)
+        pedido = Pedido.query.options(joinedload(Pedido.productos).joinedload(PedidoProducto.producto)).get(pedido_id)
         if not pedido:
             return jsonify({
                 'success': False,
                 'message': 'Pedido no encontrado'
             }), 404
 
-        # Verificar que el pedido esté en proceso
         if pedido.estado_pedido != 'en proceso':
             return jsonify({
                 'success': False,
@@ -416,35 +420,50 @@ def update_pedido(admin_user, pedido_id):
         if not usuario_id or not productos_payload:
             return jsonify({'success': False, 'message': 'Faltan datos: se requiere usuario_id y productos'}), 400
 
-        # Validar que el usuario exista
         usuario = Usuarios.query.get(usuario_id)
         if not usuario:
             return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
 
-        # Si el usuario cambió, actualizarlo
         if pedido.usuario_id != usuario_id:
             pedido.usuario_id = usuario_id
 
-        # Procesar los productos
-        # Primero, eliminamos todos los productos actuales del pedido para reemplazarlos
+        # 1. Guardar las cantidades originales y devolver el stock
+        productos_originales = {p.producto_id: p.cantidad for p in pedido.productos}
+        for item in pedido.productos:
+            item.producto.existencia += item.cantidad
+
+        # 2. Eliminar los productos antiguos del pedido
         PedidoProducto.query.filter_by(pedido_id=pedido.id).delete()
 
         total_pedido = 0
         productos_a_procesar = []
 
+        # 3. Validar y procesar nuevos productos
         for item in productos_payload:
             producto_id = item.get('id')
             cantidad = item.get('cantidad')
 
             if not producto_id or not isinstance(cantidad, int) or cantidad <= 0:
+                # Revertir el stock si hay un error
+                for prod_id, cant in productos_originales.items():
+                    producto_a_revertir = Productos.query.get(prod_id)
+                    if producto_a_revertir:
+                        producto_a_revertir.existencia -= cant
+                db.session.commit()
                 return jsonify({'success': False, 'message': f'Datos de producto inválidos: {item}'}), 400
 
             producto = Productos.query.get(producto_id)
             if not producto:
                 return jsonify({'success': False, 'message': f'Producto con ID {producto_id} no encontrado'}), 404
 
-            # Validar stock disponible
+            # Validar stock disponible (ahora es correcto)
             if producto.existencia < cantidad:
+                # Revertir el stock si no hay suficiente
+                for prod_id, cant in productos_originales.items():
+                    producto_a_revertir = Productos.query.get(prod_id)
+                    if producto_a_revertir:
+                        producto_a_revertir.existencia -= cant
+                db.session.commit()
                 return jsonify({
                     'success': False,
                     'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado: {cantidad}'
@@ -459,11 +478,10 @@ def update_pedido(admin_user, pedido_id):
                 'precio_unitario': producto.precio
             })
 
-        # Actualizar el total del pedido
+        # 4. Actualizar el pedido y el stock
         pedido.total = total_pedido
         pedido.updated_at = datetime.utcnow()
 
-        # Añadir productos al pedido y actualizar stock
         for item in productos_a_procesar:
             pedido_producto = PedidoProducto(
                 pedido_id=pedido.id,
@@ -472,8 +490,8 @@ def update_pedido(admin_user, pedido_id):
                 precio_unitario=item['precio_unitario']
             )
             db.session.add(pedido_producto)
-
-            # Actualizar stock (restar la diferencia entre el stock anterior y el nuevo)
+            
+            # Restar el nuevo stock
             item['producto_obj'].existencia -= item['cantidad']
 
         db.session.commit()
@@ -496,14 +514,10 @@ def update_pedido(admin_user, pedido_id):
 @admin_jwt_required
 def update_pedido_estado(admin_user, pedido_id):
     try:
-        pedido = Pedido.query.get(pedido_id)
+        pedido = Pedido.query.options(joinedload(Pedido.productos)).get(pedido_id)
         if not pedido:
-            return jsonify({
-                'success': False,
-                'message': 'Pedido no encontrado'
-            }), 404
+            return jsonify({'success': False, 'message': 'Pedido no encontrado'}), 404
 
-        # Verificar si el pedido está inactivo
         if pedido.estado == 'inactivo':
             return jsonify({
                 'success': False,
@@ -513,20 +527,14 @@ def update_pedido_estado(admin_user, pedido_id):
 
         data = request.get_json()
         if not data or 'estado' not in data:
-            return jsonify({
-                'success': False,
-                'message': 'Datos incompletos'
-            }), 400
+            return jsonify({'success': False, 'message': 'Datos incompletos'}), 400
 
         nuevo_estado = data.get('estado')
         if nuevo_estado not in ['completado', 'cancelado', 'en proceso']:
-            return jsonify({
-                'success': False,
-                'message': 'Estado no válido'
-            }), 400
+            return jsonify({'success': False, 'message': 'Estado no válido'}), 400
 
-        # Verificar si el estado ya es el mismo
-        if pedido.estado_pedido == nuevo_estado:
+        old_status = pedido.estado_pedido
+        if old_status == nuevo_estado:
             return jsonify({
                 'success': True,
                 'message': f'El pedido ya estaba {nuevo_estado}',
@@ -534,37 +542,42 @@ def update_pedido_estado(admin_user, pedido_id):
                 'current_status': nuevo_estado
             }), 200
 
-        # Guardar estado anterior para logging y manejo de stock
-        old_status = pedido.estado_pedido
-
-        # Actualizar el estado del pedido
-        pedido.estado_pedido = nuevo_estado
-        pedido.updated_at = datetime.utcnow()
-
-        # Manejo de stock según el cambio de estado
-        if nuevo_estado == 'cancelado' and old_status != 'cancelado':
-            # Si se cancela el pedido, devolver el stock de productos
+        # --- Lógica de stock refactorizada ---
+        
+        # 1. Mover a 'cancelado' (desde 'en proceso' o 'completado')
+        if nuevo_estado == 'cancelado' and old_status in ['en proceso', 'completado']:
             for item in pedido.productos:
                 producto = Productos.query.get(item.producto_id)
                 if producto:
                     producto.existencia += item.cantidad
-                    db.session.add(producto)
-        elif nuevo_estado == 'en proceso' and old_status == 'cancelado':
-            # Si se reactiva un pedido cancelado, volver a restar el stock
+            current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
+
+        # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
+        elif old_status == 'cancelado' and nuevo_estado in ['en proceso', 'completado']:
+            # Verificar stock antes de hacer cambios
             for item in pedido.productos:
                 producto = Productos.query.get(item.producto_id)
-                if producto and producto.existencia >= item.cantidad:
+                if not producto or producto.existencia < item.cantidad:
+                    db.session.rollback()
+                    return jsonify({
+                        'success': False,
+                        'message': f'Stock insuficiente para reactivar el pedido. Producto: {producto.nombre if producto else "ID " + str(item.producto_id)}.'
+                    }), 400
+            
+            # Si hay stock, restarlo
+            for item in pedido.productos:
+                producto = Productos.query.get(item.producto_id)
+                if producto:
                     producto.existencia -= item.cantidad
-                    db.session.add(producto)
-                elif producto:
-                    # Si no hay stock suficiente, marcar como inactivo
-                    pedido.estado = 'inactivo'
-                    db.session.add(pedido)
+            current_app.logger.info(f"Stock restado para pedido {pedido.id} reactivado (cancelado -> {nuevo_estado}).")
 
-        # Guardar cambios
+        # --- Fin de la lógica de stock ---
+
+        pedido.estado_pedido = nuevo_estado
+        pedido.updated_at = datetime.utcnow()
+        
         db.session.commit()
 
-        # Registrar la acción
         current_app.logger.info(
             f"Pedido {pedido_id} cambiado de estado de {old_status} a {nuevo_estado} "
             f"por administrador {admin_user.id} ('{admin_user.nombre}')"
@@ -581,8 +594,5 @@ def update_pedido_estado(admin_user, pedido_id):
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Error al cambiar el estado del pedido'
-        }), 500
+        current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error al cambiar el estado del pedido'}), 500

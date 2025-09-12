@@ -47,27 +47,39 @@ def get_registered_users(admin_user):
 def search_products(admin_user):
     try:
         search_term = request.args.get('q', '', type=str)
+        pedido_id = request.args.get('pedido_id', None, type=str)
+
         if not search_term or len(search_term) < 2:
             return jsonify({
                 'success': True,
                 'productos': []
             })
 
-        productos = Productos.query.filter(
+        # Si se edita un pedido, obtener los IDs de productos que ya están en él
+        product_ids_in_order = []
+        if pedido_id:
+            product_ids_in_order = [
+                pp.producto_id for pp in 
+                PedidoProducto.query.filter_by(pedido_id=pedido_id).with_entities(PedidoProducto.producto_id).all()
+            ]
+
+        # Construir la consulta base
+        query = Productos.query.filter(
             or_(
                 Productos.nombre.ilike(f'%{search_term}%'),
                 Productos.descripcion.ilike(f'%{search_term}%')
             ),
             Productos.estado == 'ACTIVO'
-        ).limit(20).all()
+        )
+
+        # Excluir los productos que ya están en el pedido
+        if product_ids_in_order:
+            query = query.filter(Productos.id.notin_(product_ids_in_order))
+
+        productos = query.limit(20).all()
         
-        # Modificación: Incluir información de stock en la respuesta
-        productos_data = []
-        for p in productos:
-            producto_dict = producto_to_dict(p)
-            # Asegurarnos de incluir el stock disponible
-            producto_dict['existencia'] = p.existencia
-            productos_data.append(producto_dict)
+        # Serializar productos a diccionario
+        productos_data = [producto_to_dict(p) for p in productos]
         
         return jsonify({
             'success': True,
@@ -75,7 +87,7 @@ def search_products(admin_user):
         })
 
     except Exception as e:
-        current_app.logger.error(f"Error al buscar productos: {e}")
+        current_app.logger.error(f"Error al buscar productos: {e}", exc_info=True)
         return jsonify({
             'success': False,
             'message': 'Error al buscar productos'

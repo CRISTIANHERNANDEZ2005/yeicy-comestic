@@ -27,9 +27,8 @@ def get_all_categories(admin_user, view_type=None):
     elif view_type == 'seudocategorias':
         current_view = 'pseudo'
     else:
-        current_view = 'all' # Default view if no specific view_type is provided or recognized
+        current_view = 'all'
 
-    # Override with query parameter if present (for backward compatibility or specific use cases)
     current_view = request.args.get('view', current_view)
     
     try:
@@ -149,7 +148,6 @@ def get_all_categories(admin_user, view_type=None):
             pagination_data = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
-            # Add total_general for initial load
             pagination_data.total_general = db.session.query(Seudocategorias.id).count()
                 
             # Serializar datos

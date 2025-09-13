@@ -493,19 +493,12 @@
 </style>
 <div class="container mx-auto px-4 py-8">
     {% if error %}
-    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 fade-in">
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm text-red-700">{{ error }}</p>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        window.toast.error({{ error|tojson }});
+    });
+</script>
+{% endif %}
     
     {% if pedido %}
     <!-- Encabezado del pedido -->
@@ -563,11 +556,11 @@
                                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                                         </svg>
-                                        $ <span class="precio-unitario">{{ "%.0f"|format(item.precio_unitario) }}</span> c/u
+                                        $ <span class="precio-unitario" data-value="{{ item.precio_unitario }}">{{ "%.0f"|format(item.precio_unitario) }}</span> c/u
                                     </div>
                                 </div>
                             </div>
-                            <div class="producto-price">$ <span class="precio-subtotal">{{ "%.0f"|format(item.subtotal) }}</span></div>
+                            <div class="producto-price">$ <span class="precio-subtotal" data-value="{{ item.subtotal }}">{{ "%.0f"|format(item.subtotal) }}</span></div>
                         </div>
                         {% endfor %}
                     </div>
@@ -582,21 +575,21 @@
                 <div class="card-body">
                     <div class="resumen-item">
                         <span class="resumen-label">Subtotal</span>
-                        <span class="resumen-value">$ <span class="resumen-subtotal">{{ "%.0f"|format(pedido.total) }}</span></span>
+                        <span class="resumen-value resumen-subtotal" data-value="{{ pedido.subtotal_productos }}">{{ "%.0f"|format(pedido.subtotal_productos) }}</span>
                     </div>
                     <div class="resumen-item">
                         <span class="resumen-label">Envío</span>
-                        <span class="resumen-value">$ <span class="resumen-envio">0</span></span>
+                        <span class="resumen-value resumen-envio" data-value="0">0</span>
                     </div>
                     <div class="resumen-item">
                         <span class="resumen-label">Impuestos</span>
-                        <span class="resumen-value">$ <span class="resumen-impuestos">0</span></span>
+                        <span class="resumen-value resumen-impuestos" data-value="0">0</span>
                     </div>
                     <div class="resumen-item resumen-total">
                         <span class="resumen-label">Total</span>
-                        <span class="resumen-value">$ <span class="resumen-total">{{ "%.0f"|format(pedido.total) }}</span></span>
+                        <span class="resumen-value resumen-total-value" data-value="{{ pedido.total }}">{{ "%.0f"|format(pedido.total) }}</span>
                     </div>
-                    
+
                     <div class="btn-group">
                         <a href="{{ url_for('order.generar_factura_pdf', order_id=pedido.id) }}" target="_blank" class="btn btn-secondary">
                             <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -721,7 +714,6 @@
     </div>
     {% endif %}
 </div>
-
 <!-- Modal de confirmación para reordenar -->
 <div id="reordenar-modal" class="modal">
     <div class="modal-content">
@@ -745,43 +737,57 @@
     </div>
 </div>
 
-<!-- Contenedor para las notificaciones toast -->
-<div id="toast-container" class="toast-container"></div>
-
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Función para formatear números al formato colombiano
         function formatNumberColombian(value) {
             try {
+                // Si el valor es un string, intentar convertirlo a número
+                if (typeof value === 'string') {
+                    // Eliminar cualquier caracter no numérico excepto el punto decimal
+                    value = value.replace(/[^\d.-]/g, '');
+                    value = parseFloat(value);
+                }
+                
+                // Si no es un número válido, devolver 0
+                if (isNaN(value) || value === null || value === undefined) {
+                    return '0';
+                }
+                
                 // Convertir a entero para eliminar decimales
-                value = parseInt(parseFloat(value));
+                value = Math.round(value);
+                
                 // Formatear con puntos como separadores de miles
                 return value.toLocaleString('es-CO').replace(/,/g, '.');
             } catch (e) {
-                return value;
+                console.error('Error formateando número:', e);
+                return '0';
             }
         }
-
+        
         // Función para actualizar todos los precios en la página
         function updatePricesFormat() {
             // Seleccionar todos los elementos que contienen precios
-            const priceElements = document.querySelectorAll('.precio-unitario, .precio-subtotal, .resumen-subtotal, .resumen-envio, .resumen-impuestos, .resumen-total');
+            const priceElements = document.querySelectorAll('.precio-unitario, .precio-subtotal, .resumen-subtotal, .resumen-envio, .resumen-impuestos, .resumen-total-value');
             
             priceElements.forEach(element => {
-                // Obtener el texto del elemento
-                const text = element.textContent;
+                // Obtener el valor del atributo data-value
+                const value = element.getAttribute('data-value');
                 
-                // Extraer el valor numérico (eliminar el símbolo $ y espacios)
-                const value = text.replace('$', '').trim();
+                // *** AÑADIR ESTAS LÍNEAS DE DEPURACIÓN ***
+                console.log(`Elemento: ${element.className}, data-value original: "${value}"`);
                 
                 // Formatear el valor
                 const formattedValue = formatNumberColombian(value);
                 
+                console.log(`Elemento: ${element.className}, valor formateado: "${formattedValue}"`);
+                // *** FIN DE LÍNEAS DE DEPURACIÓN ***
+
                 // Actualizar el texto del elemento
                 element.textContent = formattedValue;
             });
         }
-
+        
         // Llamar a la función cuando se carga la página
         updatePricesFormat();
         
@@ -851,7 +857,7 @@
                     this.innerHTML = originalContent;
                     this.disabled = false;
                     
-                    showToast('Error de conexión. Por favor, intenta de nuevo más tarde.', 'error');
+                    window.toast.error('Error de conexión. Por favor, intenta de nuevo más tarde.');
                 }
             });
         }
@@ -950,27 +956,24 @@
                     // Cerrar la modal
                     reordenarModal.classList.remove('show');
                     
-                    // Mostrar mensaje de éxito
-                    showToast('Pedido reordenado correctamente. Redirigiendo al carrito...', 'success');
-                    
-                    // Redirigir al carrito después de un breve retraso
-                    setTimeout(() => {
-                        window.location.href = '/carrito';
-                    }, 1500);
+                    // Mostrar mensaje de éxito o advertencia consolidada
+                    let toastType = data.warnings && data.warnings.length > 0 ? 'warning' : 'success';
+                    window.toast.show(data.message || '¡Productos añadidos al carrito!', toastType);
+                    // Actualizar el carrito en el frontend
+                    if (window.cart) {
+                        window.cart.hydrateCartFromServer();
+                    }
+                    // No abrir el carrito automáticamente, según la solicitud del usuario
+                    // if (data.open_cart && window.cart) {
+                    //     setTimeout(() => {
+                    //         window.cart.openCartModal();
+                    //     }, 500); // Pequeño retraso para que el usuario vea el toast
+                    // }
                 } else {
                     // Mostrar mensaje de error
                     let errorMessage = data.message || 'Error al reordenar el pedido';
                     
-                    // Si hay productos no disponibles, mostrarlos
-                    if (data.productos_no_disponibles && data.productos_no_disponibles.length > 0) {
-                        errorMessage += '<br><br>Productos sin stock suficiente:<ul>';
-                        data.productos_no_disponibles.forEach(producto => {
-                            errorMessage += `<li>${producto.nombre}: solicitado ${producto.cantidad_solicitada}, disponible ${producto.cantidad_disponible}</li>`;
-                        });
-                        errorMessage += '</ul>';
-                    }
-                    
-                    showToast(errorMessage, 'error');
+                    window.toast.error(errorMessage);
                 }
             } catch (error) {
                 console.error('Error:', error);
@@ -979,7 +982,7 @@
                 this.innerHTML = originalContent;
                 this.disabled = false;
                 
-                showToast('Error de conexión. Por favor, intenta de nuevo más tarde.', 'error');
+                window.toast.error('Error de conexión. Por favor, intenta de nuevo más tarde.');
             }
         });
         
@@ -990,29 +993,7 @@
             if (parts.length === 2) return parts.pop().split(';').shift();
         }
         
-        // Función para mostrar notificaciones toast
-        function showToast(message, type = 'info') {
-            // Crear el toast
-            const toast = document.createElement('div');
-            toast.className = `toast ${type}`;
-            toast.innerHTML = message;
-            
-            // Añadir el toast al contenedor
-            toastContainer.appendChild(toast);
-            
-            // Forzar reflow para activar la transición
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 10);
-            
-            // Eliminar después de 5 segundos
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    toastContainer.removeChild(toast);
-                }, 300);
-            }, 5000);
-        }
+        
     });
 </script>
 
@@ -1147,57 +1128,7 @@
         text-align: right;
     }
     
-    /* Estilos para las notificaciones toast */
-    .toast-container {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-    }
     
-    .toast {
-        padding: 16px;
-        margin-bottom: 10px;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        max-width: 350px;
-        opacity: 0;
-        transform: translateY(20px);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .toast.show {
-        opacity: 1;
-        transform: translateY(0);
-    }
-    
-    .toast.success {
-        background-color: #10B981;
-        color: white;
-    }
-    
-    .toast.error {
-        background-color: #EF4444;
-        color: white;
-    }
-    
-    .toast::after {
-        content: '';
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 4px;
-        background: rgba(255, 255, 255, 0.3);
-        animation: progress 5s linear forwards;
-    }
-    
-    @keyframes progress {
-        from { width: 100%; }
-        to { width: 0%; }
-    }
     
     /* Animación para el spinner */
     .animate-spin {

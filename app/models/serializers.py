@@ -395,30 +395,43 @@ def pedido_detalle_cliente_to_dict(pedido):
         }
 
     productos_info = []
+    calculated_total = 0
+    
     if pedido.productos:
         for pp in pedido.productos:
+            subtotal = pp.cantidad * pp.precio_unitario
+            calculated_total += subtotal
+            
             productos_info.append({
                 'producto_id': pp.producto_id,
                 'producto_nombre': pp.producto.nombre if pp.producto else 'Producto no disponible',
                 'producto_imagen_url': pp.producto.imagen_url if pp.producto else None,
-                'producto_marca': pp.producto.marca if pp.producto else 'N/A',  # Añadimos esta línea
+                'producto_marca': pp.producto.marca if pp.producto else 'N/A',
                 'producto_existencia': pp.producto.existencia if pp.producto else 0,
                 'cantidad': pp.cantidad,
                 'precio_unitario': pp.precio_unitario,
-                'subtotal': pp.cantidad * pp.precio_unitario
+                'subtotal': subtotal
             })
+
+    # Asegurarnos de que pedido.total sea un número válido
+    try:
+        final_total = float(pedido.total) if pedido.total is not None else calculated_total
+    except (ValueError, TypeError):
+        final_total = calculated_total
 
     return {
         'id': pedido.id,
         'usuario': usuario_info,
-        'total': pedido.total,
+        'subtotal_productos': calculated_total, # Nuevo campo para el subtotal de los productos
+        'total': final_total,
         'estado_pedido': pedido.estado_pedido,
         'estado': pedido.estado,
         'created_at': pedido.created_at if pedido.created_at else None,
         'updated_at': pedido.updated_at if pedido.updated_at else None,
         'productos': productos_info,
-        'productos_count': len(productos_info)  # Añadimos esta línea
+        'productos_count': len(productos_info)
     }
+
 def pedido_detalle_to_dict(pedido):
     """Convierte un objeto Pedido a un diccionario con detalles completos."""
     if not pedido:

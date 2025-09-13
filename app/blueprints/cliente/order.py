@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify, session, render_template, current_app, make_response, url_for
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.order_models import Pedido, PedidoProducto
+from app.models.domains.cart_models import CartItem
 from app.extensions import db
 from app.models.enums import EstadoPedido, EstadoEnum
 from app.utils.jwt_utils import jwt_required
@@ -231,14 +232,18 @@ def order_detail(usuario, order_id):
         if not pedido:
             return render_template('cliente/componentes/404.html'), 404
         
+        # Usamos el serializador mejorado
         pedido_dict = pedido_detalle_cliente_to_dict(pedido)
         
+        print(f"Debug: Pedido total antes de renderizar: {pedido_dict.get('total')}")
+        print(f"Debug: Pedido subtotal_productos antes de renderizar: {pedido_dict.get('subtotal_productos')}")
+
         return render_template('cliente/ui/detalle_pedido.html', pedido=pedido_dict)
     
     except Exception as e:
         current_app.logger.error(f"Error al cargar detalles del pedido {order_id}: {str(e)}")
         return render_template('cliente/ui/detalle_pedido.html', pedido=None, error="Error al cargar los detalles del pedido.")
-    
+
 @order_bp.route('/api/pedido-detalle/<uuid:order_id>')
 @jwt_required
 def api_pedido_detalle(usuario, order_id):
@@ -275,89 +280,116 @@ def api_pedido_detalle(usuario, order_id):
 @order_bp.route('/reordenar/<uuid:order_id>', methods=['POST'])
 @jwt_required
 def reorder_order(usuario, order_id):
-    """Crea un nuevo pedido con los mismos productos que un pedido anterior"""
+    """Añade los productos de un pedido anterior al carrito del usuario."""
     try:
         # Obtener el pedido original
         pedido_original = Pedido.query.filter_by(
             id=str(order_id),
             usuario_id=usuario.id
         ).first()
-        
+
         if not pedido_original:
             return jsonify({
                 'success': False,
                 'message': 'Pedido no encontrado'
             }), 404
-        
-        # Crear un nuevo pedido
-        nuevo_pedido = Pedido(
-            usuario_id=usuario.id,
-            total=0,  # Se calculará después
-            estado_pedido=EstadoPedido.EN_PROCESO.value,
-            estado=EstadoEnum.ACTIVO.value
-        )
-        db.session.add(nuevo_pedido)
-        db.session.flush()  # Para obtener el ID del nuevo pedido
-        
-        total = 0
-        productos_no_disponibles = []
-        
+
+        warnings = []
+        products_added_to_cart = False # Flag to track if any product was successfully added
+
         # Recorrer los productos del pedido original
         for pp in pedido_original.productos:
             producto = pp.producto
             cantidad_solicitada = pp.cantidad
-            
-            # Verificar stock
-            if producto.existencia < cantidad_solicitada:
-                productos_no_disponibles.append({
-                    'nombre': producto.nombre,
-                    'cantidad_solicitada': cantidad_solicitada,
-                    'cantidad_disponible': producto.existencia
-                })
+
+            # Si el producto no está activo o no existe, no se puede añadir
+            if not producto: # El producto original ya no existe en la tabla Productos
+                # Si el producto original no existe, usamos el ID del producto del PedidoProducto
+                warnings.append(f'Un producto (ID: {pp.producto_id}) ya no está disponible o ha sido eliminado.')
                 continue
             
-            # Crear la relación en el nuevo pedido
-            nuevo_pedido_producto = PedidoProducto(
-                pedido_id=nuevo_pedido.id,
-                producto_id=producto.id,
-                cantidad=cantidad_solicitada,
-                precio_unitario=producto.precio
-            )
-            db.session.add(nuevo_pedido_producto)
+            if producto.estado != 'activo': # El producto existe pero está inactivo
+                warnings.append(f'El producto "{producto.nombre}" está inactivo y no puede ser reordenado.')
+                continue
+
+            # Verificar stock
+            if producto.existencia <= 0:
+                warnings.append(f'El producto "{producto.nombre}" no tiene stock disponible.')
+                continue # Skip to next product if no stock at all
+
+            cantidad_a_anadir = cantidad_solicitada
+            if producto.existencia < cantidad_solicitada:
+                cantidad_a_anadir = producto.existencia
+                warnings.append(f'Stock insuficiente para "{producto.nombre}". Se añadieron {cantidad_a_anadir} unidades.')
+
+            # Buscar si el item ya está en el carrito
+            cart_item = CartItem.query.filter_by(
+                user_id=usuario.id,
+                product_id=producto.id
+            ).first()
+
+            if cart_item:
+                # Si ya existe, sumar la cantidad (sin exceder el stock total)
+                nueva_cantidad = cart_item.quantity + cantidad_a_anadir
+                if nueva_cantidad > producto.existencia:
+                    nueva_cantidad = producto.existencia
+                    warnings.append(f'La cantidad total de "{producto.nombre}" en el carrito se ajustó al stock disponible ({producto.existencia}).')
+                cart_item.quantity = nueva_cantidad
+                cart_item.updated_at = datetime.utcnow()
+            else:
+                # Si no existe, crear un nuevo item en el carrito
+                cart_item = CartItem(
+                    user_id=usuario.id,
+                    product_id=producto.id,
+                    quantity=cantidad_a_anadir
+                )
+                db.session.add(cart_item)
             
-            # Actualizar stock
-            producto.existencia -= cantidad_solicitada
-            
-            # Calcular subtotal
-            subtotal = cantidad_solicitada * producto.precio
-            total += subtotal
-        
-        # Si hay productos no disponibles, cancelar el pedido y devolver error
-        if productos_no_disponibles:
-            db.session.rollback()
-            return jsonify({
-                'success': False,
-                'message': 'Algunos productos no tienen stock suficiente',
-                'productos_no_disponibles': productos_no_disponibles
-            }), 400
-        
-        # Actualizar total del pedido
-        nuevo_pedido.total = total
-        
+            products_added_to_cart = True # At least one product was added or updated
+
         db.session.commit()
         
-        return jsonify({
-            'success': True,
-            'message': 'Pedido reordenado correctamente',
-            'pedido_id': nuevo_pedido.id
-        })
-    
+        if not products_added_to_cart:
+            # Consolidar advertencias en un solo mensaje si hay varias
+            if warnings:
+                consolidated_warnings = " ".join(warnings)
+                return jsonify({
+                    'success': False,
+                    'message': 'No se pudo añadir ningún producto al carrito. ' + consolidated_warnings,
+                    'open_cart': False,
+                    'warnings': warnings # Mantener la lista para depuración si es necesario, pero el frontend usará el mensaje consolidado
+                }), 400
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': 'No se pudo añadir ningún producto al carrito.',
+                    'open_cart': False,
+                    'warnings': []
+                }), 400
+        else:
+            # Consolidar advertencias en un solo mensaje si hay varias
+            if warnings:
+                consolidated_warnings = " ".join(warnings)
+                return jsonify({
+                    'success': True,
+                    'message': consolidated_warnings,
+                    'open_cart': False, # El usuario no quiere que se abra el carrito automáticamente
+                    'warnings': warnings # Mantener la lista para depuración si es necesario
+                })
+            else:
+                return jsonify({
+                    'success': True,
+                    'message': 'Productos añadidos al carrito exitosamente.',
+                    'open_cart': False, # El usuario no quiere que se abra el carrito automáticamente
+                    'warnings': []
+                })
+
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error al reordenar el pedido {order_id}: {str(e)}")
         return jsonify({
             'success': False,
-            'message': 'Error al reordenar el pedido'
+            'message': 'Ocurrió un error al intentar añadir los productos al carrito.'
         }), 500
         
 

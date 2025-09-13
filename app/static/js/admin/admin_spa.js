@@ -63,8 +63,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     const newScript = document.createElement('script');
                     newScript.src = script.src;
                     document.body.appendChild(newScript);
-                } else {
-                    // Script inline
+                } else if (script.type === '' || script.type === 'text/javascript') {
+                    // Script inline (solo si es JavaScript)
                     try {
                         eval(script.innerText);
                     } catch (e) {

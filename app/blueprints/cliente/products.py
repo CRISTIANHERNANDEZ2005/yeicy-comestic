@@ -19,9 +19,11 @@ def index():
     Endpoint principal que muestra productos de la categoría 'Maquillaje'
     o todos los productos si no existe la categoría
     """
-    # Obtener categorías principales (sin cambios - ya está perfecto)
+    # Obtener las 7 categorías más antiguas y activas
     categorias = CategoriasPrincipales.query\
         .filter(CategoriasPrincipales.estado == 'activo')\
+        .order_by(CategoriasPrincipales.created_at.asc())\
+        .limit(7)\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
@@ -83,7 +85,8 @@ def index():
         total_productos=total_productos,
         cart_items=cart_items,
         total_price=total_price,
-        categoria_actual=categoria_actual_nombre
+        categoria_actual=categoria_actual_nombre,
+        title="YE & Ci Cosméticos"
     )
 
 
@@ -92,9 +95,11 @@ def productos_page():
     """
     Renderiza la página de productos, pasando las categorías, subcategorías y pseudocategorías para los filtros.
     """
-    # Obtener categorías principales con subcategorías y pseudocategorías activas para el navbar
+    # Obtener las 7 categorías más antiguas y activas para el navbar
     categorias_para_navbar = CategoriasPrincipales.query \
         .filter(CategoriasPrincipales.estado == 'activo') \
+        .order_by(CategoriasPrincipales.created_at.asc())\
+        .limit(7)\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
@@ -169,9 +174,11 @@ def productos_por_categoria(slug_categoria):
         Seudocategorias.estado == 'activo'
     ).all()
 
-    # Obtener todas las categorías principales para el navbar (siempre necesarias)
+    # Obtener las 7 categorías más antiguas y activas para el navbar (siempre necesarias)
     categorias_obj_all = CategoriasPrincipales.query \
         .filter(CategoriasPrincipales.estado == 'activo') \
+        .order_by(CategoriasPrincipales.created_at.asc())\
+        .limit(7)\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
@@ -451,8 +458,6 @@ def filter_products():
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
 
-    # Start with the base query, joining all tables needed for any filter.
-    # This is slightly less efficient if no filters are applied, but much more robust.
     query = db.session.query(Productos).select_from(Productos).join(
         Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == 'activo')
     ).join(

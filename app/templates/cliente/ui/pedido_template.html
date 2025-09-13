@@ -1,0 +1,378 @@
+<!-- templates/cliente/ui/pedido_template.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Factura de Pedido - YE&CY Comestic</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 11px;
+            line-height: 1.5;
+            color: #333;
+            background-color: #fff;
+        }
+        
+        .container {
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e91e63;
+            position: relative;
+        }
+        
+        .logo {
+            margin-bottom: 10px;
+        }
+        
+        .logo h1 {
+            font-size: 24px;
+            color: #e91e63;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .company-info h2 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        .company-info p {
+            font-size: 10px;
+            color: #666;
+            margin: 2px 0;
+        }
+        
+        .invoice-title {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background-color: #e91e63;
+            color: white;
+            padding: 5px 15px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .invoice-info {
+            width: 100%;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+        
+        .invoice-details, .customer-details {
+            width: 48%;
+            margin-bottom: 10px;
+        }
+        
+        .invoice-details {
+            float: left;
+        }
+        
+        .customer-details {
+            float: right;
+        }
+        
+        .invoice-details h3, .customer-details h3 {
+            font-size: 14px;
+            color: #e91e63;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .info-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .info-table tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .info-table td {
+            padding: 6px 0;
+            vertical-align: top;
+        }
+        
+        .info-table td:first-child {
+            font-weight: bold;
+            color: #555;
+            width: 40%;
+        }
+        
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+        }
+        
+        .items-table th {
+            background-color: #e91e63;
+            color: white;
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 11px;
+        }
+        
+        .items-table th:last-child {
+            text-align: right;
+        }
+        
+        .items-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #f0f0f0;
+            vertical-align: middle;
+        }
+        
+        .items-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .items-table .numeric {
+            text-align: right;
+        }
+        
+        .product-image {
+            max-width: 50px;
+            max-height: 50px;
+            border: 1px solid #eee;
+        }
+        
+        .total-section {
+            width: 100%;
+            margin-bottom: 25px;
+            text-align: right;
+        }
+        
+        .total-table {
+            width: 300px;
+            border-collapse: collapse;
+            margin-left: auto;
+        }
+        
+        .total-table tr {
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .total-table td {
+            padding: 8px 10px;
+        }
+        
+        .total-table td:first-child {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .total-table td:last-child {
+            text-align: right;
+            width: 100px;
+        }
+        
+        .total-row {
+            background-color: #f9f9f9;
+            font-weight: bold;
+            color: #e91e63;
+            font-size: 12px;
+        }
+        
+        .total-row td {
+            border-top: 2px solid #e91e63;
+            border-bottom: none;
+            padding: 10px;
+        }
+        
+        .notes {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #e91e63;
+        }
+        
+        .notes h3 {
+            font-size: 14px;
+            color: #e91e63;
+            margin-bottom: 8px;
+        }
+        
+        .notes p {
+            font-size: 10px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .footer {
+            text-align: center;
+            font-size: 9px;
+            color: #999;
+            margin-top: 40px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        
+        .watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 80px;
+            color: rgba(233, 30, 99, 0.05);
+            z-index: -1;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <!-- Marca de agua -->
+    <div class="watermark">YE&CY COMESTIC</div>
+    
+    <div class="container">
+        <!-- Encabezado -->
+        <div class="header">
+            <div class="logo">
+                <h1>YE&CY COMESTIC</h1>
+            </div>
+            <div class="company-info">
+                <h2>Comestic Premium</h2>
+                <p>Dirección: Calle Principal 123, Bogotá, Colombia</p>
+                <p>Teléfono: (601) 123 4567</p>
+                <p>Email: info@yecycomestic.com</p>
+                <p>Web: www.yecycomestic.com</p>
+            </div>
+            <div class="invoice-title">FACTURA</div>
+        </div>
+        
+        <!-- Información de la factura y cliente -->
+        <div class="invoice-info">
+            <div class="invoice-details">
+                <h3>Detalles de la Factura</h3>
+                <table class="info-table">
+                    <tr>
+                        <td>Número de Factura:</td>
+                        <td>#{{ pedido_id }}</td>
+                    </tr>
+                    <tr>
+                        <td>Fecha de Emisión:</td>
+                        <td>{{ date }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div class="customer-details">
+                <h3>Información del Cliente</h3>
+                <table class="info-table">
+                    <tr>
+                        <td>Cliente:</td>
+                        <td>{{ user.nombre }}{% if user.apellido %} {{ user.apellido }}{% endif %}</td>
+                    </tr>
+                    <tr>
+                        <td>Teléfono:</td>
+                        <td>{{ user.numero or 'N/A' }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <div style="clear: both;"></div>
+        </div>
+        
+        <!-- Tabla de productos -->
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Imagen</th>
+                    <th>Producto</th>
+                    <th>Marca</th>
+                    <th class="numeric">Cantidad</th>
+                    <th class="numeric">Precio Unitario</th>
+                    <th class="numeric">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cart_items %}
+                <tr>
+                    <td>
+                        {% if item.producto_imagen_url %}
+                        <img src="{{ item.producto_imagen_url }}" class="product-image" alt="{{ item.producto_nombre }}">
+                        {% else %}
+                        <div style="width: 50px; height: 50px; background-color: #f0f0f0; display: flex; align-items: center; justify-content: center; border: 1px solid #eee;">
+                            <span style="font-size: 8px; color: #999;">Sin imagen</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.producto_nombre }}</td>
+                    <td>{{ item.producto_marca or 'N/A' }}</td>
+                    <td class="numeric">{{ item.quantity }}</td>
+                    <td class="numeric">${{ item.precio_unitario_formatted }}</td>
+                    <td class="numeric">${{ item.subtotal_formatted }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <!-- Sección de totales -->
+        <div class="total-section">
+            <table class="total-table">
+                <tr>
+                    <td>Subtotal:</td>
+                    <td>${{ total_price_formatted }}</td>
+                </tr>
+                <tr>
+                    <td>Envío:</td>
+                    <td>$0</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL:</td>
+                    <td>${{ total_price_formatted }}</td>
+                </tr>
+            </table>
+        </div>
+        
+        <!-- Notas -->
+        <div class="notes">
+            <h3>Notas y Términos</h3>
+            <p>Gracias por su compra en YE&CY Comestic. Todos nuestros productos cuentan con garantía de calidad.</p>
+            <p>Para cualquier consulta o devolución, contacte a nuestro servicio de atención al cliente dentro de los 30 días posteriores a la compra.</p>
+            <p>Esta factura fue generada automáticamente el {{ date }} y es válida sin firma física.</p>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <p>YE&CY Comestic © {{ date[:4] }} - Todos los derechos reservados</p>
+    </div>
+    <script>
+        window.onload = function() {
+            // Intenta manipular las opciones de impresión del navegador
+            // Esto es experimental y puede no funcionar en todos los navegadores o versiones
+            try {
+                var style = document.createElement('style');
+                style.innerHTML = '@page { size: A4; margin: 1.5cm; } body { margin: 0px; } @media print { @page { margin: 0; } body { margin: 0; } }';
+                document.head.appendChild(style);
+                window.print();
+            } catch (e) {
+                console.error("Error al intentar configurar opciones de impresión:", e);
+            }
+        };
+    </script>
+</body>
+</html>

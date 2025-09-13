@@ -945,6 +945,22 @@
             pedidoParaConfirmar: null,
             nuevoEstadoParaConfirmar: null,
             
+            // Re-inicializar la aplicación (para SPA)
+            reinitialize: function() {
+                console.log('Reinitializing pedidosApp...');
+                // Reset state if necessary, then reload data
+                this.currentPage = 1;
+                this.itemsPerPage = 10; // Reset to default or keep current
+                this.isLoading = false;
+                this.hasActiveFilters = false;
+                // Clear any existing filters in the UI
+                document.getElementById('clienteFilter').value = '';
+                document.getElementById('fechaInicioFilter').value = '';
+                document.getElementById('fechaFinFilter').value = '';
+                document.getElementById('sortFilter').value = 'created_at';
+                this.loadPedidos(); // Reload data based on current state
+            },
+
             // Inicializar la aplicación
             init: function (initialPaginationData) {
                 if (this.initialized) {

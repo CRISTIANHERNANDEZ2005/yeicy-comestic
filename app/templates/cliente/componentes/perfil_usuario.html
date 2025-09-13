@@ -50,7 +50,7 @@ Cosméticos{% endblock %} {% block content %}
       <div class="grid grid-cols-3 gap-3">
         <!-- Mis Pedidos -->
         <a
-          href="#"
+          href="{{ url_for('order.view_orders') }}"
           class="group relative overflow-hidden flex flex-col items-center py-4 px-3 rounded-2xl bg-gradient-to-br from-pink-50 to-purple-50 hover:from-pink-100 hover:to-purple-100 transition-all duration-300 transform hover:scale-105"
         >
           <div class="relative z-10">

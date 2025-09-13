@@ -26,3 +26,5 @@ Werkzeug==3.1.3
 Flask-WTF
 Flask-JWT-Extended
 pytz
+xhtml2pdf
+pdfkit

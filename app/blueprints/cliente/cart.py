@@ -1,14 +1,14 @@
 # app/blueprints/cart.py
-from flask import Blueprint, request, jsonify, session, render_template, current_app
+from flask import Blueprint, request, jsonify, session, render_template, current_app, make_response, url_for
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.cart_models import CartItem
-from app.models.serializers import producto_to_dict, cart_item_to_dict
+from app.models.domains.order_models import Pedido, PedidoProducto
+from app.models.enums import EstadoPedido
 from app.extensions import db
 from datetime import datetime, timedelta
 import uuid
-import json
 from app.utils.jwt_utils import jwt_required
-
+from io import BytesIO
 cart_bp = Blueprint('cart', __name__)
 
 
@@ -382,3 +382,145 @@ def get_product_details(product_id):
         'existencia': product._existencia ,
         'estado': product.estado
     })
+    
+@cart_bp.route('/print_invoice/<uuid:order_id>')
+@jwt_required
+def print_invoice(usuario, order_id):
+    """
+    Renderiza la factura de un pedido específico en formato HTML para impresión directa.
+    """
+    pedido = Pedido.query.filter_by(id=str(order_id), usuario_id=usuario.id).first()
+
+    if not pedido:
+        return jsonify({'success': False, 'message': 'Pedido no encontrado o no autorizado'}), 404
+
+    productos_del_pedido = PedidoProducto.query.filter_by(pedido_id=pedido.id).all()
+
+    items_para_imprimir = []
+    for pp in productos_del_pedido:
+        if pp.producto:
+            imagen_url = pp.producto.imagen_url
+            if imagen_url and not imagen_url.startswith(('http://', 'https://')):
+                imagen_url = url_for('static', filename=imagen_url.lstrip('/'), _external=True)
+            
+            items_para_imprimir.append({
+                'producto_nombre': pp.producto.nombre,
+                'producto_precio': float(pp.producto.precio),
+                'producto_imagen_url': imagen_url,
+                'producto_marca': pp.producto.marca,
+                'quantity': pp.cantidad,
+                'precio_unitario': float(pp.precio_unitario),
+                'precio_unitario_formatted': f"{pp.precio_unitario:,.0f}",
+                'subtotal': float(pp.cantidad * pp.precio_unitario),
+                'subtotal_formatted': f"{(pp.cantidad * pp.precio_unitario):,.0f}"
+            })
+
+    # Renderizar el template HTML
+    rendered_html = render_template(
+        'cliente/ui/pedido_template.html',
+        cart_items=items_para_imprimir,
+        total_price=float(pedido.total),
+        total_price_formatted=f"{pedido.total:,.0f}", # Formateado
+        user=usuario,
+        date=pedido.created_at.strftime("%d/%m/%Y"),
+        pedido_id=pedido.id
+    )
+
+    # Devolver el HTML directamente para que el navegador lo imprima
+    response = make_response(rendered_html)
+    response.headers['Content-Type'] = 'text/html'
+    return response
+
+@cart_bp.route('/api/get_whatsapp_link/<uuid:order_id>')
+@jwt_required
+def get_whatsapp_link(usuario, order_id):
+    """Genera un enlace de WhatsApp para compartir la factura PDF."""
+    # Asegúrate de que el pedido exista y pertenezca al usuario
+    pedido = Pedido.query.filter_by(id=str(order_id), usuario_id=usuario.id).first()
+    if not pedido:
+        return jsonify({'success': False, 'message': 'Pedido no encontrado o no autorizado'}), 404
+
+    # URL para descargar el PDF
+    pdf_url = url_for('cart.generate_invoice_pdf', order_id=order_id, _external=True)
+
+    # Número de WhatsApp del administrador (reemplazar con el número real)
+    admin_whatsapp_number = current_app.config.get('ADMIN_WHATSAPP_NUMBER', '573044931438')
+
+    # Mensaje personalizado
+    message = f"Hola, me gustaría confirmar mi pedido y adjunto la factura. Pedido ID: {order_id}."
+    whatsapp_link = f"https://wa.me/{admin_whatsapp_number}?text={message}"
+
+    return jsonify({'success': True, 'whatsapp_link': whatsapp_link})
+
+@cart_bp.route('/api/create_order', methods=['POST'])
+@jwt_required
+def create_order(usuario):
+    """Crea un nuevo pedido a partir del carrito del usuario autenticado."""
+    try:
+        user_id = usuario.id
+        cart_items = CartItem.query.filter_by(user_id=user_id).all()
+
+        if not cart_items:
+            return jsonify({'success': False, 'message': 'El carrito está vacío.'}), 400
+
+        total_pedido = 0
+        productos_pedido = []
+
+        for item in cart_items:
+            product = Productos.query.get(item.product_id)
+            if not product or product.estado != 'activo':
+                db.session.rollback()
+                return jsonify({'success': False, 'message': f'Producto {item.product_id} no disponible.'}), 400
+            
+            if product._existencia < item.quantity:
+                db.session.rollback()
+                return jsonify({'success': False, 'message': f'Stock insuficiente para {product.nombre}. Disponible: {product._existencia}, solicitado: {item.quantity}'}), 400
+
+            subtotal = product.precio * item.quantity
+            total_pedido += subtotal
+            productos_pedido.append({
+                'producto_obj': product,
+                'cantidad': item.quantity,
+                'precio_unitario': product.precio
+            })
+
+        # Crear el pedido
+        nuevo_pedido = Pedido(
+            usuario_id=user_id,
+            total=total_pedido,
+            estado_pedido=EstadoPedido.EN_PROCESO.value,
+            estado='inactivo'
+        )
+        db.session.add(nuevo_pedido)
+        db.session.flush()
+
+        # Añadir productos al pedido y actualizar stock
+        for item_data in productos_pedido:
+            pedido_producto = PedidoProducto(
+                pedido_id=nuevo_pedido.id,
+                producto_id=item_data['producto_obj'].id,
+                cantidad=item_data['cantidad'],
+                precio_unitario=item_data['precio_unitario']
+            )
+            db.session.add(pedido_producto)
+            
+            # Disminuir stock
+            item_data['producto_obj'].existencia -= item_data['cantidad']
+
+        # Eliminar items del carrito después de crear el pedido
+        CartItem.query.filter_by(user_id=user_id).delete()
+
+        db.session.commit()
+
+        current_app.logger.info(f"Nuevo pedido {nuevo_pedido.id} creado para el usuario {usuario.nombre}")
+
+        return jsonify({
+            'success': True,
+            'message': 'Pedido creado exitosamente',
+            'pedido_id': nuevo_pedido.id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al crear pedido para usuario {usuario.id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno al crear el pedido'}), 500

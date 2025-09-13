@@ -14,28 +14,27 @@ if (typeof ShoppingCart === "undefined") {
       this.preventAutoClose = false;
       this.originalOverflow = "";
       this.activeButtons = new Map();
-
       // 🔢 NUEVO: Cache para optimizar cálculos
       this.cache = {
         uniqueCount: 0,
         totalQuantity: 0,
         totalPrice: 0,
       };
-
+      this.currentOrderId = null; // Para almacenar el ID del pedido actual
       this.init();
     }
-
     init() {
       this.loadCartFromStorage();
       this.bindEvents();
       this.setupCartModal();
       this.setupDeleteModal();
+      this.setupWhatsAppModal();
+      this.setupUnauthenticatedWhatsAppModal();
       // Al iniciar, si el usuario está logueado, hidratar el carrito desde el servidor
       if (window.userId) {
         this.hydrateCartFromServer();
       }
     }
-
     loadCartFromStorage() {
       try {
         const saved = localStorage.getItem(this.storageKey);
@@ -50,22 +49,21 @@ if (typeof ShoppingCart === "undefined") {
         this.cartItems = [];
       }
     }
-
     saveToStorage() {
       try {
         localStorage.setItem(this.storageKey, JSON.stringify(this.cartItems));
         this.updateCache(); // 🔢 Actualizar cache después de guardar
+        // Resetear el ID del pedido actual porque el carrito ha cambiado
+        this.currentOrderId = null;
       } catch (error) {
         console.error("Error saving to storage:", error);
         this.showToast("Error al guardar el carrito", "error");
       }
     }
-
     clearStorage() {
       localStorage.removeItem(this.storageKey);
       this.updateCache(); // 🔢 Limpiar cache
     }
-
     // 🔢 NUEVO: Método para actualizar cache
     updateCache() {
       this.cache.uniqueCount = this.cartItems.length;
@@ -78,7 +76,6 @@ if (typeof ShoppingCart === "undefined") {
         0
       );
     }
-
     // 🔢 NUEVO: Función para formatear moneda COP
     formatCurrencyCOP(value) {
       if (value === null || value === undefined) {
@@ -96,23 +93,19 @@ if (typeof ShoppingCart === "undefined") {
         maximumFractionDigits: 0
       }).format(numValue);
     }
-
     async syncLocalChanges() {
       if (window.userId) {
         const previousCartItems = JSON.parse(JSON.stringify(this.cartItems)); // Deep copy
-
         try {
           const response = await fetch(this.syncEndpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ cart_items: this.cartItems }),
           });
-
           const data = await response.json();
           if (data.success) {
             // Removed: this.updateCartItemsFromBackend(data.items);
             this.saveToStorage();
-
             // Only update UI if the cart state actually changed after backend sync
             // This comparison is now less relevant as we're not updating from backend response
             // but keeping it for consistency if other parts of the code modify cartItems
@@ -156,7 +149,6 @@ if (typeof ShoppingCart === "undefined") {
         }
       }
     }
-
     async mergeLocalCartWithServer() {
       if (window.userId && this.cartItems.length > 0) {
         try {
@@ -168,7 +160,6 @@ if (typeof ShoppingCart === "undefined") {
               merge: true,
             }),
           });
-
           const data = await response.json();
           if (data.success) {
             this.updateCartItemsFromBackend(data.items);
@@ -197,21 +188,17 @@ if (typeof ShoppingCart === "undefined") {
         this.hydrateCartFromServer();
       }
     }
-
     updateCartItemsFromBackend(backendItems) {
       const newCartItems = [];
       const backendMapById = new Map(); // Map backend items by their actual database ID
       const backendMapByProductId = new Map(); // Map backend items by product_id for temp ID matching
-
       backendItems.forEach((item) => {
         backendMapById.set(item.id, item);
         backendMapByProductId.set(item.product_id, item);
       });
-
       // Iterate through current local cart items
       this.cartItems.forEach((localItem) => {
         let matchedBackendItem = null;
-
         if (localItem.id.startsWith("temp_")) {
           // For temporary items, try to find a match in backend by product_id
           matchedBackendItem = backendMapByProductId.get(localItem.product_id);
@@ -219,7 +206,6 @@ if (typeof ShoppingCart === "undefined") {
           // For items with real IDs, try to find a match in backend by real ID
           matchedBackendItem = backendMapById.get(localItem.id);
         }
-
         if (matchedBackendItem) {
           // Update local item with backend data (especially the ID)
           newCartItems.push({
@@ -243,22 +229,18 @@ if (typeof ShoppingCart === "undefined") {
         // If no match, it means this local item was deleted from backend, so don't add it to newCartItems
         // Or it's a temporary item that wasn't successfully added to backend (error case)
       });
-
       // Add any items that are only in the backend (newly added or from another device)
       backendMapById.forEach((item) => {
         // Iterate over remaining items in backendMapById
         newCartItems.push(item);
       });
-
       this.cartItems = newCartItems;
     }
-
     async hydrateCartFromServer() {
       if (window.userId) {
         try {
           const response = await fetch(this.loadEndpoint);
           const data = await response.json();
-
           if (data.success) {
             this.cartItems = data.items;
             this.saveToStorage();
@@ -278,7 +260,6 @@ if (typeof ShoppingCart === "undefined") {
         }
       }
     }
-
     bindEvents() {
       document.addEventListener("click", (e) => {
         const addBtn = e.target.closest(".add-to-cart");
@@ -288,38 +269,47 @@ if (typeof ShoppingCart === "undefined") {
           this.addToCart(addBtn);
         }
       });
-
       document.addEventListener("click", (e) => {
         if (e.target.closest("#cartIcon") || e.target.closest(".open-cart")) {
           this.openCartModal();
         }
       });
-
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
           this.closeCartModal();
           this.hideDeleteModal();
+          this.hideWhatsAppModal();
+          this.hideUnauthenticatedWhatsAppModal();
         }
       });
-
       window.addEventListener("storage", (e) => {
         if (e.key === "user_authenticated") {
           this.hydrateCartFromServer();
         }
       });
-
       document.addEventListener("click", (e) => {
         const overlay = document.getElementById("cartOverlay");
         if (e.target === overlay && !this.preventAutoClose) {
           this.closeCartModal();
         }
       });
+      document.addEventListener("click", async (e) => {
+        const whatsappBtn = e.target.closest("#whatsappCheckout");
+        if (whatsappBtn) {
+          e.preventDefault();
+          if (window.userId) {
+            // Usuario autenticado: mostrar modal de confirmación
+            this.showWhatsAppModal();
+          } else {
+            // Usuario no autenticado: mostrar modal de confirmación
+            this.showUnauthenticatedWhatsAppModal();
+          }
+        }
+      });
     }
-
     setupCartModal() {
       const closeBtn = document.getElementById("closeCart");
       const overlay = document.getElementById("cartOverlay");
-
       closeBtn?.addEventListener("click", () => this.closeCartModal());
       overlay?.addEventListener("click", (e) => {
         if (e.target === overlay) {
@@ -327,7 +317,6 @@ if (typeof ShoppingCart === "undefined") {
         }
       });
     }
-
     setupDeleteModal() {
       document
         .getElementById("cancelDelete")
@@ -336,32 +325,126 @@ if (typeof ShoppingCart === "undefined") {
         .getElementById("confirmDelete")
         ?.addEventListener("click", () => this.confirmDelete());
     }
+    setupWhatsAppModal() {
+      document
+        .getElementById("cancelWhatsapp")
+        ?.addEventListener("click", () => this.hideWhatsAppModal());
+      document
+        .getElementById("confirmWhatsapp")
+        ?.addEventListener("click", () => this.confirmWhatsApp());
+      document
+        .getElementById("downloadPdfButton")
+        ?.addEventListener("click", () => this.printInvoice());
+    }
+    showWhatsAppModal() {
+      const modal = document.getElementById("whatsappConfirmationModal");
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
+    hideWhatsAppModal() {
+      const modal = document.getElementById("whatsappConfirmationModal");
+      modal.classList.add("hidden");
+      document.body.style.overflow = "auto";
+    }
+    async confirmWhatsApp() {
+      try {
+        // Si no hay un pedido actual, crearlo
+        if (!this.currentOrderId) {
+          const response = await fetch('/api/create_order', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            },
+          });
+          const data = await response.json();
+          if (data.success) {
+            this.currentOrderId = data.pedido_id;
+            this.showToast("Pedido creado exitosamente", "success");
+            // Limpiar el carrito local después de crear el pedido en la BD
+            this.clearStorage();
+            this.cartItems = [];
+            this.updateCartCounter();
+            this.refreshCartModal();
+          } else {
+            this.showToast(data.message || "Error al crear el pedido", "error");
+            this.hideWhatsAppModal();
+            return;
+          }
+        }
 
+        // Obtener el enlace de WhatsApp
+        const whatsappResponse = await fetch(`/api/get_whatsapp_link/${this.currentOrderId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          }
+        });
+        const whatsappData = await whatsappResponse.json();
+        if (whatsappData.success) {
+          // Abrir el enlace de WhatsApp
+          window.open(whatsappData.whatsapp_link, '_blank');
+        } else {
+          this.showToast(whatsappData.message || "Error al obtener el enlace de WhatsApp", "error");
+        }
+      } catch (error) {
+        console.error("Error al confirmar el pedido por WhatsApp:", error);
+        this.showToast("Error de conexión", "error");
+      } finally {
+        this.hideWhatsAppModal();
+      }
+    }
+    setupUnauthenticatedWhatsAppModal() {
+      document
+        .getElementById("cancelUnauthenticatedWhatsapp")
+        ?.addEventListener("click", () => this.hideUnauthenticatedWhatsAppModal());
+      document
+        .getElementById("confirmUnauthenticatedWhatsapp")
+        ?.addEventListener("click", () => this.confirmUnauthenticatedWhatsApp());
+    }
+    showUnauthenticatedWhatsAppModal() {
+      const modal = document.getElementById("unauthenticatedWhatsappConfirmationModal");
+      modal.classList.remove("hidden");
+      document.body.style.overflow = "hidden";
+    }
+    hideUnauthenticatedWhatsAppModal() {
+      const modal = document.getElementById("unauthenticatedWhatsappConfirmationModal");
+      modal.classList.add("hidden");
+      document.body.style.overflow = "";
+    }
+    confirmUnauthenticatedWhatsApp() {
+      const whatsappBtn = document.getElementById("whatsappCheckout");
+      const url = whatsappBtn.href;
+      
+      if (url && url !== "#") {
+        window.open(url, '_blank');
+        this.clearStorage();
+        this.cartItems = [];
+        this.updateCartCounter();
+        this.refreshCartModal();
+      }
+      
+      this.hideUnauthenticatedWhatsAppModal();
+    }
     async addToCart(button) {
       if (this.isUpdating) return;
-
       const productId = button.dataset.productId;
       const quantity = parseInt(button.dataset.quantity || 1);
-
       if (!productId) {
         this.showToast("Producto no válido", "error");
         return;
       }
-
       const originalHTML = button.innerHTML;
       const originalClasses = button.className;
-
       this.showLoadingState(button);
       this.isUpdating = true;
       this.activeButtons.set(button, {
         html: originalHTML,
         classes: originalClasses,
       });
-
       try {
         const productResponse = await fetch(`/api/product/${productId}`);
         const product = await productResponse.json();
-
         if (!product || product.existencia < quantity) {
           this.showToast(
             `Stock insuficiente - Solo quedan ${product.existencia || 0} unidades`,
@@ -370,19 +453,15 @@ if (typeof ShoppingCart === "undefined") {
           this.restoreButton(button);
           return;
         }
-
         const isNewItem = !this.cartItems.find(
           (item) => item.product_id == productId
         );
-
         const existingItem = this.cartItems.find(
           (item) => item.product_id == productId
         );
-
         if (existingItem) {
           const oldQuantity = existingItem.quantity;
           const newQuantity = Math.min(oldQuantity + quantity, product.existencia);
-
           if (oldQuantity === newQuantity) {
             // Quantity did not change, likely already at max stock
             this.showToast(
@@ -420,16 +499,13 @@ if (typeof ShoppingCart === "undefined") {
           });
           this.showToast("Producto agregado al carrito", "success");
         }
-
         this.saveToStorage();
         this.updateCartCounter();
         this.refreshCartModal();
         this.showSuccessAnimation(button);
-
         if (isNewItem && this.autoOpenOnNewItem) {
           this.openCartModal();
         }
-
         if (window.userId) {
           this.syncLocalChanges();
         }
@@ -445,10 +521,8 @@ if (typeof ShoppingCart === "undefined") {
         }, 100);
       }
     }
-
     restoreButton(button) {
       if (!button) return;
-
       const savedState = this.activeButtons.get(button);
       if (savedState) {
         button.innerHTML = savedState.html;
@@ -460,66 +534,55 @@ if (typeof ShoppingCart === "undefined") {
         button.disabled = false;
       }
     }
-
     showDeleteModal(itemId) {
       this.currentItemToDelete = itemId;
       const modal = document.getElementById("deleteModal");
-
       modal.classList.remove("hidden");
       document.body.style.overflow = "hidden";
     }
-
     hideDeleteModal() {
       this.currentItemToDelete = null;
       document.getElementById("deleteModal").classList.add("hidden");
       document.body.style.overflow = "";
     }
-
     removeItemWithAnimation(itemId) {
       return new Promise((resolve) => {
-        const itemElement = document.querySelector(
-          `[data-item-id="${itemId}"]`
-        );
-        if (itemElement) {
-          itemElement.style.transition = "all 0.3s ease-out";
-          itemElement.style.transform = "translateX(100%)";
-          itemElement.style.opacity = "0";
-
-          setTimeout(() => {
-            this.cartItems = this.cartItems.filter(
-              (item) => item.id !== itemId
-            );
-            this.saveToStorage();
-            this.updateCartModal();
-            this.updateCartCounter();
-            resolve();
-          }, 300);
-        } else {
-          this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
-          this.saveToStorage();
-          this.updateCartModal();
-          this.updateCartCounter();
-          resolve();
-        }
+          const itemElement = document.querySelector(
+              `[data-item-id="${itemId}"]`
+          );
+          if (itemElement) {
+              itemElement.style.transition = "all 0.3s ease-out";
+              itemElement.style.transform = "translateX(100%)";
+              itemElement.style.opacity = "0";
+              setTimeout(() => {
+                  this.cartItems = this.cartItems.filter(
+                      (item) => item.id !== itemId
+                  );
+                  this.saveToStorage();
+                  this.updateCartModal();
+                  this.updateCartCounter();
+                  resolve();
+              }, 300);
+          } else {
+              this.cartItems = this.cartItems.filter((item) => item.id !== itemId);
+              this.saveToStorage();
+              this.updateCartModal();
+              this.updateCartCounter();
+              resolve();
+          }
       });
-    }
-
+  }
     async confirmDelete() {
       if (!this.currentItemToDelete || this.isDeleting) return;
-
       this.isDeleting = true;
-
       const confirmBtn = document.getElementById("confirmDelete");
       const originalText = confirmBtn.innerHTML;
-
       confirmBtn.innerHTML =
         '<span class="flex items-center"><svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>Eliminando...</span>';
       confirmBtn.disabled = true;
-
       try {
         await this.removeItemWithAnimation(this.currentItemToDelete);
         this.showToast("Producto eliminado exitosamente", "success");
-
         if (window.userId) {
           this.syncLocalChanges();
         }
@@ -532,15 +595,12 @@ if (typeof ShoppingCart === "undefined") {
         this.isDeleting = false;
       }
     }
-
     // 🔢 MEJORADO: Contador de productos únicos
     updateCartCounter() {
       const uniqueCount = this.cache.uniqueCount;
-
       if (this.cartCounter) {
         this.cartCounter.textContent = uniqueCount;
         this.cartCounter.classList.toggle("hidden", uniqueCount === 0);
-
         // Animación mejorada
         if (uniqueCount > 0) {
           this.cartCounter.classList.add("cart-counter-bounce");
@@ -549,16 +609,13 @@ if (typeof ShoppingCart === "undefined") {
           }, 600);
         }
       }
-
       // 🔢 Actualizar también el contador en el modal
       this.updateModalCounters();
     }
-
     // 🔢 NUEVO: Método para actualizar todos los contadores del modal
     updateModalCounters() {
       const uniqueProductCount = document.getElementById("uniqueProductCount");
       const productText = document.getElementById("productText");
-
       if (uniqueProductCount) {
         uniqueProductCount.textContent = this.cache.uniqueCount;
         uniqueProductCount.classList.add("changing");
@@ -566,42 +623,30 @@ if (typeof ShoppingCart === "undefined") {
           uniqueProductCount.classList.remove("changing");
         }, 300);
       }
-
       if (productText) {
         productText.textContent =
           this.cache.uniqueCount === 1 ? "producto único" : "productos únicos";
       }
     }
-
     openCartModal() {
       const modal = document.getElementById("cartModal");
       const panel = document.getElementById("cartPanel");
-
       if (!modal || !panel) return;
-
       this.originalOverflow = document.body.style.overflow;
-
       modal.style.display = "block";
       modal.offsetHeight;
-
       modal.classList.remove("invisible", "opacity-0");
       panel.classList.remove("translate-x-full");
-
       document.body.style.overflow = "hidden";
-
       this.updateCartModal();
       window.dispatchEvent(new CustomEvent("cartOpened"));
     }
-
     closeCartModal() {
       const modal = document.getElementById("cartModal");
       const panel = document.getElementById("cartPanel");
-
       if (!modal || !panel) return;
-
       modal.classList.add("opacity-0");
       panel.classList.add("translate-x-full");
-
       setTimeout(() => {
         modal.style.display = "none";
         document.body.style.overflow = this.originalOverflow || "auto";
@@ -609,42 +654,43 @@ if (typeof ShoppingCart === "undefined") {
       }, 300);
     }
 
-    updateCartModal() {
-      const container = document.getElementById("cartItemsContainer");
-      const emptyState = document.getElementById("emptyCartState");
-      const itemCount = document.getElementById("cartItemCount");
-      const subtotalElement = document.getElementById("cartSubtotal");
-      const totalElement = document.getElementById("cartTotal");
-
-      if (this.cartItems.length === 0) {
+    // Método actualizado updateCartModal
+updateCartModal() {
+    const container = document.getElementById("cartItemsContainer");
+    const emptyState = document.getElementById("emptyCartState");
+    const itemCount = document.getElementById("cartItemCount");
+    const subtotalElement = document.getElementById("cartSubtotal");
+    const totalElement = document.getElementById("cartTotal");
+    const cartFooter = document.getElementById("cartFooter"); // Nuevo elemento
+    if (this.cartItems.length === 0) {
         container.innerHTML = "";
         emptyState.classList.remove("hidden");
         emptyState.classList.add("flex");
         itemCount.textContent = "0 productos";
         subtotalElement.textContent = "$0.00";
         totalElement.textContent = "$0.00";
+        // Ocultar footer cuando no hay items
+        this.animateFooter(false);
         return;
-      }
-
-      emptyState.classList.add("hidden");
-      emptyState.classList.remove("flex");
-
-      // 🔢 Usar valores cacheados para mejor rendimiento
-      const uniqueCount = this.cache.uniqueCount;
-      const totalQuantity = this.cache.totalQuantity;
-      const totalPrice = this.cache.totalPrice;
-
-      itemCount.textContent = `${totalQuantity} ` +
+    }
+    emptyState.classList.add("hidden");
+    emptyState.classList.remove("flex");
+    // Mostrar footer cuando hay items
+    this.animateFooter(true);
+    // 🔢 Usar valores cacheados para mejor rendimiento
+    const uniqueCount = this.cache.uniqueCount;
+    const totalQuantity = this.cache.totalQuantity;
+    const totalPrice = this.cache.totalPrice;
+    itemCount.textContent = `${totalQuantity} ` +
         (totalQuantity === 1 ? "producto" : "productos");
-      subtotalElement.textContent = this.formatCurrencyCOP(totalPrice);
-      totalElement.textContent = this.formatCurrencyCOP(totalPrice);
-
-      container.innerHTML = this.cartItems
+    subtotalElement.textContent = this.formatCurrencyCOP(totalPrice);
+    totalElement.textContent = this.formatCurrencyCOP(totalPrice);
+    container.innerHTML = this.cartItems
         .map(
-          (item) => `
+            (item) => `
       <div class="group p-4 hover:bg-gray-50 transition-colors" data-item-id="${
-            item.id
-          }">
+        item.id
+      }">
         <div class="flex gap-4">
           <div class="relative">
             ${ 
@@ -721,52 +767,59 @@ if (typeof ShoppingCart === "undefined") {
     `
         )
         .join("");
-
-      this.updateWhatsAppLink(totalPrice);
+    this.updateWhatsAppLink(totalPrice);
+}
+// Nuevo método para animar la aparición/desaparición del footer
+animateFooter(show) {
+    const cartFooter = document.getElementById("cartFooter");
+    if (show) {
+        cartFooter.style.display = 'block';
+        // Forzar reflow para reiniciar la animación
+        cartFooter.offsetHeight;
+        cartFooter.style.opacity = '1';
+        cartFooter.style.transform = 'translateY(0)';
+    } else {
+        cartFooter.style.opacity = '0';
+        cartFooter.style.transform = 'translateY(20px)';
+        setTimeout(() => {
+            cartFooter.style.display = 'none';
+        }, 300); // Coincide con la duración de la transición
     }
-
+}
     clearCartOnLogout() {
       this.cartItems = [];
       this.saveToStorage();
       this.updateCartCounter();
       console.log("Carrito local limpiado por cierre de sesión.");
     }
-
-    async updateQuantity(itemId, change) {
-      if (this.isUpdating) return;
-
-      const item = this.cartItems.find((i) => i.id === itemId);
-      if (!item) return;
-
-      const newQuantity = item.quantity + change;
-
-      if (newQuantity < 1) return;
-      if (newQuantity > item.product.existencia) {
+   async updateQuantity(itemId, change) {
+    if (this.isUpdating) return;
+    const item = this.cartItems.find((i) => i.id === itemId);
+    if (!item) return;
+    const newQuantity = item.quantity + change;
+    if (newQuantity < 1) return;
+    if (newQuantity > item.product.existencia) {
         this.showToast("Stock máximo alcanzado", "warning");
         return;
-      }
-
-      this.isUpdating = true;
-
-      try {
+    }
+    this.isUpdating = true;
+    try {
         item.quantity = newQuantity;
         item.subtotal = item.product.precio * newQuantity;
         this.saveToStorage();
         this.updateCartModal();
         this.updateCartCounter();
         this.showToast("Cantidad actualizada", "success");
-
         if (window.userId) {
-          this.syncLocalChanges();
+            this.syncLocalChanges();
         }
-      } catch (error) {
+    } catch (error) {
         console.error("Error:", error);
         this.showToast("Error al actualizar cantidad", "error");
-      } finally {
+    } finally {
         this.isUpdating = false;
-      }
     }
-
+}
     refreshCartModal() {
       if (this.isModalOpen()) {
         this.updateCartModal();
@@ -774,44 +827,41 @@ if (typeof ShoppingCart === "undefined") {
         this.updateCartCounter();
       }
     }
-
     isModalOpen() {
       const modal = document.getElementById("cartModal");
       return modal && modal.style.display === "block";
     }
-
     updateWhatsAppLink(total) {
       const whatsappBtn = document.getElementById("whatsappCheckout");
       if (!whatsappBtn) return;
-
       if (this.cartItems.length === 0) {
         whatsappBtn.href = "#";
         whatsappBtn.classList.add("opacity-50", "cursor-not-allowed");
         return;
       }
-
       whatsappBtn.classList.remove("opacity-50", "cursor-not-allowed");
-
-      let message = `¡Hola! 👋 Quiero realizar este pedido:\n\n`;
-      this.cartItems.forEach((item) => {
-        message += `• ${item.product.nombre} (x${
-          item.quantity
-        }) - ${this.formatCurrencyCOP(item.subtotal)}\n`;
-      });
-      message += `
-*Total: ${this.formatCurrencyCOP(total)}*\n\n¿Podrían confirmar disponibilidad?`;
-
+      let message;
+      if (window.userId) {
+        // Mensaje para usuarios autenticados
+        message = `¡Hola! 👋 He realizado un nuevo pedido. La factura en PDF se ha descargado en mi dispositivo.`;
+      } else {
+        // Mensaje para usuarios no autenticados
+        message = `¡Hola! 👋 Quiero realizar este pedido:\n\n`;
+        this.cartItems.forEach((item) => {
+          message += `• ${item.product.nombre} (x${
+            item.quantity
+          }) - ${this.formatCurrencyCOP(item.subtotal)}\n`;
+        });
+        message += `\n*Total: ${this.formatCurrencyCOP(total)}*\n\n¿Podrían confirmar disponibilidad?`;
+      }
       const encodedMessage = encodeURIComponent(message);
-      const phoneNumber = "3044931438";
+      const phoneNumber = "3044931438"; // Reemplaza con tu número de WhatsApp
       whatsappBtn.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     }
-
     showLoadingState(button) {
       if (!button) return;
-
       button.dataset.originalHTML = button.innerHTML;
       button.dataset.originalDisabled = button.disabled;
-
       button.innerHTML =
         `
       <span class="flex items-center">
@@ -824,20 +874,15 @@ if (typeof ShoppingCart === "undefined") {
     `;
       button.disabled = true;
     }
-
     hideLoadingState(button) {
       if (!button || !button.dataset.originalHTML) return;
-
       button.innerHTML = button.dataset.originalHTML;
       button.disabled = button.dataset.originalDisabled === "true";
-
       delete button.dataset.originalHTML;
       delete button.dataset.originalDisabled;
     }
-
     showSuccessAnimation(button) {
       if (!button) return;
-
       const successHTML =
         `
       <span class="flex items-center">
@@ -847,16 +892,13 @@ if (typeof ShoppingCart === "undefined") {
         ¡Agregado!
       </span>
     `;
-
       button.innerHTML = successHTML;
       button.classList.add("bg-green-600", "border-green-600");
-
       setTimeout(() => {
         this.hideLoadingState(button);
         button.classList.remove("bg-green-600", "border-green-600");
       }, 2000);
     }
-
     showToast(message, type = "success", duration = 3000) {
       // Use the global window.toast if it exists, otherwise log to console.
       if (window.toast && typeof window.toast[type] === "function") {
@@ -865,30 +907,73 @@ if (typeof ShoppingCart === "undefined") {
         console.log(`${type.toUpperCase()}: ${message}`);
       }
     }
-
     setAutoOpenOnNewItem(enabled) {
       this.autoOpenOnNewItem = enabled;
     }
-
     setPreventAutoClose(enabled) {
       this.preventAutoClose = enabled;
     }
-  }
+    async printInvoice() {
+        // Si no hay un pedido actual, crearlo
+        if (!this.currentOrderId) {
+            try {
+                const response = await fetch('/api/create_order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+                    },
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.currentOrderId = data.pedido_id;
+                    this.showToast("Pedido creado exitosamente", "success");
+                    // Limpiar el carrito local después de crear el pedido en la BD
+                    this.clearStorage();
+                    this.cartItems = [];
+                    this.updateCartCounter();
+                    this.refreshCartModal();
+                } else {
+                    this.showToast(data.message || "Error al crear el pedido", "error");
+                    return;
+                }
+            } catch (error) {
+                console.error("Error al crear el pedido:", error);
+                this.showToast("Error de conexión al crear el pedido", "error");
+                return;
+            }
+        }
 
+        // Abrir una nueva ventana para imprimir la factura
+        this.showToast("Preparando factura para imprimir...", "info");
+        try {
+            const printUrl = `/print_invoice/${this.currentOrderId}`;
+            const printWindow = window.open(printUrl, '_blank');
+            if (printWindow) {
+                printWindow.focus();
+                this.showToast("Factura lista para imprimir en una nueva ventana. Por favor, imprímela manualmente desde la nueva ventana.", "success");
+            } else {
+                this.showToast("No se pudo abrir la ventana de impresión. Por favor, permite pop-ups.", "error");
+            }
+        } catch (error) {
+            console.error("Error al abrir la ventana de impresión:", error);
+            this.showToast("Error al preparar la impresión de la factura.", "error");
+        } finally {
+            this.hideWhatsAppModal(); // Cerrar el modal después de intentar imprimir
+        }
+    }
+  }
   // Hacer la clase accesible globalmente
   window.ShoppingCart = ShoppingCart;
 }
-
 // Inicialización mejorada
 document.addEventListener("DOMContentLoaded", () => {
   if (!window.cart) {
     window.cart = new ShoppingCart();
   }
-
   window.openCart = () => cart.openCartModal();
   window.closeCart = () => cart.closeCartModal();
 });
-
 window.addEventListener("error", (e) => {
   console.error("Error global capturado:", e.error);
   if (window.cart && window.cart.activeButtons) {

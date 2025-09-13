@@ -1,0 +1,2251 @@
+{% extends "cliente/page/base.html" %}
+{% block title %}Mis Pedidos{% endblock %}
+{% block content %}
+<style>
+    /* Estilos personalizados para la página de pedidos - Diseño Moderno */
+    :root {
+        --primary: #4F46E5;
+        --primary-dark: #4338CA;
+        --secondary: #10B981;
+        --warning: #F59E0B;
+        --danger: #EF4444;
+        --dark: #1F2937;
+        --light: #F9FAFB;
+        --gray: #6B7280;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --transition: all 0.3s ease;
+    }
+    
+    body {
+        background-color: var(--light);
+        color: var(--dark);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    .header-section {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-radius: 1rem;
+        padding: 2.5rem 2rem;
+        color: white;
+        margin-bottom: 2.5rem;
+        margin-top: 4rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .header-section::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+    
+    .header-section h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .header-section p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+        max-width: 600px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Tabs para estados */
+    .tabs-container {
+        display: flex;
+        background: white;
+        border-radius: 0.75rem;
+        padding: 0.5rem;
+        margin-bottom: 2rem;
+        box-shadow: var(--shadow);
+        overflow-x: auto;
+        scrollbar-width: thin;
+        scrollbar-color: var(--gray) var(--light);
+    }
+    
+    .tabs-container::-webkit-scrollbar {
+        height: 6px;
+    }
+    
+    .tabs-container::-webkit-scrollbar-track {
+        background: var(--light);
+        border-radius: 3px;
+    }
+    
+    .tabs-container::-webkit-scrollbar-thumb {
+        background: var(--gray);
+        border-radius: 3px;
+    }
+    
+    .tab {
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        color: var(--gray);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: var(--transition);
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .tab:hover {
+        background-color: rgba(79, 70, 229, 0.1);
+    }
+    
+    .tab.active {
+        color: var(--primary);
+        background-color: rgba(79, 70, 229, 0.1);
+    }
+    
+    .tab.active::after {
+        content: '';
+        position: absolute;
+        bottom: -0.5rem;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40%;
+        height: 3px;
+        background-color: var(--primary);
+        border-radius: 3px 3px 0 0;
+    }
+    
+    .tab-count {
+        background-color: var(--light);
+        color: var(--gray);
+        padding: 0.1rem 0.5rem;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        margin-left: 0.5rem;
+        min-width: 1.5rem;
+        text-align: center;
+    }
+    
+    .tab.active .tab-count {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    /* Barra de búsqueda y filtros */
+    .search-filter-container {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-bottom: 2.5rem;
+        box-shadow: var(--shadow);
+        position: relative;
+    }
+    
+    .search-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .search-input {
+        width: 100%;
+        padding: 0.75rem 1rem 0.75rem 3rem;
+        border: 1px solid #E5E7EB;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        transition: var(--transition);
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .search-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--gray);
+    }
+    
+    .filter-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        background-color: white;
+        border: 1px solid #E5E7EB;
+        color: var(--gray);
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .filter-btn:hover {
+        background-color: var(--light);
+    }
+    
+    .filter-btn.active {
+        background-color: var(--primary);
+        color: white;
+        border-color: var(--primary);
+    }
+    
+    .view-toggle {
+        display: flex;
+        background-color: var(--light);
+        border-radius: 0.5rem;
+        padding: 0.25rem;
+    }
+    
+    .view-btn {
+        padding: 0.5rem;
+        border-radius: 0.375rem;
+        color: var(--gray);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .view-btn.active {
+        background-color: white;
+        color: var(--primary);
+        box-shadow: var(--shadow);
+    }
+    
+    /* Filtros avanzados */
+    .advanced-filters {
+        background-color: var(--light);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 1rem;
+        display: none;
+    }
+    
+    .advanced-filters.show {
+        display: block;
+        animation: slideDown 0.3s ease forwards;
+    }
+    
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            max-height: 0;
+        }
+        to {
+            opacity: 1;
+            max-height: 500px;
+        }
+    }
+    
+    .filter-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .filter-label {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--gray);
+    }
+    
+    .filter-input {
+        padding: 0.5rem;
+        border: 1px solid #E5E7EB;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        transition: var(--transition);
+    }
+    
+    .filter-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+    
+    .filter-actions-advanced {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    /* Contenedor de pedidos con espaciado profesional */
+    .pedidos-section {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+    }
+    
+    .pedidos-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .pedidos-container.list-view {
+        grid-template-columns: 1fr;
+    }
+    
+    .pedido-card {
+        background: white;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        transition: var(--transition);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .pedido-card:hover {
+        transform: translateY(-5px);
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .pedido-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 5px;
+        height: 100%;
+    }
+    
+    .pedido-card.en-proceso::before {
+        background-color: var(--warning);
+    }
+    
+    .pedido-card.completado::before {
+        background-color: var(--secondary);
+    }
+    
+    .pedido-card.cancelado::before {
+        background-color: var(--danger);
+    }
+    
+    .pedido-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .pedido-id {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+        margin-bottom: 0.5rem;
+    }
+    
+    .pedido-fecha {
+        font-size: 0.875rem;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .pedido-body {
+        padding: 1.5rem;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .pedido-estado {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        align-self: flex-start;
+    }
+    
+    .pedido-estado.en-proceso {
+        background-color: rgba(245, 158, 11, 0.1);
+        color: var(--warning);
+    }
+    
+    .pedido-estado.completado {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: var(--secondary);
+    }
+    
+    .pedido-estado.cancelado {
+        background-color: rgba(239, 68, 68, 0.1);
+        color: var(--danger);
+    }
+    
+    .estado-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+    }
+    
+    .estado-dot.en-proceso {
+        background-color: var(--warning);
+    }
+    
+    .estado-dot.completado {
+        background-color: var(--secondary);
+    }
+    
+    .estado-dot.cancelado {
+        background-color: var(--danger);
+    }
+    
+    .pedido-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .pedido-productos {
+        font-size: 0.875rem;
+        color: var(--gray);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .pedido-total {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--dark);
+    }
+    
+    .pedido-footer {
+        padding: 1rem 1.5rem;
+        background-color: var(--light);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .pedido-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .action-btn {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+        text-decoration: none;
+    }
+    
+    .action-btn.secondary {
+        background-color: white;
+        color: var(--gray);
+        border: 1px solid #E5E7EB;
+    }
+    
+    .action-btn.secondary:hover {
+        background-color: var(--light);
+    }
+    
+    .action-btn.primary {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .action-btn.primary:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    /* Vista de lista */
+    .pedido-card.list-view {
+        flex-direction: row;
+    }
+    
+    .pedido-card.list-view .pedido-header {
+        border-bottom: none;
+        border-right: 1px solid #E5E7EB;
+        width: 250px;
+        flex-shrink: 0;
+    }
+    
+    .pedido-card.list-view .pedido-body {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    
+    .pedido-card.list-view .pedido-footer {
+        width: 200px;
+        flex-direction: column;
+        align-items: flex-end;
+        justify-content: center;
+        background-color: white;
+        border-left: 1px solid #E5E7EB;
+        flex-shrink: 0;
+    }
+    
+    /* Modal de confirmación */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal.show {
+        display: flex;
+    }
+    
+    .modal-content {
+        background-color: white;
+        border-radius: 0.75rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes modalSlideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #E5E7EB;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--gray);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .modal-close:hover {
+        color: var(--dark);
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-productos {
+        margin-top: 1rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .modal-producto {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .modal-producto:last-child {
+        border-bottom: none;
+    }
+    
+    .modal-producto-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 0.5rem;
+        object-fit: cover;
+        margin-right: 1rem;
+    }
+    
+    .modal-producto-info {
+        flex-grow: 1;
+    }
+    
+    .modal-producto-nombre {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .modal-producto-cantidad {
+        font-size: 0.875rem;
+        color: var(--gray);
+    }
+    
+    .modal-producto-precio {
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid #E5E7EB;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+    
+    .modal-total {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-align: right;
+    }
+    
+    /* Skeleton loading para tarjetas mejorado */
+    .skeleton-card {
+        background: white;
+        border-radius: 0.75rem;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+        animation: shimmer 1.5s infinite ease-in-out;
+    }
+    
+    @keyframes shimmer {
+        0% {
+            background-position: -200% 0;
+        }
+        100% {
+            background-position: 200% 0;
+        }
+    }
+    
+    .skeleton {
+        background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+        background-size: 200% 100%;
+        animation: shimmer 1.5s infinite;
+    }
+    
+    .skeleton-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .skeleton-title {
+        height: 24px;
+        width: 70%;
+        border-radius: 4px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .skeleton-subtitle {
+        height: 16px;
+        width: 40%;
+        border-radius: 4px;
+    }
+    
+    .skeleton-body {
+        padding: 1.5rem;
+    }
+    
+    .skeleton-status {
+        height: 24px;
+        width: 100px;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .skeleton-text {
+        height: 16px;
+        width: 120px;
+        border-radius: 4px;
+    }
+    
+    .skeleton-price {
+        height: 28px;
+        width: 80px;
+        border-radius: 4px;
+    }
+    
+    .skeleton-footer {
+        padding: 1rem 1.5rem;
+        background-color: var(--light);
+        display: flex;
+        justify-content: space-between;
+    }
+    
+    .skeleton-button {
+        height: 36px;
+        width: 100px;
+        border-radius: 6px;
+    }
+    
+    /* No resultados */
+    .no-results {
+        background: white;
+        border-radius: 0.75rem;
+        padding: 3rem;
+        text-align: center;
+        box-shadow: var(--shadow);
+        grid-column: 1 / -1;
+        margin-top: 2rem;
+        margin-bottom: 2rem;
+    }
+    
+    .no-results-icon {
+        width: 5rem;
+        height: 5rem;
+        margin: 0 auto 1.5rem;
+        background-color: rgba(79, 70, 229, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--primary);
+    }
+    
+    .no-results h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .no-results p {
+        color: var(--gray);
+        margin-bottom: 1.5rem;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    .reset-btn {
+        padding: 0.75rem 1.5rem;
+        background-color: var(--primary);
+        color: white;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: none;
+    }
+    
+    .reset-btn:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    /* Paginación */
+    .pagination {
+        display: flex;
+        justify-content: center;
+        margin-top: 2.5rem;
+        grid-column: 1 / -1;
+    }
+    
+    .pagination-btn {
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.375rem;
+        margin: 0 0.25rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: var(--transition);
+        border: none;
+        background-color: transparent;
+    }
+    
+    .pagination-btn:not(.active):not(.disabled) {
+        background-color: white;
+        color: var(--gray);
+        box-shadow: var(--shadow);
+    }
+    
+    .pagination-btn:not(.active):not(.disabled):hover {
+        background-color: var(--light);
+    }
+    
+    .pagination-btn.active {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .pagination-btn.disabled {
+        color: var(--gray);
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .pagination-ellipsis {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.5rem;
+        height: 2.5rem;
+        color: var(--gray);
+    }
+    
+    /* Resaltado de búsqueda */
+    .highlight {
+        background-color: rgba(245, 158, 11, 0.2);
+        padding: 0 2px;
+        border-radius: 2px;
+    }
+    
+    /* Indicadores de filtro activo */
+    .active-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .filter-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        background-color: rgba(79, 70, 229, 0.1);
+        color: var(--primary);
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .filter-tag .remove-filter {
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1rem;
+        height: 1rem;
+        border-radius: 50%;
+        background-color: var(--primary);
+        color: white;
+        font-size: 0.625rem;
+    }
+    
+    /* Estilos para las notificaciones toast */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+    }
+    
+    .toast {
+        padding: 16px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 350px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .toast.success {
+        background-color: #10B981;
+        color: white;
+    }
+    
+    .toast.error {
+        background-color: #EF4444;
+        color: white;
+    }
+    
+    .toast::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        animation: progress 5s linear forwards;
+    }
+    
+    @keyframes progress {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+    
+    /* Animación para el spinner */
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .pedidos-container {
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .header-section h1 {
+            font-size: 2rem;
+        }
+        
+        .pedidos-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .filter-actions {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .filter-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .pedido-card.list-view {
+            flex-direction: column;
+        }
+        
+        .pedido-card.list-view .pedido-header {
+            border-right: none;
+            border-bottom: 1px solid #E5E7EB;
+            width: 100%;
+        }
+        
+        .pedido-card.list-view .pedido-footer {
+            width: 100%;
+            border-left: none;
+            border-top: 1px solid #E5E7EB;
+            flex-direction: row;
+            justify-content: space-between;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .header-section {
+            padding: 1.5rem;
+        }
+        
+        .header-section h1 {
+            font-size: 1.75rem;
+        }
+        
+        .search-filter-container {
+            padding: 1rem;
+        }
+        
+        .pedido-card {
+            border-radius: 0.5rem;
+        }
+        
+        .pedido-header, .pedido-body, .pedido-footer {
+            padding: 1rem;
+        }
+        
+        .pedido-total {
+            font-size: 1.25rem;
+        }
+    }
+</style>
+<div class="container mx-auto px-4">
+    <!-- Encabezado -->
+    <div class="header-section">
+        <h1>Mis Pedidos</h1>
+        <p>Historial de todas tus compras y su estado actual</p>
+    </div>
+    
+    {% if error %}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 fade-in">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-red-700">{{ error }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Tabs de estados -->
+    <div class="tabs-container">
+        <div class="tab {% if estado_actual == 'todos' %}active{% endif %}" data-estado="todos">
+            Todos <span class="tab-count">{{ total_pedidos_todos }}</span>
+        </div>
+        <div class="tab {% if estado_actual == 'en proceso' %}active{% endif %}" data-estado="en proceso">
+            En Proceso <span class="tab-count">{{ total_pedidos_en_proceso }}</span>
+        </div>
+        <div class="tab {% if estado_actual == 'completado' %}active{% endif %}" data-estado="completado">
+            Completados <span class="tab-count">{{ total_pedidos_completado }}</span>
+        </div>
+        <div class="tab {% if estado_actual == 'cancelado' %}active{% endif %}" data-estado="cancelado">
+            Cancelados <span class="tab-count">{{ total_pedidos_cancelado }}</span>
+        </div>
+    </div>
+    
+    <!-- Búsqueda y filtros -->
+    <div class="search-filter-container">
+        <div class="search-container">
+            <svg class="search-icon h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+            </svg>
+            <input type="text" id="search-input" placeholder="Buscar pedidos por ID..." value="{{ search_actual }}" class="search-input">
+        </div>
+        
+        <div class="filter-actions">
+            <div class="filter-buttons">
+                <button id="orden-select-btn" class="filter-btn">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z" />
+                    </svg>
+                    Ordenar
+                </button>
+                <button id="advanced-filters-btn" class="filter-btn">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+                    </svg>
+                    Filtros
+                </button>
+            </div>
+            
+            <div class="view-toggle">
+                <button class="view-btn grid-view active" data-view="grid">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                </button>
+                <button class="view-btn list-view" data-view="list">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Indicadores de filtros activos -->
+        <div id="active-filters" class="active-filters"></div>
+        
+        <!-- Filtros avanzados -->
+        <div id="advanced-filters" class="advanced-filters">
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label" for="fecha-desde">Fecha desde</label>
+                    <input type="date" id="fecha-desde" class="filter-input" value="{{ fecha_desde_actual }}">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label" for="fecha-hasta">Fecha hasta</label>
+                    <input type="date" id="fecha-hasta" class="filter-input" value="{{ fecha_hasta_actual }}">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label" for="monto-min">Monto mínimo</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">$</span>
+                        </div>
+                        <input type="number" id="monto-min" class="filter-input pl-7" placeholder="0" value="{{ monto_min_actual }}">
+                    </div>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label" for="monto-max">Monto máximo</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 sm:text-sm">$</span>
+                        </div>
+                        <input type="number" id="monto-max" class="filter-input pl-7" placeholder="0" value="{{ monto_max_actual }}">
+                    </div>
+                </div>
+            </div>
+            <div class="filter-actions-advanced">
+                <button id="apply-advanced-filters" class="action-btn primary">Aplicar filtros</button>
+                <button id="reset-advanced-filters" class="action-btn secondary">Limpiar</button>
+            </div>
+        </div>
+        
+        <!-- Menú desplegable de ordenamiento -->
+        <div id="orden-menu" class="hidden absolute bg-white rounded-md shadow-lg py-1 z-10 mt-1">
+            <button class="orden-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-orden="desc">Más recientes primero</button>
+            <button class="orden-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-orden="asc">Más antiguos primero</button>
+            <button class="orden-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-orden="monto-desc">Mayor monto primero</button>
+            <button class="orden-option block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-orden="monto-asc">Menor monto primero</button>
+        </div>
+    </div>
+    
+    <!-- Sección de pedidos con espaciado profesional -->
+    <div class="pedidos-section">
+        <div id="pedidos-container" class="pedidos-container">
+            {% if pedidos %}
+            <!-- Lista de pedidos -->
+            {% for pedido in pedidos %}
+            <div class="pedido-card {{ pedido.estado_pedido|replace(' ', '-') }}">
+                <div class="pedido-header">
+                    <h3 class="pedido-id">Pedido #{{ pedido.id }}</h3>
+                    <div class="pedido-fecha">
+                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                        </svg>
+                        {{ pedido.created_at | datetimeformat('%d/%m/%Y') }}
+                    </div>
+                </div>
+                <div class="pedido-body">
+                    <div class="pedido-estado {{ pedido.estado_pedido|replace(' ', '-') }}">
+                        <span class="estado-dot {{ pedido.estado_pedido|replace(' ', '-') }}"></span>
+                        {{ pedido.estado_pedido|title }}
+                    </div>
+                    <div class="pedido-info">
+                        <div class="pedido-productos">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14,6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                            </svg>
+                            {{ pedido.productos_count }} producto{{ 's' if pedido.productos_count != 1 else '' }}
+                        </div>
+                        <div class="pedido-total">$ {{ "%.0f"|format(pedido.total) }}</div>
+                    </div>
+                </div>
+                <div class="pedido-footer">
+                    <div class="pedido-actions">
+                        <button class="action-btn secondary reorder-btn" data-pedido-id="{{ pedido.id }}">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                            </svg>
+                            Reordenar
+                        </button>
+                        <a href="{{ url_for('order.order_detail', order_id=pedido.id) }}" class="action-btn primary">
+                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                            </svg>
+                            Detalles
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- Paginación - solo se muestra si hay más de 6 elementos -->
+            {% if show_pagination %}
+            <div class="pagination">
+                {% if current_page > 1 %}
+                <button class="pagination-btn" onclick="window.location.href='?page={{ current_page - 1 }}{% if estado_actual != 'todos' %}&estado_pedido={{ estado_actual }}{% endif %}{% if search_actual %}&search={{ search_actual }}{% endif %}{% if orden_actual != 'desc' %}&orden={{ orden_actual }}{% endif %}{% if fecha_desde_actual %}&fecha_desde={{ fecha_desde_actual }}{% endif %}{% if fecha_hasta_actual %}&fecha_hasta={{ fecha_hasta_actual }}{% endif %}{% if monto_min_actual %}&monto_min={{ monto_min_actual }}{% endif %}{% if monto_max_actual %}&monto_max={{ monto_max_actual }}{% endif %}'">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                {% else %}
+                <button class="pagination-btn disabled">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                {% endif %}
+                
+                {% for page_num in range(1, total_pages + 1) %}
+                    {% if page_num == 1 or page_num == total_pages or (page_num >= current_page - 1 and page_num <= current_page + 1) %}
+                        {% if page_num == current_page %}
+                        <button class="pagination-btn active">{{ page_num }}</button>
+                        {% else %}
+                        <button class="pagination-btn" onclick="window.location.href='?page={{ page_num }}{% if estado_actual != 'todos' %}&estado_pedido={{ estado_actual }}{% endif %}{% if search_actual %}&search={{ search_actual }}{% endif %}{% if orden_actual != 'desc' %}&orden={{ orden_actual }}{% endif %}{% if fecha_desde_actual %}&fecha_desde={{ fecha_desde_actual }}{% endif %}{% if fecha_hasta_actual %}&fecha_hasta={{ fecha_hasta_actual }}{% endif %}{% if monto_min_actual %}&monto_min={{ monto_min_actual }}{% endif %}{% if monto_max_actual %}&monto_max={{ monto_max_actual }}{% endif %}'">{{ page_num }}</button>
+                        {% endif %}
+                    {% elif page_num == 2 or page_num == total_pages - 1 %}
+                        <span class="pagination-ellipsis">...</span>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if current_page < total_pages %}
+                <button class="pagination-btn" onclick="window.location.href='?page={{ current_page + 1 }}{% if estado_actual != 'todos' %}&estado_pedido={{ estado_actual }}{% endif %}{% if search_actual %}&search={{ search_actual }}{% endif %}{% if orden_actual != 'desc' %}&orden={{ orden_actual }}{% endif %}{% if fecha_desde_actual %}&fecha_desde={{ fecha_desde_actual }}{% endif %}{% if fecha_hasta_actual %}&fecha_hasta={{ fecha_hasta_actual }}{% endif %}{% if monto_min_actual %}&monto_min={{ monto_min_actual }}{% endif %}{% if monto_max_actual %}&monto_max={{ monto_max_actual }}{% endif %}'">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                {% else %}
+                <button class="pagination-btn disabled">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+            {% else %}
+            <!-- Mensaje cuando no hay pedidos -->
+            <div class="no-results">
+                <div class="no-results-icon">
+                    <svg class="h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    </svg>
+                </div>
+                <h3>No se encontraron pedidos</h3>
+                <p>No hay pedidos que coincidan con los filtros seleccionados. Intenta ajustar tus filtros o restablecerlos para ver todos tus pedidos.</p>
+                <button id="reset-filters" class="reset-btn">
+                    <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                    </svg>
+                    Restablecer filtros
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmación para reordenar -->
+<div id="reordenar-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar reorden</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>¿Estás seguro que deseas reordenar los siguientes productos?</p>
+            <div class="modal-productos" id="modal-productos">
+                <!-- Los productos se cargarán dinámicamente -->
+            </div>
+            <div class="modal-total" id="modal-total">
+                <!-- El total se calculará dinámicamente -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="cancelar-reordenar" class="action-btn secondary">Cancelar</button>
+            <button id="confirmar-reordenar" class="action-btn primary">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Contenedor para las notificaciones toast -->
+<div id="toast-container" class="toast-container"></div>
+
+<!-- Plantilla para los pedidos (se usará en JavaScript) -->
+<template id="pedido-template">
+    <div class="pedido-card">
+        <div class="pedido-header">
+            <h3 class="pedido-id">Pedido #<span class="pedido-id-span"></span></h3>
+            <div class="pedido-fecha">
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                </svg>
+                <span class="pedido-fecha-span"></span>
+            </div>
+        </div>
+        <div class="pedido-body">
+            <div class="pedido-estado">
+                <span class="estado-dot"></span>
+                <span class="pedido-estado-span"></span>
+            </div>
+            <div class="pedido-info">
+                <div class="pedido-productos">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14,6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                    </svg>
+                    <span class="pedido-productos-count"></span> producto<span class="pedido-productos-plural"></span>
+                </div>
+                <div class="pedido-total"><span class="pedido-total-span"></span></div>
+            </div>
+        </div>
+        <div class="pedido-footer">
+            <div class="pedido-actions">
+                <button class="action-btn secondary reorder-btn">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+                    </svg>
+                    Reordenar
+                </button>
+                <a href="" class="action-btn primary pedido-detalle-link">
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                    </svg>
+                    Detalles
+                </a>
+            </div>
+        </div>
+    </div>
+</template>
+
+<!-- Plantilla para el mensaje de no resultados -->
+<template id="no-resultados-template">
+    <div class="no-results">
+        <div class="no-results-icon">
+            <svg class="h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+        </div>
+        <h3>No se encontraron pedidos</h3>
+        <p>No hay pedidos que coincidan con los filtros seleccionados. Intenta ajustar tus filtros o restablecerlos para ver todos tus pedidos.</p>
+        <button id="reset-filters" class="reset-btn">
+            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd" />
+            </svg>
+            Restablecer filtros
+        </button>
+    </div>
+</template>
+
+<!-- Plantilla para el skeleton loading -->
+<template id="skeleton-template">
+    <div class="skeleton-card">
+        <div class="skeleton-header">
+            <div class="skeleton skeleton-title"></div>
+            <div class="skeleton skeleton-subtitle"></div>
+        </div>
+        <div class="skeleton-body">
+            <div class="skeleton skeleton-status"></div>
+            <div class="skeleton-info">
+                <div class="skeleton skeleton-text"></div>
+                <div class="skeleton skeleton-price"></div>
+            </div>
+        </div>
+        <div class="skeleton-footer">
+            <div class="skeleton skeleton-button"></div>
+            <div class="skeleton skeleton-button"></div>
+        </div>
+    </div>
+</template>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Elementos del DOM
+        const tabs = document.querySelectorAll('.tab');
+        const ordenSelectBtn = document.getElementById('orden-select-btn');
+        const ordenMenu = document.getElementById('orden-menu');
+        const ordenOptions = document.querySelectorAll('.orden-option');
+        const searchInput = document.getElementById('search-input');
+        const pedidosContainer = document.getElementById('pedidos-container');
+        const pedidoTemplate = document.getElementById('pedido-template');
+        const noResultadosTemplate = document.getElementById('no-resultados-template');
+        const skeletonTemplate = document.getElementById('skeleton-template');
+        const advancedFiltersBtn = document.getElementById('advanced-filters-btn');
+        const advancedFilters = document.getElementById('advanced-filters');
+        const applyAdvancedFiltersBtn = document.getElementById('apply-advanced-filters');
+        const resetAdvancedFiltersBtn = document.getElementById('reset-advanced-filters');
+        const fechaDesdeInput = document.getElementById('fecha-desde');
+        const fechaHastaInput = document.getElementById('fecha-hasta');
+        const montoMinInput = document.getElementById('monto-min');
+        const montoMaxInput = document.getElementById('monto-max');
+        const viewButtons = document.querySelectorAll('.view-btn');
+        const activeFiltersContainer = document.getElementById('active-filters');
+        
+        // Elementos del DOM para la modal de reordenar
+        const reordenarModal = document.getElementById('reordenar-modal');
+        const modalClose = document.querySelector('.modal-close');
+        const cancelarReordenar = document.getElementById('cancelar-reordenar');
+        const confirmarReordenar = document.getElementById('confirmar-reordenar');
+        const modalProductos = document.getElementById('modal-productos');
+        const modalTotal = document.getElementById('modal-total');
+        const toastContainer = document.getElementById('toast-container');
+        
+        // Estado actual
+        let estadoActual = '{{ estado_actual }}' || 'todos';
+        let ordenActual = '{{ orden_actual }}' || 'desc';
+        let searchActual = '{{ search_actual }}' || '';
+        let fechaDesde = '{{ fecha_desde_actual }}' || '';
+        let fechaHasta = '{{ fecha_hasta_actual }}' || '';
+        let montoMin = '{{ monto_min_actual }}' || '';
+        let montoMax = '{{ monto_max_actual }}' || '';
+        let currentView = 'grid';
+        let currentPage = {{ current_page or 1 }};
+        let isLoading = false;
+        
+        // Variable para almacenar el ID del pedido a reordenar
+        let pedidoAReordenar = null;
+        
+        // Función para formatear la fecha
+        function formatearFecha(fechaString) {
+            const fecha = new Date(fechaString);
+            const opciones = { year: 'numeric', month: '2-digit', day: '2-digit' };
+            return fecha.toLocaleDateString('es-ES', opciones);
+        }
+        
+        // Función para formatear el monto
+        function formatearMonto(monto) {
+            return '$ ' + Math.round(monto).toLocaleString();
+        }
+
+        // Función para formatear el monto a estilo colombiano (sin decimales, punto de mil)
+        function formatColombianCurrency(amount) {
+            return Math.round(amount).toLocaleString('es-CO');
+        }
+        
+        // Función para resaltar texto de búsqueda
+        function resaltarTexto(texto, busqueda) {
+            if (!busqueda) return texto;
+            const regex = new RegExp(`(${busqueda})`, 'gi');
+            return texto.replace(regex, '<span class="highlight">$1</span>');
+        }
+        
+        // Función para mostrar skeletons mientras carga
+        function mostrarSkeletons() {
+            // Limpiar contenedor
+            pedidosContainer.innerHTML = '';
+            
+            // Mostrar skeletons según la vista actual
+            const skeletonCount = currentView === 'grid' ? 3 : 2;
+            
+            for (let i = 0; i < skeletonCount; i++) {
+                const clone = skeletonTemplate.content.cloneNode(true);
+                pedidosContainer.appendChild(clone);
+            }
+        }
+        
+        // Función para actualizar los indicadores de filtros activos
+        function actualizarFiltrosActivos() {
+            activeFiltersContainer.innerHTML = '';
+            
+            // Añadir etiquetas para cada filtro activo
+            if (searchActual) {
+                addFilterTag('Búsqueda: ' + searchActual, 'search');
+            }
+            
+            if (fechaDesde) {
+                addFilterTag('Desde: ' + formatearFecha(fechaDesde), 'fechaDesde');
+            }
+            
+            if (fechaHasta) {
+                addFilterTag('Hasta: ' + formatearFecha(fechaHasta), 'fechaHasta');
+            }
+            
+            if (montoMin) {
+                addFilterTag('Mínimo: $' + montoMin, 'montoMin');
+            }
+            
+            if (montoMax) {
+                addFilterTag('Máximo: $' + montoMax, 'montoMax');
+            }
+            
+            if (estadoActual !== 'todos') {
+                addFilterTag('Estado: ' + estadoActual, 'estado');
+            }
+        }
+        
+        // Función para añadir una etiqueta de filtro
+        function addFilterTag(text, type) {
+            const tag = document.createElement('div');
+            tag.className = 'filter-tag';
+            tag.innerHTML = `
+                ${text}
+                <span class="remove-filter" data-type="${type}">×</span>
+            `;
+            
+            // Añadir evento para eliminar este filtro
+            const removeBtn = tag.querySelector('.remove-filter');
+            removeBtn.addEventListener('click', function() {
+                removeFilter(type);
+            });
+            
+            activeFiltersContainer.appendChild(tag);
+        }
+        
+        // Función para eliminar un filtro específico
+        function removeFilter(type) {
+            switch(type) {
+                case 'search':
+                    searchActual = '';
+                    searchInput.value = '';
+                    break;
+                case 'fechaDesde':
+                    fechaDesde = '';
+                    fechaDesdeInput.value = '';
+                    break;
+                case 'fechaHasta':
+                    fechaHasta = '';
+                    fechaHastaInput.value = '';
+                    break;
+                case 'montoMin':
+                    montoMin = '';
+                    montoMinInput.value = '';
+                    break;
+                case 'montoMax':
+                    montoMax = '';
+                    montoMaxInput.value = '';
+                    break;
+                case 'estado':
+                    estadoActual = 'todos';
+                    tabs.forEach(tab => {
+                        if (tab.dataset.estado === 'todos') {
+                            tab.classList.add('active');
+                        } else {
+                            tab.classList.remove('active');
+                        }
+                    });
+                    break;
+            }
+            
+            // Actualizar los indicadores de filtros
+            actualizarFiltrosActivos();
+            
+            // Recargar pedidos
+            cargarPedidos();
+        }
+        
+        // Función para cargar pedidos
+        async function cargarPedidos(showSkeleton = true, page = 1) {
+            // Evitar múltiples cargas simultáneas
+            if (isLoading) return;
+            isLoading = true;
+            
+            try {
+                // Mostrar skeletons si es necesario
+                if (showSkeleton) {
+                    mostrarSkeletons();
+                }
+                
+                // Construir URL con parámetros
+                const url = new URL('/api/buscar-pedidos', window.location.origin);
+                url.searchParams.append('page', page);
+                url.searchParams.append('per_page', 6); // 6 pedidos por página
+                url.searchParams.append('estado_pedido', estadoActual);
+                url.searchParams.append('orden', ordenActual);
+                url.searchParams.append('search', searchActual);
+                
+                // Añadir filtros avanzados si están definidos
+                if (fechaDesde) url.searchParams.append('fecha_desde', fechaDesde);
+                if (fechaHasta) url.searchParams.append('fecha_hasta', fechaHasta);
+                if (montoMin) url.searchParams.append('monto_min', montoMin);
+                if (montoMax) url.searchParams.append('monto_max', montoMax);
+                
+                // Obtener token de autenticación
+                const token = localStorage.getItem('jwt_token') || 
+                              sessionStorage.getItem('jwt_token') || 
+                              getCookie('jwt_token');
+                
+                // Realizar petición
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar los pedidos');
+                }
+                
+                const data = await response.json();
+                
+                // Limpiar contenedor
+                pedidosContainer.innerHTML = '';
+                
+                // Actualizar contadores de tabs
+                if (data.success) {
+                    // Renderizar pedidos
+                    if (data.pedidos.length > 0) {
+                        data.pedidos.forEach((pedido, index) => {
+                            setTimeout(() => {
+                                const clone = pedidoTemplate.content.cloneNode(true);
+                                const pedidoCard = clone.querySelector('.pedido-card');
+                                
+                                // Añadir clase de estado
+                                pedidoCard.classList.add(pedido.estado_pedido.replace(' ', '-'));
+                                
+                                // Rellenar datos del pedido
+                                clone.querySelector('.pedido-id-span').textContent = pedido.id;
+                                clone.querySelector('.pedido-fecha-span').textContent = formatearFecha(pedido.created_at);
+                                clone.querySelector('.pedido-total-span').textContent = formatearMonto(pedido.total);
+                                clone.querySelector('.pedido-productos-count').textContent = pedido.productos_count;
+                                clone.querySelector('.pedido-productos-plural').textContent = pedido.productos_count !== 1 ? 's' : '';
+                                clone.querySelector('.pedido-detalle-link').href = `/pedido/${pedido.id}`;
+                                clone.querySelector('.reorder-btn').setAttribute('data-pedido-id', pedido.id);
+                                
+                                // Configurar estado
+                                const estadoElement = clone.querySelector('.pedido-estado');
+                                const estadoSpan = clone.querySelector('.pedido-estado-span');
+                                const estadoDot = clone.querySelector('.estado-dot');
+                                
+                                estadoSpan.textContent = pedido.estado_pedido.charAt(0).toUpperCase() + pedido.estado_pedido.slice(1);
+                                estadoElement.classList.add(pedido.estado_pedido.replace(' ', '-'));
+                                estadoDot.classList.add(pedido.estado_pedido.replace(' ', '-'));
+                                
+                                // Resaltar texto de búsqueda si existe
+                                if (searchActual) {
+                                    const idElement = clone.querySelector('.pedido-id-span');
+                                    idElement.innerHTML = resaltarTexto(pedido.id, searchActual);
+                                }
+                                
+                                // Añadir clase de vista actual
+                                if (currentView === 'list') {
+                                    pedidoCard.classList.add('list-view');
+                                }
+                                
+                                pedidosContainer.appendChild(clone);
+                            }, index * 100); // Retraso escalonado para efecto de aparición
+                        });
+                    } else {
+                        // Mostrar mensaje de no resultados
+                        const clone = noResultadosTemplate.content.cloneNode(true);
+                        pedidosContainer.appendChild(clone);
+                        
+                        // Añadir evento al botón de restablecer filtros
+                        const resetBtn = pedidosContainer.querySelector('#reset-filters');
+                        if (resetBtn) {
+                            resetBtn.addEventListener('click', function() {
+                                resetAllFilters();
+                            });
+                        }
+                    }
+                    // Actualizar contadores en tabs después de un breve retraso
+                    setTimeout(() => {
+                        tabs.forEach(tab => {
+                            const tabEstado = tab.dataset.estado;
+                            const countElement = tab.querySelector('.tab-count');
+                            if (tabEstado === 'todos') {
+                                countElement.textContent = data.total_pedidos_todos || 0;
+                            } else if (tabEstado === 'en proceso') {
+                                countElement.textContent = data.total_pedidos_en_proceso || 0;
+                            } else if (tabEstado === 'completado') {
+                                countElement.textContent = data.total_pedidos_completado || 0;
+                            } else if (tabEstado === 'cancelado') {
+                                countElement.textContent = data.total_pedidos_cancelado || 0;
+                            }
+                        });
+                    }, data.pedidos.length > 0 ? data.pedidos.length * 100 : 0);
+                    
+                    // Añadir paginación después de que se carguen todos los pedidos
+                    setTimeout(() => {
+                        // Solo mostrar paginación si hay más de 6 elementos
+                        if (data.show_pagination) {
+                            renderPagination(data.current_page, data.pages);
+                        }
+                    }, data.pedidos.length > 0 ? data.pedidos.length * 100 : 0);
+                } else {
+                    // Mostrar mensaje de no resultados si la API no fue exitosa
+                    const clone = noResultadosTemplate.content.cloneNode(true);
+                    pedidosContainer.appendChild(clone);
+                    
+                    const resetBtn = pedidosContainer.querySelector('#reset-filters');
+                    if (resetBtn) {
+                        resetBtn.addEventListener('click', function() {
+                            resetAllFilters();
+                        });
+                    }
+                    
+                    // Actualizar contadores en tabs (todos en 0)
+                    tabs.forEach(tab => {
+                        const countElement = tab.querySelector('.tab-count');
+                        countElement.textContent = '0';
+                    });
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                pedidosContainer.innerHTML = `
+                    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 fade-in">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-red-700">Error al cargar los pedidos. Por favor, intenta de nuevo más tarde.</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                isLoading = false;
+            }
+        }
+        
+        // Función para renderizar la paginación
+        function renderPagination(currentPage, totalPages) {
+            if (totalPages <= 1) return; // No mostrar paginación si solo hay una página
+            
+            let paginationHtml = '<div class="pagination">';
+            
+            // Botón "Anterior"
+            if (currentPage > 1) {
+                paginationHtml += `
+                    <button class="pagination-btn" data-page="${currentPage - 1}">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+            } else {
+                paginationHtml += `
+                    <button class="pagination-btn disabled">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+            }
+            
+            // Determinar el rango de páginas a mostrar
+            let startPage = Math.max(1, currentPage - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+            
+            // Primera página y "..." si es necesario
+            if (startPage > 1) {
+                paginationHtml += `<button class="pagination-btn" data-page="1">1</button>`;
+                if (startPage > 2) {
+                    paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+                }
+            }
+            
+            // Páginas numeradas
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    paginationHtml += `<button class="pagination-btn active">${i}</button>`;
+                } else {
+                    paginationHtml += `<button class="pagination-btn" data-page="${i}">${i}</button>`;
+                }
+            }
+            
+            // Última página y "..." si es necesario
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    paginationHtml += `<span class="pagination-ellipsis">...</span>`;
+                }
+                paginationHtml += `<button class="pagination-btn" data-page="${totalPages}">${totalPages}</button>`;
+            }
+            
+            // Botón "Siguiente"
+            if (currentPage < totalPages) {
+                paginationHtml += `
+                    <button class="pagination-btn" data-page="${currentPage + 1}">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+            } else {
+                paginationHtml += `
+                    <button class="pagination-btn disabled">
+                        <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+            }
+            
+            paginationHtml += '</div>';
+            
+            // Insertar la paginación en el contenedor
+            pedidosContainer.insertAdjacentHTML('beforeend', paginationHtml);
+            
+            // Agregar event listeners a los botones de paginación
+            const paginationButtons = pedidosContainer.querySelectorAll('.pagination-btn[data-page]');
+            paginationButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const page = parseInt(this.dataset.page);
+                    cargarPedidos(true, page);
+                    
+                    // Scroll al inicio de la sección de pedidos
+                    document.querySelector('.pedidos-section').scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+        }
+        
+        // Función para restablecer todos los filtros
+        function resetAllFilters() {
+            estadoActual = 'todos';
+            ordenActual = 'desc';
+            searchActual = '';
+            fechaDesde = '';
+            fechaHasta = '';
+            montoMin = '';
+            montoMax = '';
+            
+            // Actualizar UI
+            tabs.forEach(tab => {
+                if (tab.dataset.estado === 'todos') {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            searchInput.value = '';
+            fechaDesdeInput.value = '';
+            fechaHastaInput.value = '';
+            montoMinInput.value = '';
+            montoMaxInput.value = '';
+            
+            // Actualizar texto del botón de ordenamiento
+            ordenSelectBtn.innerHTML = `
+                <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z" />
+                </svg>
+                Ordenar
+            `;
+            
+            // Actualizar los indicadores de filtros
+            actualizarFiltrosActivos();
+            
+            // Recargar pedidos
+            cargarPedidos();
+        }
+        
+        // Función para obtener una cookie por nombre
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        
+        // Event listeners para las tabs
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                // Actualizar estado
+                estadoActual = this.dataset.estado;
+                
+                // Actualizar UI
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Actualizar los indicadores de filtros
+                actualizarFiltrosActivos();
+                
+                // Recargar pedidos
+                cargarPedidos();
+            });
+        });
+        
+        // Event listener para el menú de ordenamiento
+        ordenSelectBtn.addEventListener('click', function() {
+            ordenMenu.classList.toggle('hidden');
+        });
+        
+        // Event listeners para las opciones de ordenamiento
+        ordenOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                ordenActual = this.dataset.orden;
+                
+                // Actualizar texto del botón
+                ordenSelectBtn.innerHTML = `
+                    <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M5 12a1 1 0 102 0V6.414l1.293 1.293a1 1 0 001.414-1.414l-3-3a1 1 0 00-1.414 0l-3 3a1 1 0 001.414 1.414L5 6.414V12zM15 8a1 1 0 10-2 0v5.586l-1.293-1.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L15 13.586V8z" />
+                    </svg>
+                    ${this.textContent}
+                `;
+                
+                // Cerrar menú
+                ordenMenu.classList.add('hidden');
+                
+                // Recargar pedidos
+                cargarPedidos();
+            });
+        });
+        
+        // Cerrar menú de ordenamiento al hacer clic fuera
+        document.addEventListener('click', function(event) {
+            if (!ordenSelectBtn.contains(event.target) && !ordenMenu.contains(event.target)) {
+                ordenMenu.classList.add('hidden');
+            }
+        });
+        
+        // Event listener para la búsqueda con debounce
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchActual = this.value;
+                actualizarFiltrosActivos();
+                cargarPedidos();
+            }, 500); // Esperar 500ms después de que el usuario deje de escribir
+        });
+        
+        // Event listener para el botón de filtros avanzados
+        advancedFiltersBtn.addEventListener('click', function() {
+            advancedFilters.classList.toggle('show');
+        });
+        
+        // Event listener para aplicar filtros avanzados
+        applyAdvancedFiltersBtn.addEventListener('click', function() {
+            fechaDesde = fechaDesdeInput.value;
+            fechaHasta = fechaHastaInput.value;
+            montoMin = montoMinInput.value;
+            montoMax = montoMaxInput.value;
+            
+            // Actualizar los indicadores de filtros
+            actualizarFiltrosActivos();
+            
+            // Recargar pedidos
+            cargarPedidos();
+        });
+        
+        // Event listener para restablecer filtros avanzados
+        resetAdvancedFiltersBtn.addEventListener('click', function() {
+            fechaDesdeInput.value = '';
+            fechaHastaInput.value = '';
+            montoMinInput.value = '';
+            montoMaxInput.value = '';
+            
+            fechaDesde = '';
+            fechaHasta = '';
+            montoMin = '';
+            montoMax = '';
+            
+            // Actualizar los indicadores de filtros
+            actualizarFiltrosActivos();
+            
+            // Recargar pedidos
+            cargarPedidos();
+        });
+        
+        // Event listeners para los botones de vista
+        viewButtons.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Actualizar estado
+                currentView = this.dataset.view;
+                
+                // Actualizar UI
+                viewButtons.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Actualizar clase del contenedor
+                if (currentView === 'list') {
+                    pedidosContainer.classList.add('list-view');
+                } else {
+                    pedidosContainer.classList.remove('list-view');
+                }
+                
+                // Actualizar clases de las tarjetas existentes
+                const pedidoCards = document.querySelectorAll('.pedido-card');
+                pedidoCards.forEach(card => {
+                    if (currentView === 'list') {
+                        card.classList.add('list-view');
+                    } else {
+                        card.classList.remove('list-view');
+                    }
+                });
+            });
+        });
+        
+        // Event listener para el botón de restablecer filtros (si existe)
+        const resetBtn = document.getElementById('reset-filters');
+        if (resetBtn) {
+            resetBtn.addEventListener('click', function() {
+                resetAllFilters();
+            });
+        }
+        
+        // Event listeners para los botones de reordenar (delegación de eventos)
+        pedidosContainer.addEventListener('click', async function(event) {
+            // Verificar si el clic fue en un botón de reordenar
+            if (event.target.closest('.reorder-btn')) {
+                const reorderBtn = event.target.closest('.reorder-btn');
+                const pedidoId = reorderBtn.getAttribute('data-pedido-id');
+                
+                // Guardar el ID del pedido a reordenar
+                pedidoAReordenar = pedidoId;
+                
+                let originalContent = ''; // Declare outside try-catch
+
+                if (!pedidoId) {
+                    console.error('Error: ID de pedido no encontrado en el botón de reordenar.');
+                    showToast('Error: No se pudo obtener el ID del pedido para reordenar.', 'error');
+                    return; // Exit the function if pedidoId is missing
+                }
+
+                try {
+                    // Mostrar indicador de carga
+                    originalContent = reorderBtn.innerHTML;
+                    reorderBtn.innerHTML = `
+                        <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Cargando...
+                    `;
+                    reorderBtn.disabled = true;
+                    
+                    // Obtener token de autenticación
+                    const token = localStorage.getItem('jwt_token') || 
+                                  sessionStorage.getItem('jwt_token') || 
+                                  getCookie('jwt_token');
+                    
+                    // Realizar petición para obtener los detalles del pedido
+                    const response = await fetch(`/api/pedido-detalle/${pedidoId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Error al cargar los detalles del pedido');
+                    }
+                    
+                    const pedidoDetalle = await response.json();
+                    
+                    // Restaurar botón
+                    reorderBtn.innerHTML = originalContent;
+                    reorderBtn.disabled = false;
+                    
+                    // Mostrar la modal con los detalles del pedido
+                    mostrarModalReordenar(pedidoDetalle);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    
+                    // Restaurar botón
+                    const reorderBtn = event.target.closest('.reorder-btn');
+                    reorderBtn.innerHTML = originalContent;
+                    reorderBtn.disabled = false;
+                    
+                    showToast('Error de conexión. Por favor, intenta de nuevo más tarde.', 'error');
+                }
+            }
+        });
+        
+        // Función para mostrar la modal de reordenar con los detalles del pedido
+        function mostrarModalReordenar(pedidoDetalle) {
+            // Limpiar el contenido anterior
+            modalProductos.innerHTML = '';
+            
+            // Variable para calcular el total
+            let total = 0;
+            
+            // Añadir cada producto a la modal
+            pedidoDetalle.productos.forEach(producto => {
+                const productoElement = document.createElement('div');
+                productoElement.className = 'modal-producto';
+                
+                const subtotal = producto.cantidad * producto.precio_unitario;
+                total += subtotal;
+                
+                productoElement.innerHTML = `
+                    <img src="${producto.producto_imagen_url || '/static/img/placeholder.png'}" alt="${producto.producto_nombre}" class="modal-producto-img">
+                    <div class="modal-producto-info">
+                        <div class="modal-producto-nombre">${producto.producto_nombre}</div>
+                        <div class="modal-producto-cantidad">Cantidad: ${producto.cantidad}</div>
+                    </div>
+                    <div class="modal-producto-precio">${formatColombianCurrency(subtotal)}</div>
+                `;
+                
+                modalProductos.appendChild(productoElement);
+            });
+            
+            // Mostrar el total
+            modalTotal.textContent = `Total: ${formatColombianCurrency(total)}`;
+            
+            // Mostrar la modal
+            reordenarModal.classList.add('show');
+        }
+        
+        // Event listeners para cerrar la modal
+        modalClose.addEventListener('click', function() {
+            reordenarModal.classList.remove('show');
+            pedidoAReordenar = null;
+        });
+        
+        cancelarReordenar.addEventListener('click', function() {
+            reordenarModal.classList.remove('show');
+            pedidoAReordenar = null;
+        });
+        
+        // Cerrar la modal al hacer clic fuera del contenido
+        reordenarModal.addEventListener('click', function(event) {
+            if (event.target === reordenarModal) {
+                reordenarModal.classList.remove('show');
+                pedidoAReordenar = null;
+            }
+        });
+        
+        // Event listener para confirmar el reorden
+        confirmarReordenar.addEventListener('click', async function() {
+            if (!pedidoAReordenar) return;
+            
+            let originalContent = ''; // Declare outside try-catch
+
+            try {
+                // Mostrar indicador de carga en el botón
+                originalContent = confirmarReordenar.innerHTML; // Assign here
+                confirmarReordenar.innerHTML = `
+                    <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Procesando...
+                `;
+                confirmarReordenar.disabled = true;
+                
+                // Obtener token de autenticación
+                const token = localStorage.getItem('jwt_token') || 
+                              sessionStorage.getItem('jwt_token') || 
+                              getCookie('jwt_token');
+                
+                // Realizar petición para reordenar
+                const response = await fetch(`/reordenar/${pedidoAReordenar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Restaurar botón
+                confirmarReordenar.innerHTML = originalContent;
+                confirmarReordenar.disabled = false;
+                
+                if (data.success) {
+                    // Cerrar la modal
+                    reordenarModal.classList.remove('show');
+                    
+                    // Mostrar mensaje de éxito
+                    showToast('Pedido reordenado correctamente. Redirigiendo al carrito...', 'success');
+                    
+                    // Redirigir al carrito después de un breve retraso
+                    setTimeout(() => {
+                        window.location.href = '/carrito';
+                    }, 1500);
+                } else {
+                    // Mostrar mensaje de error
+                    let errorMessage = data.message || 'Error al reordenar el pedido';
+                    
+                    // Si hay productos no disponibles, mostrarlos
+                    if (data.productos_no_disponibles && data.productos_no_disponibles.length > 0) {
+                        errorMessage += '<br><br>Productos sin stock suficiente:<ul>';
+                        data.productos_no_disponibles.forEach(producto => {
+                            errorMessage += `<li>${producto.nombre}: solicitado ${producto.cantidad_solicitada}, disponible ${producto.cantidad_disponible}</li>`;
+                        });
+                        errorMessage += '</ul>';
+                    }
+                    
+                    showToast(errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Restaurar botón
+                confirmarReordenar.innerHTML = originalContent;
+                confirmarReordenar.disabled = false;
+                
+                showToast('Error de conexión. Por favor, intenta de nuevo más tarde.', 'error');
+            }
+        });
+        
+        // Función para mostrar notificaciones toast
+        function showToast(message, type = 'info') {
+            // Crear el toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            
+            // Añadir el toast al contenedor
+            toastContainer.appendChild(toast);
+            
+            // Forzar reflow para activar la transición
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Eliminar después de 5 segundos
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 300);
+            }, 5000);
+        }
+        
+        // Inicializar indicadores de filtros
+        actualizarFiltrosActivos();
+        
+        // Cargar pedidos inicialmente sin mostrar skeletons
+        // ya que los datos ya están renderizados en el servidor
+        cargarPedidos(false);
+    });
+</script>
+{% endblock %}

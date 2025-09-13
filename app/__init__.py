@@ -64,12 +64,15 @@ def create_app(config_class=Config):
                 admin_user = Admins.query.get(payload['user_id'])
         return dict(admin_user=admin_user)
 
-    # Registrar blueprints
+    # Registrar blueprints cliente
     from app.blueprints.cliente.auth import auth_bp
     from app.blueprints.cliente.products import products_bp
     from app.blueprints.cliente.cart import cart_bp
     from app.blueprints.cliente.favorites import favorites_bp
     from app.blueprints.cliente.reviews import reviews_bp
+    from app.blueprints.cliente.order import order_bp
+    
+    # Registrar blueprints admin
     from app.blueprints.admin.auth import admin_auth_bp
     from app.blueprints.admin.dashboard import admin_dashboard_bp
     from app.blueprints.admin.product.lista_product import admin_lista_product_bp
@@ -80,11 +83,15 @@ def create_app(config_class=Config):
     from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
     from app.blueprints.admin.pedido.api import admin_api_bp
 
+    #cliente
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(products_bp)
     app.register_blueprint(favorites_bp)
     app.register_blueprint(reviews_bp)
+    app.register_blueprint(order_bp)
+    
+    # admin
     app.register_blueprint(admin_auth_bp)
     app.register_blueprint(admin_dashboard_bp)
     app.register_blueprint(admin_lista_product_bp)
@@ -123,9 +130,11 @@ def create_app(config_class=Config):
         total_items = sum(item['quantity'] for item in items)
         total_price = sum(item['subtotal'] for item in items)
         
-        # Obtener categorías activas
+        # Obtener las 7 categorías más antiguas y activas
         categorias_obj = CategoriasPrincipales.query\
             .filter(CategoriasPrincipales.estado == 'activo')\
+            .order_by(CategoriasPrincipales.created_at.asc())\
+            .limit(7)\
             .options(\
                 joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))\
                 .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))\
@@ -195,6 +204,18 @@ def create_app(config_class=Config):
     def datetimeformat_filter(value, format='%Y-%m-%d %H:%M:%S'):
         if value is None:
             return ""
+
+        # If value is a string, attempt to parse it into a datetime object
+        if isinstance(value, str):
+            try:
+                # Handle ISO format with or without 'Z' for UTC
+                if value.endswith('Z'):
+                    value = value[:-1] + '+00:00'
+                value = datetime.fromisoformat(value)
+            except ValueError:
+                # If parsing fails, return the original string or an empty string
+                return value # Or ""
+        
         # Ensure the datetime object is timezone-aware (assuming UTC if naive)
         if value.tzinfo is None:
             value = pytz.utc.localize(value)

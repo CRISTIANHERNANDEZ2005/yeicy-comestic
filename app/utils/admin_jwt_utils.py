@@ -16,8 +16,8 @@ def generate_admin_jwt_token(admin_user: Admins) -> str:
     payload = {
         'user_id': admin_user.id,
         'is_admin': True,
-        'exp': datetime.utcnow() + timedelta(minutes=token_expiration_minutes),
-        'iat': datetime.utcnow()
+        'exp': int((datetime.utcnow() + timedelta(minutes=token_expiration_minutes)).timestamp()),
+        'iat': int(datetime.utcnow().timestamp())
     }
     return jwt.encode(payload, secret, algorithm='HS256')
 

@@ -1,0 +1,1212 @@
+{% extends "cliente/page/base.html" %}
+{% block title %}Detalle del Pedido #{{ pedido.id }}{% endblock %}
+{% block content %}
+<style>
+    :root {
+        --primary: #4F46E5;
+        --primary-dark: #4338CA;
+        --secondary: #10B981;
+        --warning: #F59E0B;
+        --danger: #EF4444;
+        --dark: #1F2937;
+        --light: #F9FAFB;
+        --gray: #6B7280;
+        --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        --transition: all 0.3s ease;
+    }
+    
+    body {
+        background-color: var(--light);
+        color: var(--dark);
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    
+    .container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+    
+    .ayuda{
+        margin-bottom: 8rem;
+    }
+    
+    .pedido-header {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border-radius: 1rem;
+        padding: 2.5rem 2rem;
+        color: white;
+        margin-bottom: 2.5rem;
+        margin-top: 4rem;
+        box-shadow: var(--shadow-lg);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .pedido-header::before {
+        content: '';
+        position: absolute;
+        top: -50px;
+        right: -50px;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+    
+    .pedido-header h1 {
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .pedido-header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+        max-width: 600px;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        color: rgba(255, 255, 255, 0.8);
+        font-weight: 500;
+        margin-bottom: 1rem;
+        transition: var(--transition);
+        position: relative;
+        z-index: 1;
+    }
+    
+    .back-link:hover {
+        color: white;
+    }
+    
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 999px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .status-badge.en-proceso {
+        background-color: rgba(245, 158, 11, 0.2);
+        color: white;
+    }
+    
+    .status-badge.completado {
+        background-color: rgba(16, 185, 129, 0.2);
+        color: white;
+    }
+    
+    .status-badge.cancelado {
+        background-color: rgba(239, 68, 68, 0.2);
+        color: white;
+    }
+    
+    .card {
+        background: white;
+        border-radius: 1rem;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+        transition: var(--transition);
+    }
+    
+    .card:hover {
+        box-shadow: var(--shadow-lg);
+    }
+    
+    .card-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .producto-item {
+        display: flex;
+        padding: 1.5rem 0;
+        border-bottom: 1px solid #E5E7EB;
+        transition: var(--transition);
+    }
+    
+    .producto-item:last-child {
+        border-bottom: none;
+    }
+    
+    .producto-item:hover {
+        background-color: rgba(79, 70, 229, 0.02);
+    }
+    
+    .producto-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 0.75rem;
+        object-fit: cover;
+        margin-right: 1.5rem;
+        flex-shrink: 0;
+    }
+    
+    .producto-details {
+        flex-grow: 1;
+    }
+    
+    .producto-name {
+        font-weight: 600;
+        font-size: 1.125rem;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .producto-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .producto-meta-item {
+        display: flex;
+        align-items: center;
+        color: var(--gray);
+        font-size: 0.875rem;
+    }
+    
+    .producto-meta-item svg {
+        width: 1rem;
+        height: 1rem;
+        margin-right: 0.25rem;
+    }
+    
+    .producto-price {
+        font-weight: 700;
+        font-size: 1.125rem;
+        color: var(--primary);
+        margin-left: auto;
+        align-self: flex-start;
+    }
+    
+    .resumen-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .resumen-item:last-child {
+        border-bottom: none;
+    }
+    
+    .resumen-label {
+        color: var(--gray);
+    }
+    
+    .resumen-value {
+        font-weight: 500;
+    }
+    
+    .resumen-total .resumen-label,
+    .resumen-total .resumen-value {
+        font-weight: 700;
+        font-size: 1.125rem;
+        color: var(--dark);
+    }
+    
+    .info-item {
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-label {
+        font-size: 0.875rem;
+        color: var(--gray);
+        margin-bottom: 0.25rem;
+    }
+    
+    .info-value {
+        font-weight: 500;
+    }
+    
+    .timeline {
+        position: relative;
+        padding-left: 1.5rem;
+    }
+    
+    .timeline::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 2px;
+        height: 100%;
+        background-color: #E5E7EB;
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+    
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: -1.75rem;
+        top: 0.25rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: #E5E7EB;
+        z-index: 1;
+    }
+    
+    .timeline-item.active::before {
+        background-color: var(--primary);
+        box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.2);
+    }
+    
+    .timeline-item.completed::before {
+        background-color: var(--secondary);
+    }
+    
+    .timeline-date {
+        font-size: 0.875rem;
+        color: var(--gray);
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .timeline-description {
+        font-size: 0.875rem;
+        color: var(--gray);
+    }
+    
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.75rem 1.5rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+        border: none;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+    
+    .btn-primary {
+        background-color: var(--primary);
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background-color: var(--primary-dark);
+    }
+    
+    .btn-secondary {
+        background-color: white;
+        color: var(--gray);
+        border: 1px solid #E5E7EB;
+    }
+    
+    .btn-secondary:hover {
+        background-color: var(--light);
+    }
+    
+    .btn-success {
+        background-color: var(--secondary);
+        color: white;
+    }
+    
+    .btn-success:hover {
+        background-color: #059669;
+    }
+    
+    .btn-group {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+    
+    .btn-group .btn {
+        flex: 1;
+    }
+    
+    .help-section {
+        background-color: rgba(79, 70, 229, 0.05);
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+    
+    .help-title {
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    
+    .help-description {
+        color: var(--gray);
+        margin-bottom: 1rem;
+    }
+    
+    .help-links {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    
+    .help-link {
+        display: inline-flex;
+        align-items: center;
+        color: var(--primary);
+        font-weight: 500;
+        text-decoration: none;
+        transition: var(--transition);
+    }
+    
+    .help-link:hover {
+        color: var(--primary-dark);
+    }
+    
+    .help-link svg {
+        width: 1.25rem;
+        height: 1.25rem;
+        margin-right: 0.5rem;
+    }
+    
+    .not-found {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+    
+    .not-found-icon {
+        width: 5rem;
+        height: 5rem;
+        margin: 0 auto 1.5rem;
+        background-color: rgba(239, 68, 68, 0.1);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--danger);
+    }
+    
+    .not-found h3 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        color: var(--dark);
+    }
+    
+    .not-found p {
+        color: var(--gray);
+        margin-bottom: 1.5rem;
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    
+    /* Animaciones */
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .fade-in {
+        animation: fadeIn 0.5s ease-out;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .pedido-header h1 {
+            font-size: 2rem;
+        }
+        
+        .producto-item {
+            flex-direction: column;
+        }
+        
+        .producto-image {
+            width: 100%;
+            height: 200px;
+            margin-right: 0;
+            margin-bottom: 1rem;
+        }
+        
+        .producto-price {
+            margin-left: 0;
+            align-self: flex-end;
+        }
+        
+        .btn-group {
+            flex-direction: column;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .pedido-header {
+            padding: 1.5rem;
+        }
+        
+        .pedido-header h1 {
+            font-size: 1.75rem;
+        }
+        
+        .card {
+            border-radius: 0.75rem;
+        }
+        
+        .card-header, .card-body {
+            padding: 1rem;
+        }
+    }
+</style>
+<div class="container mx-auto px-4 py-8">
+    {% if error %}
+    <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-6 fade-in">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm text-red-700">{{ error }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if pedido %}
+    <!-- Encabezado del pedido -->
+    <div class="pedido-header fade-in">
+        <a href="{{ url_for('order.view_orders') }}" class="back-link">
+            <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Volver a mis pedidos
+        </a>
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div>
+                <h1>Pedido #{{ pedido.id }}</h1>
+                <p>Realizado el {{ pedido.created_at | datetimeformat('%d de %B de %Y a las %I:%M %p') }}</p>
+            </div>
+            <div class="mt-4 md:mt-0">
+                <span class="status-badge {{ pedido.estado_pedido|replace(' ', '-') }}">
+                    {{ pedido.estado_pedido|title }}
+                </span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Columna principal -->
+        <div class="lg:col-span-2 space-y-6">
+            <!-- Productos del pedido -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h2 class="card-title">Productos del Pedido</h2>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-2">
+                        {% for item in pedido.productos %}
+                        <div class="producto-item">
+                            {% if item.producto_imagen_url %}
+                                <img src="{{ item.producto_imagen_url }}" alt="{{ item.producto_nombre }}" class="producto-image">
+                            {% else %}
+                                <div class="producto-image bg-gray-200 flex items-center justify-center">
+                                    <svg class="h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                    </svg>
+                                </div>
+                            {% endif %}
+                            <div class="producto-details">
+                                <h3 class="producto-name">{{ item.producto_nombre }}</h3>
+                                <div class="producto-meta">
+                                    <div class="producto-meta-item">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                        </svg>
+                                        Cantidad: {{ item.cantidad }}
+                                    </div>
+                                    <div class="producto-meta-item">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        $ <span class="precio-unitario">{{ "%.0f"|format(item.precio_unitario) }}</span> c/u
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="producto-price">$ <span class="precio-subtotal">{{ "%.0f"|format(item.subtotal) }}</span></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Resumen del pedido -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h2 class="card-title">Resumen del Pedido</h2>
+                </div>
+                <div class="card-body">
+                    <div class="resumen-item">
+                        <span class="resumen-label">Subtotal</span>
+                        <span class="resumen-value">$ <span class="resumen-subtotal">{{ "%.0f"|format(pedido.total) }}</span></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Envío</span>
+                        <span class="resumen-value">$ <span class="resumen-envio">0</span></span>
+                    </div>
+                    <div class="resumen-item">
+                        <span class="resumen-label">Impuestos</span>
+                        <span class="resumen-value">$ <span class="resumen-impuestos">0</span></span>
+                    </div>
+                    <div class="resumen-item resumen-total">
+                        <span class="resumen-label">Total</span>
+                        <span class="resumen-value">$ <span class="resumen-total">{{ "%.0f"|format(pedido.total) }}</span></span>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <a href="{{ url_for('order.generar_factura_pdf', order_id=pedido.id) }}" target="_blank" class="btn btn-secondary">
+                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Descargar Factura
+                        </a>
+                        <button class="btn btn-primary reorder-btn" data-pedido-id="{{ pedido.id }}">
+                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Comprar de Nuevo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Columna lateral -->
+        <div class="space-y-6">
+            <!-- Información del pedido -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h2 class="card-title">Información del Pedido</h2>
+                </div>
+                <div class="card-body">
+                    <div class="info-item">
+                        <div class="info-label">Número de Pedido</div>
+                        <div class="info-value">{{ pedido.id }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Fecha</div>
+                        <div class="info-value">{{ pedido.created_at | datetimeformat('%d de %B de %Y') }}</div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Estado</div>
+                        <div class="info-value">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {% if pedido.estado_pedido == 'en proceso' %}
+                                    bg-yellow-100 text-yellow-800
+                                {% elif pedido.estado_pedido == 'completado' %}
+                                    bg-green-100 text-green-800
+                                {% elif pedido.estado_pedido == 'cancelado' %}
+                                    bg-red-100 text-red-800
+                                {% endif %}">
+                                {{ pedido.estado_pedido|title }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="info-item">
+                        <div class="info-label">Método de Pago</div>
+                        <div class="info-value">Pago contra entrega</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Seguimiento del pedido -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <h2 class="card-title">Seguimiento del Pedido</h2>
+                </div>
+                <div class="card-body">
+                    <div class="timeline">
+                        <div class="timeline-item completed">
+                            <div class="timeline-date">{{ pedido.created_at | datetimeformat('%d de %B') }}</div>
+                            <div class="timeline-title">Pedido recibido</div>
+                            <div class="timeline-description">Tu pedido ha sido recibido y está siendo procesado</div>
+                        </div>
+                        <div class="timeline-item {% if pedido.estado_pedido == 'en proceso' %}active{% elif pedido.estado_pedido == 'completado' %}completed{% endif %}">
+                            <div class="timeline-date">{{ pedido.created_at | datetimeformat('%d de %B') }}</div>
+                            <div class="timeline-title">En preparación</div>
+                            <div class="timeline-description">Tu pedido está siendo preparado para el envío</div>
+                        </div>
+                        <div class="timeline-item {% if pedido.estado_pedido == 'completado' %}active{% endif %}">
+                            <div class="timeline-date">{% if pedido.estado_pedido == 'completado' %}{{ pedido.updated_at | datetimeformat('%d de %B') }}{% else %}Pendiente{% endif %}</div>
+                            <div class="timeline-title">En camino</div>
+                            <div class="timeline-description">Tu pedido está en camino a tu dirección</div>
+                        </div>
+                        <div class="timeline-item {% if pedido.estado_pedido == 'completado' %}completed{% endif %}">
+                            <div class="timeline-date">{% if pedido.estado_pedido == 'completado' %}{{ pedido.updated_at | datetimeformat('%d de %B') }}{% else %}Pendiente{% endif %}</div>
+                            <div class="timeline-title">Entregado</div>
+                            <div class="timeline-description">Tu pedido ha sido entregado con éxito</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Ayuda -->
+            <div class="card fade-in ayuda">
+                <div class="card-header">
+                    <h2 class="card-title">¿Necesitas Ayuda?</h2>
+                </div>
+                <div class="card-body">
+                    <div class="help-section">
+                        <div class="help-description">¿Tienes preguntas sobre tu pedido? Contáctanos y te ayudaremos.</div>
+                        <div class="help-links">
+                            <a href="#" class="help-link">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
+                                </svg>
+                                Chatear por WhatsApp
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Mensaje cuando no se encuentra el pedido -->
+    <div class="not-found fade-in">
+        <div class="not-found-icon">
+            <svg class="h-16 w-16" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3>Pedido no encontrado</h3>
+        <p>El pedido que buscas no existe o no tienes permiso para verlo.</p>
+        <a href="{{ url_for('order.view_orders') }}" class="btn btn-primary">
+            Ver Mis Pedidos
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modal de confirmación para reordenar -->
+<div id="reordenar-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 class="modal-title">Confirmar reorden</h3>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p>¿Estás seguro que deseas reordenar los siguientes productos?</p>
+            <div class="modal-productos" id="modal-productos">
+                <!-- Los productos se cargarán dinámicamente -->
+            </div>
+            <div class="modal-total" id="modal-total">
+                <!-- El total se calculará dinámicamente -->
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="cancelar-reordenar" class="btn btn-secondary">Cancelar</button>
+            <button id="confirmar-reordenar" class="btn btn-primary">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Contenedor para las notificaciones toast -->
+<div id="toast-container" class="toast-container"></div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Función para formatear números al formato colombiano
+        function formatNumberColombian(value) {
+            try {
+                // Convertir a entero para eliminar decimales
+                value = parseInt(parseFloat(value));
+                // Formatear con puntos como separadores de miles
+                return value.toLocaleString('es-CO').replace(/,/g, '.');
+            } catch (e) {
+                return value;
+            }
+        }
+
+        // Función para actualizar todos los precios en la página
+        function updatePricesFormat() {
+            // Seleccionar todos los elementos que contienen precios
+            const priceElements = document.querySelectorAll('.precio-unitario, .precio-subtotal, .resumen-subtotal, .resumen-envio, .resumen-impuestos, .resumen-total');
+            
+            priceElements.forEach(element => {
+                // Obtener el texto del elemento
+                const text = element.textContent;
+                
+                // Extraer el valor numérico (eliminar el símbolo $ y espacios)
+                const value = text.replace('$', '').trim();
+                
+                // Formatear el valor
+                const formattedValue = formatNumberColombian(value);
+                
+                // Actualizar el texto del elemento
+                element.textContent = formattedValue;
+            });
+        }
+
+        // Llamar a la función cuando se carga la página
+        updatePricesFormat();
+        
+        // Elementos del DOM para la modal de reordenar
+        const reordenarModal = document.getElementById('reordenar-modal');
+        const modalClose = document.querySelector('.modal-close');
+        const cancelarReordenar = document.getElementById('cancelar-reordenar');
+        const confirmarReordenar = document.getElementById('confirmar-reordenar');
+        const modalProductos = document.getElementById('modal-productos');
+        const modalTotal = document.getElementById('modal-total');
+        const toastContainer = document.getElementById('toast-container');
+        
+        // Variable para almacenar el ID del pedido a reordenar
+        let pedidoAReordenar = null;
+        
+        // Event listener para el botón de reordenar
+        const reorderBtn = document.querySelector('.reorder-btn');
+        if (reorderBtn) {
+            reorderBtn.addEventListener('click', async function() {
+                const pedidoId = this.getAttribute('data-pedido-id');
+                
+                // Guardar el ID del pedido a reordenar
+                pedidoAReordenar = pedidoId;
+                
+                try {
+                    // Mostrar indicador de carga
+                    const originalContent = this.innerHTML;
+                    this.innerHTML = `
+                        <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Cargando...
+                    `;
+                    this.disabled = true;
+                    
+                    // Obtener token de autenticación
+                    const token = localStorage.getItem('jwt_token') || 
+                                  sessionStorage.getItem('jwt_token') || 
+                                  getCookie('jwt_token');
+                    
+                    // Realizar petición para obtener los detalles del pedido
+                    const response = await fetch(`/api/pedido-detalle/${pedidoId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Error al cargar los detalles del pedido');
+                    }
+                    
+                    const pedidoDetalle = await response.json();
+                    
+                    // Restaurar botón
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    
+                    // Mostrar la modal con los detalles del pedido
+                    mostrarModalReordenar(pedidoDetalle);
+                    
+                } catch (error) {
+                    console.error('Error:', error);
+                    
+                    // Restaurar botón
+                    this.innerHTML = originalContent;
+                    this.disabled = false;
+                    
+                    showToast('Error de conexión. Por favor, intenta de nuevo más tarde.', 'error');
+                }
+            });
+        }
+        
+        // Función para mostrar la modal de reordenar con los detalles del pedido
+        function mostrarModalReordenar(pedidoDetalle) {
+            // Limpiar el contenido anterior
+            modalProductos.innerHTML = '';
+            
+            // Variable para calcular el total
+            let total = 0;
+            
+            // Añadir cada producto a la modal
+            pedidoDetalle.productos.forEach(producto => {
+                const productoElement = document.createElement('div');
+                productoElement.className = 'modal-producto';
+                
+                const subtotal = producto.cantidad * producto.precio_unitario;
+                total += subtotal;
+                
+                productoElement.innerHTML = `
+                    <img src="${producto.producto_imagen_url || '/static/img/placeholder.png'}" alt="${producto.producto_nombre}" class="modal-producto-img">
+                    <div class="modal-producto-info">
+                        <div class="modal-producto-nombre">${producto.producto_nombre}</div>
+                        <div class="modal-producto-cantidad">Cantidad: ${producto.cantidad}</div>
+                    </div>
+                    <div class="modal-producto-precio">$${formatNumberColombian(subtotal)}</div>
+                `;
+                
+                modalProductos.appendChild(productoElement);
+            });
+            
+            // Mostrar el total
+            modalTotal.textContent = `Total: $${formatNumberColombian(total)}`;
+            
+            // Mostrar la modal
+            reordenarModal.classList.add('show');
+        }
+        
+        // Event listeners para cerrar la modal
+        modalClose.addEventListener('click', function() {
+            reordenarModal.classList.remove('show');
+            pedidoAReordenar = null;
+        });
+        
+        cancelarReordenar.addEventListener('click', function() {
+            reordenarModal.classList.remove('show');
+            pedidoAReordenar = null;
+        });
+        
+        // Cerrar la modal al hacer clic fuera del contenido
+        reordenarModal.addEventListener('click', function(event) {
+            if (event.target === reordenarModal) {
+                reordenarModal.classList.remove('show');
+                pedidoAReordenar = null;
+            }
+        });
+        
+        // Event listener para confirmar el reorden
+        confirmarReordenar.addEventListener('click', async function() {
+            if (!pedidoAReordenar) return;
+            
+            try {
+                // Mostrar indicador de carga en el botón
+                const originalContent = this.innerHTML;
+                this.innerHTML = `
+                    <svg class="animate-spin h-5 w-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Procesando...
+                `;
+                this.disabled = true;
+                
+                // Obtener token de autenticación
+                const token = localStorage.getItem('jwt_token') || 
+                              sessionStorage.getItem('jwt_token') || 
+                              getCookie('jwt_token');
+                
+                // Realizar petición para reordenar
+                const response = await fetch(`/reordenar/${pedidoAReordenar}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                // Restaurar botón
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                
+                if (data.success) {
+                    // Cerrar la modal
+                    reordenarModal.classList.remove('show');
+                    
+                    // Mostrar mensaje de éxito
+                    showToast('Pedido reordenado correctamente. Redirigiendo al carrito...', 'success');
+                    
+                    // Redirigir al carrito después de un breve retraso
+                    setTimeout(() => {
+                        window.location.href = '/carrito';
+                    }, 1500);
+                } else {
+                    // Mostrar mensaje de error
+                    let errorMessage = data.message || 'Error al reordenar el pedido';
+                    
+                    // Si hay productos no disponibles, mostrarlos
+                    if (data.productos_no_disponibles && data.productos_no_disponibles.length > 0) {
+                        errorMessage += '<br><br>Productos sin stock suficiente:<ul>';
+                        data.productos_no_disponibles.forEach(producto => {
+                            errorMessage += `<li>${producto.nombre}: solicitado ${producto.cantidad_solicitada}, disponible ${producto.cantidad_disponible}</li>`;
+                        });
+                        errorMessage += '</ul>';
+                    }
+                    
+                    showToast(errorMessage, 'error');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Restaurar botón
+                this.innerHTML = originalContent;
+                this.disabled = false;
+                
+                showToast('Error de conexión. Por favor, intenta de nuevo más tarde.', 'error');
+            }
+        });
+        
+        // Función para obtener una cookie por nombre
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+        
+        // Función para mostrar notificaciones toast
+        function showToast(message, type = 'info') {
+            // Crear el toast
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = message;
+            
+            // Añadir el toast al contenedor
+            toastContainer.appendChild(toast);
+            
+            // Forzar reflow para activar la transición
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Eliminar después de 5 segundos
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toastContainer.removeChild(toast);
+                }, 300);
+            }, 5000);
+        }
+    });
+</script>
+
+<style>
+    /* Estilos para la modal */
+    .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal.show {
+        display: flex;
+    }
+    
+    .modal-content {
+        background-color: white;
+        border-radius: 0.75rem;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: var(--shadow-lg);
+        animation: modalSlideIn 0.3s ease-out;
+    }
+    
+    @keyframes modalSlideIn {
+        from {
+            transform: translateY(-50px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #E5E7EB;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .modal-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--dark);
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        color: var(--gray);
+        cursor: pointer;
+        transition: var(--transition);
+    }
+    
+    .modal-close:hover {
+        color: var(--dark);
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+    
+    .modal-productos {
+        margin-top: 1rem;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+    
+    .modal-producto {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem;
+        border-bottom: 1px solid #E5E7EB;
+    }
+    
+    .modal-producto:last-child {
+        border-bottom: none;
+    }
+    
+    .modal-producto-img {
+        width: 50px;
+        height: 50px;
+        border-radius: 0.5rem;
+        object-fit: cover;
+        margin-right: 1rem;
+    }
+    
+    .modal-producto-info {
+        flex-grow: 1;
+    }
+    
+    .modal-producto-nombre {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+    
+    .modal-producto-cantidad {
+        font-size: 0.875rem;
+        color: var(--gray);
+    }
+    
+    .modal-producto-precio {
+        font-weight: 600;
+        color: var(--primary);
+    }
+    
+    .modal-footer {
+        padding: 1.5rem;
+        border-top: 1px solid #E5E7EB;
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.75rem;
+    }
+    
+    .modal-total {
+        font-size: 1.25rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        text-align: right;
+    }
+    
+    /* Estilos para las notificaciones toast */
+    .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+    }
+    
+    .toast {
+        padding: 16px;
+        margin-bottom: 10px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        max-width: 350px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    .toast.success {
+        background-color: #10B981;
+        color: white;
+    }
+    
+    .toast.error {
+        background-color: #EF4444;
+        color: white;
+    }
+    
+    .toast::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: rgba(255, 255, 255, 0.3);
+        animation: progress 5s linear forwards;
+    }
+    
+    @keyframes progress {
+        from { width: 100%; }
+        to { width: 0%; }
+    }
+    
+    /* Animación para el spinner */
+    .animate-spin {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+{% endblock %}

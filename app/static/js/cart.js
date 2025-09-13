@@ -331,7 +331,7 @@ if (typeof ShoppingCart === "undefined") {
         ?.addEventListener("click", () => this.hideWhatsAppModal());
       document
         .getElementById("confirmWhatsapp")
-        ?.addEventListener("click", () => this.confirmWhatsApp());
+        ?.addEventListener("click", () => this.confirmOrderAndClearCart());
       document
         .getElementById("downloadPdfButton")
         ?.addEventListener("click", () => this.printInvoice());
@@ -346,9 +346,9 @@ if (typeof ShoppingCart === "undefined") {
       modal.classList.add("hidden");
       document.body.style.overflow = "auto";
     }
-    async confirmWhatsApp() {
+    async confirmOrderAndClearCart() {
       try {
-        // Si no hay un pedido actual, crearlo
+        // Asegurarse de que el pedido exista antes de vaciar el carrito
         if (!this.currentOrderId) {
           const response = await fetch('/api/create_order', {
             method: 'POST',
@@ -361,17 +361,34 @@ if (typeof ShoppingCart === "undefined") {
           if (data.success) {
             this.currentOrderId = data.pedido_id;
             this.showToast("Pedido creado exitosamente", "success");
-            // Limpiar el carrito local después de crear el pedido en la BD
-            this.clearStorage();
-            this.cartItems = [];
-            this.updateCartCounter();
-            this.refreshCartModal();
           } else {
             this.showToast(data.message || "Error al crear el pedido", "error");
             this.hideWhatsAppModal();
             return;
           }
         }
+
+        // Ahora que el pedido está asegurado, vaciar el carrito en el backend
+        const clearResponse = await fetch('/api/clear_cart', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+            }
+        });
+        const clearData = await clearResponse.json();
+        if (!clearData.success) {
+            this.showToast(clearData.message || "Error al vaciar el carrito", "error");
+            this.hideWhatsAppModal();
+            return;
+        }
+
+        // Si el vaciado en el backend es exitoso, limpiar localmente
+        this.clearStorage();
+        this.cartItems = [];
+        this.updateCartCounter();
+        this.refreshCartModal();
+        this.showToast("Pedido confirmado y carrito vaciado", "success");
 
         // Obtener el enlace de WhatsApp
         const whatsappResponse = await fetch(`/api/get_whatsapp_link/${this.currentOrderId}`, {
@@ -382,11 +399,11 @@ if (typeof ShoppingCart === "undefined") {
         });
         const whatsappData = await whatsappResponse.json();
         if (whatsappData.success) {
-          // Abrir el enlace de WhatsApp
           window.open(whatsappData.whatsapp_link, '_blank');
         } else {
           this.showToast(whatsappData.message || "Error al obtener el enlace de WhatsApp", "error");
         }
+
       } catch (error) {
         console.error("Error al confirmar el pedido por WhatsApp:", error);
         this.showToast("Error de conexión", "error");
@@ -688,7 +705,7 @@ updateCartModal() {
     container.innerHTML = this.cartItems
         .map(
             (item) => `
-      <div class="group p-4 hover:bg-gray-50 transition-colors" data-item-id="${
+      <div class="group p-4 hover:bg-gray-50 transition-colors" data-item-id="${ 
         item.id
       }">
         <div class="flex gap-4">
@@ -928,11 +945,6 @@ animateFooter(show) {
                 if (data.success) {
                     this.currentOrderId = data.pedido_id;
                     this.showToast("Pedido creado exitosamente", "success");
-                    // Limpiar el carrito local después de crear el pedido en la BD
-                    this.clearStorage();
-                    this.cartItems = [];
-                    this.updateCartCounter();
-                    this.refreshCartModal();
                 } else {
                     this.showToast(data.message || "Error al crear el pedido", "error");
                     return;

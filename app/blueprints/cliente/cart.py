@@ -440,9 +440,6 @@ def get_whatsapp_link(usuario, order_id):
     if not pedido:
         return jsonify({'success': False, 'message': 'Pedido no encontrado o no autorizado'}), 404
 
-    # URL para descargar el PDF
-    pdf_url = url_for('cart.generate_invoice_pdf', order_id=order_id, _external=True)
-
     # Número de WhatsApp del administrador (reemplazar con el número real)
     admin_whatsapp_number = current_app.config.get('ADMIN_WHATSAPP_NUMBER', '573044931438')
 
@@ -507,9 +504,6 @@ def create_order(usuario):
             # Disminuir stock
             item_data['producto_obj'].existencia -= item_data['cantidad']
 
-        # Eliminar items del carrito después de crear el pedido
-        CartItem.query.filter_by(user_id=user_id).delete()
-
         db.session.commit()
 
         current_app.logger.info(f"Nuevo pedido {nuevo_pedido.id} creado para el usuario {usuario.nombre}")
@@ -524,3 +518,17 @@ def create_order(usuario):
         db.session.rollback()
         current_app.logger.error(f"Error al crear pedido para usuario {usuario.id}: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Error interno al crear el pedido'}), 500
+
+@cart_bp.route('/api/clear_cart', methods=['POST'])
+@jwt_required
+def clear_cart(usuario):
+    """Elimina todos los items del carrito de un usuario."""
+    try:
+        user_id = usuario.id
+        CartItem.query.filter_by(user_id=user_id).delete()
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Carrito vaciado exitosamente'})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al vaciar el carrito para el usuario {usuario.id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno al vaciar el carrito'}), 500

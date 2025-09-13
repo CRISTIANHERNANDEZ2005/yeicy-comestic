@@ -154,7 +154,7 @@
                 </div>
                 <div id="paginationContainer" class="flex flex-wrap justify-center gap-2">
                     {% from 'admin/ui/_macros.html' import render_pagination %}
-                    {{ render_pagination(pagination, 'admin_pedidos.get_all_pedidos') }}
+                    {{ render_pagination(pagination, 'admin_lista_pedidos.get_all_pedidos', filter_params) }}
                 </div>
             </div>
         </main>
@@ -456,7 +456,7 @@
     </div>
     <!-- Elemento para almacenar datos de paginación -->
     <script id="pagination-data" type="application/json">
-        {% if pagination %}{{ pagination | tojson }}{% else %}{}{% endif %}
+        {% if pagination_info %}{{ pagination_info | tojson }}{% else %}{}{% endif %}
     </script>
     <style>
         .action-button {

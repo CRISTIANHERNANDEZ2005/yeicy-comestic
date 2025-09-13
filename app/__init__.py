@@ -13,6 +13,7 @@ import pytz
 
 def create_app(config_class=Config):
     app = Flask(__name__)
+    app.jinja_env.add_extension('jinja2.ext.do')
     app.config.from_object(config_class)
 
     # --- LOGGING PROFESIONAL ---

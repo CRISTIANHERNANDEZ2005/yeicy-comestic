@@ -231,7 +231,7 @@
                     <script>
                         console.log("Debug Pagination: Pages = {{ pagination.pages }}, Total = {{ pagination.total }}");
                     </script>
-                    {% from 'admin/ui/_macros.html' import render_pagination as macros_render_pagination %}
+                    {% from 'admin/ui/_macro_categoria.html' import render_pagination as macros_render_pagination %}
                     {{ macros_render_pagination(pagination, 'admin_categorias.get_all_categories', filter_params) }}
                 </div>
             </div>

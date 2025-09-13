@@ -18,7 +18,8 @@ admin_lista_pedidos_bp = Blueprint('admin_lista_pedidos', __name__)
 def get_all_pedidos(admin_user, estado=None):
     error_message = None
     pedidos_data = []  # Initialize
-    pagination_info = {} # Initialize
+    pagination = None
+    pagination_info = {}
     
     # Determinar el estado a mostrar
     if estado == 'completados':
@@ -92,8 +93,8 @@ def get_all_pedidos(admin_user, estado=None):
         
         # Serializar datos
         pedidos_data = [pedido_to_dict(pedido) for pedido in pagination.items]
-        
-        # Preparar información de paginación
+
+        # Preparar información de paginación para JSON
         pagination_info = {
             'page': pagination.page,
             'pages': pagination.pages,
@@ -104,7 +105,7 @@ def get_all_pedidos(admin_user, estado=None):
             'next_num': pagination.next_num,
             'prev_num': pagination.prev_num
         }
-    
+        
     except Exception as e:
         current_app.logger.error(f"Error al cargar pedidos en el panel de administración: {e}")
         error_message = "Ocurrió un error al cargar los pedidos. Por favor, inténtalo de nuevo."
@@ -113,7 +114,8 @@ def get_all_pedidos(admin_user, estado=None):
 
     return render_template('admin/componentes/pedidos/lista_pedidos.html',
                            pedidos=pedidos_data,
-                           pagination=pagination_info,
+                           pagination=pagination,
+                           pagination_info=pagination_info,
                            current_estado=current_estado,
                            filter_params=request.args,
                            error_message=error_message,

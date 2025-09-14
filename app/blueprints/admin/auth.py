@@ -25,7 +25,7 @@ def validate_credentials():
     
     return jsonify({'valid': True, 'message': 'Credenciales válidas.'}), 200
 
-from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies
+from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies, jwt_required, get_jwt_identity, jwt_required
 from app.utils.admin_jwt_utils import admin_jwt_required
 
 @admin_auth_bp.route('/administracion', methods=['GET', 'POST'])
@@ -58,3 +58,18 @@ def logout():
     response = make_response(jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'}))
     unset_jwt_cookies(response)
     return response
+
+@admin_auth_bp.route("/admin/me", methods=["GET"])
+@jwt_required(locations=["cookies"])
+def admin_me():
+    current_admin_id = get_jwt_identity()
+    admin = Admins.query.get(current_admin_id)
+    if not admin:
+        return jsonify({"error": "Admin not found"}), 404
+    
+    return jsonify({
+        "id": admin.id,
+        "nombre": admin.nombre,
+        "apellido": admin.apellido,
+        "cedula": admin.cedula
+    })

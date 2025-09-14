@@ -32,7 +32,7 @@ if (!window.adminAuthInterceptorLoaded) {
       const clonedResponse = response.clone();
 
       // Si la respuesta es 401 (No autorizado) para una ruta de admin
-      if (response.status === 401 && typeof resource === "string" && resource.startsWith("/admin/")) {
+      if (response.status === 401 && typeof resource === "string" && (resource.startsWith("/admin/") || resource.startsWith("/me"))) {
         try {
           const errorData = await clonedResponse.json();
           if (errorData && errorData.msg === "Token has expired") {
@@ -58,6 +58,40 @@ if (!window.adminAuthInterceptorLoaded) {
       throw error;
     }
   };
+
+  // Función para verificar la sesión del administrador al cargar la página
+  async function checkAdminSession() {
+    // No ejecutar en la página de login
+    if (window.location.pathname === '/administracion') {
+      return;
+    }
+
+    try {
+      const response = await window.fetch('/admin/me', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+        },
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        const admin = await response.json();
+        console.log('Sesión de administrador activa para:', admin.nombre);
+        // Aquí se podría actualizar la UI para mostrar que el admin está logueado
+      } else {
+        if (response.status === 401) {
+           console.error('No hay sesión de administrador activa. Redirigiendo al login...');
+           window.location.href = '/administracion';
+        }
+      }
+    } catch (error) {
+      console.error('Error al verificar la sesión del administrador:', error);
+    }
+  }
+
+  // Verificar la sesión en cuanto el DOM esté listo
+  document.addEventListener('DOMContentLoaded', checkAdminSession);
 
   // Marcar el interceptor como cargado
   window.adminAuthInterceptorLoaded = true;

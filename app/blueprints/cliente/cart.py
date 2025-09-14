@@ -500,7 +500,7 @@ def create_order(usuario):
                 precio_unitario=item_data['precio_unitario']
             )
             db.session.add(pedido_producto)
-            
+
             # Disminuir stock
             item_data['producto_obj'].existencia -= item_data['cantidad']
 

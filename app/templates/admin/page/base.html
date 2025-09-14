@@ -108,6 +108,25 @@
         </div>
     </div>
 
+    <!-- Logout Modal -->
+    <div id="logout-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Cerrar Sesión</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500">¿Estás seguro de que quieres cerrar la sesión?</p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="cancel-logout-button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2 hover:bg-gray-300">Cancelar</button>
+                    <button id="confirm-logout-button" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Cerrar Sesión</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Funcionalidad para el sidebar móvil
         const mobileMenuButton = document.getElementById('mobile-menu-button');
@@ -136,6 +155,44 @@
                 setTimeout(() => {
                     mobileSidebar.classList.add('hidden');
                 }, 300);
+            }
+        });
+
+        // Logout functionality
+        const logoutModal = document.getElementById('logout-modal');
+        const cancelLogoutButton = document.getElementById('cancel-logout-button');
+        const confirmLogoutButton = document.getElementById('confirm-logout-button');
+        const logoutButtonDesktop = document.getElementById('logout-button-desktop');
+        const logoutButtonMobile = document.getElementById('logout-button-mobile');
+
+        function openLogoutModal() {
+            logoutModal.classList.remove('hidden');
+        }
+
+        function closeLogoutModal() {
+            logoutModal.classList.add('hidden');
+        }
+
+        logoutButtonDesktop.addEventListener('click', openLogoutModal);
+        logoutButtonMobile.addEventListener('click', openLogoutModal);
+        cancelLogoutButton.addEventListener('click', closeLogoutModal);
+
+        confirmLogoutButton.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/admin/logout', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    window.location.href = '/administracion';
+                } else {
+                    console.error('Error al cerrar la sesión');
+                }
+            } catch (error) {
+                console.error('Error de red al cerrar la sesión', error);
             }
         });
     </script>

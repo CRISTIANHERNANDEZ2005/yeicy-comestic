@@ -53,9 +53,8 @@ def login():
 
     return render_template('admin/page/login_admin.html')
 
-@admin_auth_bp.route('/admin/logout')
-@admin_jwt_required
-def logout(admin_user): # admin_user is passed by the decorator
-    # Client-side will handle token deletion.
-    # We just return a success message.
-    return jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'})
+@admin_auth_bp.route('/admin/logout', methods=['POST'])
+def logout():
+    response = make_response(jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'}))
+    unset_jwt_cookies(response)
+    return response

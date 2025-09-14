@@ -861,50 +861,6 @@
             margin-left: 0.5rem;
         }
         
-        /* Mejoras en las notificaciones */
-        .notification {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 9999;
-            max-width: 24rem;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            border-radius: 0.5rem;
-            padding: 1rem;
-            display: flex;
-            align-items: center;
-            animation: slideIn 0.3s ease-out;
-        }
-        
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-        
-        .notification.warning {
-            background-color: #fffbeb;
-            border-left: 4px solid #f59e0b;
-            color: #92400e;
-        }
-        
-        .notification.error {
-            background-color: #fef2f2;
-            border-left: 4px solid #ef4444;
-            color: #b91c1c;
-        }
-        
-        .notification.success {
-            background-color: #ecfdf5;
-            border-left: 4px solid #10b981;
-            color: #065f46;
-        }
-        
         /* Estilos para badges de estado */
         .estado-badge {
             display: inline-flex;
@@ -1020,15 +976,15 @@
                     body: JSON.stringify({estado: nuevoEstado})
                 }).then(res => res.json()).then(data => {
                     if (data.success) {
-                        this.showNotification(`Pedido ${nuevoEstado} correctamente`, 'success');
+                        window.toast.success(`Pedido ${nuevoEstado} correctamente`);
                         // Recargar la lista de pedidos para reflejar los cambios
                         this.loadPedidos();
                     } else {
-                        this.showNotification(data.message || 'Error al cambiar estado', 'error');
+                        window.toast.error(data.message || 'Error al cambiar estado');
                     }
                 }).catch(err => {
                     console.error(err);
-                    this.showNotification('Error al cambiar estado del pedido', 'error');
+                    window.toast.error('Error al cambiar estado del pedido');
                 });
             },
             
@@ -1037,16 +993,15 @@
                 // Obtener la fila del pedido para verificar su estado
                 const pedidoRow = document.querySelector(`#toggle-pedido-${pedidoId}`)?.closest('tr');
                 if (!pedidoRow) {
-                    this.showNotification('No se encontró el pedido', 'error');
+                    window.toast.error('No se encontró el pedido');
                     return;
                 }
                 
                 // Verificar si el pedido está inactivo
                 const toggleInput = document.getElementById(`toggle-pedido-${pedidoId}`);
                 if (toggleInput && !toggleInput.checked) {
-                    this.showNotification(
-                        'No se puede cambiar el estado de un pedido inactivo. Por favor, actívelo primero.', 
-                        'warning'
+                    window.toast.warning(
+                        'No se puede cambiar el estado de un pedido inactivo. Por favor, actívelo primero.'
                     );
                     return;
                 }
@@ -1066,12 +1021,12 @@
                         if (data.success) {
                             this.showConfirmEstadoModalContent(data.pedido, nuevoEstado);
                         } else {
-                            this.showNotification('Error al cargar detalles del pedido', 'error');
+                            window.toast.error('Error al cargar detalles del pedido');
                         }
                     })
                     .catch(error => {
                         console.error('Error al cargar detalles del pedido:', error);
-                        this.showNotification('Error al cargar detalles del pedido', 'error');
+                        window.toast.error('Error al cargar detalles del pedido');
                     });
             },
             
@@ -1346,7 +1301,7 @@
                             const hasResults = data.pedidos && data.pedidos.length > 0;
                             this.showHidePaginationControls(hasResults && data.pagination.total > 0);
                         } else {
-                            this.showNotification('Error al cargar pedidos', 'error');
+                            window.toast.error('Error al cargar pedidos');
                         }
                         this.isLoading = false;
                         if (this.elements.pedidosListLoaderOverlay) {
@@ -1355,7 +1310,7 @@
                     })
                     .catch(error => {
                         console.error('Error al cargar pedidos:', error);
-                        this.showNotification('Error al cargar pedidos', 'error');
+                        window.toast.error('Error al cargar pedidos');
                         this.isLoading = false;
                         if (this.elements.pedidosListLoaderOverlay) {
                             this.elements.pedidosListLoaderOverlay.classList.add('hidden');
@@ -1603,12 +1558,12 @@
                         if (data.success) {
                             this.showPedidoModal(data.pedido);
                         } else {
-                            this.showNotification('Error al cargar detalles del pedido', 'error');
+                            window.toast.error('Error al cargar detalles del pedido');
                         }
                     })
                     .catch(error => {
                         console.error('Error al cargar detalles del pedido:', error);
-                        this.showNotification('Error al cargar detalles del pedido', 'error');
+                        window.toast.error('Error al cargar detalles del pedido');
                     });
             },
             
@@ -1624,12 +1579,12 @@
                             // Abrir el modal de creación/edición
                             crearPedidoApp.openModalForEdit(pedido);
                         } else {
-                            this.showNotification('Error al cargar detalles del pedido', 'error');
+                            window.toast.error('Error al cargar detalles del pedido');
                         }
                     })
                     .catch(error => {
                         console.error('Error al cargar detalles del pedido:', error);
-                        this.showNotification('Error al cargar detalles del pedido', 'error');
+                        window.toast.error('Error al cargar detalles del pedido');
                     });
             },
             
@@ -1802,7 +1757,7 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        this.showNotification(data.message, 'success');
+                        window.toast.success(data.message);
                         // Eliminar el pedido de la tabla actual
                         const row = document.querySelector(`#toggle-pedido-${pedidoId}`)?.closest('tr');
                         if (row) {
@@ -1815,13 +1770,13 @@
                         // Recargar paginación sin recargar toda la página
                         this.loadPedidos(false);
                     } else {
-                        this.showNotification(data.message || 'Error al actualizar estado', 'error');
+                        window.toast.error(data.message || 'Error al actualizar estado');
                     }
                     this.isLoading = false;
                 })
                 .catch(error => {
                     console.error('Error al actualizar estado del pedido:', error);
-                    this.showNotification('Error al actualizar estado del pedido', 'error');
+                    window.toast.error('Error al actualizar estado del pedido');
                     this.isLoading = false;
                 });
             },
@@ -1835,40 +1790,10 @@
                 this.loadPedidos();
             },
             
-            // Mostrar notificación - MEJORADA
-            showNotification: function (message, type = 'info') {
-                // Crear un elemento de notificación
-                const notification = document.createElement('div');
-                notification.className = `notification ${type}`;
-                
-                notification.innerHTML = `
-                    <div class="flex items-center">
-                        <div class="py-1"><i class="fas ${
-                            type === 'warning' ? 'fa-exclamation-triangle' :
-                            type === 'error' ? 'fa-times-circle' :
-                            type === 'success' ? 'fa-check-circle' :
-                            'fa-info-circle'
-                        } mr-2"></i></div>
-                        <div>${message}</div>
-                        <button class="ml-4 text-lg leading-none" onclick="this.parentElement.parentElement.remove()">×</button>
-                    </div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Eliminar la notificación después de 5 segundos
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 5000);
-            },
-            
             // Mostrar mensaje de pedido inactivo
             showInactiveOrderMessage: function() {
-                this.showNotification(
-                    'No se puede realizar esta acción en un pedido inactivo. Por favor, actívelo primero.', 
-                    'warning'
+                window.toast.warning(
+                    'No se puede realizar esta acción en un pedido inactivo. Por favor, actívelo primero.'
                 );
             },
             
@@ -2422,7 +2347,7 @@ window.crearPedidoApp = {
         if (cantidad > producto.existencia) {
             // Ajustar al máximo disponible y mostrar mensaje
             producto.cantidad = producto.existencia;
-            this.showNotification(`La cantidad máxima disponible para ${producto.nombre} es ${producto.existencia}`, 'warning');
+            window.toast.warning(`La cantidad máxima disponible para ${producto.nombre} es ${producto.existencia}`);
         } else {
             producto.cantidad = cantidad;
         }
@@ -2456,13 +2381,13 @@ window.crearPedidoApp = {
         
         // Validar que haya un cliente seleccionado
         if (!this.pedido.usuario_id) {
-            this.showNotification('Por favor, selecciona un cliente', 'error');
+            window.toast.error('Por favor, selecciona un cliente');
             return;
         }
         
         // Validar que haya productos
         if (this.pedido.productos.length === 0) {
-            this.showNotification('Por favor, agrega al menos un producto', 'error');
+            window.toast.error('Por favor, agrega al menos un producto');
             return;
         }
         
@@ -2499,7 +2424,7 @@ window.crearPedidoApp = {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                this.showNotification(successMessage, 'success');
+                window.toast.success(successMessage);
                 this.closeModal();
                 // Recargar la lista de pedidos
                 if (window.pedidosApp) {
@@ -2509,12 +2434,12 @@ window.crearPedidoApp = {
                     window.location.reload();
                 }
             } else {
-                this.showNotification(data.message || 'Error al procesar el pedido', 'error');
+                window.toast.error(data.message || 'Error al procesar el pedido');
             }
         })
         .catch(error => {
             console.error('Error al procesar el pedido:', error);
-            this.showNotification('Error al procesar el pedido', 'error');
+            window.toast.error('Error al procesar el pedido');
         });
     },
     
@@ -2533,35 +2458,6 @@ window.crearPedidoApp = {
         this.elements.selectedCustomer.classList.add('hidden');
         this.renderPedidoItems();
         this.updateTotal();
-    },
-    
-    // Mostrar notificación
-    showNotification: function(message, type = 'info') {
-        // Crear un elemento de notificación
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        
-        notification.innerHTML = `
-            <div class="flex items-center">
-                <div class="py-1"><i class="fas ${
-                    type === 'warning' ? 'fa-exclamation-triangle' :
-                    type === 'error' ? 'fa-times-circle' :
-                    type === 'success' ? 'fa-check-circle' :
-                    'fa-info-circle'
-                } mr-2"></i></div>
-                <div>${message}</div>
-                <button class="ml-4 text-lg leading-none" onclick="this.parentElement.parentElement.remove()">×</button>
-            </div>
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // Eliminar la notificación después de 5 segundos
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
-            }
-        }, 5000);
     },
     
     // Función debounce para limitar la frecuencia de las búsquedas

@@ -196,16 +196,22 @@ def logout():
         return jsonify({'error': 'Error al cerrar sesión'}), 500
 
 # Perfil de usuario
-def perfil(usuario):
+def perfil(usuario, pedidos_realizados=0, total_compras=0):
     # Detectar si es un dispositivo móvil
     user_agent = request.headers.get('User-Agent', '').lower()
     es_movil = 'mobile' in user_agent or 'android' in user_agent or 'iphone' in user_agent
 
+    template_vars = {
+        'usuario': usuario,
+        'pedidos_realizados': pedidos_realizados,
+        'total_compras': total_compras
+    }
+
     if es_movil:
-        return render_template('cliente/componentes/perfil_usuario.html', usuario=usuario)
+        return render_template('cliente/componentes/perfil_usuario.html', **template_vars)
     else:
         # TODO: Crear una plantilla de perfil para escritorio
-        return render_template('cliente/componentes/perfil_usuario.html', usuario=usuario)
+        return render_template('cliente/componentes/perfil_usuario.html', **template_vars)
 
 @auth_bp.route('/update_profile', methods=['PUT'])
 @jwt_required

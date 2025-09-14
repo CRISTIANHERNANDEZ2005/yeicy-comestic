@@ -4,12 +4,14 @@ from config import Config
 from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
 from .models.domains.order_models import Pedido, PedidoProducto
-from app.models.serializers import categoria_principal_to_dict
+from .models.enums import EstadoPedido, EstadoEnum
+from app.models.serializers import categoria_principal_to_dict, format_currency_cop
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
 from app.utils.admin_jwt_utils import decode_admin_jwt_token
 from datetime import datetime
 import pytz
+from sqlalchemy import func
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -108,7 +110,20 @@ def create_app(config_class=Config):
     @app.route('/perfil')
     @jwt_required
     def root_perfil(usuario):
-        return perfil(usuario)
+        pedidos_realizados = Pedido.query.filter(
+            Pedido.usuario_id == usuario.id,
+            Pedido.estado == EstadoEnum.ACTIVO.value
+        ).count()
+
+        total_compras_valor = db.session.query(func.sum(Pedido.total)).filter(
+            Pedido.usuario_id == usuario.id,
+            Pedido.estado == EstadoEnum.ACTIVO.value,
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO.value
+        ).scalar() or 0
+
+        total_compras_formateado = format_currency_cop(total_compras_valor)
+        
+        return perfil(usuario, pedidos_realizados=pedidos_realizados, total_compras=total_compras_formateado)
 
     # Verificar conexión a la base de datos al iniciar
     with app.app_context():

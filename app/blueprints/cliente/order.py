@@ -449,3 +449,306 @@ def generar_factura_pdf(usuario, order_id):
                                total_price=0,
                                total_price_formatted="0",
                                error="Error al generar la factura. Por favor, contacte con soporte.")
+        
+@order_bp.route('/mis-compras')
+@jwt_required
+def view_compras(usuario):
+    """Vista para que los clientes vean sus compras (pedidos completados)"""
+    try:
+        # Obtener parámetros de la URL
+        page = request.args.get('page', 1, type=int)
+        search = request.args.get('search', '')
+        fecha_desde = request.args.get('fecha_desde', '')
+        fecha_hasta = request.args.get('fecha_hasta', '')
+        
+        # Construir la consulta base, filtrando solo pedidos activos y completados
+        query = Pedido.query.filter_by(
+            usuario_id=usuario.id, 
+            estado=EstadoEnum.ACTIVO.value,
+            estado_pedido=EstadoPedido.COMPLETADO.value
+        )
+        
+        # Aplicar búsqueda si hay término de búsqueda
+        if search:
+            # Buscar por ID de pedido
+            query = query.filter(Pedido.id.ilike(f'%{search}%'))
+        
+        # Aplicar filtros de fecha
+        if fecha_desde:
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            query = query.filter(Pedido.created_at >= fecha_desde_dt)
+        
+        if fecha_hasta:
+            # Agregar un día a la fecha_hasta para incluir todo ese día
+            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Pedido.created_at <= fecha_hasta_dt)
+        
+        # Ordenar por fecha descendente (más recientes primero)
+        query = query.order_by(Pedido.created_at.desc())
+        
+        # Paginar los resultados (6 elementos por página)
+        per_page = 6
+        pedidos_paginados = query.paginate(page=page, per_page=per_page, error_out=False)
+        pedidos = pedidos_paginados.items
+        
+        # Convertir a diccionarios para la vista
+        pedidos_dict = []
+        for pedido in pedidos:
+            pedidos_dict.append(pedido_detalle_cliente_to_dict(pedido))
+        
+        return render_template('cliente/componentes/mis_compras.html', 
+                               pedidos=pedidos_dict,
+                               current_page=page,
+                               total_pages=pedidos_paginados.pages,
+                               total_items=pedidos_paginados.total)
+    
+    except Exception as e:
+        current_app.logger.error(f"Error al cargar compras del usuario {usuario.id}: {str(e)}")
+        return render_template('cliente/componentes/mis_compras.html', 
+                               pedidos=[], 
+                               error="Error al cargar tus compras. Por favor, intenta más tarde.")
+        
+@order_bp.route('/api/estadisticas-compras', methods=['GET'])
+@jwt_required
+def estadisticas_compras(usuario):
+    """API para obtener estadísticas de compras para el gráfico de evolución"""
+    try:
+        # Obtener parámetros
+        periodo = request.args.get('periodo', 'mes')  # mes, trimestre, año
+        comparar = request.args.get('comparar', 'false') == 'true'  # si se compara con el período anterior
+        fecha_desde = request.args.get('fecha_desde', '')
+        fecha_hasta = request.args.get('fecha_hasta', '')
+
+        # Construir la consulta base
+        query = Pedido.query.filter_by(
+            usuario_id=usuario.id,
+            estado=EstadoEnum.ACTIVO.value,
+            estado_pedido=EstadoPedido.COMPLETADO.value
+        )
+
+        # Aplicar filtros de fecha si se proporcionan
+        if fecha_desde:
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            query = query.filter(Pedido.created_at >= fecha_desde_dt)
+
+        if fecha_hasta:
+            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Pedido.created_at <= fecha_hasta_dt)
+
+        # Obtener todos los pedidos que cumplen los filtros
+        pedidos = query.all()
+
+        # Función para agrupar por período
+        def agrupar_por_periodo(pedidos, periodo):
+            grupos = {}
+            for pedido in pedidos:
+                fecha = pedido.created_at
+                if periodo == 'mes':
+                    clave = (fecha.year, fecha.month)
+                elif periodo == 'trimestre':
+                    trimestre = (fecha.month - 1) // 3 + 1
+                    clave = (fecha.year, trimestre)
+                else:  # año
+                    clave = fecha.year
+
+                if clave not in grupos:
+                    grupos[clave] = {'total': 0, 'count': 0}
+                grupos[clave]['total'] += pedido.total
+                grupos[clave]['count'] += 1
+
+            return grupos
+
+        # Agrupar los pedidos
+        grupos_actuales = agrupar_por_periodo(pedidos, periodo)
+
+        # Si se solicita comparar, obtenemos el período anterior
+        grupos_anteriores = {}
+        if comparar:
+            # Calculamos el rango de fechas para el período anterior
+            if fecha_desde and fecha_hasta:
+                # Si se proporcionaron fechas, calculamos el mismo período del año anterior o el período anterior según la duración
+                fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+                fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
+                duracion = fecha_hasta_dt - fecha_desde_dt
+
+                nueva_fecha_desde = fecha_desde_dt - duracion
+                nueva_fecha_hasta = fecha_desde_dt
+
+                query_anterior = Pedido.query.filter_by(
+                    usuario_id=usuario.id,
+                    estado=EstadoEnum.ACTIVO.value,
+                    estado_pedido=EstadoPedido.COMPLETADO.value
+                ).filter(
+                    Pedido.created_at >= nueva_fecha_desde,
+                    Pedido.created_at < nueva_fecha_hasta
+                )
+                pedidos_anteriores = query_anterior.all()
+                grupos_anteriores = agrupar_por_periodo(pedidos_anteriores, periodo)
+            else:
+                # Si no se proporcionaron fechas, comparamos con el mismo período del año anterior
+                query_anterior = Pedido.query.filter_by(
+                    usuario_id=usuario.id,
+                    estado=EstadoEnum.ACTIVO.value,
+                    estado_pedido=EstadoPedido.COMPLETADO.value
+                )
+
+                # Ajustamos el filtro para el año anterior
+                hoy = datetime.utcnow()
+                if periodo == 'mes':
+                    # Restar un año
+                    query_anterior = query_anterior.filter(
+                        db.extract('year', Pedido.created_at) == hoy.year - 1,
+                        db.extract('month', Pedido.created_at) == hoy.month
+                    )
+                elif periodo == 'trimestre':
+                    trimestre_actual = (hoy.month - 1) // 3 + 1
+                    query_anterior = query_anterior.filter(
+                        db.extract('year', Pedido.created_at) == hoy.year - 1,
+                        db.extract('month', Pedido.created_at) >= (trimestre_actual - 1) * 3 + 1,
+                        db.extract('month', Pedido.created_at) <= trimestre_actual * 3
+                    )
+                else:  # año
+                    query_anterior = query_anterior.filter(
+                        db.extract('year', Pedido.created_at) == hoy.year - 1
+                    )
+
+                pedidos_anteriores = query_anterior.all()
+                grupos_anteriores = agrupar_por_periodo(pedidos_anteriores, periodo)
+
+        # Preparar los datos para la respuesta
+        datos_actuales = []
+        datos_anteriores = []
+
+        # Ordenar las claves
+        claves_ordenadas = sorted(grupos_actuales.keys())
+
+        for clave in claves_ordenadas:
+            if periodo == 'mes':
+                etiqueta = f"{clave[1]}/{clave[0]}"
+            elif periodo == 'trimestre':
+                etiqueta = f"T{clave[1]}/{clave[0]}"
+            else:
+                etiqueta = str(clave)
+
+            datos_actuales.append({
+                'periodo': etiqueta,
+                'total': grupos_actuales[clave]['total'],
+                'count': grupos_actuales[clave]['count']
+            })
+
+            if comparar and clave in grupos_anteriores:
+                datos_anteriores.append({
+                    'periodo': etiqueta,
+                    'total': grupos_anteriores[clave]['total'],
+                    'count': grupos_anteriores[clave]['count']
+                })
+            elif comparar:
+                datos_anteriores.append({
+                    'periodo': etiqueta,
+                    'total': 0,
+                    'count': 0
+                })
+
+        return jsonify({
+            'success': True,
+            'periodo': periodo,
+            'datos_actuales': datos_actuales,
+            'datos_anteriores': datos_anteriores if comparar else None
+        })
+
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener estadísticas de compras: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al obtener estadísticas de compras'
+        }), 500
+        
+@order_bp.route('/api/categorias-compras', methods=['GET'])
+@jwt_required
+def categorias_compras(usuario):
+    """API para obtener estadísticas de categorías más compradas"""
+    try:
+        # Obtener parámetros
+        estado_pedido = request.args.get('estado_pedido', 'completado')
+        search = request.args.get('search', '')
+        fecha_desde = request.args.get('fecha_desde', '')
+        fecha_hasta = request.args.get('fecha_hasta', '')
+        per_page = request.args.get('per_page', 1000, type=int)
+        
+        # Construir la consulta base
+        query = Pedido.query.filter_by(
+            usuario_id=usuario.id,
+            estado=EstadoEnum.ACTIVO.value
+        )
+        
+        # Aplicar filtro por estado de pedido
+        if estado_pedido != 'todos':
+            query = query.filter(Pedido.estado_pedido == estado_pedido)
+        
+        # Aplicar búsqueda si hay término de búsqueda
+        if search:
+            query = query.filter(Pedido.id.ilike(f'%{search}%'))
+        
+        # Aplicar filtros de fecha
+        if fecha_desde:
+            fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
+            query = query.filter(Pedido.created_at >= fecha_desde_dt)
+        
+        if fecha_hasta:
+            fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Pedido.created_at <= fecha_hasta_dt)
+        
+        # Obtener todos los pedidos que cumplen los filtros
+        pedidos = query.all()
+        
+        # Obtener detalles de todos los productos de los pedidos
+        categorias_data = {}
+        
+        for pedido in pedidos:
+            # Obtener detalles del pedido
+            pedido_detalle = PedidoProducto.query.filter_by(pedido_id=pedido.id).all()
+            
+            for detalle in pedido_detalle:
+                # Obtener información del producto
+                producto = Productos.query.filter_by(id=detalle.producto_id).first()
+                
+                if producto and producto.seudocategoria:
+                    # Obtener la categoría principal
+                    seudocategoria = producto.seudocategoria
+                    subcategoria = seudocategoria.subcategoria
+                    categoria_principal = subcategoria.categoria_principal
+                    
+                    categoria_nombre = categoria_principal.nombre
+                    
+                    if categoria_nombre not in categorias_data:
+                        categorias_data[categoria_nombre] = {
+                            'total': 0,
+                            'cantidad': 0,
+                            'productos': set()
+                        }
+                    
+                    categorias_data[categoria_nombre]['total'] += detalle.precio_unitario * detalle.cantidad
+                    categorias_data[categoria_nombre]['cantidad'] += detalle.cantidad
+                    categorias_data[categoria_nombre]['productos'].add(producto.id)
+        
+        # Convertir a lista para la respuesta
+        categorias_lista = []
+        for nombre, data in categorias_data.items():
+            categorias_lista.append({
+                'nombre': nombre,
+                'total': data['total'],
+                'cantidad': data['cantidad'],
+                'productos_count': len(data['productos'])
+            })
+        
+        return jsonify({
+            'success': True,
+            'categorias': categorias_lista
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener categorías de compras: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': 'Error al obtener categorías de compras'
+        }), 500

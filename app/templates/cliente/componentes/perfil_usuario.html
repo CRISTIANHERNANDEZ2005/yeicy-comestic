@@ -79,7 +79,7 @@ Cosméticos{% endblock %} {% block content %}
 
         <!-- Historial de Compras -->
         <a
-          href="#"
+        href="{{ url_for('order.view_compras') }}"
           class="group relative overflow-hidden flex flex-col items-center py-4 px-3 rounded-2xl bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 transition-all duration-300 transform hover:scale-105"
         >
           <div class="relative z-10">

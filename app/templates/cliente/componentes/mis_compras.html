@@ -1,0 +1,1692 @@
+{% extends 'cliente/page/base.html' %}
+{% block title %}Mis Compras{% endblock %}
+{% block content %}
+<style>
+  /* Estilos para el efecto de carga profesional */
+  .skeleton-card {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  
+  .skeleton-line {
+    height: 1rem;
+    border-radius: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .skeleton-circle {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+  }
+  
+  .skeleton-rect {
+    height: 4rem;
+    border-radius: 0.5rem;
+  }
+  
+  /* Animación para las tarjetas al cargar */
+  .fade-in {
+    animation: fadeIn 0.5s ease-in-out forwards;
+    opacity: 0;
+  }
+  
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  /* Efecto hover para las tarjetas */
+  .purchase-card {
+    transition: all 0.3s ease;
+  }
+  
+  .purchase-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  }
+  
+  /* Estilos mejorados para la modal */
+  .modal-backdrop {
+    backdrop-filter: blur(5px);
+    background-color: rgba(0, 0, 0, 0.7);
+  }
+  
+  .modal-content {
+    animation: modalSlideIn 0.3s ease-out forwards;
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  
+  @keyframes modalSlideIn {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  
+  .modal-header-gradient {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .modal-header-gradient::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%);
+    animation: pulse 3s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(0.8); opacity: 0.5; }
+    50% { transform: scale(1.2); opacity: 0.3; }
+    100% { transform: scale(0.8); opacity: 0.5; }
+  }
+  
+  .modal-close-btn {
+    transition: all 0.2s ease;
+  }
+  
+  .modal-close-btn:hover {
+    transform: rotate(90deg);
+  }
+  
+  .product-card {
+    transition: all 0.3s ease;
+    border-radius: 0.75rem;
+    overflow: hidden;
+  }
+  
+  .product-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+  }
+  
+  .summary-card {
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+    border-radius: 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .summary-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+  }
+  
+  .action-btn {
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .action-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .action-btn:hover::before {
+    transform: translateX(0);
+  }
+  
+  .badge-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  
+  .badge-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+  
+  .info-item {
+    transition: all 0.2s ease;
+  }
+  
+  .info-item:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+    border-radius: 0.5rem;
+  }
+</style>
+<div class="min-h-screen py-8">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- Encabezado mejorado -->
+    <div class="mb-10 text-center relative">
+      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div class="w-full h-1 bg-gradient-to-r from-transparent via-gray-300 to-transparent"></div>
+      </div>
+      <h1 class="text-5xl font-extrabold text-gray-900 mb-2 relative z-10">Mis Compras</h1>
+      <p class="text-xl text-gray-700 max-w-2xl mx-auto relative z-10">Historial de tus compras completadas y análisis de tus patrones de consumo</p>
+    </div>
+    
+    <!-- Tarjetas de estadísticas mejoradas -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div class="bg-white rounded-2xl shadow-xl p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Compras</p>
+            <p class="text-3xl font-bold text-blue-600" id="total-compras">0</p>
+            <div class="mt-2 flex items-center text-sm text-green-600">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span id="compras-tendencia">+0%</span>
+            </div>
+          </div>
+          <div class="rounded-full bg-blue-100 p-4">
+            <svg class="h-10 w-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl shadow-xl p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Total Invertido</p>
+            <p class="text-3xl font-bold text-green-600" id="total-invertido">$0</p>
+            <div class="mt-2 flex items-center text-sm text-green-600">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span id="inversion-tendencia">+0%</span>
+            </div>
+          </div>
+          <div class="rounded-full bg-green-100 p-4">
+            <svg class="h-10 w-10 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl shadow-xl p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Productos Comprados</p>
+            <p class="text-3xl font-bold text-purple-600" id="total-productos">0</p>
+            <div class="mt-2 flex items-center text-sm text-green-600">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span id="productos-tendencia">+0%</span>
+            </div>
+          </div>
+          <div class="rounded-full bg-purple-100 p-4">
+            <svg class="h-10 w-10 text-purple-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white rounded-2xl shadow-xl p-6 transform transition-all duration-300 hover:scale-105 hover:shadow-2xl border border-gray-200">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm font-medium text-gray-600">Compra Promedio</p>
+            <p class="text-3xl font-bold text-yellow-600" id="compra-promedio">$0</p>
+            <div class="mt-2 flex items-center text-sm text-green-600">
+              <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+              </svg>
+              <span id="promedio-tendencia">+0%</span>
+            </div>
+          </div>
+          <div class="rounded-full bg-yellow-100 p-4">
+            <svg class="h-10 w-10 text-yellow-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Gráficos mejorados -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+      <!-- Gráfico de evolución de compras -->
+      <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-gray-900">Evolución de Compras</h3>
+          <div class="flex items-center space-x-4">
+            <div class="flex space-x-2">
+              <button class="px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors" onclick="cambiarPeriodoGrafico('mes')">Mes</button>
+              <button class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full hover:bg-gray-200 transition-colors" onclick="cambiarPeriodoGrafico('trimestre')">Trimestre</button>
+              <button class="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-800 rounded-full hover:bg-gray-200 transition-colors" onclick="cambiarPeriodoGrafico('anio')">Año</button>
+            </div>
+            <div class="flex items-center">
+              <input type="checkbox" id="comparar-periodo" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" onchange="toggleCompararPeriodo()">
+              <label for="comparar-periodo" class="ml-2 block text-sm text-gray-700">Comparar</label>
+            </div>
+          </div>
+        </div>
+        <div class="h-80 relative">
+          <canvas id="evolucionCompras"></canvas>
+          <div id="evolucionCompras-no-data" class="absolute inset-0 flex items-center justify-center hidden">
+            <div class="text-center p-6 bg-white rounded-lg shadow-md max-w-md">
+              <svg class="mx-auto h-16 w-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <h3 class="mt-4 text-lg font-medium text-gray-900">Sin compras registradas</h3>
+              <p class="mt-2 text-sm text-gray-500">No hay compras en el período seleccionado. Intenta cambiar el período de tiempo o los filtros.</p>
+              <div class="mt-6">
+                <button onclick="cambiarPeriodoGrafico('anio'); toggleCompararPeriodo();" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  Ver último año
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Gráfico de categorías más compradas -->
+      <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-200">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-bold text-gray-900">Categorías Más Compradas</h3>
+          <div class="flex items-center space-x-2">
+            <button id="vista-categoria-barras" class="p-1 rounded-md bg-blue-100 text-blue-600" onclick="cambiarVistaCategorias('barras')">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+              </svg>
+            </button>
+            <button id="vista-categoria-torta" class="p-1 rounded-md text-gray-500" onclick="cambiarVistaCategorias('torta')">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div class="h-80 relative">
+          <canvas id="categoriasCompras"></canvas>
+          <div id="categoriasCompras-no-data" class="absolute inset-0 flex items-center justify-center hidden">
+            <div class="text-center p-6 bg-white rounded-lg shadow-md max-w-md">
+              <svg class="mx-auto h-16 w-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+              <h3 class="mt-4 text-lg font-medium text-gray-900">Sin categorías registradas</h3>
+              <p class="mt-2 text-sm text-gray-500">No hay compras de productos en categorías específicas en el período seleccionado.</p>
+              <div class="mt-6">
+                <button onclick="document.getElementById('limpiar-filtros-btn').click();" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                  Limpiar filtros
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Filtros y búsqueda mejorados -->
+    <div class="bg-white rounded-2xl shadow-xl p-6 mb-8 border border-gray-200">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Buscar compra</label>
+          <div class="relative rounded-md shadow-sm">
+            <input type="text" id="search" class="focus:ring-blue-500 focus:border-blue-500 block w-full pr-10 sm:text-sm border-gray-300 rounded-lg" placeholder="ID de compra">
+            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        
+        <div>
+          <label for="fecha-desde" class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+          <input type="date" id="fecha-desde" class="focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-lg">
+        </div>
+        
+        <div>
+          <label for="fecha-hasta" class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+          <input type="date" id="fecha-hasta" class="focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-lg">
+        </div>
+        
+        <div class="flex items-end space-x-2">
+          <button id="filtrar-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M3 3a1 1 0 011-1h12a1 1 0 011 1v3a1 1 0 01-.293.707L12 11.414V15a1 1 0 01-.293.707l-2 2A1 1 0 018 17v-5.586L3.293 6.707A1 1 0 013 6V3z" clip-rule="evenodd" />
+            </svg>
+            Filtrar
+          </button>
+          <button id="limpiar-filtros-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded-lg transition duration-300">
+            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Lista de compras mejorada -->
+    <div class="bg-white shadow-xl overflow-hidden sm:rounded-2xl mb-8 border border-gray-200">
+      <div class="px-6 py-5 border-b border-gray-200">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="text-xl font-bold text-gray-900">Historial de Compras</h3>
+            <p class="mt-1 text-sm text-gray-500">Tus compras completadas</p>
+          </div>
+          <!-- Botones de vista solo visibles en desktop -->
+          <div class="hidden sm:flex space-x-2">
+            <div class="inline-flex rounded-md shadow-sm" role="group">
+              <button id="vista-grid-btn" type="button" class="relative inline-flex items-center px-4 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:z-10 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" onclick="cambiarVistaLista('grid')">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                </svg>
+                Cuadrícula
+              </button>
+              <button id="vista-list-btn" type="button" class="relative inline-flex items-center px-4 py-2 rounded-r-md border border-gray-300 bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:z-10 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200" onclick="cambiarVistaLista('list')">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                </svg>
+                Lista
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="compras-container" class="p-4">
+        <!-- Las compras se cargarán dinámicamente aquí con el efecto de carga -->
+      </div>
+      
+      <!-- Paginación mejorada -->
+      <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6 hidden" id="pagination-container">
+        <div class="flex-1 flex justify-between sm:hidden">
+          <button id="prev-page-mobile" class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+            Anterior
+          </button>
+          <button id="next-page-mobile" class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50">
+            Siguiente
+          </button>
+        </div>
+        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+          <div>
+            <p class="text-sm text-gray-700">
+              Mostrando <span id="start-item" class="font-medium">1</span> a <span id="end-item" class="font-medium">6</span> de <span id="total-items" class="font-medium">0</span> resultados
+            </p>
+          </div>
+          <div>
+            <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <button id="prev-page" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Anterior</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+              
+              <div id="page-numbers" class="flex">
+                <!-- Los números de página se generarán dinámicamente -->
+              </div>
+              
+              <button id="next-page" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50">
+                <span class="sr-only">Siguiente</span>
+                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal para detalles de la compra mejorado -->
+<div id="compra-modal" class="fixed z-60 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+    <div class="fixed inset-0 modal-backdrop transition-opacity" aria-hidden="true"></div>
+    
+    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+    
+    <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full modal-content">
+      <div class="modal-header-gradient px-6 py-6 relative">
+        <div class="flex justify-between items-center relative z-10">
+          <div class="flex items-center space-x-3">
+            <div class="bg-white bg-opacity-20 p-2 rounded-lg">
+              <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+            </div>
+            <h3 class="text-xl font-bold text-white" id="modal-title">
+              Detalles de la Compra
+            </h3>
+          </div>
+          <button id="close-modal" type="button" class="rounded-full text-white hover:text-gray-200 focus:outline-none p-2 modal-close-btn">
+            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <div class="px-6 py-5">
+        <div id="compra-details" class="space-y-6">
+          <!-- Los detalles de la compra se cargarán aquí -->
+        </div>
+      </div>
+      
+      <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse">
+        <button id="close-modal-btn" type="button" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-base font-medium text-white hover:from-blue-700 hover:to-indigo-800 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm action-btn">
+          Cerrar
+        </button>
+        <button id="reorder-btn" type="button" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm action-btn">
+          <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          Comprar de Nuevo
+        </button>
+        <button id="descargar-factura-btn" type="button" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm action-btn">
+          <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Descargar Factura
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Incluir Chart.js y librerías adicionales -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Variables globales
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentFilters = {
+      estado_pedido: 'completado',
+      search: '',
+      fecha_desde: '',
+      fecha_hasta: ''
+    };
+    // Determinar vista inicial según el tamaño de pantalla
+    let vistaActual = window.innerWidth < 640 ? 'grid' : 'list'; // 'list' o 'grid'
+    let periodoGraficoActual = 'mes';
+    let compararPeriodo = false;
+    let vistaCategoriasActual = 'barras'; // 'barras' o 'torta'
+    
+    // Cargar datos iniciales
+    cargarCompras();
+    cargarEstadisticas();
+    cargarGraficos();
+    
+    // Event listeners
+    document.getElementById('filtrar-btn').addEventListener('click', function() {
+      currentFilters.search = document.getElementById('search').value;
+      currentFilters.fecha_desde = document.getElementById('fecha-desde').value;
+      currentFilters.fecha_hasta = document.getElementById('fecha-hasta').value;
+      currentPage = 1;
+      cargarCompras();
+      cargarGraficos();
+    });
+    
+    document.getElementById('limpiar-filtros-btn').addEventListener('click', function() {
+      document.getElementById('search').value = '';
+      document.getElementById('fecha-desde').value = '';
+      document.getElementById('fecha-hasta').value = '';
+      currentFilters = {
+        estado_pedido: 'completado',
+        search: '',
+        fecha_desde: '',
+        fecha_hasta: ''
+      };
+      currentPage = 1;
+      cargarCompras();
+      cargarGraficos();
+    });
+    
+    document.getElementById('prev-page').addEventListener('click', function() {
+      if (currentPage > 1) {
+        currentPage--;
+        cargarCompras();
+      }
+    });
+    
+    document.getElementById('next-page').addEventListener('click', function() {
+      if (currentPage < totalPages) {
+        currentPage++;
+        cargarCompras();
+      }
+    });
+    
+    document.getElementById('prev-page-mobile').addEventListener('click', function() {
+      if (currentPage > 1) {
+        currentPage--;
+        cargarCompras();
+      }
+    });
+    
+    document.getElementById('next-page-mobile').addEventListener('click', function() {
+      if (currentPage < totalPages) {
+        currentPage++;
+        cargarCompras();
+      }
+    });
+    
+    document.getElementById('close-modal').addEventListener('click', cerrarModal);
+    document.getElementById('close-modal-btn').addEventListener('click', cerrarModal);
+    
+    document.getElementById('reorder-btn').addEventListener('click', function() {
+      const compraId = this.getAttribute('data-compra-id');
+      reordenarCompra(compraId);
+    });
+    
+    document.getElementById('descargar-factura-btn').addEventListener('click', function() {
+      const compraId = this.getAttribute('data-compra-id');
+      descargarFactura(compraId);
+    });
+    
+    // Función para cargar compras
+    function cargarCompras() {
+      const comprasContainer = document.getElementById('compras-container');
+      
+      // Mostrar efecto de carga profesional
+      comprasContainer.innerHTML = renderSkeletonCompras();
+      
+      const params = new URLSearchParams({
+        page: currentPage,
+        estado_pedido: currentFilters.estado_pedido,
+        search: currentFilters.search,
+        fecha_desde: currentFilters.fecha_desde,
+        fecha_hasta: currentFilters.fecha_hasta
+      });
+      
+      fetch(`/api/buscar-pedidos?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderCompras(data.pedidos);
+          renderPagination(data);
+          totalPages = data.pages;
+        } else {
+          comprasContainer.innerHTML = `
+            <div class="py-12 text-center text-gray-500">
+              <svg class="mx-auto h-16 w-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p class="mt-4 text-lg">No se encontraron compras</p>
+            </div>
+          `;
+          document.getElementById('pagination-container').classList.add('hidden');
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar compras:', error);
+        comprasContainer.innerHTML = `
+          <div class="py-12 text-center text-red-500">
+            <svg class="mx-auto h-16 w-16 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3, 1.732 3z" />
+            </svg>
+            <p class="mt-4 text-lg">Error al cargar tus compras. Intenta nuevamente.</p>
+          </div>
+        `;
+        document.getElementById('pagination-container').classList.add('hidden');
+      });
+    }
+    
+    // Función para renderizar el esqueleto de carga
+    function renderSkeletonCompras() {
+      if (vistaActual === 'list') {
+        return `
+          <ul class="divide-y divide-gray-200">
+            ${Array(6).fill(0).map(() => `
+              <li class="py-6 px-6">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="min-w-0 flex-1 flex items-center">
+                      <div class="flex-shrink-0">
+                        <div class="skeleton-card skeleton-circle"></div>
+                      </div>
+                      <div class="min-w-0 flex-1 px-4">
+                        <div class="skeleton-card skeleton-line w-3/4 mb-2"></div>
+                        <div class="skeleton-card skeleton-line w-1/2"></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div class="flex items-center space-x-4">
+                      <div class="text-right">
+                        <div class="skeleton-card skeleton-line w-20 mb-1"></div>
+                        <div class="skeleton-card skeleton-line w-16"></div>
+                      </div>
+                      <div>
+                        <div class="skeleton-card skeleton-line w-5 h-5"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            `).join('')}
+          </ul>
+        `;
+      } else {
+        return `
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${Array(6).fill(0).map(() => `
+              <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+                <div class="p-4">
+                  <div class="flex justify-between items-start mb-3">
+                    <div class="flex-1 min-w-0">
+                      <div class="skeleton-card skeleton-line w-3/4 mb-2"></div>
+                      <div class="skeleton-card skeleton-line w-1/3"></div>
+                    </div>
+                    <div class="skeleton-card skeleton-circle"></div>
+                  </div>
+                  
+                  <div class="mt-3">
+                    <div class="skeleton-card skeleton-line w-2/3"></div>
+                  </div>
+                  
+                  <div class="mt-4 flex justify-between items-center">
+                    <div>
+                      <div class="skeleton-card skeleton-line w-16"></div>
+                    </div>
+                    <div class="text-right">
+                      <div class="skeleton-card skeleton-line w-20"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+    }
+    
+    // Función para cargar estadísticas
+    function cargarEstadisticas() {
+      fetch('/api/buscar-pedidos?estado_pedido=todos', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById('total-compras').textContent = data.total_pedidos_completado;
+          
+          // Calcular estadísticas adicionales
+          calcularEstadisticasAvanzadas(data);
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar estadísticas:', error);
+      });
+    }
+    
+    // Función para calcular estadísticas avanzadas
+    function calcularEstadisticasAvanzadas(data) {
+      // Obtener todos los pedidos completados para calcular estadísticas
+      fetch('/api/buscar-pedidos?estado_pedido=completado&per_page=1000', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.pedidos.length > 0) {
+          // Calcular total invertido
+          const totalInvertido = data.pedidos.reduce((sum, pedido) => sum + pedido.total, 0);
+          document.getElementById('total-invertido').textContent = formatCurrency(totalInvertido);
+          
+          // Calcular total de productos
+          const totalProductos = data.pedidos.reduce((sum, pedido) => sum + pedido.productos_count, 0);
+          document.getElementById('total-productos').textContent = totalProductos;
+          
+          // Calcular compra promedio
+          const compraPromedio = totalInvertido / data.pedidos.length;
+          document.getElementById('compra-promedio').textContent = formatCurrency(compraPromedio);
+          
+          // Calcular tendencias (simuladas)
+          document.getElementById('compras-tendencia').textContent = `+${Math.floor(Math.random() * 20)}%`;
+          document.getElementById('inversion-tendencia').textContent = `+${Math.floor(Math.random() * 15)}%`;
+          document.getElementById('productos-tendencia').textContent = `+${Math.floor(Math.random() * 25)}%`;
+          document.getElementById('promedio-tendencia').textContent = `+${Math.floor(Math.random() * 10)}%`;
+        }
+      })
+      .catch(error => {
+        console.error('Error al calcular estadísticas avanzadas:', error);
+      });
+    }
+    
+    // Función para cargar gráficos
+    function cargarGraficos() {
+      // Obtener datos para los gráficos
+      const params = new URLSearchParams({
+        periodo: periodoGraficoActual,
+        comparar: compararPeriodo,
+        fecha_desde: currentFilters.fecha_desde,
+        fecha_hasta: currentFilters.fecha_hasta
+      });
+      
+      fetch(`/api/estadisticas-compras?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderGraficoEvolucion(data);
+          cargarGraficoCategorias();
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar datos para gráficos:', error);
+      });
+    }
+    
+    // Función para renderizar el gráfico de evolución de compras
+    function renderGraficoEvolucion(data) {
+      const ctx = document.getElementById('evolucionCompras').getContext('2d');
+      const noDataContainer = document.getElementById('evolucionCompras-no-data');
+      
+      // Destruir gráfico anterior si existe
+      if (window.evolucionChart) {
+        window.evolucionChart.destroy();
+      }
+      
+      // Preparar los datos
+      const labels = data.datos_actuales.map(d => d.periodo);
+      const datosActuales = data.datos_actuales.map(d => d.total);
+      const datosAnteriores = data.datos_anteriores ? data.datos_anteriores.map(d => d.total) : null;
+      
+      // Verificar si hay datos para mostrar
+      if (labels.length === 0 || (datosActuales.every(val => val === 0) && (!datosAnteriores || datosAnteriores.every(val => val === 0)))) {
+        // Mostrar mensaje de no datos
+        document.getElementById('evolucionCompras').style.display = 'none';
+        noDataContainer.classList.remove('hidden');
+        return;
+      }
+      
+      // Ocultar mensaje de no datos si existe
+      document.getElementById('evolucionCompras').style.display = 'block';
+      noDataContainer.classList.add('hidden');
+      
+      // Configuración del gráfico
+      const datasets = [{
+        label: 'Período Actual',
+        data: datosActuales,
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: 'rgba(59, 130, 246, 1)',
+        borderWidth: 1,
+        borderRadius: 6,
+        barPercentage: 0.7
+      }];
+      
+      if (datosAnteriores) {
+        datasets.push({
+          label: 'Período Anterior',
+          data: datosAnteriores,
+          backgroundColor: 'rgba(209, 213, 219, 0.8)',
+          borderColor: 'rgba(209, 213, 219, 1)',
+          borderWidth: 1,
+          borderRadius: 6,
+          barPercentage: 0.7
+        });
+      }
+      
+      // Crear nuevo gráfico
+      window.evolucionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: datosAnteriores !== null,
+              position: 'top',
+              labels: {
+                font: {
+                  size: 12
+                },
+                padding: 15
+              }
+            },
+            tooltip: {
+              backgroundColor: 'rgba(255, 255, 255, 0.9)',
+              titleColor: '#1F2937',
+              bodyColor: '#1F2937',
+              borderColor: '#E5E7EB',
+              borderWidth: 1,
+              padding: 12,
+              displayColors: true,
+              callbacks: {
+                label: function(context) {
+                  return `${context.dataset.label}: ${formatCurrency(context.raw)}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return formatCurrency(value);
+                },
+                font: {
+                  size: 11
+                }
+              },
+              grid: {
+                color: 'rgba(0, 0, 0, 0.05)'
+              }
+            },
+            x: {
+              grid: {
+                display: false
+              },
+              ticks: {
+                font: {
+                  size: 11
+                }
+              }
+            }
+          },
+          animation: {
+            duration: 1000,
+            easing: 'easeOutQuart'
+          }
+        }
+      });
+    }
+    
+    // Función para cargar el gráfico de categorías
+    function cargarGraficoCategorias() {
+      // Obtener datos para el gráfico de categorías
+      const params = new URLSearchParams({
+        estado_pedido: 'completado',
+        search: currentFilters.search,
+        fecha_desde: currentFilters.fecha_desde,
+        fecha_hasta: currentFilters.fecha_hasta,
+        per_page: 1000 // Obtener todos los pedidos para los gráficos
+      });
+      
+      fetch(`/api/categorias-compras?${params.toString()}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderGraficoCategorias(data.categorias);
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar datos para gráfico de categorías:', error);
+      });
+    }
+    
+    // Función para renderizar el gráfico de categorías
+    function renderGraficoCategorias(categorias) {
+      const ctx = document.getElementById('categoriasCompras').getContext('2d');
+      const noDataContainer = document.getElementById('categoriasCompras-no-data');
+      
+      // Destruir gráfico anterior si existe
+      if (window.categoriasChart) {
+        window.categoriasChart.destroy();
+      }
+      
+      // Verificar si hay datos para mostrar
+      if (categorias.length === 0 || categorias.every(cat => cat.total === 0)) {
+        // Mostrar mensaje de no datos
+        document.getElementById('categoriasCompras').style.display = 'none';
+        noDataContainer.classList.remove('hidden');
+        return;
+      }
+      
+      // Ocultar mensaje de no datos si existe
+      document.getElementById('categoriasCompras').style.display = 'block';
+      noDataContainer.classList.add('hidden');
+      
+      // Ordenar categorías por valor
+      const categoriasOrdenadas = categorias.sort((a, b) => b.total - a.total);
+      
+      const labels = categoriasOrdenadas.map(cat => cat.nombre);
+      const valores = categoriasOrdenadas.map(cat => cat.total);
+      const cantidades = categoriasOrdenadas.map(cat => cat.cantidad);
+      
+      // Colores para el gráfico
+      const colores = [
+        'rgba(59, 130, 246, 0.8)',
+        'rgba(16, 185, 129, 0.8)',
+        'rgba(245, 158, 11, 0.8)',
+        'rgba(139, 92, 246, 0.8)',
+        'rgba(236, 72, 153, 0.8)',
+        'rgba(14, 165, 233, 0.8)'
+      ];
+      
+      // Crear gráfico según la vista seleccionada
+      if (vistaCategoriasActual === 'barras') {
+        // Gráfico de barras horizontales
+        window.categoriasChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Monto Comprado',
+              data: valores,
+              backgroundColor: colores,
+              borderColor: colores.map(color => color.replace('0.8', '1')),
+              borderWidth: 1,
+              borderRadius: 6,
+              barPercentage: 0.7
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              },
+              tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                titleColor: '#1F2937',
+                bodyColor: '#1F2937',
+                borderColor: '#E5E7EB',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: false,
+                callbacks: {
+                  title: function(context) {
+                    return context[0].label;
+                  },
+                  label: function(context) {
+                    const total = context.raw;
+                    const cantidad = cantidades[context.dataIndex];
+                    const totalGeneral = valores.reduce((a, b) => a + b, 0);
+                    const porcentaje = ((total / totalGeneral) * 100).toFixed(1);
+                    return [
+                      `Monto: ${formatCurrency(total)}`,
+                      `Productos: ${cantidad}`,
+                      `Porcentaje: ${porcentaje}%`
+                    ];
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                ticks: {
+                  callback: function(value) {
+                    return formatCurrency(value);
+                  },
+                  font: {
+                    size: 11
+                  }
+                },
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.05)'
+                }
+              },
+              y: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  font: {
+                    size: 12
+                  }
+                }
+              }
+            },
+            animation: {
+              duration: 1000,
+              easing: 'easeOutQuart'
+            }
+          }
+        });
+      } else {
+        // Gráfico de torta/dona
+        window.categoriasChart = new Chart(ctx, {
+          type: 'doughnut',
+          data: {
+            labels: labels,
+            datasets: [{
+              data: valores,
+              backgroundColor: colores,
+              borderColor: 'white',
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'right',
+                labels: {
+                  font: {
+                    size: 12
+                  },
+                  padding: 15,
+                  generateLabels: function(chart) {
+                    const data = chart.data;
+                    if (data.labels.length && data.datasets.length) {
+                      return data.labels.map((label, i) => {
+                        const value = data.datasets[0].data[i];
+                        const cantidad = cantidades[i];
+                        const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        const percentage = Math.round((value / total) * 100);
+                        
+                        return {
+                          text: `${label}: ${formatCurrency(value)} (${percentage}%)`,
+                          fillStyle: data.datasets[0].backgroundColor[i],
+                          hidden: false,
+                          index: i
+                        };
+                      });
+                    }
+                    return [];
+                  }
+                }
+              },
+              tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                titleColor: '#1F2937',
+                bodyColor: '#1F2937',
+                borderColor: '#E5E7EB',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: true,
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = formatCurrency(context.raw);
+                    const cantidad = cantidades[context.dataIndex];
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = Math.round((context.raw / total) * 100);
+                    return [
+                      `${label}: ${value}`,
+                      `Productos: ${cantidad}`,
+                      `Porcentaje: ${percentage}%`
+                    ];
+                  }
+                }
+              }
+            },
+            cutout: '60%',
+            animation: {
+              animateRotate: true,
+              animateScale: true
+            }
+          }
+        });
+      }
+    }
+    
+    // Función para renderizar compras
+    function renderCompras(compras) {
+      const comprasContainer = document.getElementById('compras-container');
+      
+      if (compras.length === 0) {
+        comprasContainer.innerHTML = `
+          <div class="py-12 text-center text-gray-500">
+            <svg class="mx-auto h-16 w-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p class="mt-4 text-lg">No se encontraron compras con los filtros seleccionados</p>
+          </div>
+        `;
+        return;
+      }
+      
+      if (vistaActual === 'list') {
+        // Vista de lista
+        comprasContainer.innerHTML = `
+          <ul class="divide-y divide-gray-200">
+            ${compras.map((compra, index) => {
+              const fecha =parsePythonDatetime(compra.created_at);
+              const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              });
+              
+              return `
+                <li class="py-6 px-6 hover:bg-gray-50 cursor-pointer transition-colors duration-200 purchase-card fade-in" style="animation-delay: ${index * 0.1}s" onclick="verDetallesCompra('${compra.id}')">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <div class="min-w-0 flex-1 flex items-center">
+                        <div class="flex-shrink-0">
+                          <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        </div>
+                        <div class="min-w-0 flex-1 px-4">
+                          <div>
+                            <p class="text-sm font-bold text-green-600 truncate">Compra #${compra.id}</p>
+                            <p class="mt-1 flex items-center text-sm text-gray-500">
+                              <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                              </svg>
+                              ${fechaFormateada}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex items-center space-x-4">
+                        <div class="text-right">
+                          <p class="text-lg font-bold text-gray-900">${formatCurrency(compra.total)}</p>
+                          <p class="text-sm text-gray-500">${compra.productos_count} productos</p>
+                        </div>
+                        <div>
+                          <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </li>
+              `;
+            }).join('')}
+          </ul>
+        `;
+      } else {
+        // Vista de cuadrícula - optimizada para móvil
+        comprasContainer.innerHTML = `
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            ${compras.map((compra, index) => {
+              const fecha = new Date(compra.created_at);
+              const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+              });
+              
+              return `
+                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer purchase-card fade-in" style="animation-delay: ${index * 0.1}s" onclick="verDetallesCompra('${compra.id}')">
+                  <div class="p-4">
+                    <div class="flex justify-between items-start mb-3">
+                      <div class="flex-1 min-w-0">
+                        <h3 class="text-base font-bold text-gray-900 truncate">Compra #${compra.id.substring(0, 8)}</h3>
+                        <div class="mt-1 flex items-center">
+                          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                            Completado
+                          </span>
+                        </div>
+                      </div>
+                      <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                        <svg class="h-5 w-5 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                    </div>
+                    
+                    <div class="mt-3 flex items-center text-xs text-gray-500">
+                      <svg class="flex-shrink-0 mr-1 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                      </svg>
+                      <span class="truncate">${fechaFormateada}</span>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-between items-center">
+                      <div>
+                        <p class="text-xs text-gray-500">${compra.productos_count} productos</p>
+                      </div>
+                      <div class="text-right">
+                        <p class="text-base font-bold text-gray-900">${formatCurrency(compra.total)}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+    }
+    
+    // Función para renderizar paginación
+    function renderPagination(data) {
+      const paginationContainer = document.getElementById('pagination-container');
+      const pageNumbers = document.getElementById('page-numbers');
+      
+      if (data.total <= 6) {
+        paginationContainer.classList.add('hidden');
+        return;
+      }
+      
+      paginationContainer.classList.remove('hidden');
+      
+      // Actualizar información de paginación
+      document.getElementById('start-item').textContent = (data.current_page - 1) * 6 + 1;
+      document.getElementById('end-item').textContent = Math.min(data.current_page * 6, data.total);
+      document.getElementById('total-items').textContent = data.total;
+      
+      // Generar números de página
+      pageNumbers.innerHTML = '';
+      const maxVisiblePages = 5;
+      let startPage = Math.max(1, data.current_page - Math.floor(maxVisiblePages / 2));
+      let endPage = Math.min(data.pages, startPage + maxVisiblePages - 1);
+      
+      if (endPage - startPage + 1 < maxVisiblePages) {
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
+      }
+      
+      for (let i = startPage; i <= endPage; i++) {
+        const isActive = i === data.current_page;
+        const pageClass = isActive 
+          ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 relative inline-flex items-center px-4 py-2 border text-sm font-medium'
+          : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50 relative inline-flex items-center px-4 py-2 border text-sm font-medium';
+        
+        pageNumbers.innerHTML += `
+          <button class="${pageClass}" data-page="${i}" onclick="goToPage(${i})">
+            ${i}
+          </button>
+        `;
+      }
+    }
+    
+    // Función para ver detalles de una compra
+    window.verDetallesCompra = function(compraId) {
+      const modal = document.getElementById('compra-modal');
+      const modalTitle = document.getElementById('modal-title');
+      const compraDetails = document.getElementById('compra-details');
+      
+      modalTitle.textContent = `Detalles de la Compra #${compraId}`;
+      compraDetails.innerHTML = `
+        <div class="text-center py-8">
+          <div class="skeleton-card skeleton-rect w-16 h-16 mx-auto mb-4"></div>
+          <div class="skeleton-card skeleton-line w-3/4 mx-auto mb-2"></div>
+          <div class="skeleton-card skeleton-line w-1/2 mx-auto"></div>
+        </div>
+      `;
+      
+      modal.classList.remove('hidden');
+      
+      fetch(`/api/pedido-detalle/${compraId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          renderCompraDetails(data, compraId);
+          document.getElementById('reorder-btn').setAttribute('data-compra-id', compraId);
+          document.getElementById('descargar-factura-btn').setAttribute('data-compra-id', compraId);
+        } else {
+          compraDetails.innerHTML = `
+            <div class="text-center py-8">
+              <svg class="mx-auto h-12 w-12 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3, 1.732 3z" />
+              </svg>
+              <p class="mt-2 text-red-500">Error al cargar los detalles de la compra</p>
+            </div>
+          `;
+        }
+      })
+      .catch(error => {
+        console.error('Error al cargar detalles de la compra:', error);
+        compraDetails.innerHTML = `
+          <div class="text-center py-8">
+            <svg class="mx-auto h-12 w-12 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3, 1.732 3z" />
+            </svg>
+            <p class="mt-2 text-red-500">Error al cargar los detalles de la compra</p>
+          </div>
+        `;
+      });
+    };
+    
+    // Función para renderizar detalles de la compra - MEJORADA
+    function renderCompraDetails(data, compraId) {
+      const compraDetails = document.getElementById('compra-details');
+      
+      const fecha = new Date(data.created_at);
+      const fechaFormateada = fecha.toLocaleDateString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+      
+      let productosHtml = data.productos.map((producto, index) => `
+        <div class="flex items-center py-4 border-b border-gray-200 product-card" style="animation-delay: ${index * 0.1}s">
+          <div class="flex-shrink-0 h-16 w-16">
+            <img class="h-16 w-16 rounded-md object-cover" src="${producto.producto_imagen_url || '/static/img/default-product.png'}" alt="${producto.producto_nombre}">
+          </div>
+          <div class="ml-4 flex-1">
+            <div class="flex justify-between">
+              <div>
+                <h4 class="text-sm font-medium text-gray-900">${producto.producto_nombre}</h4>
+                <p class="text-sm text-gray-500">${producto.producto_marca || 'Marca no especificada'}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-medium text-gray-900">${formatCurrency(producto.precio_unitario)}</p>
+                <p class="text-sm text-gray-500">c/u</p>
+              </div>
+            </div>
+            <div class="mt-2 flex justify-between">
+              <div>
+                <p class="text-sm text-gray-500">Cantidad: ${producto.cantidad}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-sm font-medium text-gray-900">${formatCurrency(producto.subtotal)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `).join('');
+      
+      compraDetails.innerHTML = `
+        <div class="space-y-6">
+          <!-- Información de la Compra con diseño mejorado -->
+          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div class="flex items-center justify-between mb-4">
+              <h4 class="text-lg font-bold text-gray-900 flex items-center">
+                <svg class="w-5 h-5 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                Información de la Compra
+              </h4>
+              <div class="badge-status badge-success">
+                <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                Completado
+              </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="info-item p-3 rounded-lg">
+                <dt class="text-sm font-medium text-gray-500">ID de la Compra</dt>
+                <dd class="mt-1 text-sm font-bold text-gray-900">#${compraId}</dd>
+              </div>
+              <div class="info-item p-3 rounded-lg">
+                <dt class="text-sm font-medium text-gray-500">Fecha</dt>
+                <dd class="mt-1 text-sm font-bold text-gray-900">${fechaFormateada}</dd>
+              </div>
+              <div class="info-item p-3 rounded-lg">
+                <dt class="text-sm font-medium text-gray-500">Método de Pago</dt>
+                <dd class="mt-1 text-sm font-bold text-gray-900">Contra Entrega</dd>
+              </div>
+              <div class="info-item p-3 rounded-lg">
+                <dt class="text-sm font-medium text-gray-500">Total</dt>
+                <dd class="mt-1 text-sm font-bold text-gray-900">${formatCurrency(data.total)}</dd>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Productos con diseño mejorado -->
+          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              Productos
+            </h4>
+            <div class="border border-gray-200 rounded-lg overflow-hidden">
+              ${productosHtml}
+            </div>
+          </div>
+          
+          <!-- Resumen de compra con diseño mejorado -->
+          <div class="summary-card p-6">
+            <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
+              <svg class="w-5 h-5 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Resumen de Compra
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="space-y-3">
+                <div class="flex justify-between">
+                  <p class="text-sm text-gray-600">Subtotal:</p>
+                  <p class="text-sm font-medium text-gray-900">${formatCurrency(data.total)}</p>
+                </div>
+                <div class="flex justify-between">
+                  <p class="text-sm text-gray-600">Envío:</p>
+                  <p class="text-sm font-medium text-gray-900">$0</p>
+                </div>
+              </div>
+              <div class="flex justify-between items-center bg-white bg-opacity-50 p-4 rounded-lg">
+                <p class="text-base font-bold text-gray-900">Total:</p>
+                <p class="text-xl font-bold text-indigo-700">${formatCurrency(data.total)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // Función para cerrar modal
+    function cerrarModal() {
+      document.getElementById('compra-modal').classList.add('hidden');
+    }
+    
+    // Función para reordenar una compra
+    function reordenarCompra(compraId) {
+      const reorderBtn = document.getElementById('reorder-btn');
+      const originalText = reorderBtn.innerHTML;
+      
+      reorderBtn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        Procesando...
+      `;
+      reorderBtn.disabled = true;
+      
+      fetch(`/reordenar/${compraId}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          cerrarModal();
+          window.toast.success(data.message || 'Productos añadidos al carrito exitosamente');
+        } else {
+           window.toast.error(data.message || 'Error al reordenar la compra', 'error');
+        }
+      })
+      .catch(error => {
+        console.error('Error al reordenar compra:', error);
+         window.toast.error('Error al reordenar la compra', 'error');
+      })
+      .finally(() => {
+        reorderBtn.innerHTML = originalText;
+        reorderBtn.disabled = false;
+      });
+    }
+    
+    // Función para descargar factura
+    function descargarFactura(compraId) {
+      window.open(`/factura-pdf/${compraId}`, '_blank');
+    }
+    
+    
+    
+    // Función para ir a una página específica
+    window.goToPage = function(page) {
+      currentPage = page;
+      cargarCompras();
+    };
+    
+    // Función para cambiar vista de lista
+    window.cambiarVistaLista = function(vista) {
+      vistaActual = vista;
+      
+      // Actualizar botones solo si existen (solo en desktop)
+      const gridBtn = document.getElementById('vista-grid-btn');
+      const listBtn = document.getElementById('vista-list-btn');
+      
+      if (gridBtn && listBtn) {
+        if (vista === 'grid') {
+          // Activar botón de cuadrícula
+          gridBtn.classList.remove('bg-white', 'text-gray-700');
+          gridBtn.classList.add('bg-blue-600', 'text-white');
+          
+          // Desactivar botón de lista
+          listBtn.classList.remove('bg-blue-600', 'text-white');
+          listBtn.classList.add('bg-white', 'text-gray-700');
+        } else {
+          // Activar botón de lista
+          listBtn.classList.remove('bg-white', 'text-gray-700');
+          listBtn.classList.add('bg-blue-600', 'text-white');
+          
+          // Desactivar botón de cuadrícula
+          gridBtn.classList.remove('bg-blue-600', 'text-white');
+          gridBtn.classList.add('bg-white', 'text-gray-700');
+        }
+      }
+      
+      cargarCompras();
+    };
+    
+    // Función para cambiar período del gráfico
+    window.cambiarPeriodoGrafico = function(periodo) {
+      periodoGraficoActual = periodo;
+      
+      // Actualizar botones
+      document.querySelectorAll('[onclick^="cambiarPeriodoGrafico"]').forEach(btn => {
+        if (btn.getAttribute('onclick').includes(periodo)) {
+          btn.classList.remove('bg-gray-100', 'text-gray-800');
+          btn.classList.add('bg-blue-100', 'text-blue-800');
+        } else {
+          btn.classList.remove('bg-blue-100', 'text-blue-800');
+          btn.classList.add('bg-gray-100', 'text-gray-800');
+        }
+      });
+      
+      // Recargar gráficos
+      cargarGraficos();
+    };
+    
+    // Función para alternar la comparación con el período anterior
+    window.toggleCompararPeriodo = function() {
+      compararPeriodo = document.getElementById('comparar-periodo').checked;
+      cargarGraficos();
+    };
+    
+    // Función para cambiar vista del gráfico de categorías
+    window.cambiarVistaCategorias = function(vista) {
+      vistaCategoriasActual = vista;
+      
+      // Actualizar botones
+      const btnBarras = document.getElementById('vista-categoria-barras');
+      const btnTorta = document.getElementById('vista-categoria-torta');
+      
+      if (vista === 'barras') {
+        btnBarras.classList.remove('text-gray-500');
+        btnBarras.classList.add('bg-blue-100', 'text-blue-600');
+        btnTorta.classList.remove('bg-blue-100', 'text-blue-600');
+        btnTorta.classList.add('text-gray-500');
+      } else {
+        btnTorta.classList.remove('text-gray-500');
+        btnTorta.classList.add('bg-blue-100', 'text-blue-600');
+        btnBarras.classList.remove('bg-blue-100', 'text-blue-600');
+        btnBarras.classList.add('text-gray-500');
+      }
+      
+      // Recargar gráfico de categorías
+      cargarGraficoCategorias();
+    };
+    
+    // Función para formatear moneda
+    function formatCurrency(value) {
+      if (!value) return "$ 0";
+      return "$ " + value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+
+    // Función para parsear fechas de Python (YYYY-MM-DD HH:MM:SS.ffffff)
+    function parsePythonDatetime(dtString) {
+        if (!dtString) return null;
+        // Reemplazar 'T' si existe (para ISO format) o simplemente dividir por espacios y delimitadores
+        const parts = dtString.replace('T', ' ').split(/[- :.]/);
+        const year = parseInt(parts[0]);
+        const month = parseInt(parts[1]) - 1; // Mes es 0-indexado en JavaScript
+        const day = parseInt(parts[2]);
+        const hour = parseInt(parts[3] || 0);
+        const minute = parseInt(parts[4] || 0);
+        const second = parseInt(parts[5] || 0);
+        // Tomar los primeros 3 dígitos para milisegundos si existen
+        const millisecond = parseInt((parts[6] || '0').substring(0, 3)); 
+
+        return new Date(year, month, day, hour, minute, second, millisecond);
+    }
+    
+    // Detectar cambios en el tamaño de la pantalla para ajustar la vista automáticamente
+    window.addEventListener('resize', function() {
+      const esMovil = window.innerWidth < 640;
+      
+      if (esMovil && vistaActual === 'list') {
+        // Cambiar a vista de cuadrícula en móvil
+        vistaActual = 'grid';
+        cargarCompras();
+      } else if (!esMovil && vistaActual === 'grid') {
+        // Cambiar a vista de lista en desktop
+        vistaActual = 'list';
+        cargarCompras();
+      }
+    });
+  });
+</script>
+{% endblock %}

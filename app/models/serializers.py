@@ -239,6 +239,92 @@ def producto_to_dict(prod):
         'existencia_porcentaje': existencia_porcentaje
     }
 
+def admin_producto_to_dict(prod):
+    """Convierte un objeto Producto a un diccionario para la vista de admin, sin filtrar por estado."""
+    if not prod:
+        return None
+
+    # --- Navegación de categorías ---
+    categoria_principal_nombre = None
+    subcategoria_nombre = None
+    seudocategoria_nombre = None
+    categoria_principal_slug = None
+    subcategoria_slug = None
+    seudocategoria_slug = None
+
+    if (seudocategoria := getattr(prod, 'seudocategoria', None)):
+        seudocategoria_nombre = getattr(seudocategoria, 'nombre', None)
+        seudocategoria_slug = getattr(seudocategoria, 'slug', None)
+        if (subcategoria := getattr(seudocategoria, 'subcategoria', None)):
+            subcategoria_nombre = getattr(subcategoria, 'nombre', None)
+            subcategoria_slug = getattr(subcategoria, 'slug', None)
+            if (categoria_principal := getattr(subcategoria, 'categoria_principal', None)):
+                categoria_principal_nombre = getattr(
+                    categoria_principal, 'nombre', None)
+                categoria_principal_slug = getattr(
+                    categoria_principal, 'slug', None)
+
+    # --- Cálculos de negocio ---
+    margen_ganancia = 0
+    if prod.precio and prod.costo and prod.precio > 0:
+        margen_ganancia = round(((prod.precio - prod.costo) / prod.precio) * 100, 2)
+
+    antiguedad_dias = 0
+    if prod.created_at:
+        antiguedad_dias = (datetime.utcnow() - prod.created_at).days
+
+    # --- Datos adicionales ---
+    # Simulado, se necesitaría un modelo de ventas
+    ventas_unidades = len(prod.reseñas) * 3 if hasattr(prod, 'reseñas') else 42
+
+    existencia_porcentaje = 0
+    if prod.existencia is not None and prod.stock_maximo is not None and prod.stock_maximo > 0:
+        existencia_porcentaje = round((prod.existencia / prod.stock_maximo) * 100)
+
+    return {
+        'id': prod.id,
+        'nombre': prod.nombre,
+        'slug': prod.slug,
+        'descripcion': prod.descripcion,
+        'precio': prod.precio,
+        'costo': prod.costo,
+        'imagen_url': prod.imagen_url,
+        'existencia': prod.existencia,
+        'stock_minimo': prod.stock_minimo,
+        'stock_maximo': prod.stock_maximo,
+        'seudocategoria_id': prod.seudocategoria_id,
+        'marca': prod.marca,
+        'estado': prod.estado,
+        'created_at': prod.created_at if prod.created_at else None,
+        'updated_at': prod.updated_at.isoformat() if prod.updated_at else None,
+
+        # Categorías
+        'categoria_principal_nombre': categoria_principal_nombre,
+        'subcategoria_nombre': subcategoria_nombre,
+        'seudocategoria_nombre': seudocategoria_nombre,
+        'categoria_principal_slug': categoria_principal_slug,
+        'subcategoria_slug': subcategoria_slug,
+        'seudocategoria_slug': seudocategoria_slug,
+
+        # Datos de reseñas y calificaciones
+        'calificacion_promedio': prod.calificacion_promedio_almacenada,
+        'reseñas_count': len(prod.reseñas) if hasattr(prod, 'reseñas') else 0,
+
+        # Indicadores y estado
+        'es_nuevo': prod.es_nuevo,
+        'agotado': prod.agotado,
+
+        # Especificaciones
+        'especificaciones': prod.especificaciones or {},
+
+        # --- Campos Enriquecidos ---
+        'margen_ganancia': margen_ganancia,
+        'antiguedad_dias': antiguedad_dias,
+        'ventas_unidades': ventas_unidades,
+        'existencia_porcentaje': existencia_porcentaje
+    }
+
+
 def producto_list_to_dict(prod):
     """Convierte un objeto Producto a un diccionario para la lista de productos (excluye id)."""
     if not prod:

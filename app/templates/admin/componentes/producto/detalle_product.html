@@ -121,10 +121,17 @@
                                 <span class="text-sm text-gray-500">({{ product.reseñas_count }})</span>
                             </div>
                         </div>
-                        <a href="#" class="w-full text-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl transition font-medium shadow-lg block">
-                            <i class="fas fa-edit mr-2"></i>
-                            Editar Producto
-                        </a>
+                        {% if product.estado == 'activo' %}
+                            <a href="{{ url_for('admin_editar.edit_product_page', product_slug=product.slug) }}" class="spa-edit-product-link w-full text-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl transition font-medium shadow-lg block">
+                                <i class="fas fa-edit mr-2"></i>
+                                Editar Producto
+                            </a>
+                        {% else %}
+                            <button type="button" id="edit-product-inactive-button" class="w-full text-center bg-gray-400 text-white py-3 px-4 rounded-xl cursor-pointer" title="Para editar, el producto debe estar activo">
+                                <i class="fas fa-edit mr-2"></i>
+                                Editar Producto
+                            </button>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -408,8 +415,8 @@
                             </div>
                             <div class="pb-5">
                                 <p class="font-bold text-gray-800">Actualización de precio</p>
-                                <p class="text-gray-600">El precio se actualizó de $95.00 a $99.99</p>
-                                <p class="text-gray-500 text-sm mt-1">15 de mayo de 2023 - 10:30 AM</p>
+                                <p class="text-gray-600">El precio se actualizó de $95.000 a $99.999</p>
+                                <p class="text-gray-500 text-sm mt-1">15 de septiempre de 2025 - 10:30 AM</p>
                             </div>
                         </div>
 
@@ -423,7 +430,7 @@
                             <div class="pb-5">
                                 <p class="font-bold text-gray-800">Reposición de inventario</p>
                                 <p class="text-gray-600">Se agregaron 20 unidades al inventario</p>
-                                <p class="text-gray-500 text-sm mt-1">10 de mayo de 2023 - 02:15 PM</p>
+                                <p class="text-gray-500 text-sm mt-1">15 de septiembre de 2025 - 12-00 PM</p>
                             </div>
                         </div>
 
@@ -446,8 +453,8 @@
     </main>
 
     <script>
-        // Script para animaciones al hacer scroll
         document.addEventListener('DOMContentLoaded', function () {
+            // Script para animaciones al hacer scroll
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
@@ -459,6 +466,18 @@
             document.querySelectorAll('.card-hover').forEach(card => {
                 observer.observe(card);
             });
+
+            // Script para el botón de editar inactivo
+            const inactiveEditButton = document.getElementById('edit-product-inactive-button');
+            if (inactiveEditButton) {
+                inactiveEditButton.addEventListener('click', function() {
+                    if (window.toast) {
+                        window.toast.warning('Para editar, el producto debe estar activo.');
+                    } else {
+                        alert('Para editar, el producto debe estar activo.');
+                    }
+                });
+            }
         });
     </script>
 {% endblock %}

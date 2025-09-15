@@ -4,7 +4,7 @@ from sqlalchemy.orm import joinedload
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias
 from app.models.domains.review_models import Reseñas
-from app.models.serializers import producto_to_dict, resena_to_dict, format_currency_cop
+from app.models.serializers import admin_producto_to_dict, resena_to_dict, format_currency_cop
 
 admin_detalle_product_bp = Blueprint(
     'admin_detalle', __name__, url_prefix='/admin')
@@ -26,7 +26,7 @@ def get_product_detail(admin_user, product_slug):
         ).filter_by(slug=product_slug).first_or_404()
 
         # Serializar el producto a un diccionario. El serializador se encarga de la lógica compleja.
-        product_data = producto_to_dict(product)
+        product_data = admin_producto_to_dict(product)
 
         # Formatear valores monetarios para la vista
         product_data['precio_formateado'] = format_currency_cop(

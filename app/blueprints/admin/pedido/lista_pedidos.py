@@ -168,14 +168,19 @@ def filter_pedidos_api(admin_user):
         cliente = request.args.get('cliente', '')
         fecha_inicio = request.args.get('fecha_inicio', '')
         fecha_fin = request.args.get('fecha_fin', '')
-        estado = request.args.get('estado', 'en proceso')
+        estado_pedido_filter = request.args.get('estado', 'en proceso') # This is for estado_pedido (en proceso, completado, cancelado)
+        status_filter = request.args.get('status', 'all') # This is for the new activo/inactivo status
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
 
         # Construir consulta base
         query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == estado
+            Pedido.estado_pedido == estado_pedido_filter
         )
+        
+        # Aplicar el nuevo filtro de estado (activo/inactivo)
+        if status_filter != 'all':
+            query = query.filter(Pedido.estado == status_filter)
         
         # Aplicar filtros
         if cliente:

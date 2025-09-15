@@ -424,6 +424,19 @@
                     </div>
                 </div>
                 
+                <!-- Estado Activo/Inactivo -->
+                <div class="filter-field">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                        Estado (Activo/Inactivo)
+                    </label>
+                    <select id="statusFilter" class="w-full py-2 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <option value="all">Todos</option>
+                        <option value="activo">Activos</option>
+                        <option value="inactivo">Inactivos</option>
+                    </select>
+                </div>
+
                 <!-- Ordenamiento -->
                 <div class="filter-field">
                     <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -962,9 +975,10 @@
                 const fechaInicio = document.getElementById('fechaInicioFilter')?.value || '';
                 const fechaFin = document.getElementById('fechaFinFilter')?.value || '';
                 const sortFilter = document.getElementById('sortFilter')?.value || 'created_at';
+                const statusFilter = document.getElementById('statusFilter')?.value || 'all';
                 
                 // Consideramos que hay filtros activos si hay algo diferente a los valores por defecto
-                this.hasActiveFilters = !!(cliente || fechaInicio || fechaFin || sortFilter !== 'created_at');
+                this.hasActiveFilters = !!(cliente || fechaInicio || fechaFin || sortFilter !== 'created_at' || statusFilter !== 'all');
             },
             
             // Función para cambiar estado del pedido
@@ -1233,6 +1247,7 @@
                 const fechaInicio = document.getElementById('fechaInicioFilter')?.value || '';
                 const fechaFin = document.getElementById('fechaFinFilter')?.value || '';
                 const sortFilter = document.getElementById('sortFilter')?.value || 'created_at';
+                const statusFilter = document.getElementById('statusFilter')?.value || 'all';
                 
                 // Verificar si hay filtros activos
                 this.checkActiveFilters();
@@ -1242,6 +1257,7 @@
                 if (cliente) apiUrl += `&cliente=${encodeURIComponent(cliente)}`;
                 if (fechaInicio) apiUrl += `&fecha_inicio=${fechaInicio}`;
                 if (fechaFin) apiUrl += `&fecha_fin=${fechaFin}`;
+                if (statusFilter !== 'all') apiUrl += `&status=${statusFilter}`;
                 
                 let sortBy = 'created_at';
                 let sortOrder = 'desc';
@@ -1790,6 +1806,7 @@
                 document.getElementById('fechaInicioFilter').value = '';
                 document.getElementById('fechaFinFilter').value = '';
                 document.getElementById('sortFilter').value = 'created_at';
+                document.getElementById('statusFilter').value = 'all'; // Clear the new status filter
                 this.loadPedidos();
             },
             
@@ -1862,6 +1879,11 @@
                 const sortFilterInput = document.getElementById('sortFilter');
                 if (sortFilterInput) {
                     sortFilterInput.addEventListener('change', () => this.loadPedidos());
+                }
+                
+                const statusFilterInput = document.getElementById('statusFilter');
+                if (statusFilterInput) {
+                    statusFilterInput.addEventListener('change', () => this.loadPedidos());
                 }
                 
                 // Limpiar filtros

@@ -85,6 +85,7 @@ def create_app(config_class=Config):
     from app.blueprints.admin.categoria.lista_categorias import admin_lista_categorias_bp
     from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
     from app.blueprints.admin.pedido.api import admin_api_bp
+    from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
 
     #cliente
     app.register_blueprint(cart_bp)
@@ -103,6 +104,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_editar_product_bp)
     app.register_blueprint(admin_lista_categorias_bp)
     app.register_blueprint(admin_lista_pedidos_bp, url_prefix='/admin')
+    app.register_blueprint(admin_ventas_bp, url_prefix='/admin')
     app.register_blueprint(admin_api_bp)
 
 

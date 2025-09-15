@@ -254,8 +254,8 @@
             </div>
             <div class="company-info">
                 <h2>Comestic Premium</h2>
-                <p>Dirección: Calle Principal 123, Bogotá, Colombia</p>
-                <p>Teléfono: (601) 123 4567</p>
+                <p>Dirección: Calle Principal 123, Barranquilla, Colombia</p>
+                <p>Teléfono: (57) 3044931438</p>
                 <p>Email: info@yecycomestic.com</p>
                 <p>Web: www.yecycomestic.com</p>
             </div>
@@ -322,8 +322,8 @@
                     <td>{{ item.producto_nombre }}</td>
                     <td>{{ item.producto_marca or 'N/A' }}</td>
                     <td class="numeric">{{ item.quantity }}</td>
-                    <td class="numeric">${{ item.precio_unitario_formatted }}</td>
-                    <td class="numeric">${{ item.subtotal_formatted }}</td>
+                    <td class="numeric">{{ item.precio_unitario_formatted }}</td>
+                    <td class="numeric">{{ item.subtotal_formatted }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -334,7 +334,7 @@
             <table class="total-table">
                 <tr>
                     <td>Subtotal:</td>
-                    <td>${{ total_price_formatted }}</td>
+                    <td>{{ total_price_formatted }}</td>
                 </tr>
                 <tr>
                     <td>Envío:</td>
@@ -342,7 +342,7 @@
                 </tr>
                 <tr class="total-row">
                     <td>TOTAL:</td>
-                    <td>${{ total_price_formatted }}</td>
+                    <td>{{ total_price_formatted }}</td>
                 </tr>
             </table>
         </div>

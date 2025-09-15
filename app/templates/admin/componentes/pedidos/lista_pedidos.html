@@ -863,6 +863,9 @@
         
         /* Estilos para badges de estado */
         .estado-badge {
+            body.no-scroll {
+                overflow: hidden;
+            }
             display: inline-flex;
             align-items: center;
             padding: 0.25rem 0.5rem;
@@ -1950,9 +1953,9 @@
             panel.classList.toggle("translate-x-full");
             overlay.classList.toggle("hidden");
             if (!panel.classList.contains("translate-x-full")) {
-                document.body.classList.add("overflow-hidden");
+                document.body.classList.add("no-scroll");
             } else {
-                document.body.classList.remove("overflow-hidden");
+                document.body.classList.remove("no-scroll");
             }
         }
         

@@ -52,13 +52,12 @@
     <!-- Header para móvil -->
     <header class="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
         <div class="flex items-center">
+            <button id="mobile-menu-button" class="text-gray-500 hover:text-gray-600 focus:outline-none focus:text-gray-600">
+                <i class="fas fa-bars text-xl"></i>
+            </button>
             <h1 class="ml-3 text-xl font-bold text-blue-600">management ye&ci</h1>
         </div>
         <div class="flex items-center space-x-3">
-            <button class="text-gray-600 relative">
-                <i class="fas fa-bell text-xl"></i>
-                <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">3</span>
-            </button>
             <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
                 {% if admin_user %}{{ admin_user.nombre[0]|upper }}{{ admin_user.apellido[0]|upper }}{% endif %}
             </div>

@@ -355,20 +355,3 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         if id:
             self.id = id
         self.calificacion_promedio_almacenada = 0.0 # Inicializar la nueva columna
-
-    def __init__(self, nombre, descripcion, subcategoria_id, estado='activo', id=None):
-        if not nombre or not nombre.strip():
-            raise ValueError("El nombre no puede estar vacío")
-        if not descripcion or not descripcion.strip():
-            raise ValueError("La descripción no puede estar vacía")
-        if not subcategoria_id:
-            raise ValueError("Debe indicar la subcategoría")
-        if estado not in EstadoEnum._value2member_map_:
-            raise ValueError("El estado debe ser 'activo' o 'inactivo'")
-        self.nombre = nombre
-        self.slug = slugify(nombre) # Generar slug automáticamente
-        self.descripcion = descripcion
-        self.subcategoria_id = subcategoria_id
-        self.estado = estado
-        if id:
-            self.id = id

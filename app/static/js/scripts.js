@@ -30,29 +30,13 @@ function createSimpleNotification(message, bgClass) {
  * Inicializa un sistema de notificaciones Toast de fallback si no existe uno global.
  */
 function initializeToastFallback() {
-  if (window.toast) {
-    console.log("✅ Sistema de notificaciones Toast disponible.");
-    return;
-  }
+  if (window.toast) return;
 
-  console.warn("⚠️ Sistema de notificaciones no encontrado. Usando fallback.");
   window.toast = {
-    success: (msg) => {
-      console.log(`✅ SUCCESS: ${msg}`);
-      createSimpleNotification(msg, "bg-green-500");
-    },
-    error: (msg) => {
-      console.error(`❌ ERROR: ${msg}`);
-      createSimpleNotification(msg, "bg-red-500");
-    },
-    warning: (msg) => {
-      console.warn(`⚠️ WARNING: ${msg}`);
-      createSimpleNotification(msg, "bg-yellow-500");
-    },
-    info: (msg) => {
-      console.info(`ℹ️ INFO: ${msg}`);
-      createSimpleNotification(msg, "bg-blue-500");
-    },
+    success: (msg) => createSimpleNotification(msg, "bg-green-500"),
+    error: (msg) => createSimpleNotification(msg, "bg-red-500"),
+    warning: (msg) => createSimpleNotification(msg, "bg-yellow-500"),
+    info: (msg) => createSimpleNotification(msg, "bg-blue-500"),
   };
 }
 
@@ -74,7 +58,7 @@ function handleShowAuthModal(event) {
 
 /**
  * Manejador para el evento 'favorites:countUpdated'. Actualiza el contador de favoritos en la UI.
- * @param {CustomEvent} event - El evento con el detalle del conteo.
+ * @param {CustomEvent} event - El evento con el detalle del contenido.
  */
 function handleFavoritesCountUpdated(event) {
   const counter = document.getElementById("favorites-counter");
@@ -101,15 +85,8 @@ function handleNavbarFavButtonClick(event) {
   const isDataUserIdPresent = document.body.getAttribute('data-user-id') !== null;
   const isWindowAuthenticated = window.isAuthenticated === true;
 
-  console.log('DEBUG: handleNavbarFavButtonClick - isDataUserIdPresent:', isDataUserIdPresent, 'isWindowAuthenticated:', isWindowAuthenticated);
+  if (isDataUserIdPresent || isWindowAuthenticated) return; // Permitir el comportamiento predeterminado del enlace.
 
-  // Si el atributo data-user-id está presente O window.isAuthenticated es true, consideramos al usuario autenticado.
-  if (isDataUserIdPresent || isWindowAuthenticated) {
-    console.log('DEBUG: Usuario autenticado. Permitiendo navegación.');
-    return; // Permitir el comportamiento predeterminado del enlace.
-  }
-
-  console.log('DEBUG: Usuario NO autenticado. Bloqueando navegación y mostrando modal.');
   event.preventDefault();
   event.stopPropagation();
 
@@ -148,7 +125,7 @@ function registerGlobalEventListeners() {
  * @returns {string} El HTML de las estrellas.
  */
 function generateStarsHTML(rating) {
-  let stars = '';
+  let stars = "";
   const roundedRating = Math.round(rating);
   for (let i = 1; i <= 5; i++) {
     stars += `<svg class="w-5 h-5 ${i <= roundedRating ? 'text-yellow-400' : 'text-gray-300'}" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
@@ -182,6 +159,40 @@ function updateProductRatingDisplay(productId, averageRating, totalReviewsCount)
   });
 }
 
+/**
+ * Inicializa el comportamiento "inteligente" de la barra de navegación principal.
+ * La barra se oculta al hacer scroll hacia abajo y aparece al hacer scroll hacia arriba.
+ */
+function initializeSmartNavbar() {
+  const navbarContainer = document.getElementById("navbar-container");
+  if (!navbarContainer) return;
+
+  let lastScrollY = window.scrollY;
+  const hideThreshold = 200; // Píxeles desde la parte superior para empezar a ocultar
+  const scrollDelta = 5; // Un pequeño delta para evitar que se active con movimientos mínimos
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      const currentScrollY = window.scrollY;
+
+      // No hacer nada si el cambio en el scroll es menor que el delta
+      if (Math.abs(lastScrollY - currentScrollY) <= scrollDelta) return;
+
+      // Si se está bajando la página Y se ha pasado el umbral, ocultar la barra.
+      if (currentScrollY > lastScrollY && currentScrollY > hideThreshold) {
+        navbarContainer.classList.add("-translate-y-full");
+      } else {
+        // Si se está subiendo la página O se está cerca de la parte superior, mostrar la barra.
+        navbarContainer.classList.remove("-translate-y-full");
+      }
+
+      // Actualizar la última posición de scroll para la siguiente comparación.
+      lastScrollY = currentScrollY <= 0 ? 0 : currentScrollY;
+    },
+    { passive: true }
+  ); // Usar passive: true para un mejor rendimiento de scroll
+}
 
 /**
  * Función principal de inicialización que se ejecuta cuando el DOM está listo.
@@ -189,6 +200,7 @@ function updateProductRatingDisplay(productId, averageRating, totalReviewsCount)
 function main() {
   initializeToastFallback();
   registerGlobalEventListeners();
+  initializeSmartNavbar();
 }
 
 // Punto de entrada de la aplicación.

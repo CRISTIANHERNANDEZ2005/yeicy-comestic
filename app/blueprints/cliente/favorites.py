@@ -533,12 +533,15 @@ def favoritos(usuario):
         favoritos = [producto_to_dict(like.producto) for like in likes if like.producto]
         app.logger.info(f"Se encontraron {len(favoritos)} productos favoritos para el usuario con ID {user_id}")
 
-        # Obtener categorías para el menú (se mantiene por si se usa en la base.html)
-        categorias = CategoriasPrincipales.query.filter_by(estado='activo')\
+        # Obtener las 5 categorías más antiguas y activas para el navbar/footer
+        categorias = CategoriasPrincipales.query \
+            .filter(CategoriasPrincipales.estado == 'activo') \
+            .order_by(CategoriasPrincipales.created_at.asc())\
+            .limit(5)\
             .options(
-                joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo')).joinedload(
-                    Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
-        ).all()
+                joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
+                .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
+            ).all()
 
         if not categorias:
             app.logger.info("No se encontraron categorías activas")

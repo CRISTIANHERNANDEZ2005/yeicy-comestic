@@ -3,6 +3,7 @@ from app.models.domains.product_models import Productos, Seudocategorias, Subcat
 from app.models.domains.order_models import Pedido, PedidoProducto
 from app.models.domains.cart_models import CartItem
 from app.extensions import db
+from sqlalchemy import not_, and_
 from app.models.enums import EstadoPedido, EstadoEnum
 from app.utils.jwt_utils import jwt_required
 from datetime import datetime, timedelta
@@ -28,8 +29,18 @@ def view_orders(usuario):
         monto_min = request.args.get('monto_min', 0, type=float)
         monto_max = request.args.get('monto_max', float('inf'), type=float)
         
-        # Construir la consulta base, filtrando solo pedidos activos
-        query = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value)
+        # Construir la consulta base
+        query = Pedido.query.filter_by(usuario_id=usuario.id)
+        
+        # Excluir pedidos 'en proceso' que estén 'inactivos'
+        query = query.filter(
+            not_(
+                and_(
+                    Pedido.estado_pedido == EstadoPedido.EN_PROCESO.value,
+                    Pedido.estado == 'inactivo'
+                )
+            )
+        )
         
         # Aplicar filtro por estado de pedido (ej. 'en proceso', 'completado') si se especifica
         estado_pedido_filtro = request.args.get('estado_pedido', 'todos')
@@ -67,10 +78,10 @@ def view_orders(usuario):
             query = query.order_by(Pedido.created_at.desc())
         
         # Obtener conteos para cada estado de pedido (sin aplicar filtros de búsqueda o paginación)
-        total_pedidos_todos = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value).count()
         total_pedidos_en_proceso = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value, estado_pedido=EstadoPedido.EN_PROCESO.value).count()
-        total_pedidos_completado = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value, estado_pedido=EstadoPedido.COMPLETADO.value).count()
-        total_pedidos_cancelado = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value, estado_pedido=EstadoPedido.CANCELADO.value).count()
+        total_pedidos_completado = Pedido.query.filter_by(usuario_id=usuario.id, estado_pedido=EstadoPedido.COMPLETADO.value).count()
+        total_pedidos_cancelado = Pedido.query.filter_by(usuario_id=usuario.id, estado_pedido=EstadoPedido.CANCELADO.value).count()
+        total_pedidos_todos = total_pedidos_en_proceso + total_pedidos_completado + total_pedidos_cancelado
 
         # Obtener el total de resultados para determinar si se necesita paginación
         total_count = query.count()
@@ -132,8 +143,18 @@ def buscar_pedidos(usuario):
         monto_min = request.args.get('monto_min', 0, type=float)
         monto_max = request.args.get('monto_max', float('inf'), type=float)
         
-        # Construir la consulta base, filtrando solo pedidos activos
-        query = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value)
+        # Construir la consulta base
+        query = Pedido.query.filter_by(usuario_id=usuario.id)
+        
+        # Excluir pedidos 'en proceso' que estén 'inactivos'
+        query = query.filter(
+            not_(
+                and_(
+                    Pedido.estado_pedido == EstadoPedido.EN_PROCESO.value,
+                    Pedido.estado == 'inactivo'
+                )
+            )
+        )
         
         # Aplicar filtro por estado de pedido (ej. 'en proceso', 'completado') si se especifica
         estado_pedido_filtro = request.args.get('estado_pedido', 'todos')
@@ -171,10 +192,10 @@ def buscar_pedidos(usuario):
             query = query.order_by(Pedido.created_at.desc())
         
         # Obtener conteos para cada estado de pedido (sin aplicar filtros de búsqueda o paginación)
-        total_pedidos_todos = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value).count()
         total_pedidos_en_proceso = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value, estado_pedido=EstadoPedido.EN_PROCESO.value).count()
-        total_pedidos_completado = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value, estado_pedido=EstadoPedido.COMPLETADO.value).count()
-        total_pedidos_cancelado = Pedido.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO.value, estado_pedido=EstadoPedido.CANCELADO.value).count()
+        total_pedidos_completado = Pedido.query.filter_by(usuario_id=usuario.id, estado_pedido=EstadoPedido.COMPLETADO.value).count()
+        total_pedidos_cancelado = Pedido.query.filter_by(usuario_id=usuario.id, estado_pedido=EstadoPedido.CANCELADO.value).count()
+        total_pedidos_todos = total_pedidos_en_proceso + total_pedidos_completado + total_pedidos_cancelado
 
         # Obtener el total de resultados para determinar si se necesita paginación
         total_count = query.count()
@@ -461,11 +482,10 @@ def view_compras(usuario):
         fecha_desde = request.args.get('fecha_desde', '')
         fecha_hasta = request.args.get('fecha_hasta', '')
         
-        # Construir la consulta base, filtrando solo pedidos activos y completados
+        # Construir la consulta base, filtrando pedidos completados (activos e inactivos)
         query = Pedido.query.filter_by(
-            usuario_id=usuario.id, 
-            estado=EstadoEnum.ACTIVO.value,
-            estado_pedido=EstadoPedido.COMPLETADO.value
+            usuario_id=usuario.id,
+            estado_pedido=EstadoPedido.COMPLETADO.value,
         )
         
         # Aplicar búsqueda si hay término de búsqueda
@@ -522,7 +542,6 @@ def estadisticas_compras(usuario):
         # Construir la consulta base
         query = Pedido.query.filter_by(
             usuario_id=usuario.id,
-            estado=EstadoEnum.ACTIVO.value,
             estado_pedido=EstadoPedido.COMPLETADO.value
         )
 
@@ -576,7 +595,6 @@ def estadisticas_compras(usuario):
 
                 query_anterior = Pedido.query.filter_by(
                     usuario_id=usuario.id,
-                    estado=EstadoEnum.ACTIVO.value,
                     estado_pedido=EstadoPedido.COMPLETADO.value
                 ).filter(
                     Pedido.created_at >= nueva_fecha_desde,
@@ -588,7 +606,6 @@ def estadisticas_compras(usuario):
                 # Si no se proporcionaron fechas, comparamos con el mismo período del año anterior
                 query_anterior = Pedido.query.filter_by(
                     usuario_id=usuario.id,
-                    estado=EstadoEnum.ACTIVO.value,
                     estado_pedido=EstadoPedido.COMPLETADO.value
                 )
 
@@ -677,8 +694,7 @@ def categorias_compras(usuario):
         
         # Construir la consulta base
         query = Pedido.query.filter_by(
-            usuario_id=usuario.id,
-            estado=EstadoEnum.ACTIVO.value
+            usuario_id=usuario.id
         )
         
         # Aplicar filtro por estado de pedido

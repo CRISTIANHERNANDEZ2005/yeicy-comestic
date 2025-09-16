@@ -23,7 +23,7 @@ def index():
     categorias = CategoriasPrincipales.query\
         .filter(CategoriasPrincipales.estado == 'activo')\
         .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(7)\
+        .limit(5)\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
@@ -86,6 +86,7 @@ def index():
         cart_items=cart_items,
         total_price=total_price,
         categoria_actual=categoria_actual_nombre,
+        categoria_maquillaje=categoria_maquillaje,
         title="YE & Ci Cosméticos"
     )
 
@@ -97,9 +98,9 @@ def productos_page():
     """
     # Obtener las 7 categorías más antiguas y activas para el navbar
     categorias_para_navbar = CategoriasPrincipales.query \
-        .filter(CategoriasPrincipales.estado == 'activo') \
+        .filter(CategoriasPrincipales.estado == 'activo')\
         .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(7)\
+        .limit(5)\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
@@ -122,7 +123,7 @@ def productos_page():
 
     return render_template(
         'cliente/componentes/todos_productos.html',
-        categorias=[categoria_principal_to_dict(c) for c in categorias_para_navbar], # Serializar para JSON
+        categorias=categorias_para_navbar,
         subcategorias=subcategorias,
         seudocategorias=seudocategorias
     )
@@ -178,15 +179,13 @@ def productos_por_categoria(slug_categoria):
     categorias_obj_all = CategoriasPrincipales.query \
         .filter(CategoriasPrincipales.estado == 'activo') \
         .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(7)\
+        .limit(5)\
         .options(
             joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
             .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
         )\
         .all()
 
-    # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
-    categorias = [categoria_principal_to_dict(c) for c in categorias_obj_all]
     subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
     seudocategorias = []
     for s in seudocategorias_obj:
@@ -200,7 +199,7 @@ def productos_por_categoria(slug_categoria):
         categoria_principal=categoria_principal_to_dict(categoria_principal),
         productos=productos,
         productos_data=productos_data,
-        categorias=categorias, # Ahora está vacío, ya que no se necesita el filtro de categoría
+        categorias=categorias_obj_all,
         subcategorias=subcategorias, # Ahora solo incluye las de esta categoría principal
         seudocategorias=seudocategorias, # Ahora solo incluye las de esta categoría principal
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
@@ -233,6 +232,17 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         CategoriasPrincipales.estado == 'activo' # Add this filter
     ).first_or_404()
     
+    # Obtener las 5 categorías más antiguas y activas para el navbar/footer
+    categorias_para_navbar = CategoriasPrincipales.query \
+        .filter(CategoriasPrincipales.estado == 'activo') \
+        .order_by(CategoriasPrincipales.created_at.asc())\
+        .limit(5)\
+        .options(
+            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
+            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
+        )\
+        .all()
+
     # Verificar si el producto está activo
     if producto.estado != 'activo':
         from flask import abort
@@ -304,6 +314,7 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
     return render_template(
         'cliente/componentes/producto_detalle.html',
         producto=producto,
+        categorias=categorias_para_navbar,
         productos_relacionados=productos_relacionados_data,
         reseñas=reseñas,
         calificacion_promedio=calificacion_promedio,
@@ -577,4 +588,3 @@ def get_price_range():
         'min_price': min_price if min_price is not None else 0,
         'max_price': max_price if max_price is not None else 0
     })
-

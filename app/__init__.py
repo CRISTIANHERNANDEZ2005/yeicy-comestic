@@ -11,7 +11,7 @@ from app.utils.jwt_utils import jwt_required
 from app.utils.admin_jwt_utils import decode_admin_jwt_token
 from datetime import datetime
 import pytz
-from sqlalchemy import func
+from sqlalchemy import func, not_, and_
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -112,14 +112,24 @@ def create_app(config_class=Config):
     @app.route('/perfil')
     @jwt_required
     def root_perfil(usuario):
+        # Contar todos los pedidos excepto aquellos 'en proceso' que están 'inactivos'.
+        # Esto incluye:
+        # - Pedidos 'en proceso' y 'activos'.
+        # - Todos los pedidos 'completados' (activos e inactivos).
+        # - Todos los pedidos 'cancelados' (activos e inactivos).
         pedidos_realizados = Pedido.query.filter(
             Pedido.usuario_id == usuario.id,
-            Pedido.estado == EstadoEnum.ACTIVO.value
+            not_(
+                and_(
+                    Pedido.estado_pedido == EstadoPedido.EN_PROCESO.value,
+                    Pedido.estado == 'inactivo'
+                )
+            )
         ).count()
 
+        # El total de compras debe sumar todos los pedidos 'completados', sin importar si están activos o inactivos.
         total_compras_valor = db.session.query(func.sum(Pedido.total)).filter(
             Pedido.usuario_id == usuario.id,
-            Pedido.estado == EstadoEnum.ACTIVO.value,
             Pedido.estado_pedido == EstadoPedido.COMPLETADO.value
         ).scalar() or 0
 

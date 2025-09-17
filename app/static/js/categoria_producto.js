@@ -629,12 +629,15 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       case 'min_price':
         currentFilters.min_price = '';
+        minPriceInput.value = '';
         break;
       case 'max_price':
         currentFilters.max_price = '';
+        maxPriceInput.value = '';
         break;
     }
     
+    updatePriceLabels();
     applyFilters();
   }
 

@@ -1,8 +1,16 @@
 document.addEventListener("DOMContentLoaded", function () {
-  const allCategorias = window.appData.categorias;
-  const allSubcategorias = window.appData.subcategorias;
-  const allSeudocategorias = window.appData.seudocategorias;
-  const allMarcas = window.appData.marcas;
+  // Estado inicial de los filtros
+  let currentFilters = {
+    categoria_principal: 'all',
+    subcategoria: 'all',
+    pseudocategoria: 'all',
+    marca: 'all',
+    min_price: '',
+    max_price: '',
+    ordenar_por: 'newest'
+  };
+
+  // Elementos del DOM
   const productGrid = document.getElementById("product-grid");
   const productGridLoader = document.getElementById("product-grid-loader");
   const productListingContainer = document.getElementById("product-listing-container");
@@ -12,30 +20,39 @@ document.addEventListener("DOMContentLoaded", function () {
   const breadcrumbs = document.getElementById("breadcrumbs");
   const productCount = document.getElementById("product-count");
   const totalProductCount = document.getElementById("total-product-count");
+  
+  // Filtros
   const categoryFilters = document.getElementById("category-filters-content");
   const subcategoryFilters = document.getElementById("subcategory-filters-content");
   const pseudocategoryFilters = document.getElementById("pseudocategory-filters-content");
   const brandFilters = document.getElementById("brand-filters-content");
+  const sortSelect = document.getElementById("sort-select");
+  const minPriceInput = document.getElementById("min-price");
+  const maxPriceInput = document.getElementById("max-price");
+  const minPriceLabel = document.getElementById("min-price-label");
+  const maxPriceLabel = document.getElementById("max-price-label");
+  
+  // Botones
   const clearFiltersBtn = document.getElementById("clear-filters");
   const resetFiltersBtn = document.getElementById("reset-filters");
-
-  // Elementos del drawer de filtros unificado
+  const loadMoreBtn = document.getElementById("load-more-btn");
+  const showLessBtn = document.getElementById("show-less-btn");
+  
+  // Drawer
   const filterDrawer = document.getElementById("filter-drawer");
   const filterBtn = document.getElementById("filter-btn");
   const closeFilterBtn = document.getElementById("close-filter-btn");
   const applyFiltersBtn = document.getElementById("apply-filters");
   const filterModalOverlay = document.getElementById("filter-modal-overlay");
 
-  const sortSelect = document.getElementById("sort-select");
-  const minPriceInput = document.getElementById("min-price");
-  const maxPriceInput = document.getElementById("max-price");
-  const minPriceLabel = document.getElementById("min-price-label");
-  const maxPriceLabel = document.getElementById("max-price-label");
+  // Contenedor de etiquetas de filtros aplicados
+  const appliedFiltersContainer = document.getElementById("applied-filters");
 
   let allProducts = [];
   const productsPerPage = 12;
   let currentDisplayedProducts = 0;
   let isFetching = false;
+  let isUpdatingFilters = false; // Bandera para evitar actualizaciones simultáneas
 
   // Toggle para los filtros del drawer
   document.querySelectorAll(".filter-toggle").forEach((header) => {
@@ -56,8 +73,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   });
 
-  const loadMoreBtn = document.getElementById("load-more-btn");
-  const showLessBtn = document.getElementById("show-less-btn");
+  // Inicialización
+  async function init() {
+    setupEventListeners();
+    
+    // Cargar datos iniciales
+    await updateAllFilters();
+    await fetchProductsWithFilters();
+    await fetchAndSetPriceRange();
+  }
 
   // Función para abrir/cerrar el drawer de filtros
   function toggleFilterDrawer(forceOpen = null) {
@@ -66,17 +90,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (shouldOpen) {
       // --- Secuencia de Apertura Profesional ---
-      // 1. Hacer visible el overlay
       filterModalOverlay.classList.remove("hidden");
-
-      // 2. Si es la primera vez, quitar 'hidden' para que el elemento exista en el layout
       if (filterDrawer.classList.contains("hidden")) {
         filterDrawer.classList.remove("hidden");
-        // 3. Forzar un reflow. Es un truco necesario para que la transición se aplique correctamente en la primera apertura.
         void filterDrawer.offsetWidth;
       }
-
-      // 4. Añadir la clase 'open' para iniciar la animación de entrada
       filterDrawer.classList.add("open");
       syncFiltersWithCurrentValues();
     } else {
@@ -89,28 +107,24 @@ document.addEventListener("DOMContentLoaded", function () {
   // Sincronizar los filtros del drawer con los valores actuales
   function syncFiltersWithCurrentValues() {
     // Sincronizar categorías
-    const selectedCategory = categoryFilters.querySelector('input[name="category"]:checked')?.value || "all";
-    const categoryInput = filterDrawer.querySelector(`input[name="category"][value="${selectedCategory}"]`);
+    const categoryInput = filterDrawer.querySelector(`input[name="category"][value="${currentFilters.categoria_principal}"]`);
     if (categoryInput) categoryInput.checked = true;
     
     // Sincronizar subcategorías
-    const selectedSubcategory = subcategoryFilters.querySelector('input[name="subcategory"]:checked')?.value || "all";
-    const subcategoryInput = filterDrawer.querySelector(`input[name="subcategory"][value="${selectedSubcategory}"]`);
+    const subcategoryInput = filterDrawer.querySelector(`input[name="subcategory"][value="${currentFilters.subcategoria}"]`);
     if (subcategoryInput) subcategoryInput.checked = true;
     
     // Sincronizar pseudocategorías
-    const selectedPseudocategory = pseudocategoryFilters.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
-    const pseudocategoryInput = filterDrawer.querySelector(`input[name="pseudocategory"][value="${selectedPseudocategory}"]`);
+    const pseudocategoryInput = filterDrawer.querySelector(`input[name="pseudocategory"][value="${currentFilters.pseudocategoria}"]`);
     if (pseudocategoryInput) pseudocategoryInput.checked = true;
 
     // Sincronizar marcas
-    const selectedBrand = brandFilters.querySelector('input[name="brand"]:checked')?.value || "all";
-    const brandInput = filterDrawer.querySelector(`input[name="brand"][value="${selectedBrand}"]`);
+    const brandInput = filterDrawer.querySelector(`input[name="brand"][value="${currentFilters.marca}"]`);
     if (brandInput) brandInput.checked = true;
     
     // Sincronizar precios
-    minPriceInput.value = minPriceInput.value || '';
-    maxPriceInput.value = maxPriceInput.value || '';
+    minPriceInput.value = currentFilters.min_price || '';
+    maxPriceInput.value = currentFilters.max_price || '';
     
     // Actualizar etiquetas de precio
     updatePriceLabels();
@@ -122,217 +136,201 @@ document.addEventListener("DOMContentLoaded", function () {
     maxPriceLabel.textContent = maxPriceInput.value ? `$${maxPriceInput.value}` : '$0';
   }
 
-  // Event listeners para el drawer de filtros
-  if (filterBtn) {
-    filterBtn.addEventListener("click", () => toggleFilterDrawer(true));
-  }
-  if (closeFilterBtn) {
-    closeFilterBtn.addEventListener("click", () => toggleFilterDrawer(false));
-  }
-  if (filterModalOverlay) {
-    filterModalOverlay.addEventListener("click", () => toggleFilterDrawer(false));
-  }
-
-  // Prevenir clicks dentro del drawer de cerrarlo
-  if (filterDrawer) {
-    filterDrawer.addEventListener("click", function (event) {
-      event.stopPropagation();
-    });
-  }
-
-  // Event listener para aplicar filtros desde el drawer
-  if (applyFiltersBtn) {
-    applyFiltersBtn.addEventListener("click", () => {
-      // Obtener valores seleccionados en el drawer
-      const selectedCategory = filterDrawer.querySelector('input[name="category"]:checked')?.value || "all";
-      const selectedSubcategory = filterDrawer.querySelector('input[name="subcategory"]:checked')?.value || "all";
-      const selectedPseudocategory = filterDrawer.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
-      const selectedBrand = filterDrawer.querySelector('input[name="brand"]:checked')?.value || "all";
-      
-      // Actualizar los filtros principales
-      categoryFilters.querySelector(`input[value="${selectedCategory}"]`)?.click();
-      subcategoryFilters.querySelector(`input[value="${selectedSubcategory}"]`)?.click();
-      pseudocategoryFilters.querySelector(`input[value="${selectedPseudocategory}"]`)?.click();
-      brandFilters.querySelector(`input[value="${selectedBrand}"]`)?.click();
-      
-      // Cerrar el drawer
-      toggleFilterDrawer(false);
-    });
-  }
-
-  // Event listener para restablecer filtros desde el drawer
-  if (resetFiltersBtn) {
-    resetFiltersBtn.addEventListener("click", () => {
-      // Restablecer todos los filtros en el drawer
-      filterDrawer.querySelector('input[name="category"][value="all"]')?.click();
-      filterDrawer.querySelector('input[name="subcategory"][value="all"]')?.click();
-      filterDrawer.querySelector('input[name="pseudocategory"][value="all"]')?.click();
-      filterDrawer.querySelector('input[name="brand"][value="all"]')?.click();
-      minPriceInput.value = '';
-      maxPriceInput.value = '';
-      updatePriceLabels();
-      
-      // Aplicar los cambios
-      applyFiltersBtn.click();
-    });
-  }
-
-  // Event listeners para los inputs de precio
-  if (minPriceInput) {
-    minPriceInput.addEventListener("input", () => {
-      updatePriceLabels();
-      // Aplicar filtros automáticamente al cambiar el precio
-      if (!isFetching) {
-        fetchProductsWithFilters();
-      }
-    });
-  }
-  
-  if (maxPriceInput) {
-    maxPriceInput.addEventListener("input", () => {
-      updatePriceLabels();
-      // Aplicar filtros automáticamente al cambiar el precio
-      if (!isFetching) {
-        fetchProductsWithFilters();
-      }
-    });
-  }
-
-  function showLoader() {
-    productListingContainer.classList.remove("hidden");
-    productGrid.style.display = "none";
-    noResultsMessage.classList.add("hidden");
-    productGridLoader.style.display = "grid";
+  // Función para actualizar todos los filtros (categorías, subcategorías, etc.)
+  async function updateAllFilters() {
+    if (isUpdatingFilters) return;
+    isUpdatingFilters = true;
     
-    if (loadMoreBtn) loadMoreBtn.style.display = "none";
-    if (showLessBtn) showLessBtn.style.display = "none";
+    try {
+      await Promise.all([
+        updateCategoryFilters(),
+        updateSubcategoryFilters(),
+        updatePseudocategoryFilters(),
+        updateBrandFilters()
+      ]);
+      updateAppliedFiltersTags();
+    } catch (error) {
+      console.error('Error al actualizar filtros:', error);
+    } finally {
+      isUpdatingFilters = false;
+    }
   }
 
-  function hideLoader() {
-    productGridLoader.style.display = "none";
+  // Función para crear una opción de filtro (radio button)
+  function createFilterOption(name, value, label, checked, isFirst = false) {
+    const labelClass = isFirst ? 'font-medium' : '';
+    return `
+      <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+        <input
+          type="radio"
+          name="${name}"
+          value="${value}"
+          class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
+          ${checked ? 'checked' : ''}
+        />
+        <span class="ml-3 text-gray-700 ${labelClass}">${label}</span>
+      </label>
+    `;
   }
 
-  function renderProducts(productsToRender, animate = false) {
-    productGrid.innerHTML = "";
-    productListingContainer.classList.remove("hidden");
-    noResultsMessage.classList.add("hidden");
-    productGrid.style.display = "grid";
+  // Función genérica para actualizar un tipo de filtro
+  async function updateFilterGroup(endpoint, container, filterKey, allLabel) {
+    try {
+      const params = new URLSearchParams();
+      if (currentFilters.categoria_principal && currentFilters.categoria_principal !== 'all') params.append('categoria_principal', currentFilters.categoria_principal);
+      if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') params.append('subcategoria', currentFilters.subcategoria);
+      if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
+      if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
 
-    productsToRender.forEach((product, index) => {
-      const productCard = renderProductCard(product);
-        if (animate) {
-            productCard.classList.add("card-enter");
-            productCard.style.animationDelay = `${index * 50}ms`;
-        }
-        productGrid.appendChild(productCard);
+      const response = await fetch(`${endpoint}?${params.toString()}`);
+      if (!response.ok) throw new Error(`Error ${response.status}`);
+      
+      const items = await response.json();
+      
+      container.innerHTML = createFilterOption(filterKey, 'all', allLabel, currentFilters[filterKey] === 'all', true);
+
+      items.forEach(item => {
+        const name = typeof item === 'string' ? item : item.nombre;
+        container.innerHTML += createFilterOption(filterKey, name, name, currentFilters[filterKey] === name);
       });
 
-    currentDisplayedProducts = productGrid.children.length;
-    productCount.textContent = currentDisplayedProducts;
-    totalProductCount.textContent = allProducts.length;
+      // Re-attach event listeners
+      container.querySelectorAll(`input[name="${filterKey}"]`).forEach(input => {
+        input.addEventListener('change', (e) => {
+          currentFilters[filterKey] = e.target.value;
+          // Si se cambia una categoría superior, resetear las inferiores
+          if (filterKey === 'categoria_principal') {
+            currentFilters.subcategoria = 'all';
+            currentFilters.pseudocategoria = 'all';
+          }
+          if (filterKey === 'subcategoria') {
+            currentFilters.pseudocategoria = 'all';
+          }
+          applyFilters();
+        });
+      });
 
-    if (currentDisplayedProducts < allProducts.length) {
-      loadMoreBtn.style.display = "block";
-    } else {
-      loadMoreBtn.style.display = "none";
-    }
-
-    if (currentDisplayedProducts > productsPerPage) {
-      showLessBtn.style.display = "block";
-    } else {
-      showLessBtn.style.display = "none";
+    } catch (error) {
+      console.error(`Error al actualizar ${filterKey}:`, error);
+      // Fallback: mostrar solo la opción "Todos"
+      container.innerHTML = createFilterOption(filterKey, 'all', allLabel, true, true);
     }
   }
 
+  // Funciones específicas para cada filtro
+  function updateCategoryFilters() {
+    return updateFilterGroup('/api/filtros/categorias', categoryFilters, 'categoria_principal', 'Todas las categorías');
+  }
 
   // Función para popular los filtros de subcategoría
-  function updateSubcategoryFilters(selectedCategoryName) {
-    const targetElement = subcategoryFilters;
-    targetElement.innerHTML = "";
-
-    const allOptionHtml = `
-        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-          <input
-            type="radio"
-            name="subcategory"
-            value="all"
-            class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-            checked
-          />
-          <span class="ml-3 text-gray-700 font-medium">Todas las subcategorías</span>
-        </label>
-      `;
-    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-
-    if (selectedCategoryName !== "all") {
-      const categoryId = allCategorias.find(
-        (cat) => cat.nombre === selectedCategoryName
-      )?.id;
-      if (categoryId) {
-        const filteredSubcategories = allSubcategorias.filter(
-          (sub) => sub.categoria_principal_id === categoryId
-        );
-        filteredSubcategories.forEach((sub) => {
-          const subcategoryHtml = `
-              <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-                <input
-                  type="radio"
-                  name="subcategory"
-                  value="${sub.nombre}"
-                  class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-                />
-                <span class="ml-3 text-gray-700">${sub.nombre}</span>
-              </label>
-            `;
-          targetElement.insertAdjacentHTML("beforeend", subcategoryHtml);
-        });
-      }
-    }
+  function updateSubcategoryFilters() {
+    return updateFilterGroup('/api/filtros/subcategorias', subcategoryFilters, 'subcategoria', 'Todas las subcategorías');
   }
 
   // Función para popular los filtros de pseudocategoría
-  function updatePseudocategoryFilters(selectedSubcategoryName) {
-    const targetElement = pseudocategoryFilters;
-    targetElement.innerHTML = "";
+  function updatePseudocategoryFilters() {
+    return updateFilterGroup('/api/filtros/seudocategorias', pseudocategoryFilters, 'pseudocategoria', 'Todas las pseudocategorías');
+  }
 
-    const allOptionHtml = `
-        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-          <input
-            type="radio"
-            name="pseudocategory"
-            value="all"
-            class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-            checked
-          />
-          <span class="ml-3 text-gray-700 font-medium">Todas las pseudocategorías</span>
-        </label>
+  // Función para actualizar las opciones de marcas
+  function updateBrandFilters() {
+    return updateFilterGroup('/api/filtros/marcas', brandFilters, 'marca', 'Todas las marcas');
+  }
+
+  // Función para actualizar las etiquetas de filtros aplicados
+  function updateAppliedFiltersTags() {
+    if (!appliedFiltersContainer) return;
+    
+    appliedFiltersContainer.innerHTML = '';
+    
+    const createFilterTag = (key, value, displayValue) => {
+      if (value === 'all' || value === '') return null;
+      
+      const tag = document.createElement('div');
+      tag.className = 'inline-flex items-center bg-pink-100 text-pink-800 rounded-full px-3 py-1 text-sm font-medium mr-2 mb-2';
+      tag.innerHTML = `
+        ${displayValue}
+        <button class="ml-2 text-pink-600 hover:text-pink-900 focus:outline-none" data-filter="${key}">
+          <i class="fas fa-times"></i>
+        </button>
       `;
-    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
+      
+      tag.querySelector('button').addEventListener('click', () => removeFilter(key));
+      return tag;
+    };
+    
+    const tags = [
+      createFilterTag('categoria_principal', currentFilters.categoria_principal, currentFilters.categoria_principal),
+      createFilterTag('subcategoria', currentFilters.subcategoria, currentFilters.subcategoria),
+      createFilterTag('pseudocategoria', currentFilters.pseudocategoria, currentFilters.pseudocategoria),
+      createFilterTag('marca', currentFilters.marca, currentFilters.marca),
+      createFilterTag('min_price', currentFilters.min_price, `Min: $${currentFilters.min_price}`),
+      createFilterTag('max_price', currentFilters.max_price, `Max: $${currentFilters.max_price}`)
+    ].filter(Boolean); // filter(Boolean) elimina los nulos
+    
+    tags.forEach(tag => appliedFiltersContainer.appendChild(tag));
+    
+    appliedFiltersContainer.classList.toggle('hidden', tags.length === 0);
+  }
 
-    if (selectedSubcategoryName !== "all") {
-      const subcategoryId = allSubcategorias.find(
-        (sub) => sub.nombre === selectedSubcategoryName
-      )?.id;
-      if (subcategoryId) {
-        const filteredPseudocategorias = allSeudocategorias.filter(
-          (pseudo) => pseudo.subcategoria_id == subcategoryId
-        );
-        filteredPseudocategorias.forEach((pseudo) => {
-          const pseudocategoryHtml = `
-              <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-                <input
-                  type="radio"
-                  name="pseudocategory"
-                  value="${pseudo.nombre}"
-                  class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-                />
-                <span class="ml-3 text-gray-700">${pseudo.nombre}</span>
-              </label>
-            `;
-          targetElement.insertAdjacentHTML("beforeend", pseudocategoryHtml);
-        });
-      }
+  // Función para quitar un filtro específico
+  function removeFilter(filterKey) {
+    switch (filterKey) {
+      case 'categoria_principal':
+        currentFilters.categoria_principal = 'all';
+        currentFilters.subcategoria = 'all';
+        currentFilters.pseudocategoria = 'all';
+        break;
+      case 'subcategoria':
+        currentFilters.subcategoria = 'all';
+        currentFilters.pseudocategoria = 'all';
+        break;
+      case 'pseudocategoria':
+        currentFilters.pseudocategoria = 'all';
+        break;
+      case 'marca':
+        currentFilters.marca = 'all';
+        break;
+      case 'min_price':
+        currentFilters.min_price = '';
+        minPriceInput.value = '';
+        break;
+      case 'max_price':
+        currentFilters.max_price = '';
+        maxPriceInput.value = '';
+        break;
     }
+    updatePriceLabels();
+    applyFilters();
+  }
+
+  // Función para aplicar los filtros
+  async function applyFilters() {
+    currentFilters.min_price = minPriceInput.value;
+    currentFilters.max_price = maxPriceInput.value;
+    
+    await updateAllFilters();
+    await fetchProductsWithFilters();
+  }
+
+  // Función para restablecer todos los filtros
+  function resetAllFilters() {
+    currentFilters = {
+      categoria_principal: 'all',
+      subcategoria: 'all',
+      pseudocategoria: 'all',
+      marca: 'all',
+      min_price: '',
+      max_price: '',
+      ordenar_por: 'newest'
+    };
+    
+    minPriceInput.value = '';
+    maxPriceInput.value = '';
+    updatePriceLabels();
+    sortSelect.value = 'newest';
+    
+    applyFilters();
   }
 
   // Función para cargar productos con filtros
@@ -343,39 +341,15 @@ document.addEventListener("DOMContentLoaded", function () {
     showLoader();
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const selectedCategory = categoryFilters.querySelector('input[name="category"]:checked')?.value || "all";
-    const selectedSubcategory = subcategoryFilters.querySelector('input[name="subcategory"]:checked')?.value || "all";
-    const selectedPseudocategory = pseudocategoryFilters.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
-    const selectedBrand = brandFilters.querySelector('input[name="brand"]:checked')?.value || "all";
-    const selectedSort = sortSelect.value;
-
     const params = new URLSearchParams();
-    if (selectedCategory && selectedCategory !== "all") {
-      params.append("categoria_principal", selectedCategory);
-    }
-    if (selectedSubcategory && selectedSubcategory !== "all") {
-      params.append("subcategoria", selectedSubcategory);
-    }
-    if (selectedPseudocategory && selectedPseudocategory !== "all") {
-      params.append("seudocategoria", selectedPseudocategory);
-    }
-    if (selectedBrand && selectedBrand !== "all") {
-      params.append("marca", selectedBrand);
-    }
-    if (selectedSort && selectedSort !== "newest") {
-      params.append("ordenar_por", selectedSort);
-    }
-
-    // Add price filters
-    const minPrice = minPriceInput.value;
-    const maxPrice = maxPriceInput.value;
-
-    if (minPrice) {
-      params.append("min_price", minPrice);
-    }
-    if (maxPrice) {
-      params.append("max_price", maxPrice);
-    }
+    
+    // Agregar todos los filtros actuales
+    currentFilters.ordenar_por = sortSelect.value;
+    Object.keys(currentFilters).forEach(key => {
+      if (currentFilters[key] !== 'all' && currentFilters[key] !== '') {
+        params.append(key, currentFilters[key]);
+      }
+    });
 
     const url = `/api/productos/filtrar?${params.toString()}`;
 
@@ -390,17 +364,10 @@ document.addEventListener("DOMContentLoaded", function () {
       hideLoader();
 
       if (products.length === 0) {
-        displayDynamicNoResultsMessage({
-          category: selectedCategory,
-          subcategory: selectedSubcategory,
-          pseudocategory: selectedPseudocategory,
-          brand: selectedBrand,
-          minPrice: minPrice,
-          maxPrice: maxPrice
-        });
+        displayDynamicNoResultsMessage();
       } else {
         renderProducts(allProducts.slice(0, productsPerPage), true);
-        updateCategoryInfo(selectedCategory, selectedSubcategory, selectedPseudocategory);
+        updateCategoryInfo();
       }
     } catch (error) {
       console.error(error);
@@ -412,11 +379,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Event listener for sort select
-  if (sortSelect) {
-    sortSelect.addEventListener("change", fetchProductsWithFilters);
-  }
-
   function displayDynamicNoResultsMessage(filters) {
     const titleEl = document.getElementById('no-results-title');
     const suggestionEl = document.getElementById('no-results-suggestion');
@@ -425,17 +387,17 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!titleEl || !suggestionEl || !clearBtn) return;
 
     const activeFilters = [];
-    if (filters.brand && filters.brand !== 'all') activeFilters.push(`de la marca <strong>"${filters.brand}"</strong>`);
-    if (filters.pseudocategory && filters.pseudocategory !== 'all') activeFilters.push(`en <strong>"${filters.pseudocategory}"</strong>`);
-    else if (filters.subcategory && filters.subcategory !== 'all') activeFilters.push(`en la subcategoría <strong>"${filters.subcategory}"</strong>`);
-    else if (filters.category && filters.category !== 'all') activeFilters.push(`en la categoría <strong>"${filters.category}"</strong>`);
+    if (currentFilters.marca && currentFilters.marca !== 'all') activeFilters.push(`de la marca <strong>"${currentFilters.marca}"</strong>`);
+    if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') activeFilters.push(`en <strong>"${currentFilters.pseudocategoria}"</strong>`);
+    else if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') activeFilters.push(`en la subcategoría <strong>"${currentFilters.subcategoria}"</strong>`);
+    else if (currentFilters.categoria_principal && currentFilters.categoria_principal !== 'all') activeFilters.push(`en la categoría <strong>"${currentFilters.categoria_principal}"</strong>`);
 
-    if (filters.minPrice && filters.maxPrice) {
-        activeFilters.push(`con precios entre <strong>$${filters.minPrice}</strong> y <strong>$${filters.maxPrice}</strong>`);
-    } else if (filters.minPrice) {
-        activeFilters.push(`con precio mayor a <strong>$${filters.minPrice}</strong>`);
-    } else if (filters.maxPrice) {
-        activeFilters.push(`con precio menor a <strong>$${filters.maxPrice}</strong>`);
+    if (currentFilters.min_price && currentFilters.max_price) {
+        activeFilters.push(`con precios entre <strong>$${currentFilters.min_price}</strong> y <strong>$${currentFilters.max_price}</strong>`);
+    } else if (currentFilters.min_price) {
+        activeFilters.push(`con precio mayor a <strong>$${currentFilters.min_price}</strong>`);
+    } else if (currentFilters.max_price) {
+        activeFilters.push(`con precio menor a <strong>$${currentFilters.max_price}</strong>`);
     }
 
     if (activeFilters.length > 0) {
@@ -456,7 +418,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   // Función para actualizar el título y breadcrumbs
-  function updateCategoryInfo(category, subcategory, pseudocategory) {
+  function updateCategoryInfo() {
     let title = "Todos los Productos";
     let description = "Descubre nuestra exclusiva selección de productos de alta calidad";
     let breadcrumbsHtml = `
@@ -467,10 +429,10 @@ document.addEventListener("DOMContentLoaded", function () {
       <span class="text-gray-700 font-medium">Productos</span>
     `;
 
-    if (category && category !== "all") {
-      const categoryObj = allCategorias.find(c => c.nombre === category);
-      title = category;
-      description = categoryObj?.descripcion || `Explora nuestros productos en la categoría ${category}.`;
+    if (currentFilters.categoria_principal && currentFilters.categoria_principal !== "all") {
+      const categoryName = currentFilters.categoria_principal;
+      title = categoryName;
+      description = `Explora nuestros productos en la categoría ${categoryName}.`;
       breadcrumbsHtml = `
         <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
           <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
@@ -478,27 +440,25 @@ document.addEventListener("DOMContentLoaded", function () {
         <span class="text-gray-300">/</span>
         <a href="/productos" class="text-pink-600 hover:text-pink-800 transition-colors">Productos</a>
         <span class="text-gray-300">/</span>
-        <span class="text-gray-700 font-medium">${category}</span>
+        <span class="text-gray-700 font-medium">${categoryName}</span>
       `;
     }
 
-    if (subcategory && subcategory !== "all") {
-      const subcategoryObj = allSubcategorias.find(s => s.nombre === subcategory);
-      title = subcategory;
-      description = subcategoryObj?.descripcion || `Descubre la variedad en la subcategoría ${subcategory}.`;
+    if (currentFilters.subcategoria && currentFilters.subcategoria !== "all") {
+      title = currentFilters.subcategoria;
+      description = `Descubre la variedad en la subcategoría ${currentFilters.subcategoria}.`;
       breadcrumbsHtml += `
         <span class="text-gray-300">/</span>
-        <span class="text-gray-700 font-medium">${subcategory}</span>
+        <span class="text-gray-700 font-medium">${currentFilters.subcategoria}</span>
       `;
     }
 
-    if (pseudocategory && pseudocategory !== "all") {
-      const pseudocategoryObj = allSeudocategorias.find(p => p.nombre === pseudocategory);
-      title = pseudocategory;
-      description = pseudocategoryObj?.descripcion || `Encuentra lo mejor en ${pseudocategory}.`;
+    if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== "all") {
+      title = currentFilters.pseudocategoria;
+      description = `Encuentra lo mejor en ${currentFilters.pseudocategoria}.`;
       breadcrumbsHtml += `
         <span class="text-gray-300">/</span>
-        <span class="text-gray-700 font-medium">${pseudocategory}</span>
+        <span class="text-gray-700 font-medium">${currentFilters.pseudocategoria}</span>
       `;
     }
 
@@ -507,71 +467,113 @@ document.addEventListener("DOMContentLoaded", function () {
     breadcrumbs.innerHTML = breadcrumbsHtml;
   }
 
-  // Event listener para los filtros de escritorio
-  if (categoryFilters) {
-    categoryFilters.addEventListener("change", (event) => {
-      const selectedCategory = event.target.value;
-      updateSubcategoryFilters(selectedCategory);
-      updatePseudocategoryFilters("all");
-      fetchProductsWithFilters();
-    });
-  }
+  function setupEventListeners() {
+    // Drawer
+    if (filterBtn) filterBtn.addEventListener("click", () => toggleFilterDrawer(true));
+    if (closeFilterBtn) closeFilterBtn.addEventListener("click", () => toggleFilterDrawer(false));
+    if (filterModalOverlay) filterModalOverlay.addEventListener("click", () => toggleFilterDrawer(false));
+    if (filterDrawer) filterDrawer.addEventListener("click", (event) => event.stopPropagation());
 
-  if (subcategoryFilters) {
-    subcategoryFilters.addEventListener("change", (event) => {
-      const selectedSubcategory = event.target.value;
-      updatePseudocategoryFilters(selectedSubcategory);
-      fetchProductsWithFilters();
-    });
-  }
+    // Botones del Drawer
+    if (applyFiltersBtn) {
+      applyFiltersBtn.addEventListener("click", () => {
+        currentFilters.categoria_principal = filterDrawer.querySelector('input[name="category"]:checked')?.value || "all";
+        currentFilters.subcategoria = filterDrawer.querySelector('input[name="subcategory"]:checked')?.value || "all";
+        currentFilters.pseudocategoria = filterDrawer.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
+        currentFilters.marca = filterDrawer.querySelector('input[name="brand"]:checked')?.value || "all";
+        applyFilters();
+        toggleFilterDrawer(false);
+      });
+    }
 
-  if (pseudocategoryFilters) {
-    pseudocategoryFilters.addEventListener("change", fetchProductsWithFilters);
-  }
+    if (resetFiltersBtn) {
+      resetFiltersBtn.addEventListener("click", () => {
+        resetAllFilters();
+        toggleFilterDrawer(false);
+      });
+    }
 
-  if (brandFilters) {
-    brandFilters.addEventListener("change", fetchProductsWithFilters);
-  }
-
-  // Event listener para limpiar filtros
-  if (clearFiltersBtn) {
-    clearFiltersBtn.addEventListener("click", () => {
-      categoryFilters.querySelector('input[value="all"]').checked = true;
-      subcategoryFilters.querySelector('input[value="all"]').checked = true;
-      pseudocategoryFilters.querySelector('input[value="all"]').checked = true;
-      brandFilters.querySelector('input[value="all"]').checked = true;
-
-      // Also reset price inputs
-      if (minPriceInput) minPriceInput.value = '';
-      if (maxPriceInput) maxPriceInput.value = '';
+    // Inputs de precio
+    if (minPriceInput) minPriceInput.addEventListener("input", () => {
       updatePriceLabels();
-
-      // Also reset sort select to the new default
-      sortSelect.value = "newest";
-
-      // Update cascading filters after clearing
-      updateSubcategoryFilters("all");
-      updatePseudocategoryFilters("all");
-      fetchProductsWithFilters();
+      debounceFilterProducts();
     });
+    
+    if (maxPriceInput) maxPriceInput.addEventListener("input", () => {
+      updatePriceLabels();
+      debounceFilterProducts();
+    });
+
+    // Ordenamiento
+    if (sortSelect) {
+      sortSelect.addEventListener("change", () => {
+        currentFilters.ordenar_por = sortSelect.value;
+        fetchProductsWithFilters();
+      });
+    }
+
+    // Limpiar filtros
+    if (clearFiltersBtn) {
+      clearFiltersBtn.addEventListener("click", resetAllFilters);
+    }
+
+    // Paginación
+    if (loadMoreBtn) loadMoreBtn.addEventListener("click", loadMoreProducts);
+    if (showLessBtn) showLessBtn.addEventListener("click", showLessProducts);
+
+    // Limpiar búsqueda en "no resultados"
+    const clearSearchBtn = document.getElementById("clear-search-btn");
+    if (clearSearchBtn) {
+      clearSearchBtn.addEventListener("click", resetAllFilters);
+    }
   }
 
-  // Load More / Show Less functionality
-  if (loadMoreBtn) {
-    loadMoreBtn.addEventListener("click", () => {
-      const nextBatch = allProducts.slice(
-        currentDisplayedProducts,
-        currentDisplayedProducts + productsPerPage
-      );
-      renderProducts(nextBatch, false);
-    });
+  function showLoader() {
+    productListingContainer.classList.remove("hidden");
+    productGrid.style.display = "none";
+    noResultsMessage.classList.add("hidden");
+    productGridLoader.style.display = "grid";
+    if (loadMoreBtn) loadMoreBtn.style.display = "none";
+    if (showLessBtn) showLessBtn.style.display = "none";
   }
 
-  if (showLessBtn) {
-    showLessBtn.addEventListener("click", () => {
-      renderProducts(allProducts.slice(0, productsPerPage), true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
+  function hideLoader() {
+    productGridLoader.style.display = "none";
+  }
+
+  function renderProducts(productsToRender, isInitialRender = false) {
+    if (isInitialRender) {
+      productGrid.innerHTML = "";
+    }
+    productListingContainer.classList.remove("hidden");
+    noResultsMessage.classList.add("hidden");
+    productGrid.style.display = "grid";
+
+    productsToRender.forEach((product, index) => {
+      const productCard = renderProductCard(product);
+      if (isInitialRender) {
+        productCard.classList.add("card-enter");
+        productCard.style.animationDelay = `${index * 50}ms`;
+      }
+      productGrid.appendChild(productCard);
     });
+
+    currentDisplayedProducts = productGrid.children.length;
+    productCount.textContent = currentDisplayedProducts;
+    totalProductCount.textContent = allProducts.length;
+
+    loadMoreBtn.style.display = currentDisplayedProducts < allProducts.length ? "block" : "none";
+    showLessBtn.style.display = currentDisplayedProducts > productsPerPage ? "block" : "none";
+  }
+
+  function loadMoreProducts() {
+    const nextBatch = allProducts.slice(currentDisplayedProducts, currentDisplayedProducts + productsPerPage);
+    renderProducts(nextBatch, false);
+  }
+
+  function showLessProducts() {
+    renderProducts(allProducts.slice(0, productsPerPage), true);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   // Función para obtener y establecer el rango de precios
@@ -584,10 +586,10 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       
       if (minPriceInput) {
-        minPriceInput.value = data.min_price;
+        minPriceInput.value = data.min_price || 0;
       }
       if (maxPriceInput) {
-        maxPriceInput.value = data.max_price;
+        maxPriceInput.value = data.max_price || 1000;
       }
       updatePriceLabels();
     } catch (error) {
@@ -595,22 +597,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Función para debounce
+  let debounceTimeout;
+  function debounceFilterProducts() {
+    clearTimeout(debounceTimeout);
+    debounceTimeout = setTimeout(() => {
+      applyFilters();
+    }, 500);
+  }
+
   // Carga inicial
-  async function init() {
-    updateSubcategoryFilters("all");
-    updatePseudocategoryFilters("all");
-    await fetchAndSetPriceRange();
-    await fetchProductsWithFilters();
-  }
-
   init();
-
-  const clearSearchBtn = document.getElementById("clear-search-btn");
-  if (clearSearchBtn) {
-    clearSearchBtn.addEventListener("click", () => {
-      if (clearFiltersBtn) {
-        clearFiltersBtn.click();
-      }
-    });
-  }
 });

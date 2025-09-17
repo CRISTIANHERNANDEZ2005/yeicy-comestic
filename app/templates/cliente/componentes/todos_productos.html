@@ -82,6 +82,9 @@
     </div>
   </div>
 
+  <!-- Contenedor de filtros aplicados -->
+  <div id="applied-filters" class="mb-6 hidden"></div>
+
   <div class="flex flex-col md:flex-row gap-8">
     <!-- Contenido principal de productos mejorado -->
     <div class="flex-1">
@@ -546,6 +549,7 @@
   }
 
 </style>
+<script src="{{ url_for('static', filename='js/product_card.js') }}"></script>
 <script src="{{ url_for('static', filename='js/todos_productos.js') }}"></script>
 
 {% endblock %}

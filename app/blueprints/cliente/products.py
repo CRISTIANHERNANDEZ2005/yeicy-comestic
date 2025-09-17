@@ -196,6 +196,157 @@ def productos_por_categoria(slug_categoria):
         marcas=marcas,
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
     )
+@products_bp.route('/api/filtros/categorias')
+def get_categorias_filtradas():
+    """
+    Devuelve las categorías principales disponibles según los filtros aplicados.
+    """
+    try:
+        marca = request.args.get('marca')
+        subcategoria_nombre = request.args.get('subcategoria')
+        seudocategoria_nombre = request.args.get('seudocategoria')
+
+        query = db.session.query(CategoriasPrincipales).filter(CategoriasPrincipales.estado == 'activo').distinct()
+
+        # Unir tablas si algún filtro lo requiere
+        needs_join = (marca and marca != 'all') or \
+                     (subcategoria_nombre and subcategoria_nombre != 'all') or \
+                     (seudocategoria_nombre and seudocategoria_nombre != 'all')
+
+        if needs_join:
+            query = query.join(Subcategorias).join(Seudocategorias).join(Productos)
+
+        # Aplicar filtros
+        if marca and marca != 'all':
+            query = query.filter(Productos.marca == marca, Productos.estado == 'activo', Productos._existencia > 0)
+        if subcategoria_nombre and subcategoria_nombre != 'all':
+            query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
+        if seudocategoria_nombre and seudocategoria_nombre != 'all':
+            query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+
+        categorias = query.order_by(CategoriasPrincipales.nombre.asc()).all()
+        return jsonify([categoria_principal_to_dict(c) for c in categorias])
+    except Exception as e:
+        print(f"Error en get_categorias_filtradas: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@products_bp.route('/api/filtros/subcategorias')
+def get_subcategorias_filtradas():
+    """
+    Devuelve las subcategorías disponibles según los filtros aplicados.
+    """
+    try:
+        categoria_principal_nombre = request.args.get('categoria_principal')
+        marca = request.args.get('marca')
+        seudocategoria_nombre = request.args.get('seudocategoria')
+
+        query = db.session.query(Subcategorias).filter(Subcategorias.estado == 'activo').distinct()
+
+        # Determinar qué uniones son necesarias
+        needs_seudocategorias_join = (marca and marca != 'all') or (seudocategoria_nombre and seudocategoria_nombre != 'all')
+        needs_productos_join = (marca and marca != 'all')
+
+        if categoria_principal_nombre and categoria_principal_nombre != 'all':
+            query = query.join(CategoriasPrincipales)
+            query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
+
+        if needs_seudocategorias_join:
+            query = query.join(Seudocategorias, Subcategorias.id == Seudocategorias.subcategoria_id)
+
+        if needs_productos_join:
+            query = query.join(Productos, Seudocategorias.id == Productos.seudocategoria_id)
+
+        # Aplicar filtros que dependen de las uniones
+        if marca and marca != 'all':
+            query = query.filter(Productos.marca == marca, Productos.estado == 'activo', Productos._existencia > 0)
+
+        if seudocategoria_nombre and seudocategoria_nombre != 'all':
+            query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+
+        subcategorias = query.all()
+        return jsonify([subcategoria_to_dict(s) for s in subcategorias])
+    except Exception as e:
+        print(f"Error en get_subcategorias_filtradas: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
+@products_bp.route('/api/filtros/seudocategorias')
+def get_seudocategorias_filtradas():
+    """
+    Devuelve las seudocategorías disponibles según los filtros aplicados.
+    """
+    try:
+        categoria_principal_nombre = request.args.get('categoria_principal')
+        subcategoria_nombre = request.args.get('subcategoria')
+        marca = request.args.get('marca')
+
+        query = db.session.query(Seudocategorias).filter(Seudocategorias.estado == 'activo').distinct()
+
+        # Unir tablas si algún filtro lo requiere
+        if (categoria_principal_nombre and categoria_principal_nombre != 'all') or \
+           (subcategoria_nombre and subcategoria_nombre != 'all'):
+            query = query.join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)
+            query = query.join(CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id)
+
+        if marca and marca != 'all':
+            query = query.join(Productos, Seudocategorias.id == Productos.seudocategoria_id)
+
+        # Aplicar filtros
+        if categoria_principal_nombre and categoria_principal_nombre != 'all':
+            query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
+
+        if subcategoria_nombre and subcategoria_nombre != 'all':
+            query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
+
+        if marca and marca != 'all':
+            query = query.filter(Productos.marca == marca, Productos.estado == 'activo', Productos._existencia > 0)
+
+        seudocategorias = query.all()
+        return jsonify([seudocategoria_to_dict(s) for s in seudocategorias])
+    except Exception as e:
+        print(f"Error en get_seudocategorias_filtradas: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+@products_bp.route('/api/filtros/marcas')
+def get_marcas_filtradas():
+    """
+    Devuelve las marcas disponibles según los filtros aplicados.
+    """
+    try:
+        categoria_principal_nombre = request.args.get('categoria_principal')
+        subcategoria_nombre = request.args.get('subcategoria')
+        seudocategoria_nombre = request.args.get('seudocategoria')
+
+        query = db.session.query(Productos.marca).filter(
+            Productos.estado == 'activo',
+            Productos._existencia > 0,
+            Productos.marca.isnot(None),
+            Productos.marca != ''
+        ).distinct()
+
+        # Unir tablas si algún filtro de categoría está presente
+        if (categoria_principal_nombre and categoria_principal_nombre != 'all') or \
+           (subcategoria_nombre and subcategoria_nombre != 'all') or \
+           (seudocategoria_nombre and seudocategoria_nombre != 'all'):
+            query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)
+            query = query.join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)
+            query = query.join(CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id)
+
+        # Aplicar filtros
+        if categoria_principal_nombre and categoria_principal_nombre != 'all':
+            query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
+
+        if subcategoria_nombre and subcategoria_nombre != 'all':
+            query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
+
+        if seudocategoria_nombre and seudocategoria_nombre != 'all':
+            query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+
+        marcas = [row[0] for row in query.order_by(Productos.marca.asc()).all() if row[0]]
+        return jsonify(marcas)
+    except Exception as e:
+        print(f"Error en get_marcas_filtradas: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>/<slug_seudocategoria>/<slug_producto>')
 def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocategoria, slug_producto):
@@ -435,22 +586,19 @@ def _extraer_terminos_de_producto(product_id, query):
                 
     return terminos
 
-
 @products_bp.route('/api/productos/filtrar')
 def filter_products():
     """
-    Devuelve productos filtrados por categoría principal, subcategoría y/o pseudocategoría en formato JSON.
-    Mejorado para manejar mejor los filtros y optimizar consultas.
+    Devuelve productos filtrados por categoría principal, subcategoría, pseudocategoría, marca y/o rango de precios en formato JSON.
     """
     main_category_name = request.args.get('categoria_principal')
     subcategory_name = request.args.get('subcategoria')
-    pseudocategory_name = request.args.get('seudocategoria')
-    brand_name = request.args.get('marca')
-    sort_by = request.args.get('ordenar_por', 'newest')
+    pseudocategory_name = request.args.get('pseudocategoria')
+    marca = request.args.get('marca')
+    sort_by = request.args.get('ordenar_por', 'featured')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
-    
-    # Optimización: Crear una consulta base con joins necesarios
+
     query = db.session.query(Productos).select_from(Productos).join(
         Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == 'activo')
     ).join(
@@ -459,10 +607,10 @@ def filter_products():
         CategoriasPrincipales, and_(Subcategorias.categoria_principal_id == CategoriasPrincipales.id, CategoriasPrincipales.estado == 'activo')
     )
 
-    # Siempre filtrar por estado del producto y disponibilidad
-    query = query.filter(Productos.estado == 'activo', Productos._existencia > 0)
+    # Always filter by product status and availability
+    query = query.filter(Productos.estado == 'activo', Productos._existencia  > 0)
 
-    # Aplicar filtros basados en nombres proporcionados
+    # Apply filters based on provided names
     if main_category_name and main_category_name != 'all':
         query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
     
@@ -471,40 +619,38 @@ def filter_products():
 
     if pseudocategory_name and pseudocategory_name != 'all':
         query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
+    
+    if marca and marca != 'all':
+        query = query.filter(func.lower(Productos.marca) == func.lower(marca))
 
-    if brand_name and brand_name != 'all':
-        query = query.filter(func.lower(Productos.marca) == func.lower(brand_name))
-
-    # Aplicar filtros de precio con validación mejorada
-    try:
-        if min_price_str:
+    # Apply price filters
+    if min_price_str:
+        try:
             min_price = float(min_price_str)
-            if min_price >= 0:
-                query = query.filter(Productos.precio >= min_price)
-    except ValueError:
-        pass  # Ignorar valores de precio inválidos
+            query = query.filter(Productos.precio >= min_price)
+        except ValueError:
+            pass  # Ignore invalid price values
 
-    try:
-        if max_price_str:
+    if max_price_str:
+        try:
             max_price = float(max_price_str)
-            if max_price >= 0:
-                query = query.filter(Productos.precio <= max_price)
-    except ValueError:
-        pass  # Ignorar valores de precio inválidos
+            query = query.filter(Productos.precio <= max_price)
+        except ValueError:
+            pass  # Ignore invalid price values
 
-    # Aplicar ordenamiento con más opciones
+    # Apply sorting
     if sort_by == 'price_asc':
         query = query.order_by(Productos.precio.asc())
     elif sort_by == 'price_desc':
         query = query.order_by(Productos.precio.desc())
     elif sort_by == 'top_rated':
-        query = query.order_by(Productos.calificacion_promedio_almacenada.desc(), Productos.nombre.asc())
-    elif sort_by == 'za':
-        query = query.order_by(Productos.nombre.desc())
+        query = query.order_by(Productos.calificacion_promedio_almacenada.desc())
     elif sort_by == 'az':
         query = query.order_by(Productos.nombre.asc())
-    else:  # 'newest' o cualquier otro valor por defecto
-        query = query.order_by(Productos.created_at.desc())
+    elif sort_by == 'za':
+        query = query.order_by(Productos.nombre.desc())
+    else:  # 'az' or any other default
+        query = query.order_by(Productos.nombre.asc())
 
     productos = query.all()
     return jsonify([producto_to_dict(p) for p in productos])

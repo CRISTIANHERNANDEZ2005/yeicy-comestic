@@ -1,4 +1,39 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const subcategoriasDisponibles = window.appData.subcategorias;
+  const seudocategoriasDisponibles = window.appData.seudocategorias;
+  const productGrid = document.getElementById("product-grid");
+  const productGridLoader = document.getElementById("product-grid-loader");
+  const productListingContainer = document.getElementById("product-listing-container");
+  const noResultsMessage = document.getElementById("no-results-message");
+  const categoryTitle = document.getElementById("category-title");
+  const categoryDescription = document.getElementById("category-description");
+  const breadcrumbs = document.getElementById("breadcrumbs");
+  const productCount = document.getElementById("product-count");
+  const totalProductCount = document.getElementById("total-product-count");
+  const subcategoryFilters = document.getElementById("subcategory-filters-content");
+  const pseudocategoryFilters = document.getElementById("pseudocategory-filters-content");
+  const clearFiltersBtn = document.getElementById("clear-filters");
+  const resetFiltersBtn = document.getElementById("reset-filters");
+
+  // Elementos del drawer de filtros unificado
+  const filterDrawer = document.getElementById("filter-drawer");
+  const filterBtn = document.getElementById("filter-btn");
+  const closeFilterBtn = document.getElementById("close-filter-btn");
+  const applyFiltersBtn = document.getElementById("apply-filters");
+  const filterModalOverlay = document.getElementById("filter-modal-overlay");
+
+  const sortSelect = document.getElementById("sort-select");
+  const minPriceInput = document.getElementById("min-price");
+  const maxPriceInput = document.getElementById("max-price");
+  const minPriceLabel = document.getElementById("min-price-label");
+  const maxPriceLabel = document.getElementById("max-price-label");
+
+  let allProducts = [];
+  const productsPerPage = 12;
+  let currentDisplayedProducts = 0;
+  let isFetching = false;
+
+  // Toggle para los filtros del drawer
   document.querySelectorAll(".filter-toggle").forEach((header) => {
     header.addEventListener("click", () => {
       const targetId = header.dataset.target;
@@ -16,62 +51,133 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   });
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-  console.log("DEBUG: window.appData.productos en categoria_producto.js", window.appData.productos);
-  const subcategoriasDisponibles = window.appData.subcategorias;
-  const seudocategoriasDisponibles = window.appData.seudocategorias;
-  const productGrid = document.getElementById("product-grid");
-  const productGridLoader = document.getElementById("product-grid-loader");
-  const productListingContainer = document.getElementById(
-    "product-listing-container"
-  );
-  const noResultsMessage = document.getElementById("no-results-message");
-  const categoryTitle = document.getElementById("category-title");
-  const categoryDescription = document.getElementById("category-description");
-  const breadcrumbs = document.getElementById("breadcrumbs");
-  const productCount = document.getElementById("product-count");
-  const totalProductCount = document.getElementById("total-product-count");
-  const subcategoryFilters = document.getElementById(
-    "subcategory-filters-content"
-  );
-  const pseudocategoryFilters = document.getElementById(
-    "pseudocategory-filters-content"
-  );
-  const clearFiltersBtn = document.getElementById("clear-filters");
-
-  // Mobile filter elements
-  const mobileFilterDrawer = document.getElementById("mobile-filter-drawer");
-  const mobileFilterBtn = document.getElementById("mobile-filter-btn");
-  const closeFilterBtn = document.getElementById("close-filter-btn");
-  const applyMobileFiltersBtn = document.getElementById("apply-mobile-filters");
-  const closeFilterBtnResults = document.getElementById(
-    "close-filter-btn-results"
-  );
-  const mobileSubcategoryFilters = document.getElementById(
-    "mobile-subcategory-filters"
-  );
-  const mobilePseudocategoryFilters = document.getElementById(
-    "mobile-pseudocategory-filters"
-  );
-  const filterModalOverlay = document.getElementById("filter-modal-overlay");
-
-  const sortSelect = document.getElementById("sort-select");
-  const minPriceInput = document.getElementById("min-price");
-  const maxPriceInput = document.getElementById("max-price");
-  const mobileMinPriceInput = document.getElementById("mobile-min-price");
-  const mobileMaxPriceInput = document.getElementById("mobile-max-price");
-
-  let allProducts = window.appData.productos || [];
-  const productsPerPage = 12;
-  let currentDisplayedProducts = 0;
-  let isFetching = false;
 
   const loadMoreBtn = document.getElementById("load-more-btn");
   const showLessBtn = document.getElementById("show-less-btn");
 
-  // --- Animation Functions ---
+  // Función para abrir/cerrar el drawer de filtros
+  function toggleFilterDrawer(forceOpen = null) {
+    const isOpen = filterDrawer.classList.contains("open");
+    const shouldOpen = forceOpen !== null ? forceOpen : !isOpen;
+
+    if (shouldOpen) {
+      // --- Secuencia de Apertura Profesional ---
+      // 1. Hacer visible el overlay
+      filterModalOverlay.classList.remove("hidden");
+
+      // 2. Si es la primera vez, quitar 'hidden' para que el elemento exista en el layout
+      if (filterDrawer.classList.contains("hidden")) {
+        filterDrawer.classList.remove("hidden");
+        // 3. Forzar un reflow. Es un truco necesario para que la transición se aplique correctamente en la primera apertura.
+        void filterDrawer.offsetWidth;
+      }
+
+      // 4. Añadir la clase 'open' para iniciar la animación de entrada
+      filterDrawer.classList.add("open");
+      syncFiltersWithCurrentValues();
+    } else {
+      // --- Secuencia de Cierre ---
+      filterDrawer.classList.remove("open");
+      filterModalOverlay.classList.add("hidden");
+    }
+  }
+
+  // Sincronizar los filtros del drawer con los valores actuales
+  function syncFiltersWithCurrentValues() {
+    // Sincronizar subcategorías
+    const selectedSubcategory = subcategoryFilters.querySelector('input[name="subcategory"]:checked')?.value || "all";
+    const subcategoryInput = filterDrawer.querySelector(`input[name="subcategory"][value="${selectedSubcategory}"]`);
+    if (subcategoryInput) subcategoryInput.checked = true;
+    
+    // Sincronizar pseudocategorías
+    const selectedPseudocategory = pseudocategoryFilters.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
+    const pseudocategoryInput = filterDrawer.querySelector(`input[name="pseudocategory"][value="${selectedPseudocategory}"]`);
+    if (pseudocategoryInput) pseudocategoryInput.checked = true;
+    
+    // Sincronizar precios
+    minPriceInput.value = minPriceInput.value || '';
+    maxPriceInput.value = maxPriceInput.value || '';
+    
+    // Actualizar etiquetas de precio
+    updatePriceLabels();
+  }
+
+  // Actualizar etiquetas de precio
+  function updatePriceLabels() {
+    minPriceLabel.textContent = minPriceInput.value ? `$${minPriceInput.value}` : '$0';
+    maxPriceLabel.textContent = maxPriceInput.value ? `$${maxPriceInput.value}` : '$0';
+  }
+
+  // Event listeners para el drawer de filtros
+  if (filterBtn) {
+    filterBtn.addEventListener("click", () => toggleFilterDrawer(true));
+  }
+  if (closeFilterBtn) {
+    closeFilterBtn.addEventListener("click", () => toggleFilterDrawer(false));
+  }
+  if (filterModalOverlay) {
+    filterModalOverlay.addEventListener("click", () => toggleFilterDrawer(false));
+  }
+
+  // Prevenir clicks dentro del drawer de cerrarlo
+  if (filterDrawer) {
+    filterDrawer.addEventListener("click", function (event) {
+      event.stopPropagation();
+    });
+  }
+
+  // Event listener para aplicar filtros desde el drawer
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener("click", () => {
+      // Obtener valores seleccionados en el drawer
+      const selectedSubcategory = filterDrawer.querySelector('input[name="subcategory"]:checked')?.value || "all";
+      const selectedPseudocategory = filterDrawer.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
+      
+      // Actualizar los filtros principales
+      subcategoryFilters.querySelector(`input[value="${selectedSubcategory}"]`)?.click();
+      pseudocategoryFilters.querySelector(`input[value="${selectedPseudocategory}"]`)?.click();
+      
+      // Cerrar el drawer
+      toggleFilterDrawer(false);
+    });
+  }
+
+  // Event listener para restablecer filtros desde el drawer
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener("click", () => {
+      // Restablecer todos los filtros en el drawer
+      filterDrawer.querySelector('input[name="subcategory"][value="all"]')?.click();
+      filterDrawer.querySelector('input[name="pseudocategory"][value="all"]')?.click();
+      minPriceInput.value = '';
+      maxPriceInput.value = '';
+      updatePriceLabels();
+      
+      // Aplicar los cambios
+      applyFiltersBtn.click();
+    });
+  }
+
+  // Event listeners para los inputs de precio
+  if (minPriceInput) {
+    minPriceInput.addEventListener("input", () => {
+      updatePriceLabels();
+      // Aplicar filtros automáticamente al cambiar el precio
+      if (!isFetching) {
+        fetchProductsWithFilters();
+      }
+    });
+  }
+  
+  if (maxPriceInput) {
+    maxPriceInput.addEventListener("input", () => {
+      updatePriceLabels();
+      // Aplicar filtros automáticamente al cambiar el precio
+      if (!isFetching) {
+        fetchProductsWithFilters();
+      }
+    });
+  }
+
   function showLoader() {
     productListingContainer.classList.remove("hidden");
     productGrid.style.display = "none";
@@ -96,7 +202,7 @@ document.addEventListener("DOMContentLoaded", function () {
       noResultsMessage.classList.remove("hidden");
     } else {
       productListingContainer.classList.remove("hidden");
-      noResultsMessage.classList.add("hidden"); // MODIFIED LINE
+      noResultsMessage.classList.add("hidden");
       productGrid.style.display = "grid";
 
       productsToRender.forEach((product, index) => {
@@ -126,104 +232,59 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  
-
-  // --- Mobile Filter Drawer Functions ---
-  function toggleFilterDrawer() {
-    mobileFilterDrawer.classList.toggle("open");
-    filterModalOverlay.classList.toggle("hidden");
-  }
-
-  if (mobileFilterBtn) {
-    mobileFilterBtn.addEventListener("click", toggleFilterDrawer);
-  }
-  if (closeFilterBtn) {
-    closeFilterBtn.addEventListener("click", toggleFilterDrawer);
-  }
-  if (closeFilterBtnResults) {
-    closeFilterBtnResults.addEventListener("click", toggleFilterDrawer);
-  }
-  if (filterModalOverlay) {
-    filterModalOverlay.addEventListener("click", toggleFilterDrawer);
-  }
-  if (mobileFilterDrawer) {
-    mobileFilterDrawer.addEventListener("click", function (event) {
-      event.stopPropagation();
-    });
-  }
-
-  // --- Filter Population Functions ---
+  // Función para popular los filtros de subcategoría
   function updateSubcategoryFilters() {
     const targetElement = subcategoryFilters;
-    const mobileTargetElement = mobileSubcategoryFilters;
-    if (!targetElement || !mobileTargetElement) return;
-
     targetElement.innerHTML = "";
-    mobileTargetElement.innerHTML = "";
 
     const allOptionHtml = `
-      <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-        <input
-          type="radio"
-          name="subcategory"
-          value="all"
-          class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-          checked
-        />
-        <span class="ml-3 text-gray-700 font-medium">Todas las subcategorías</span>
-      </label>
-    `;
-    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-    mobileTargetElement.insertAdjacentHTML(
-      "beforeend",
-      allOptionHtml.replace(/name="subcategory"/g, 'name="mobile-subcategory"')
-    );
-
-    subcategoriasDisponibles.forEach((sub) => {
-      const subcategoryHtml = `
         <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
           <input
             type="radio"
             name="subcategory"
-            value="${sub.nombre}"
+            value="all"
             class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
+            checked
           />
-          <span class="ml-3 text-gray-700">${sub.nombre}</span>
+          <span class="ml-3 text-gray-700 font-medium">Todas las subcategorías</span>
         </label>
       `;
+    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
+
+    subcategoriasDisponibles.forEach((sub) => {
+      const subcategoryHtml = `
+          <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+            <input
+              type="radio"
+              name="subcategory"
+              value="${sub.nombre}"
+              class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
+            />
+            <span class="ml-3 text-gray-700">${sub.nombre}</span>
+          </label>
+        `;
       targetElement.insertAdjacentHTML("beforeend", subcategoryHtml);
-      mobileTargetElement.insertAdjacentHTML(
-        "beforeend",
-        subcategoryHtml.replace(/name="subcategory"/g, 'name="mobile-subcategory"')
-      );
     });
   }
 
+  // Función para popular los filtros de pseudocategoría
   function updatePseudocategoryFilters(selectedSubcategoryName) {
     const targetElement = pseudocategoryFilters;
-    const mobileTargetElement = mobilePseudocategoryFilters;
-    if (!targetElement || !mobileTargetElement) return;
-
     targetElement.innerHTML = "";
-    mobileTargetElement.innerHTML = "";
 
     const allOptionHtml = `
-      <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-        <input
-          type="radio"
-          name="pseudocategory"
-          value="all"
-          class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-          checked
-        />
-        <span class="ml-3 text-gray-700 font-medium">Todas las pseudocategorías</span>
-      </label>
-    `;
+        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+          <input
+            type="radio"
+            name="pseudocategory"
+            value="all"
+            class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
+            checked
+          />
+          <span class="ml-3 text-gray-700 font-medium">Todas las pseudocategorías</span>
+        </label>
+      `;
     targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-    mobileTargetElement.insertAdjacentHTML(
-      "beforeend",
-      allOptionHtml.replace(/name="pseudocategory"/g, 'name="mobile-pseudocategory"')
-    );
 
     if (selectedSubcategoryName !== "all") {
       const subcategoryId = subcategoriasDisponibles.find(
@@ -235,56 +296,32 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         filteredPseudocategorias.forEach((pseudo) => {
           const pseudocategoryHtml = `
-            <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-              <input
-                type="radio"
-                name="pseudocategory"
-                value="${pseudo.nombre}"
-                class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-              />
-              <span class="ml-3 text-gray-700">${pseudo.nombre}</span>
-            </label>
-          `;
+              <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+                <input
+                  type="radio"
+                  name="pseudocategory"
+                  value="${pseudo.nombre}"
+                  class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
+                />
+                <span class="ml-3 text-gray-700">${pseudo.nombre}</span>
+              </label>
+            `;
           targetElement.insertAdjacentHTML("beforeend", pseudocategoryHtml);
-          mobileTargetElement.insertAdjacentHTML(
-            "beforeend",
-            pseudocategoryHtml.replace(/name="pseudocategory"/g, 'name="mobile-pseudocategory"')
-          );
         });
       }
     }
   }
 
-  function populateMobileFilters() {
-    updateSubcategoryFilters();
-    const selectedSubcategory = subcategoryFilters.querySelector(
-      'input[name="subcategory"]:checked'
-    ).value;
-    updatePseudocategoryFilters(selectedSubcategory);
-
-    if (minPriceInput && mobileMinPriceInput) {
-      mobileMinPriceInput.value = minPriceInput.value;
-    }
-    if (maxPriceInput && mobileMaxPriceInput) {
-      mobileMaxPriceInput.value = maxPriceInput.value;
-    }
-  }
-
-  // --- Filter Fetching Functions ---
+  // Función para cargar productos con filtros
   async function fetchProductsWithFilters() {
     if (isFetching) return;
     isFetching = true;
 
     showLoader();
-
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const selectedSubcategory = subcategoryFilters.querySelector(
-      'input[name="subcategory"]:checked'
-    ).value;
-    const selectedPseudocategory = pseudocategoryFilters.querySelector(
-      'input[name="pseudocategory"]:checked'
-    ).value;
+    const selectedSubcategory = subcategoryFilters.querySelector('input[name="subcategory"]:checked')?.value || "all";
+    const selectedPseudocategory = pseudocategoryFilters.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
     const selectedSort = sortSelect.value;
 
     const params = new URLSearchParams();
@@ -298,10 +335,11 @@ document.addEventListener("DOMContentLoaded", function () {
     if (selectedPseudocategory && selectedPseudocategory !== "all") {
       params.append("seudocategoria", selectedPseudocategory);
     }
-    if (selectedSort && selectedSort !== "az") {
+    if (selectedSort && selectedSort !== "newest") {
       params.append("ordenar_por", selectedSort);
     }
 
+    // Add price filters
     const minPrice = minPriceInput.value;
     const maxPrice = maxPriceInput.value;
 
@@ -331,22 +369,60 @@ document.addEventListener("DOMContentLoaded", function () {
       productListingContainer.classList.add("hidden");
       noResultsMessage.classList.remove("hidden");
     } finally {
-        isFetching = false;
+      isFetching = false;
     }
   }
 
-  // --- Event Listeners ---
+  // Event listener for sort select
   if (sortSelect) {
     sortSelect.addEventListener("change", fetchProductsWithFilters);
   }
 
-  if (minPriceInput) {
-    minPriceInput.addEventListener("input", fetchProductsWithFilters);
-  }
-  if (maxPriceInput) {
-    maxPriceInput.addEventListener("input", fetchProductsWithFilters);
+  // Función para actualizar el título y breadcrumbs
+  function updateCategoryInfo(subcategory, pseudocategory) {
+    const categoriaPrincipal = window.appData.categoriaPrincipal;
+    let title = categoriaPrincipal.nombre;
+    let description = categoriaPrincipal.descripcion || `Productos de la categoría ${categoriaPrincipal.nombre}`;
+    let breadcrumbsHtml = `
+      <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
+        <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
+      </a>
+      <span class="text-gray-300">/</span>
+      <span class="text-gray-700 font-medium">${categoriaPrincipal.nombre}</span>
+    `;
+
+    if (subcategory && subcategory !== "all") {
+      const subcategoryObj = subcategoriasDisponibles.find(s => s.nombre === subcategory);
+      title = subcategory;
+      description = subcategoryObj?.descripcion || `Descubre la variedad en la subcategoría ${subcategory}.`;
+      breadcrumbsHtml = `
+        <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
+          <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
+        </a>
+        <span class="text-gray-300">/</span>
+        <a href="/${categoriaPrincipal.slug}" class="text-pink-600 hover:text-pink-800 transition-colors">${categoriaPrincipal.nombre}</a>
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-700 font-medium">${subcategory}</span>
+      `;
+    }
+
+    if (pseudocategory && pseudocategory !== "all") {
+      const pseudocategoryObj = seudocategoriasDisponibles.find(p => p.nombre === pseudocategory);
+      title = pseudocategory;
+      description = pseudocategoryObj?.descripcion || `Encuentra lo mejor en ${pseudocategory}.`;
+      // Asume que la subcategoría ya está en el breadcrumb
+      breadcrumbsHtml += `
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-700 font-medium">${pseudocategory}</span>
+      `;
+    }
+
+    categoryTitle.textContent = title;
+    categoryDescription.textContent = description;
+    breadcrumbs.innerHTML = breadcrumbsHtml;
   }
 
+  // Event listener para los filtros de escritorio
   if (subcategoryFilters) {
     subcategoryFilters.addEventListener("change", (event) => {
       const selectedSubcategory = event.target.value;
@@ -359,72 +435,28 @@ document.addEventListener("DOMContentLoaded", function () {
     pseudocategoryFilters.addEventListener("change", fetchProductsWithFilters);
   }
 
-  if (mobileFilterDrawer) {
-    mobileFilterDrawer.addEventListener("click", (event) => {
-      const target = event.target;
-      if (target.tagName === "INPUT" && target.type === "radio") {
-        if (target.name === "mobile-subcategory") {
-          const selectedSubcategory = target.value;
-          updatePseudocategoryFilters(selectedSubcategory);
-        }
-      }
-    });
-  }
-
-  if (applyMobileFiltersBtn) {
-    applyMobileFiltersBtn.addEventListener("click", () => {
-      const selectedSubcategory = mobileSubcategoryFilters.querySelector(
-        'input[name="mobile-subcategory"]:checked'
-      ).value;
-      const selectedPseudocategory = mobilePseudocategoryFilters.querySelector(
-        'input[name="mobile-pseudocategory"]:checked'
-      ).value;
-      const mobileMinPrice = mobileMinPriceInput.value;
-      const mobileMaxPrice = mobileMaxPriceInput.value;
-
-      subcategoryFilters.querySelector(
-        `input[value="${selectedSubcategory}"]`
-      ).checked = true;
-      pseudocategoryFilters.querySelector(
-        `input[value="${selectedPseudocategory}"]`
-      ).checked = true;
-      minPriceInput.value = mobileMinPrice;
-      maxPriceInput.value = mobileMaxPrice;
-
-      fetchProductsWithFilters();
-      toggleFilterDrawer();
-    });
-  }
-
+  // Event listener para limpiar filtros
   if (clearFiltersBtn) {
     clearFiltersBtn.addEventListener("click", () => {
       subcategoryFilters.querySelector('input[value="all"]').checked = true;
       pseudocategoryFilters.querySelector('input[value="all"]').checked = true;
 
-      if (mobileSubcategoryFilters) {
-        mobileSubcategoryFilters.querySelector(
-          'input[value="all"]'
-        ).checked = true;
-      }
-      if (mobilePseudocategoryFilters) {
-        mobilePseudocategoryFilters.querySelector(
-          'input[value="all"]'
-        ).checked = true;
-      }
-
+      // Also reset price inputs
       if (minPriceInput) minPriceInput.value = '';
       if (maxPriceInput) maxPriceInput.value = '';
-      if (mobileMinPriceInput) mobileMinPriceInput.value = '';
-      if (mobileMaxPriceInput) mobileMaxPriceInput.value = '';
+      updatePriceLabels();
 
-      sortSelect.value = "az";
+      // Also reset sort select to the new default
+      sortSelect.value = "newest";
 
+      // Update cascading filters after clearing
       updateSubcategoryFilters();
       updatePseudocategoryFilters("all");
       fetchProductsWithFilters();
     });
   }
 
+  // Load More / Show Less functionality
   if (loadMoreBtn) {
     loadMoreBtn.addEventListener("click", () => {
       const nextBatch = allProducts.slice(
@@ -442,41 +474,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // --- Update Category Info Function ---
-  function updateCategoryInfo(subcategory, pseudocategory) {
-    const categoriaPrincipalNombre = window.appData.categoriaPrincipal.nombre;
-    let title = categoriaPrincipalNombre;
-    let description = window.appData.categoriaPrincipal.descripcion || `Productos de la categoría ${categoriaPrincipalNombre}`;
-    let breadcrumbsHtml = `
-      <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors">Inicio</a>
-      <span class="text-gray-300">/</span>
-      <span class="text-gray-700 font-medium">${categoriaPrincipalNombre}</span>
-    `;
-
-    if (subcategory && subcategory !== "all") {
-      title = subcategory;
-      description = `Productos de la subcategoría ${subcategory}`;
-      breadcrumbsHtml += `
-        <span class="text-gray-300">/</span>
-        <span class="text-gray-700 font-medium">${subcategory}</span>
-      `;
-    }
-
-    if (pseudocategory && pseudocategory !== "all") {
-      title = pseudocategory;
-      description = `Productos de la pseudocategoría ${pseudocategory}`;
-      breadcrumbsHtml += `
-        <span class="text-gray-300">/</span>
-        <span class="text-gray-700 font-medium">${pseudocategory}</span>
-      `;
-    }
-
-    categoryTitle.textContent = title;
-    categoryDescription.textContent = description;
-    breadcrumbs.innerHTML = breadcrumbsHtml;
-  }
-
-  // --- Price Range Function ---
+  // Función para obtener y establecer el rango de precios
   async function fetchAndSetPriceRange() {
     try {
       const categoriaPrincipalNombre = window.appData.categoriaPrincipal.nombre;
@@ -498,24 +496,18 @@ document.addEventListener("DOMContentLoaded", function () {
       if (maxPriceInput) {
         maxPriceInput.value = data.max_price || 1000;
       }
-      if (mobileMinPriceInput) {
-        mobileMinPriceInput.value = data.min_price || 0;
-      }
-      if (mobileMaxPriceInput) {
-        mobileMaxPriceInput.value = data.max_price || 1000;
-      }
+      updatePriceLabels();
     } catch (error) {
       console.error('Error al cargar el rango de precios:', error);
     }
   }
 
-  // --- Initial Load ---
+  // Carga inicial
   async function init() {
     updateSubcategoryFilters();
     updatePseudocategoryFilters("all");
     await fetchAndSetPriceRange();
-    await fetchProductsWithFilters(); // Fetch products on initial load
-    populateMobileFilters();
+    await fetchProductsWithFilters();
   }
 
   init();

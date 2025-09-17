@@ -417,19 +417,20 @@ def _extraer_terminos_de_producto(product_id, query):
     return terminos
 
 
-
 @products_bp.route('/api/productos/filtrar')
 def filter_products():
     """
     Devuelve productos filtrados por categoría principal, subcategoría y/o pseudocategoría en formato JSON.
+    Mejorado para manejar mejor los filtros y optimizar consultas.
     """
     main_category_name = request.args.get('categoria_principal')
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('seudocategoria')
-    sort_by = request.args.get('ordenar_por', 'featured')
+    sort_by = request.args.get('ordenar_por', 'newest')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
-
+    
+    # Optimización: Crear una consulta base con joins necesarios
     query = db.session.query(Productos).select_from(Productos).join(
         Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == 'activo')
     ).join(
@@ -438,10 +439,10 @@ def filter_products():
         CategoriasPrincipales, and_(Subcategorias.categoria_principal_id == CategoriasPrincipales.id, CategoriasPrincipales.estado == 'activo')
     )
 
-    # Always filter by product status and availability
-    query = query.filter(Productos.estado == 'activo', Productos._existencia  > 0)
+    # Siempre filtrar por estado del producto y disponibilidad
+    query = query.filter(Productos.estado == 'activo', Productos._existencia > 0)
 
-    # Apply filters based on provided names
+    # Aplicar filtros basados en nombres proporcionados
     if main_category_name and main_category_name != 'all':
         query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
     
@@ -451,38 +452,39 @@ def filter_products():
     if pseudocategory_name and pseudocategory_name != 'all':
         query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
 
-    # Apply price filters
-    if min_price_str:
-        try:
+    # Aplicar filtros de precio con validación mejorada
+    try:
+        if min_price_str:
             min_price = float(min_price_str)
-            query = query.filter(Productos.precio >= min_price)
-        except ValueError:
-            pass  # Ignore invalid price values
+            if min_price >= 0:
+                query = query.filter(Productos.precio >= min_price)
+    except ValueError:
+        pass  # Ignorar valores de precio inválidos
 
-    if max_price_str:
-        try:
+    try:
+        if max_price_str:
             max_price = float(max_price_str)
-            query = query.filter(Productos.precio <= max_price)
-        except ValueError:
-            pass  # Ignore invalid price values
+            if max_price >= 0:
+                query = query.filter(Productos.precio <= max_price)
+    except ValueError:
+        pass  # Ignorar valores de precio inválidos
 
-    # Apply sorting
+    # Aplicar ordenamiento con más opciones
     if sort_by == 'price_asc':
         query = query.order_by(Productos.precio.asc())
     elif sort_by == 'price_desc':
         query = query.order_by(Productos.precio.desc())
     elif sort_by == 'top_rated':
-        query = query.order_by(Productos.calificacion_promedio_almacenada.desc())
-    elif sort_by == 'az':
-        query = query.order_by(Productos.nombre.asc())
+        query = query.order_by(Productos.calificacion_promedio_almacenada.desc(), Productos.nombre.asc())
     elif sort_by == 'za':
         query = query.order_by(Productos.nombre.desc())
-    else:  # 'az' or any other default
+    elif sort_by == 'az':
         query = query.order_by(Productos.nombre.asc())
+    else:  # 'newest' o cualquier otro valor por defecto
+        query = query.order_by(Productos.created_at.desc())
 
     productos = query.all()
     return jsonify([producto_to_dict(p) for p in productos])
-
 
 @products_bp.route('/api/productos')
 def get_all_products():

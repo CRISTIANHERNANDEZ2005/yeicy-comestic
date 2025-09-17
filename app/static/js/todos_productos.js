@@ -4,9 +4,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const allSeudocategorias = window.appData.seudocategorias;
   const productGrid = document.getElementById("product-grid");
   const productGridLoader = document.getElementById("product-grid-loader");
-  const productListingContainer = document.getElementById(
-    "product-listing-container"
-  );
+  const productListingContainer = document.getElementById("product-listing-container");
   const noResultsMessage = document.getElementById("no-results-message");
   const categoryTitle = document.getElementById("category-title");
   const categoryDescription = document.getElementById("category-description");
@@ -14,45 +12,30 @@ document.addEventListener("DOMContentLoaded", function () {
   const productCount = document.getElementById("product-count");
   const totalProductCount = document.getElementById("total-product-count");
   const categoryFilters = document.getElementById("category-filters-content");
-  const subcategoryFilters = document.getElementById(
-    "subcategory-filters-content"
-  );
-  const pseudocategoryFilters = document.getElementById(
-    "pseudocategory-filters-content"
-  );
+  const subcategoryFilters = document.getElementById("subcategory-filters-content");
+  const pseudocategoryFilters = document.getElementById("pseudocategory-filters-content");
   const clearFiltersBtn = document.getElementById("clear-filters");
+  const resetFiltersBtn = document.getElementById("reset-filters");
 
-  // Mobile filter elements
-  const mobileFilterDrawer = document.getElementById("mobile-filter-drawer");
-  const mobileFilterBtn = document.getElementById("mobile-filter-btn");
+  // Elementos del drawer de filtros unificado
+  const filterDrawer = document.getElementById("filter-drawer");
+  const filterBtn = document.getElementById("filter-btn");
   const closeFilterBtn = document.getElementById("close-filter-btn");
-  const applyMobileFiltersBtn = document.getElementById("apply-mobile-filters");
-  const closeFilterBtnResults = document.getElementById(
-    "close-filter-btn-results"
-  );
-  const mobileCategoryFilters = document.getElementById(
-    "mobile-category-filters"
-  );
-  const mobileSubcategoryFilters = document.getElementById(
-    "mobile-subcategory-filters"
-  );
-  const mobilePseudocategoryFilters = document.getElementById(
-    "mobile-pseudocategory-filters"
-  );
+  const applyFiltersBtn = document.getElementById("apply-filters");
   const filterModalOverlay = document.getElementById("filter-modal-overlay");
 
   const sortSelect = document.getElementById("sort-select");
   const minPriceInput = document.getElementById("min-price");
   const maxPriceInput = document.getElementById("max-price");
-  const mobileMinPriceInput = document.getElementById("mobile-min-price");
-  const mobileMaxPriceInput = document.getElementById("mobile-max-price");
+  const minPriceLabel = document.getElementById("min-price-label");
+  const maxPriceLabel = document.getElementById("max-price-label");
 
   let allProducts = [];
   const productsPerPage = 12;
   let currentDisplayedProducts = 0;
-  let isFetching = false; // Flag to prevent multiple simultaneous fetches
+  let isFetching = false;
 
-  // Toggle para los filtros del sidebar
+  // Toggle para los filtros del drawer
   document.querySelectorAll(".filter-toggle").forEach((header) => {
     header.addEventListener("click", () => {
       const targetId = header.dataset.target;
@@ -74,20 +57,143 @@ document.addEventListener("DOMContentLoaded", function () {
   const loadMoreBtn = document.getElementById("load-more-btn");
   const showLessBtn = document.getElementById("show-less-btn");
 
-  // --- Start of Corrected Animation Code ---
+  // Función para abrir/cerrar el drawer de filtros
+  function toggleFilterDrawer(forceOpen = null) {
+    const isOpen = filterDrawer.classList.contains("open");
+    const shouldOpen = forceOpen !== null ? forceOpen : !isOpen;
+
+    if (shouldOpen) {
+      // --- Secuencia de Apertura Profesional ---
+      // 1. Hacer visible el overlay
+      filterModalOverlay.classList.remove("hidden");
+
+      // 2. Si es la primera vez, quitar 'hidden' para que el elemento exista en el layout
+      if (filterDrawer.classList.contains("hidden")) {
+        filterDrawer.classList.remove("hidden");
+        // 3. Forzar un reflow. Es un truco necesario para que la transición se aplique correctamente en la primera apertura.
+        void filterDrawer.offsetWidth;
+      }
+
+      // 4. Añadir la clase 'open' para iniciar la animación de entrada
+      filterDrawer.classList.add("open");
+      syncFiltersWithCurrentValues();
+    } else {
+      // --- Secuencia de Cierre ---
+      filterDrawer.classList.remove("open");
+      filterModalOverlay.classList.add("hidden");
+    }
+  }
+
+  // Sincronizar los filtros del drawer con los valores actuales
+  function syncFiltersWithCurrentValues() {
+    // Sincronizar categorías
+    const selectedCategory = categoryFilters.querySelector('input[name="category"]:checked')?.value || "all";
+    const categoryInput = filterDrawer.querySelector(`input[name="category"][value="${selectedCategory}"]`);
+    if (categoryInput) categoryInput.checked = true;
+    
+    // Sincronizar subcategorías
+    const selectedSubcategory = subcategoryFilters.querySelector('input[name="subcategory"]:checked')?.value || "all";
+    const subcategoryInput = filterDrawer.querySelector(`input[name="subcategory"][value="${selectedSubcategory}"]`);
+    if (subcategoryInput) subcategoryInput.checked = true;
+    
+    // Sincronizar pseudocategorías
+    const selectedPseudocategory = pseudocategoryFilters.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
+    const pseudocategoryInput = filterDrawer.querySelector(`input[name="pseudocategory"][value="${selectedPseudocategory}"]`);
+    if (pseudocategoryInput) pseudocategoryInput.checked = true;
+    
+    // Sincronizar precios
+    minPriceInput.value = minPriceInput.value || '';
+    maxPriceInput.value = maxPriceInput.value || '';
+    
+    // Actualizar etiquetas de precio
+    updatePriceLabels();
+  }
+
+  // Actualizar etiquetas de precio
+  function updatePriceLabels() {
+    minPriceLabel.textContent = minPriceInput.value ? `$${minPriceInput.value}` : '$0';
+    maxPriceLabel.textContent = maxPriceInput.value ? `$${maxPriceInput.value}` : '$0';
+  }
+
+  // Event listeners para el drawer de filtros
+  if (filterBtn) {
+    filterBtn.addEventListener("click", () => toggleFilterDrawer(true));
+  }
+  if (closeFilterBtn) {
+    closeFilterBtn.addEventListener("click", () => toggleFilterDrawer(false));
+  }
+  if (filterModalOverlay) {
+    filterModalOverlay.addEventListener("click", () => toggleFilterDrawer(false));
+  }
+
+  // Prevenir clicks dentro del drawer de cerrarlo
+  if (filterDrawer) {
+    filterDrawer.addEventListener("click", function (event) {
+      event.stopPropagation();
+    });
+  }
+
+  // Event listener para aplicar filtros desde el drawer
+  if (applyFiltersBtn) {
+    applyFiltersBtn.addEventListener("click", () => {
+      // Obtener valores seleccionados en el drawer
+      const selectedCategory = filterDrawer.querySelector('input[name="category"]:checked')?.value || "all";
+      const selectedSubcategory = filterDrawer.querySelector('input[name="subcategory"]:checked')?.value || "all";
+      const selectedPseudocategory = filterDrawer.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
+      
+      // Actualizar los filtros principales
+      categoryFilters.querySelector(`input[value="${selectedCategory}"]`)?.click();
+      subcategoryFilters.querySelector(`input[value="${selectedSubcategory}"]`)?.click();
+      pseudocategoryFilters.querySelector(`input[value="${selectedPseudocategory}"]`)?.click();
+      
+      // Cerrar el drawer
+      toggleFilterDrawer(false);
+    });
+  }
+
+  // Event listener para restablecer filtros desde el drawer
+  if (resetFiltersBtn) {
+    resetFiltersBtn.addEventListener("click", () => {
+      // Restablecer todos los filtros en el drawer
+      filterDrawer.querySelector('input[name="category"][value="all"]')?.click();
+      filterDrawer.querySelector('input[name="subcategory"][value="all"]')?.click();
+      filterDrawer.querySelector('input[name="pseudocategory"][value="all"]')?.click();
+      minPriceInput.value = '';
+      maxPriceInput.value = '';
+      updatePriceLabels();
+      
+      // Aplicar los cambios
+      applyFiltersBtn.click();
+    });
+  }
+
+  // Event listeners para los inputs de precio
+  if (minPriceInput) {
+    minPriceInput.addEventListener("input", () => {
+      updatePriceLabels();
+      // Aplicar filtros automáticamente al cambiar el precio
+      if (!isFetching) {
+        fetchProductsWithFilters();
+      }
+    });
+  }
+  
+  if (maxPriceInput) {
+    maxPriceInput.addEventListener("input", () => {
+      updatePriceLabels();
+      // Aplicar filtros automáticamente al cambiar el precio
+      if (!isFetching) {
+        fetchProductsWithFilters();
+      }
+    });
+  }
 
   function showLoader() {
-    // Ensure the main container is visible so the loader can be seen
     productListingContainer.classList.remove("hidden");
-
-    // Hide product grid and "no results" message
     productGrid.style.display = "none";
     noResultsMessage.classList.add("hidden");
-
-    // Show loader
     productGridLoader.style.display = "grid";
     
-    // Hide pagination buttons
     if (loadMoreBtn) loadMoreBtn.style.display = "none";
     if (showLessBtn) showLessBtn.style.display = "none";
   }
@@ -97,12 +203,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function renderProducts(productsToRender, animate = false) {
-    // Clear previous products if we are doing a full animated render
     if (animate) {
         productGrid.innerHTML = "";
     }
 
-    if (productsToRender.length === 0 && animate) { // Only show no-results if it's a fresh render
+    if (productsToRender.length === 0 && animate) {
       productListingContainer.classList.add("hidden");
       noResultsMessage.classList.remove("hidden");
     } else {
@@ -119,12 +224,10 @@ document.addEventListener("DOMContentLoaded", function () {
         productGrid.appendChild(productCard);
       });
 
-      // Update counts
       currentDisplayedProducts = productGrid.children.length;
       productCount.textContent = currentDisplayedProducts;
       totalProductCount.textContent = allProducts.length;
 
-      // Update pagination buttons visibility
       if (currentDisplayedProducts < allProducts.length) {
         loadMoreBtn.style.display = "block";
       } else {
@@ -139,62 +242,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // --- End of Corrected Animation Code ---
-
-  // Función para abrir/cerrar el drawer de filtros móvil
-  function toggleFilterDrawer() {
-    mobileFilterDrawer.classList.toggle("open");
-    filterModalOverlay.classList.toggle("hidden");
-  }
-
-  // Event listeners para el drawer móvil
-  if (mobileFilterBtn) {
-    mobileFilterBtn.addEventListener("click", toggleFilterDrawer);
-  }
-  if (closeFilterBtn) {
-    closeFilterBtn.addEventListener("click", toggleFilterDrawer);
-  }
-  if (closeFilterBtnResults) {
-    closeFilterBtnResults.addEventListener("click", toggleFilterDrawer);
-  }
-
-  // Close drawer when clicking outside (on the overlay)
-  if (filterModalOverlay) {
-    filterModalOverlay.addEventListener("click", toggleFilterDrawer);
-  }
-
-  // Prevent clicks inside the drawer from closing it
-  if (mobileFilterDrawer) {
-    mobileFilterDrawer.addEventListener("click", function (event) {
-      event.stopPropagation();
-    });
-  }
-
   // Función para popular los filtros de subcategoría
   function updateSubcategoryFilters(selectedCategoryName) {
     const targetElement = subcategoryFilters;
-    const mobileTargetElement = mobileSubcategoryFilters;
     targetElement.innerHTML = "";
-    mobileTargetElement.innerHTML = "";
 
-    // Add "Todas" option
     const allOptionHtml = `
-        <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
           <input
             type="radio"
             name="subcategory"
             value="all"
-            class="rounded-full text-pink-600 focus:ring-pink-500"
+            class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
             checked
           />
-          <span class="ml-2 text-gray-700">Todas</span>
+          <span class="ml-3 text-gray-700 font-medium">Todas las subcategorías</span>
         </label>
       `;
     targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-    mobileTargetElement.insertAdjacentHTML(
-      "beforeend",
-      allOptionHtml.replace(/name=\"subcategory\"/g, 'name="mobile-subcategory"')
-    );
 
     if (selectedCategoryName !== "all") {
       const categoryId = allCategorias.find(
@@ -206,24 +271,17 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         filteredSubcategories.forEach((sub) => {
           const subcategoryHtml = `
-              <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+              <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
                 <input
                   type="radio"
                   name="subcategory"
                   value="${sub.nombre}"
-                  class="rounded-full text-pink-600 focus:ring-pink-500"
+                  class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
                 />
-                <span class="ml-2 text-gray-700">${sub.nombre}</span>
+                <span class="ml-3 text-gray-700">${sub.nombre}</span>
               </label>
             `;
           targetElement.insertAdjacentHTML("beforeend", subcategoryHtml);
-          mobileTargetElement.insertAdjacentHTML(
-            "beforeend",
-            subcategoryHtml.replace(
-              /name=\"subcategory\"/g,
-              'name="mobile-subcategory"'
-            )
-          );
         });
       }
     }
@@ -232,31 +290,21 @@ document.addEventListener("DOMContentLoaded", function () {
   // Función para popular los filtros de pseudocategoría
   function updatePseudocategoryFilters(selectedSubcategoryName) {
     const targetElement = pseudocategoryFilters;
-    const mobileTargetElement = mobilePseudocategoryFilters;
     targetElement.innerHTML = "";
-    mobileTargetElement.innerHTML = "";
 
-    // Add "Todas" option
     const allOptionHtml = `
-        <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
           <input
             type="radio"
             name="pseudocategory"
             value="all"
-            class="rounded-full text-pink-600 focus:ring-pink-500"
+            class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
             checked
           />
-          <span class="ml-2 text-gray-700">Todas</span>
+          <span class="ml-3 text-gray-700 font-medium">Todas las pseudocategorías</span>
         </label>
       `;
     targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-    mobileTargetElement.insertAdjacentHTML(
-      "beforeend",
-      allOptionHtml.replace(
-        /name=\"pseudocategory\"/g,
-        'name="mobile-pseudocategory"'
-      )
-    );
 
     if (selectedSubcategoryName !== "all") {
       const subcategoryId = allSubcategorias.find(
@@ -268,83 +316,33 @@ document.addEventListener("DOMContentLoaded", function () {
         );
         filteredPseudocategorias.forEach((pseudo) => {
           const pseudocategoryHtml = `
-              <label class="flex items-center p-2 hover:bg-gray-50 rounded-lg cursor-pointer">
+              <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
                 <input
                   type="radio"
                   name="pseudocategory"
                   value="${pseudo.nombre}"
-                  class="rounded-full text-pink-600 focus:ring-pink-500"
+                  class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
                 />
-                <span class="ml-2 text-gray-700">${pseudo.nombre}</span>
+                <span class="ml-3 text-gray-700">${pseudo.nombre}</span>
               </label>
             `;
           targetElement.insertAdjacentHTML("beforeend", pseudocategoryHtml);
-          mobileTargetElement.insertAdjacentHTML(
-            "beforeend",
-            pseudocategoryHtml.replace(
-              /name=\"pseudocategory\"/g,
-              'name="mobile-pseudocategory"'
-            )
-          );
         });
       }
     }
   }
 
-  // Función para popular los filtros de categoría en el drawer móvil
-  function populateMobileFilters() {
-    // Categories are static, just clone them
-    if (categoryFilters && mobileCategoryFilters) {
-      mobileCategoryFilters.innerHTML = "";
-      const desktopCategoryFilters = categoryFilters.querySelectorAll("label");
-      desktopCategoryFilters.forEach((label) => {
-        const newLabel = label.cloneNode(true);
-        const input = newLabel.querySelector("input");
-        if (input) {
-          input.name = "mobile-category";
-        }
-        mobileCategoryFilters.appendChild(newLabel);
-      });
-    }
-
-    // Subcategories and Pseudocategories are dynamic based on selection
-    const selectedCategory = categoryFilters.querySelector(
-      'input[name="category"]:checked'
-    ).value;
-    updateSubcategoryFilters(selectedCategory);
-    const selectedSubcategory = subcategoryFilters.querySelector(
-      'input[name="subcategory"]:checked'
-    ).value;
-    updatePseudocategoryFilters(selectedSubcategory);
-
-    // Set mobile price inputs to match desktop price inputs
-    if (minPriceInput && mobileMinPriceInput) {
-      mobileMinPriceInput.value = minPriceInput.value;
-    }
-    if (maxPriceInput && mobileMaxPriceInput) {
-      mobileMaxPriceInput.value = maxPriceInput.value;
-    }
-  }
-
-  // Función para cargar productos con filters
+  // Función para cargar productos con filtros
   async function fetchProductsWithFilters() {
     if (isFetching) return;
     isFetching = true;
 
     showLoader();
-
-    // Artificial delay to ensure loader is visible
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    const selectedCategory = categoryFilters.querySelector(
-      'input[name="category"]:checked'
-    ).value;
-    const selectedSubcategory = subcategoryFilters.querySelector(
-      'input[name="subcategory"]:checked'
-    ).value;
-    const selectedPseudocategory = pseudocategoryFilters.querySelector(
-      'input[name="pseudocategory"]:checked'
-    ).value;
+    const selectedCategory = categoryFilters.querySelector('input[name="category"]:checked')?.value || "all";
+    const selectedSubcategory = subcategoryFilters.querySelector('input[name="subcategory"]:checked')?.value || "all";
+    const selectedPseudocategory = pseudocategoryFilters.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
     const selectedSort = sortSelect.value;
 
     const params = new URLSearchParams();
@@ -357,7 +355,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (selectedPseudocategory && selectedPseudocategory !== "all") {
       params.append("seudocategoria", selectedPseudocategory);
     }
-    if (selectedSort && selectedSort !== "az") {
+    if (selectedSort && selectedSort !== "newest") {
       params.append("ordenar_por", selectedSort);
     }
 
@@ -384,18 +382,14 @@ document.addEventListener("DOMContentLoaded", function () {
       
       hideLoader();
       renderProducts(allProducts.slice(0, productsPerPage), true);
-      updateCategoryInfo(
-        selectedCategory,
-        selectedSubcategory,
-        selectedPseudocategory
-      );
+      updateCategoryInfo(selectedCategory, selectedSubcategory, selectedPseudocategory);
     } catch (error) {
       console.error(error);
       hideLoader();
       productListingContainer.classList.add("hidden");
       noResultsMessage.classList.remove("hidden");
     } finally {
-        isFetching = false;
+      isFetching = false;
     }
   }
 
@@ -404,52 +398,51 @@ document.addEventListener("DOMContentLoaded", function () {
     sortSelect.addEventListener("change", fetchProductsWithFilters);
   }
 
-  // Event listeners for price inputs
-  if (minPriceInput) {
-    minPriceInput.addEventListener("input", fetchProductsWithFilters);
-  }
-  if (maxPriceInput) {
-    maxPriceInput.addEventListener("input", fetchProductsWithFilters);
-  }
-
   // Función para actualizar el título y breadcrumbs
   function updateCategoryInfo(category, subcategory, pseudocategory) {
     let title = "Todos los Productos";
-    let description = "Descubre nuestra selección de productos.";
+    let description = "Descubre nuestra exclusiva selección de productos de alta calidad";
     let breadcrumbsHtml = `
-          <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors">Inicio</a>
-          <span class="text-gray-400">|</span>
-          <span class="text-gray-700 font-medium">Productos</span>
-        `;
+      <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
+        <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
+      </a>
+      <span class="text-gray-300">/</span>
+      <span class="text-gray-700 font-medium">Productos</span>
+    `;
 
     if (category && category !== "all") {
+      const categoryObj = allCategorias.find(c => c.nombre === category);
       title = category;
-      description = `Productos de la categoría ${category}`;
+      description = categoryObj?.descripcion || `Explora nuestros productos en la categoría ${category}.`;
       breadcrumbsHtml = `
-              <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors">Inicio</a>
-              <span class="text-gray-400">|</span>
-              <a href="/productos" class="text-pink-600 hover:text-pink-800 transition-colors">Productos</a>
-              <span class="text-gray-400">|</span>
-              <span class="text-gray-700 font-medium">${category}</span>
-          `;
+        <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
+          <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
+        </a>
+        <span class="text-gray-300">/</span>
+        <a href="/productos" class="text-pink-600 hover:text-pink-800 transition-colors">Productos</a>
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-700 font-medium">${category}</span>
+      `;
     }
 
     if (subcategory && subcategory !== "all") {
+      const subcategoryObj = allSubcategorias.find(s => s.nombre === subcategory);
       title = subcategory;
-      description = `Productos de la subcategoría ${subcategory}`;
+      description = subcategoryObj?.descripcion || `Descubre la variedad en la subcategoría ${subcategory}.`;
       breadcrumbsHtml += `
-              <span class="text-gray-400">|</span>
-              <span class="text-gray-700 font-medium">${subcategory}</span>
-          `;
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-700 font-medium">${subcategory}</span>
+      `;
     }
 
     if (pseudocategory && pseudocategory !== "all") {
+      const pseudocategoryObj = allSeudocategorias.find(p => p.nombre === pseudocategory);
       title = pseudocategory;
-      description = `Productos de la pseudocategoría ${pseudocategory}`;
+      description = pseudocategoryObj?.descripcion || `Encuentra lo mejor en ${pseudocategory}.`;
       breadcrumbsHtml += `
-              <span class="text-gray-400">|</span>
-              <span class="text-gray-700 font-medium">${pseudocategory}</span>
-          `;
+        <span class="text-gray-300">/</span>
+        <span class="text-gray-700 font-medium">${pseudocategory}</span>
+      `;
     }
 
     categoryTitle.textContent = title;
@@ -479,62 +472,6 @@ document.addEventListener("DOMContentLoaded", function () {
     pseudocategoryFilters.addEventListener("change", fetchProductsWithFilters);
   }
 
-  // Event listener para el drawer de filtros móvil usando delegación de eventos
-  if (mobileFilterDrawer) {
-    mobileFilterDrawer.addEventListener("click", (event) => {
-      const target = event.target;
-
-      // Asegurarse de que el objetivo sea un input de radio antes de continuar
-      if (target.tagName === "INPUT" && target.type === "radio") {
-        // Actualización dinámica de subcategorías
-        if (target.name === "mobile-category") {
-          const selectedCategory = target.value;
-          updateSubcategoryFilters(selectedCategory);
-          updatePseudocategoryFilters("all"); // Resetea el siguiente nivel
-        }
-
-        // Actualización dinámica de pseudocategorías
-        if (target.name === "mobile-subcategory") {
-          const selectedSubcategory = target.value;
-          updatePseudocategoryFilters(selectedSubcategory);
-        }
-      }
-    });
-  }
-
-  // Event listener para el botón de aplicar filtros en móvil
-  if (applyMobileFiltersBtn) {
-    applyMobileFiltersBtn.addEventListener("click", () => {
-      const selectedCategory = mobileCategoryFilters.querySelector(
-        'input[name="mobile-category"]:checked'
-      ).value;
-      const selectedSubcategory = mobileSubcategoryFilters.querySelector(
-        'input[name="mobile-subcategory"]:checked'
-      ).value;
-      const selectedPseudocategory = mobilePseudocategoryFilters.querySelector(
-        'input[name="mobile-pseudocategory"]:checked'
-      ).value;
-      const mobileMinPrice = mobileMinPriceInput.value;
-      const mobileMaxPrice = mobileMaxPriceInput.value;
-
-      // Set desktop filters to match mobile selection
-      categoryFilters.querySelector(
-        `input[value="${selectedCategory}"]`
-      ).checked = true;
-      subcategoryFilters.querySelector(
-        `input[value="${selectedSubcategory}"]`
-      ).checked = true;
-      pseudocategoryFilters.querySelector(
-        `input[value="${selectedPseudocategory}"]`
-      ).checked = true;
-      minPriceInput.value = mobileMinPrice;
-      maxPriceInput.value = mobileMaxPrice;
-
-      fetchProductsWithFilters();
-      toggleFilterDrawer();
-    });
-  }
-
   // Event listener para limpiar filtros
   if (clearFiltersBtn) {
     clearFiltersBtn.addEventListener("click", () => {
@@ -542,23 +479,13 @@ document.addEventListener("DOMContentLoaded", function () {
       subcategoryFilters.querySelector('input[value="all"]').checked = true;
       pseudocategoryFilters.querySelector('input[value="all"]').checked = true;
 
-      // Also reset mobile filters
-      mobileCategoryFilters.querySelector('input[value="all"]').checked = true;
-      mobileSubcategoryFilters.querySelector(
-        'input[value="all"]'
-      ).checked = true;
-      mobilePseudocategoryFilters.querySelector(
-        'input[value="all"]'
-      ).checked = true;
-
       // Also reset price inputs
       if (minPriceInput) minPriceInput.value = '';
       if (maxPriceInput) maxPriceInput.value = '';
-      if (mobileMinPriceInput) mobileMinPriceInput.value = '';
-      if (mobileMaxPriceInput) mobileMaxPriceInput.value = '';
+      updatePriceLabels();
 
-      // Also reset sort select
-      sortSelect.value = "az";
+      // Also reset sort select to the new default
+      sortSelect.value = "newest";
 
       // Update cascading filters after clearing
       updateSubcategoryFilters("all");
@@ -574,14 +501,14 @@ document.addEventListener("DOMContentLoaded", function () {
         currentDisplayedProducts,
         currentDisplayedProducts + productsPerPage
       );
-      renderProducts(nextBatch, false); // `false` to not re-animate all cards
+      renderProducts(nextBatch, false);
     });
   }
 
   if (showLessBtn) {
     showLessBtn.addEventListener("click", () => {
       renderProducts(allProducts.slice(0, productsPerPage), true);
-      window.scrollTo({ top: 0, behavior: "smooth" }); // Scroll to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
 
@@ -600,12 +527,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (maxPriceInput) {
         maxPriceInput.value = data.max_price;
       }
-      if (mobileMinPriceInput) {
-        mobileMinPriceInput.value = data.min_price;
-      }
-      if (mobileMaxPriceInput) {
-        mobileMaxPriceInput.value = data.max_price;
-      }
+      updatePriceLabels();
     } catch (error) {
       console.error('Error al cargar el rango de precios:', error);
     }
@@ -613,12 +535,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Carga inicial
   async function init() {
-    // Initialize filters before fetching products
     updateSubcategoryFilters("all");
     updatePseudocategoryFilters("all");
-    await fetchAndSetPriceRange(); // Fetch and set price range before filtering products
+    await fetchAndSetPriceRange();
     await fetchProductsWithFilters();
-    populateMobileFilters();
   }
 
   init();

@@ -94,6 +94,14 @@ def productos_page():
     subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
     seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
 
+    # NEW: Get all unique brands from active products
+    marcas_obj = db.session.query(Productos.marca).filter(
+        Productos.estado == 'activo', 
+        Productos.marca.isnot(None), 
+        Productos.marca != ''
+    ).distinct().order_by(Productos.marca).all()
+    marcas = [marca[0] for marca in marcas_obj]
+
     # Serializar los objetos a diccionarios para que sean compatibles con JSON y el template.
     categorias_para_filtros = [categoria_principal_to_dict(c) for c in categorias_obj]
     subcategorias_para_filtros = [subcategoria_to_dict(s) for s in subcategorias_obj]
@@ -110,7 +118,8 @@ def productos_page():
         # para los filtros y para el script `window.appData`.
         categorias=categorias_para_filtros,
         subcategorias=subcategorias_para_filtros,
-        seudocategorias=seudocategorias_para_filtros
+        seudocategorias=seudocategorias_para_filtros,
+        marcas=marcas
     )
 
 
@@ -145,6 +154,15 @@ def productos_por_categoria(slug_categoria):
     
     # Preparar datos para JavaScript
     productos_data = [producto_to_dict(p) for p in productos]
+
+    # NEW: Get unique brands for this category
+    marcas_obj = db.session.query(Productos.marca).filter(
+        Productos.seudocategoria_id.in_(seudocategoria_ids),
+        Productos.estado == 'activo',
+        Productos.marca.isnot(None),
+        Productos.marca != ''
+    ).distinct().order_by(Productos.marca).all()
+    marcas = [marca[0] for marca in marcas_obj]
     print(f"DEBUG: productos_por_categoria - Cantidad de productos encontrados: {len(productos_data)}")
 
     # --- MEJORA: Filtrar subcategorías y pseudocategorías relacionadas ---
@@ -175,6 +193,7 @@ def productos_por_categoria(slug_categoria):
         productos_data=productos_data,
         subcategorias=subcategorias, # Ahora solo incluye las de esta categoría principal
         seudocategorias=seudocategorias, # Ahora solo incluye las de esta categoría principal
+        marcas=marcas,
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
     )
 
@@ -426,6 +445,7 @@ def filter_products():
     main_category_name = request.args.get('categoria_principal')
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('seudocategoria')
+    brand_name = request.args.get('marca')
     sort_by = request.args.get('ordenar_por', 'newest')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
@@ -451,6 +471,9 @@ def filter_products():
 
     if pseudocategory_name and pseudocategory_name != 'all':
         query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
+
+    if brand_name and brand_name != 'all':
+        query = query.filter(func.lower(Productos.marca) == func.lower(brand_name))
 
     # Aplicar filtros de precio con validación mejorada
     try:

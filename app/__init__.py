@@ -158,14 +158,6 @@ def create_app(config_class=Config):
                 .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))\
             )\
             .all()
-
-        # Filtrar subcategorías y seudocategorías activas
-        for categoria in categorias_obj:
-            categoria.subcategorias = [
-                sub for sub in categoria.subcategorias if sub.estado == 'activo']
-            for subcategoria in categoria.subcategorias:
-                subcategoria.seudocategorias = [
-                    seudo for seudo in subcategoria.seudocategorias if seudo.estado == 'activo']
         
         # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
         categorias_data = [categoria_principal_to_dict(c) for c in categorias_obj]

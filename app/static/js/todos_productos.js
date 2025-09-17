@@ -1,24 +1,4 @@
 document.addEventListener("DOMContentLoaded", function () {
-  document.querySelectorAll(".filter-toggle").forEach((header) => {
-    header.addEventListener("click", () => {
-      const targetId = header.dataset.target;
-      const content = document.getElementById(targetId);
-      const icon = header.querySelector("i");
-
-      if (content.classList.contains("hidden")) {
-        content.classList.remove("hidden");
-        icon.classList.remove("rotate-0");
-        icon.classList.add("rotate-180");
-      } else {
-        content.classList.add("hidden");
-        icon.classList.remove("rotate-180");
-        icon.classList.add("rotate-0");
-      }
-    });
-  });
-});
-
-document.addEventListener("DOMContentLoaded", function () {
   const allCategorias = window.appData.categorias;
   const allSubcategorias = window.appData.subcategorias;
   const allSeudocategorias = window.appData.seudocategorias;
@@ -71,6 +51,25 @@ document.addEventListener("DOMContentLoaded", function () {
   const productsPerPage = 12;
   let currentDisplayedProducts = 0;
   let isFetching = false; // Flag to prevent multiple simultaneous fetches
+
+  // Toggle para los filtros del sidebar
+  document.querySelectorAll(".filter-toggle").forEach((header) => {
+    header.addEventListener("click", () => {
+      const targetId = header.dataset.target;
+      const content = document.getElementById(targetId);
+      const icon = header.querySelector("i");
+
+      if (content.classList.contains("hidden")) {
+        content.classList.remove("hidden");
+        icon.classList.remove("rotate-0");
+        icon.classList.add("rotate-180");
+      } else {
+        content.classList.add("hidden");
+        icon.classList.remove("rotate-180");
+        icon.classList.add("rotate-0");
+      }
+    });
+  });
 
   const loadMoreBtn = document.getElementById("load-more-btn");
   const showLessBtn = document.getElementById("show-less-btn");
@@ -633,4 +632,3 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
-

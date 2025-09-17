@@ -19,16 +19,6 @@ def index():
     Endpoint principal que muestra productos de la categoría 'Maquillaje'
     o todos los productos si no existe la categoría
     """
-    # Obtener las 7 categorías más antiguas y activas
-    categorias = CategoriasPrincipales.query\
-        .filter(CategoriasPrincipales.estado == 'activo')\
-        .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(5)\
-        .options(
-            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
-            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
-        )\
-        .all()
 
     # Buscar la categoría principal "Maquillaje"
     categoria_maquillaje = CategoriasPrincipales.query.filter(
@@ -81,7 +71,6 @@ def index():
         productos=productos,
         producto=productos[0] if productos else None,
         productos_data=productos_data,
-        categorias=categorias,
         total_productos=total_productos,
         cart_items=cart_items,
         total_price=total_price,
@@ -96,36 +85,32 @@ def productos_page():
     """
     Renderiza la página de productos, pasando las categorías, subcategorías y pseudocategorías para los filtros.
     """
-    # Obtener las 7 categorías más antiguas y activas para el navbar
-    categorias_para_navbar = CategoriasPrincipales.query \
-        .filter(CategoriasPrincipales.estado == 'activo')\
-        .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(5)\
-        .options(
-            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
-            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
-        )\
-        .all()
+    # La información para el navbar y otros elementos globales ya es inyectada
+    # por el context_processor en app/__init__.py. No es necesario volver a consultarla aquí.
 
-    # Estas son para el sidebar de filtros, ya están filtradas por estado
+    # Estas consultas son específicas para los filtros de esta página,
+    # obteniendo todas las categorías activas para el sidebar de filtros.
     categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
     subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
     seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
 
-    categorias = [categoria_principal_to_dict(c) for c in categorias_obj]
-    subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
-    seudocategorias = []
+    # Serializar los objetos a diccionarios para que sean compatibles con JSON y el template.
+    categorias_para_filtros = [categoria_principal_to_dict(c) for c in categorias_obj]
+    subcategorias_para_filtros = [subcategoria_to_dict(s) for s in subcategorias_obj]
+    seudocategorias_para_filtros = []
     for s in seudocategorias_obj:
         s_dict = seudocategoria_to_dict(s)
         if s_dict is not None:
             s_dict['subcategoria_id'] = s.subcategoria_id
-            seudocategorias.append(s_dict)
+            seudocategorias_para_filtros.append(s_dict)
 
     return render_template(
         'cliente/componentes/todos_productos.html',
-        categorias=categorias_para_navbar,
-        subcategorias=subcategorias,
-        seudocategorias=seudocategorias
+        # Pasamos las listas serializadas al template. El template usará 'categorias'
+        # para los filtros y para el script `window.appData`.
+        categorias=categorias_para_filtros,
+        subcategorias=subcategorias_para_filtros,
+        seudocategorias=seudocategorias_para_filtros
     )
 
 
@@ -175,17 +160,6 @@ def productos_por_categoria(slug_categoria):
         Seudocategorias.estado == 'activo'
     ).all()
 
-    # Obtener las 7 categorías más antiguas y activas para el navbar (siempre necesarias)
-    categorias_obj_all = CategoriasPrincipales.query \
-        .filter(CategoriasPrincipales.estado == 'activo') \
-        .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(5)\
-        .options(
-            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
-            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
-        )\
-        .all()
-
     subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
     seudocategorias = []
     for s in seudocategorias_obj:
@@ -199,7 +173,6 @@ def productos_por_categoria(slug_categoria):
         categoria_principal=categoria_principal_to_dict(categoria_principal),
         productos=productos,
         productos_data=productos_data,
-        categorias=categorias_obj_all,
         subcategorias=subcategorias, # Ahora solo incluye las de esta categoría principal
         seudocategorias=seudocategorias, # Ahora solo incluye las de esta categoría principal
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
@@ -232,17 +205,6 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         CategoriasPrincipales.estado == 'activo' # Add this filter
     ).first_or_404()
     
-    # Obtener las 5 categorías más antiguas y activas para el navbar/footer
-    categorias_para_navbar = CategoriasPrincipales.query \
-        .filter(CategoriasPrincipales.estado == 'activo') \
-        .order_by(CategoriasPrincipales.created_at.asc())\
-        .limit(5)\
-        .options(
-            joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))
-            .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
-        )\
-        .all()
-
     # Verificar si el producto está activo
     if producto.estado != 'activo':
         from flask import abort
@@ -314,7 +276,6 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
     return render_template(
         'cliente/componentes/producto_detalle.html',
         producto=producto,
-        categorias=categorias_para_navbar,
         productos_relacionados=productos_relacionados_data,
         reseñas=reseñas,
         calificacion_promedio=calificacion_promedio,

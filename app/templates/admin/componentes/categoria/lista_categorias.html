@@ -2215,11 +2215,16 @@
                         const nombre = document.getElementById('editCategoryName').value;
                         const descripcion = document.getElementById('editCategoryDescription').value;
                         const submitBtn = document.getElementById('editSubmitBtn');
+                        const submitText = submitBtn.querySelector('.submit-text');
+                        const spinner = submitBtn.querySelector('.loading-spinner');
+
                         if (!categoryId || !categoryType) 
                             return;
                         
                         submitBtn.disabled = true;
-                        submitBtn.innerHTML = 'Guardando...';
+                        submitText.classList.add('hidden');
+                        spinner.classList.remove('hidden');
+
                         fetch(`/admin/api/categoria/${categoryType}/${categoryId}`, {
                             method: 'PUT',
                             headers: {
@@ -2245,7 +2250,8 @@
                             this.showNotification('Error de conexión al guardar', 'error');
                         }).finally(() => {
                             submitBtn.disabled = false;
-                            submitBtn.innerHTML = 'Guardar Cambios';
+                            submitText.classList.remove('hidden');
+                            spinner.classList.add('hidden');
                         });
                     });
                 }
@@ -2362,7 +2368,7 @@
         }
         // Función para inicializar la aplicación
         function initializeCategoriesApp() {
-            categoriesApp.init({{ pagination | tojson }});
+            categoriesApp.init({{ pagination_info | tojson }});
         }
         // Inicializar la aplicación cuando el DOM esté listo
         document.addEventListener('DOMContentLoaded', initializeCategoriesApp);

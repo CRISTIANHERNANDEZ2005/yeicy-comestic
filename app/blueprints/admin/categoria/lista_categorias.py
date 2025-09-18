@@ -68,15 +68,15 @@ def get_all_categories(admin_user, view_type=None):
                 query = query.order_by(order_expression.desc())
             
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
             # Add total_general for initial load
-            pagination_data.total_general = db.session.query(CategoriasPrincipales.id).count()
+            pagination.total_general = db.session.query(CategoriasPrincipales.id).count()
             
             # Serializar datos
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in pagination_data.items]
+                cat) for cat in pagination.items]
                 
         elif current_view == 'sub':
             # Vista de subcategorías
@@ -105,15 +105,15 @@ def get_all_categories(admin_user, view_type=None):
                 query = query.order_by(order_expression.desc())
             
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
             # Add total_general for initial load
-            pagination_data.total_general = db.session.query(Subcategorias.id).count()
+            pagination.total_general = db.session.query(Subcategorias.id).count()
                 
             # Serializar datos
             subcategorias_data = [subcategoria_to_dict(
-                sub) for sub in pagination_data.items]
+                sub) for sub in pagination.items]
             
             # Obtener categorías principales para el filtro
             categorias_data = [categoria_principal_to_dict(
@@ -146,14 +146,14 @@ def get_all_categories(admin_user, view_type=None):
                 query = query.order_by(order_expression.desc())
             
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
-            pagination_data.total_general = db.session.query(Seudocategorias.id).count()
+            pagination.total_general = db.session.query(Seudocategorias.id).count()
                 
             # Serializar datos
             seudocategorias_data = [seudocategoria_to_dict(
-                seudo) for seudo in pagination_data.items]
+                seudo) for seudo in pagination.items]
             
             # Obtener subcategorías para el filtro
             subcategorias_data = [subcategoria_to_dict(
@@ -171,27 +171,28 @@ def get_all_categories(admin_user, view_type=None):
             query = query.order_by(CategoriasPrincipales.created_at.desc())
 
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
             # Add total_general for initial load (total count of main categories)
-            pagination_data.total_general = db.session.query(CategoriasPrincipales.id).count()
+            pagination.total_general = db.session.query(CategoriasPrincipales.id).count()
 
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in pagination_data.items]
+                cat) for cat in pagination.items]
 
-        # Convert pagination_data to a JSON-serializable dictionary
-        pagination_info = {
-            'page': pagination_data.page,
-            'pages': pagination_data.pages,
-            'per_page': pagination_data.per_page,
-            'total': pagination_data.total,
-            'total_general': getattr(pagination_data, 'total_general', pagination_data.total),
-            'has_next': pagination_data.has_next,
-            'has_prev': pagination_data.has_prev,
-            'next_num': pagination_data.next_num,
-            'prev_num': pagination_data.prev_num
-        }
+        if pagination:
+            # Convert pagination object to a JSON-serializable dictionary for JavaScript
+            pagination_info = {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'total_general': getattr(pagination, 'total_general', pagination.total),
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev,
+                'next_num': pagination.next_num,
+                'prev_num': pagination.prev_num
+            }
     
     except Exception as e:
         current_app.logger.error(
@@ -204,7 +205,8 @@ def get_all_categories(admin_user, view_type=None):
                            categorias=categorias_data,
                            subcategorias=subcategorias_data,
                            seudocategorias=seudocategorias_data,
-                           pagination=pagination_info,
+                           pagination=pagination,
+                           pagination_info=pagination_info,
                            current_view=current_view,
                            filter_params=request.args,
                            error_message=error_message,

@@ -1,60 +1,91 @@
-    <!-- Modal para añadir/editar categoría -->
-    <div id="categoryModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden z-modal-top">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all">
-            <div class="p-6">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-xl font-bold text-gray-900" id="modalTitle">Agregar Nueva Categoría</h3>
-                    <button id="closeModal" class="text-gray-400 hover:text-gray-500 transition-colors">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
+<!-- Modal para añadir categoría -->
+<div id="categoryModal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center hidden z-modal-top backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg mx-4 transform transition-all duration-300 scale-95 opacity-0 modal-content">
+        <!-- Header con degradado verde -->
+        <div class="bg-gradient-to-r from-green-600 to-emerald-700 rounded-t-2xl p-6 pb-8">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-white bg-opacity-20 p-2 rounded-lg">
+                        <i class="fas fa-plus text-white text-xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold text-white" id="modalTitle">Agregar Nueva Categoría</h3>
                 </div>
+                <button id="closeModal" class="text-white hover:text-gray-200 transition-colors p-2 rounded-full hover:bg-white hover:bg-opacity-10">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
 
-                <form id="categoryForm">
-                    <div
-                        class="space-y-5">
-                        <!-- Campo: Nombre -->
-                        <div>
-                            <label for="categoryName" class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                            <input type="text" id="categoryName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
+        <!-- Contenido del formulario -->
+        <div class="p-6 -mt-4">
+            <form id="categoryForm">
+                <div class="space-y-6">
+                    <!-- Campo: Nombre -->
+                    <div>
+                        <label for="categoryName" class="block text-sm font-semibold text-gray-700 mb-2">Nombre</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-tag text-gray-400"></i>
+                            </div>
+                            <input type="text" id="categoryName" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm" required>
                         </div>
+                    </div>
 
-                        <!-- Campo: Descripción -->
-                        <div>
-                            <label for="categoryDescription" class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
-                            <textarea id="categoryDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required></textarea>
+                    <!-- Campo: Descripción -->
+                    <div>
+                        <label for="categoryDescription" class="block text-sm font-semibold text-gray-700 mb-2">Descripción</label>
+                        <div class="relative">
+                            <div class="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
+                                <i class="fas fa-align-left text-gray-400 mt-1"></i>
+                            </div>
+                            <textarea id="categoryDescription" rows="3" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm" required></textarea>
                         </div>
+                    </div>
 
-                        <!-- Campo: Nivel -->
-                        <div>
-                            <label for="categoryLevel" class="block text-sm font-medium text-gray-700 mb-1">Nivel</label>
-                            <select id="categoryLevel" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors">
+                    <!-- Campo: Nivel -->
+                    <div>
+                        <label for="categoryLevel" class="block text-sm font-semibold text-gray-700 mb-2">Nivel</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i class="fas fa-layer-group text-gray-400"></i>
+                            </div>
+                            <select id="categoryLevel" class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-all shadow-sm appearance-none">
                                 <option value="main">Categoría Principal</option>
                                 <option value="sub">Subcategoría</option>
                                 <option value="pseudo">Seudocategoría</option>
                             </select>
-                        </div>
-
-                        <!-- Campos dinámicos según el nivel -->
-                        <div
-                            id="dynamicFields"><!-- Se llenarán dinámicamente según el nivel seleccionado -->
-                        </div>
-
-                        <!-- Campo: Estado -->
-                        <div class="flex items-center">
-                            <input type="checkbox" id="categoryStatus" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
-                            <label for="categoryStatus" class="ml-2 text-sm text-gray-700">Activo</label>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                <i class="fas fa-chevron-down text-gray-400"></i>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex justify-end space-x-3 mt-8">
-                        <button type="button" id="cancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                            Cancelar
-                        </button>
-                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors">
-                            Guardar
-                        </button>
+                    <!-- Campos dinámicos según el nivel -->
+                    <div id="dynamicFields" class="space-y-4">
+                        <!-- Se llenarán dinámicamente según el nivel seleccionado -->
                     </div>
-                </form>
-            </div>
+
+                </div>
+
+                <!-- Botones de acción -->
+                <div class="flex justify-end space-x-4 mt-10 pt-6 border-t border-gray-100">
+                    <button type="button" id="cancelBtn" class="px-5 py-2.5 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 hover:bg-gray-50 transition-all hover:shadow-sm">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-700 text-white rounded-xl text-sm font-medium hover:from-green-700 hover:to-emerald-800 transition-all shadow-md hover:shadow-lg flex items-center">
+                        <span>Guardar</span>
+                        <i class="fas fa-check ml-2"></i>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
+<!-- Estilos para la animación de entrada/salida -->
+<style>
+    #categoryModal:not(.hidden) .modal-content {
+        transform: scale(1);
+        opacity: 1;
+    }
+</style>

@@ -41,8 +41,10 @@
                             </a>
                             <!-- Lista de subcategorías -->
                             {% for subcategoria in categoria.subcategorias %}
+                                {% if subcategoria.estado == 'activo' %}
                                 <div class="mb-2 mt-2">
-                                    {% if subcategoria.seudocategorias %}
+                                    {% set active_seudos = subcategoria.seudocategorias | selectattr('estado', 'equalto', 'activo') | list %}
+                                    {% if active_seudos %}
                                         <div class="w-full flex justify-between items-center text-left py-2.5 px-4 rounded-lg bg-white bg-opacity-80 shadow-sm hover:shadow border border-gray-100 hover:border-pink-100 group transition-all cursor-pointer" onclick="toggleDropdown('subcategoria-{{ subcategoria.id }}')">
                                             <span class="flex-grow text-gray-700 font-medium group-hover:text-pink-600 transition-colors">{{ subcategoria.nombre }}</span>
                                             <div class="ml-2 p-1 rounded-md bg-gray-50 group-hover:bg-pink-50 transition-colors">
@@ -56,7 +58,7 @@
                                                 <i class="fas fa-eye w-4 h-4 mr-2"></i>
                                                 Ver todo en {{ subcategoria.nombre }}
                                             </a>
-                                            {% for seudocategoria in subcategoria.seudocategorias %}
+                                            {% for seudocategoria in active_seudos %}
                                                 <a href="/{{ categoria.slug }}/{{ subcategoria.slug }}/{{ seudocategoria.slug }}" class="block py-2.5 px-4 text-sm text-gray-600 hover:text-fuchsia-700 hover:bg-white rounded-lg transition-all duration-200 mb-1 border border-transparent hover:border-fuchsia-100 hover:shadow-sm">
                                                     <span class="w-1.5 h-1.5 bg-fuchsia-400 rounded-full inline-block mr-2"></span>
                                                     {{ seudocategoria.nombre }}
@@ -69,6 +71,7 @@
                                         </a>
                                     {% endif %}
                                 </div>
+                                {% endif %}
                             {% endfor %}
                         </div>
                     {% else %}

@@ -105,21 +105,29 @@ document.addEventListener('DOMContentLoaded', function () {
       "nombre": {{ categoria.nombre | tojson }},
       "slug": {{ categoria.slug | tojson }},
       "subcategorias": [
+        {% set sub_joiner = joiner(", ") %}
         {% for sub in categoria.subcategorias %}
+        {% if sub.estado == 'activo' %}
+        {{ sub_joiner() }}
         {
           "id": "{{ sub.id }}",
           "nombre": {{ sub.nombre | tojson }},
           "slug": {{ sub.slug | tojson }},
           "seudocategorias": [
+            {% set seudo_joiner = joiner(", ") %}
             {% for seudo in sub.seudocategorias %}
+            {% if seudo.estado == 'activo' %}
+            {{ seudo_joiner() }}
             {
               "id": "{{ seudo.id }}",
               "nombre": {{ seudo.nombre | tojson }},
               "slug": {{ seudo.slug | tojson }}
-            }{% if not loop.last %},{% endif %}
+            }
+            {% endif %}
             {% endfor %}
           ]
-        }{% if not loop.last %},{% endif %}
+        }
+        {% endif %}
         {% endfor %}
       ]
     }{% if not loop.last %},{% endif %}

@@ -7,6 +7,7 @@ from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import joinedload, subqueryload
 from datetime import datetime
 from flask_wtf.csrf import generate_csrf
+from slugify import slugify
 
 admin_lista_categorias_bp = Blueprint('admin_categorias', __name__, url_prefix='/admin')
 
@@ -458,6 +459,121 @@ def update_pseudocategory_status(admin_user, seudocategoria_id):
             'error_code': 'INTERNAL_ERROR',
             'error_details': str(e) if current_app.debug else None
         }), 500
+
+# Endpoint para obtener detalles de una categoría para edición
+@admin_lista_categorias_bp.route('/api/categoria/<string:category_type>/<string:category_id>', methods=['GET'])
+@admin_jwt_required
+def get_category_details(admin_user, category_type, category_id):
+    try:
+        category = None
+        data = {}
+        
+        model_map = {
+            'main': CategoriasPrincipales,
+            'sub': Subcategorias,
+            'pseudo': Seudocategorias
+        }
+        
+        model = model_map.get(category_type)
+        if not model:
+            return jsonify({'success': False, 'message': 'Tipo de categoría no válido.'}), 400
+
+        if category_type == 'main':
+            category = model.query.get(category_id)
+            if category:
+                data = {
+                    'id': category.id,
+                    'nombre': category.nombre,
+                    'descripcion': category.descripcion,
+                    'nivel_display': 'Categoría Principal'
+                }
+        elif category_type == 'sub':
+            category = model.query.options(joinedload(model.categoria_principal)).get(category_id)
+            if category:
+                data = {
+                    'id': category.id,
+                    'nombre': category.nombre,
+                    'descripcion': category.descripcion,
+                    'nivel_display': 'Subcategoría',
+                    'categoria_principal_nombre': category.categoria_principal.nombre if category.categoria_principal else 'N/A'
+                }
+        elif category_type == 'pseudo':
+            category = model.query.options(joinedload(model.subcategoria).joinedload(Subcategorias.categoria_principal)).get(category_id)
+            if category:
+                data = {
+                    'id': category.id,
+                    'nombre': category.nombre,
+                    'descripcion': category.descripcion,
+                    'nivel_display': 'Seudocategoría',
+                    'subcategoria_nombre': category.subcategoria.nombre if category.subcategoria else 'N/A',
+                    'categoria_principal_nombre': category.subcategoria.categoria_principal.nombre if category.subcategoria and category.subcategoria.categoria_principal else 'N/A'
+                }
+        
+        if not category:
+            return jsonify({'success': False, 'message': 'Categoría no encontrada'}), 404
+            
+        return jsonify({'success': True, 'categoria': data})
+
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener detalles de la categoría {category_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+# Endpoint para actualizar detalles de una categoría
+@admin_lista_categorias_bp.route('/api/categoria/<string:category_type>/<string:category_id>', methods=['PUT'])
+@admin_jwt_required
+def update_category_details(admin_user, category_type, category_id):
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre')
+        descripcion = data.get('descripcion')
+
+        if not nombre or not descripcion:
+            return jsonify({'success': False, 'message': 'El nombre y la descripción son obligatorios.'}), 400
+
+        model_map = {
+            'main': CategoriasPrincipales,
+            'sub': Subcategorias,
+            'pseudo': Seudocategorias
+        }
+
+        model = model_map.get(category_type)
+        if not model:
+            return jsonify({'success': False, 'message': 'Tipo de categoría no válido.'}), 400
+
+        category = model.query.get(category_id)
+        if not category:
+            return jsonify({'success': False, 'message': 'Categoría no encontrada.'}), 404
+
+        # Check for name uniqueness if it has changed
+        if category.nombre != nombre:
+            query = model.query.filter(model.nombre == nombre)
+            # For sub and pseudo, uniqueness is within the parent
+            if category_type == 'sub':
+                query = query.filter(model.categoria_principal_id == category.categoria_principal_id)
+            elif category_type == 'pseudo':
+                query = query.filter(model.subcategoria_id == category.subcategoria_id)
+            
+            existing = query.filter(model.id != category.id).first()
+            if existing:
+                return jsonify({'success': False, 'message': f'Ya existe una categoría con el nombre "{nombre}" en este nivel.'}), 409
+
+        # Update fields
+        category.nombre = nombre
+        category.descripcion = descripcion
+        category.slug = slugify(nombre)
+
+        db.session.commit()
+        
+        current_app.logger.info(
+            f"Categoría ({category_type}) ID {category.id} actualizada por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        return jsonify({'success': True, 'message': 'Categoría actualizada correctamente.'})
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al actualizar la categoría {category_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor al actualizar.'}), 500
 
 # Endpoint API para filtros en tiempo real - Categorías Principales
 @admin_lista_categorias_bp.route('/api/categorias-principales/filter', methods=['GET'])

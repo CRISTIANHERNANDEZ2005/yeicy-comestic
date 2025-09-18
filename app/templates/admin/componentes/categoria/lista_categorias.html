@@ -331,6 +331,7 @@
         </div>
     </div>
     {% include 'admin/ui/_category_form_modal.html' %}
+    {% include 'admin/ui/_category_edit_form_modal.html' %}
     <style>
         .initial-load > tr {
             display: none;
@@ -1924,9 +1925,62 @@
                 this.showNotification (`Ver detalles de ${categoryType}`, 'success');
             },
             // Función para editar una categoría
-            editCategory: function (categoryId, categoryType) { // Implementar la lógica para editar
-                console.log(`Editar ${categoryType} con ID: ${categoryId}`);
-                this.showNotification (`Editar ${categoryType}`, 'success');
+            editCategory: function (categoryId, categoryType) {
+                const modal = document.getElementById('editCategoryModal');
+                const form = document.getElementById('editCategoryForm');
+                const modalTitle = document.getElementById('editModalTitle');
+                const nameInput = document.getElementById('editCategoryName');
+                const descriptionInput = document.getElementById('editCategoryDescription');
+                const levelDisplay = document.getElementById('editCategoryLevelDisplay');
+                const dynamicFields = document.getElementById('editDynamicFields');
+                if (!modal || !form) 
+                    return;
+                
+                // Reset and show loading state
+                form.reset();
+                modalTitle.textContent = 'Cargando...';
+                nameInput.value = '';
+                descriptionInput.value = '';
+                levelDisplay.innerHTML = '';
+                dynamicFields.innerHTML = '';
+                modal.classList.remove('hidden');
+                // Store data for submission
+                form.dataset.categoryId = categoryId;
+                form.dataset.categoryType = categoryType;
+                // Fetch category data
+                fetch(`/admin/api/categoria/${categoryType}/${categoryId}`).then(response => response.json()).then(data => {
+                    if (data.success) {
+                        const category = data.categoria;
+                        modalTitle.textContent = `Editar ${
+                            category.nivel_display
+                        }`;
+                        nameInput.value = category.nombre;
+                        descriptionInput.value = category.descripcion;
+                        // Display level and parent info
+                        levelDisplay.innerHTML = `<p class="text-sm text-gray-500 mb-2">Nivel: <span class="font-semibold text-gray-800">${
+                            category.nivel_display
+                        }</span></p>`;
+                        let parentInfoHtml = '';
+                        if (category.categoria_principal_nombre) {
+                            parentInfoHtml += `<p class="text-sm text-gray-500">Categoría Principal: <span class="font-semibold text-gray-800">${
+                                category.categoria_principal_nombre
+                            }</span></p>`;
+                        }
+                        if (category.subcategoria_nombre) {
+                            parentInfoHtml += `<p class="text-sm text-gray-500">Subcategoría: <span class="font-semibold text-gray-800">${
+                                category.subcategoria_nombre
+                            }</span></p>`;
+                        }
+                        dynamicFields.innerHTML = parentInfoHtml;
+                    } else {
+                        this.showNotification(data.message || 'Error al cargar datos de la categoría', 'error');
+                        modal.classList.add('hidden');
+                    }
+                }).catch(error => {
+                    console.error('Error fetching category details:', error);
+                    this.showNotification('Error de conexión al cargar datos', 'error');
+                    modal.classList.add('hidden');
+                });
             },
             // Configurar event listeners
             setupEventListeners: function () { 
@@ -2145,6 +2199,57 @@
                         });
                     });
                 }
+                // --- INICIO: Event Listeners para el modal de EDICIÓN ---
+                const editModal = document.getElementById('editCategoryModal');
+                const editForm = document.getElementById('editCategoryForm');
+                const closeEditModalBtn = document.getElementById('closeEditModal');
+                const cancelEditBtn = document.getElementById('editCancelBtn');
+                if (editModal && editForm && closeEditModalBtn && cancelEditBtn) {
+                    const closeModal = () => editModal.classList.add('hidden');
+                    closeEditModalBtn.addEventListener('click', closeModal);
+                    cancelEditBtn.addEventListener('click', closeModal);
+                    editForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        const categoryId = editForm.dataset.categoryId;
+                        const categoryType = editForm.dataset.categoryType;
+                        const nombre = document.getElementById('editCategoryName').value;
+                        const descripcion = document.getElementById('editCategoryDescription').value;
+                        const submitBtn = document.getElementById('editSubmitBtn');
+                        if (!categoryId || !categoryType) 
+                            return;
+                        
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = 'Guardando...';
+                        fetch(`/admin/api/categoria/${categoryType}/${categoryId}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            },
+                            body: JSON.stringify({nombre, descripcion})
+                        }).then(response => response.json()).then(data => {
+                            if (data.success) {
+                                this.showNotification(data.message, 'success');
+                                closeModal();
+                                // Refresh data
+                                if (this.currentView === 'all') {
+                                    this.loadHierarchicalCategories();
+                                } else {
+                                    this.loadTableData();
+                                }
+                            } else {
+                                this.showNotification(data.message || 'Error al guardar los cambios', 'error');
+                            }
+                        }).catch(error => {
+                            console.error('Error updating category:', error);
+                            this.showNotification('Error de conexión al guardar', 'error');
+                        }).finally(() => {
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = 'Guardar Cambios';
+                        });
+                    });
+                }
+                // --- FIN: Event Listeners para el modal de EDICIÓN ---
             },
             // Función para actualizar campos dinámicos
             updateDynamicFields: function () {

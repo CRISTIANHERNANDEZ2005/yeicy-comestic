@@ -7,7 +7,7 @@ function initializeCrearProductForm() {
   }
 
   // Asegurarse de que todos los elementos necesarios existan antes de continuar
-  const imagenUrlInput = document.getElementById("imagen_url");
+  const imagenFileInput = document.getElementById("imagen_file");
   const previewImage = document.getElementById("preview-image");
   const imagePlaceholder = document.getElementById("image-placeholder");
   const addEspecificacionBtn = document.getElementById("add-especificacion");
@@ -49,7 +49,7 @@ function initializeCrearProductForm() {
 
   // Si alguno de los elementos críticos no se encuentra, salimos
   if (
-    !imagenUrlInput ||
+    !imagenFileInput ||
     !previewImage ||
     !imagePlaceholder ||
     !addEspecificacionBtn ||
@@ -123,25 +123,22 @@ function initializeCrearProductForm() {
   });
 
   // Previsualización de imagen
-  imagenUrlInput.oninput = function () {
-    // Usar oninput directamente para evitar duplicación de listeners
-    const url = this.value;
-    if (url) {
-      previewImage.src = url;
-      previewImage.onload = function () {
+  imagenFileInput.onchange = function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        previewImage.src = e.target.result;
         previewImage.classList.remove("hidden");
         imagePlaceholder.classList.add("hidden");
       };
-      previewImage.onerror = function () {
-        previewImage.classList.add("hidden");
-        imagePlaceholder.classList.remove("hidden");
-      };
+      reader.readAsDataURL(file);
     } else {
       previewImage.classList.add("hidden");
       imagePlaceholder.classList.remove("hidden");
+      previewImage.src = ""; // Limpiar src si no hay archivo
     }
     updateFormStatus();
-    updateFinancialMetrics();
   };
 
   // Validación de precios
@@ -409,10 +406,10 @@ function initializeCrearProductForm() {
   function updateFormStatus() {
     // Verificar información básica
     const nombre = document.getElementById("nombre").value;
-    const descripcion = document.getElementById("descripcion").value;
-    const imagenUrl = document.getElementById("imagen_url").value;
+    const descripcion = document.getElementById("descripcion").value; // La descripción es opcional en algunos casos, pero la mantenemos obligatoria por ahora.
+    const imagenFile = document.getElementById("imagen_file").files.length > 0;
 
-    const basicComplete = nombre && descripcion && imagenUrl;
+    const basicComplete = nombre && descripcion && imagenFile;
     statusBasic.className = basicComplete
       ? "w-3 h-3 rounded-full bg-green-500 mr-2"
       : "w-3 h-3 rounded-full bg-red-500 mr-2";
@@ -503,11 +500,14 @@ function initializeCrearProductForm() {
       "Descripción del producto";
     const marca = document.getElementById("marca").value || "Marca";
     const precio = document.getElementById("precio").value || "0.00";
-    const costo = document.getElementById("costo").value || "0.00";
+    const costo = document.getElementById("costo").value || "0.00"; // Usar el valor del input
     const existencia = document.getElementById("existencia").value || "0";
-    const imagenUrl =
-      document.getElementById("imagen_url").value ||
-      "https://via.placeholder.com/400";
+    
+    // Usar la previsualización de la imagen local si existe, si no, un placeholder
+    const imagenFile = document.getElementById("imagen_file").files[0];
+    const imagenUrl = imagenFile
+      ? URL.createObjectURL(imagenFile)
+      : "https://via.placeholder.com/400";
 
     const categoriaPrincipalText =
       categoriaPrincipal.options[categoriaPrincipal.selectedIndex]?.text ||
@@ -709,7 +709,8 @@ function initializeCrearProductForm() {
     const isFormComplete = updateFormStatus();
 
     if (!isFormComplete || !validatePrices() || !validateStock()) {
-      handleDisabledSubmitClick();
+      handleDisabledSubmitClick(); // Esta función ya muestra notificaciones
+      // No es necesario mostrar otra notificación aquí.
       return;
     }
 
@@ -727,6 +728,12 @@ function initializeCrearProductForm() {
 
     // Agregar especificaciones como JSON
     formData.append("especificaciones", JSON.stringify(especificaciones));
+
+    // Asegurarse de que el archivo de imagen esté en el FormData
+    const imagenFile = document.getElementById("imagen_file").files[0];
+    if (imagenFile) {
+      formData.append("imagen_file", imagenFile);
+    }
 
     // Mostrar indicador de carga
     submitBtn.classList.add("btn-disabled"); // Usar clase para deshabilitar visualmente

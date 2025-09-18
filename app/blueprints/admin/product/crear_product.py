@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, abort, current_app, jsoni
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
+import cloudinary.uploader
 from app.extensions import db
 import json
 
@@ -30,7 +31,7 @@ def create_product(admin_user):
             nombre = data.get('nombre')
             marca = data.get('marca')
             descripcion = data.get('descripcion')
-            imagen_url = data.get('imagen_url')
+            imagen_file = request.files.get('imagen_file')
             precio_str = data.get('precio')
             costo_str = data.get('costo')
             existencia_str = data.get('existencia')
@@ -45,10 +46,10 @@ def create_product(admin_user):
                 errors.append('El nombre del producto es obligatorio.')
             if not marca:
                 errors.append('La marca del producto es obligatoria.')
-            if not descripcion:
+            if not descripcion: # La descripción es opcional en algunos casos, pero la mantenemos obligatoria por ahora.
                 errors.append('La descripción del producto es obligatoria.')
-            if not imagen_url:
-                errors.append('La URL de la imagen es obligatoria.')
+            if not imagen_file:
+                errors.append('La imagen del producto es obligatoria.')
             if not seudocategoria_id:
                 errors.append('Debe seleccionar una seudocategoría.')
 
@@ -84,7 +85,19 @@ def create_product(admin_user):
             if errors:
                 return jsonify({'success': False, 'message': ' '.join(errors)}), 400
 
-            # --- 3. Verificación de Unicidad (Slug) ---
+            # --- 3. Subida de Imagen a Cloudinary ---
+            imagen_url = None
+            try:
+                # El folder ayuda a organizar las imágenes en Cloudinary
+                upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
+                imagen_url = upload_result.get('secure_url')
+                if not imagen_url:
+                    raise Exception("La subida a Cloudinary no devolvió una URL.")
+            except Exception as e:
+                current_app.logger.error(f"Error al subir imagen a Cloudinary: {e}", exc_info=True)
+                return jsonify({'success': False, 'message': 'Error al subir la imagen del producto.'}), 500
+
+            # --- 4. Verificación de Unicidad (Slug) ---
             from slugify import slugify
             slug = slugify(nombre)
             if Productos.query.filter_by(slug=slug).first():
@@ -93,7 +106,7 @@ def create_product(admin_user):
                     'message': f'Ya existe un producto con el nombre "{nombre}". Por favor, elige otro.'
                 }), 409  # 409 Conflict es más apropiado aquí
 
-            # --- 4. Verificación de Entidades Relacionadas ---
+            # --- 5. Verificación de Entidades Relacionadas ---
             seudocategoria = Seudocategorias.query.get(seudocategoria_id)
             if not seudocategoria:
                 return jsonify({
@@ -101,7 +114,7 @@ def create_product(admin_user):
                     'message': 'La seudocategoría seleccionada ya no existe. Por favor, recarga la página.'
                 }), 400
 
-            # --- 5. Procesamiento y Creación del Objeto ---
+            # --- 6. Procesamiento y Creación del Objeto ---
             try:
                 especificaciones = json.loads(especificaciones_json)
                 if not isinstance(especificaciones, dict):
@@ -123,7 +136,7 @@ def create_product(admin_user):
                 especificaciones=especificaciones
             )
 
-            # --- 6. Persistencia en Base de Datos ---
+            # --- 7. Persistencia en Base de Datos ---
             db.session.add(nuevo_producto)
             db.session.commit()
             

@@ -9,7 +9,7 @@ function initializeEditarProductForm() {
   const productSlug = form.dataset.productSlug;
 
   // Asegurarse de que todos los elementos necesarios existan antes de continuar
-  const imagenUrlInput = document.getElementById("imagen_url");
+  const imagenFileInput = document.getElementById("imagen_file");
   const previewImage = document.getElementById("preview-image");
   const imagePlaceholder = document.getElementById("image-placeholder");
   const addEspecificacionBtn = document.getElementById("add-especificacion");
@@ -23,6 +23,14 @@ function initializeEditarProductForm() {
   );
   const submitBtn = document.getElementById("submit-btn");
   const submitText = document.getElementById("submit-text");
+
+  // --- Elementos para la nueva UI de imagen ---
+  const imageUploadContainer = document.getElementById("image-upload-container");
+  const currentImageThumbnail = document.getElementById("current-image-thumbnail");
+  const cancelImageChangeBtn = document.getElementById("cancel-image-change");
+  const imageHelperText = document.getElementById("image-helper-text");
+  const newImageFilename = document.getElementById("new-image-filename");
+  const changeImageLabel = document.getElementById("change-image-label");
 
   const statusBasic = document.getElementById("status-basic");
   const statusCategory = document.getElementById("status-category");
@@ -51,7 +59,7 @@ function initializeEditarProductForm() {
 
   // Si alguno de los elementos críticos no se encuentra, salimos
   if (
-    !imagenUrlInput ||
+    !imagenFileInput ||
     !previewImage ||
     !imagePlaceholder ||
     !addEspecificacionBtn ||
@@ -80,7 +88,14 @@ function initializeEditarProductForm() {
     !stockMaximoInput ||
     !precioError ||
     !existenciaError ||
-    !priceChartCanvas
+    !priceChartCanvas ||
+    // --- Nuevos elementos ---
+    !imageUploadContainer ||
+    !currentImageThumbnail ||
+    !cancelImageChangeBtn ||
+    !imageHelperText ||
+    !newImageFilename ||
+    !changeImageLabel
   ) {
     console.warn(
       "Faltan elementos críticos en el DOM para inicializar editar_product.js"
@@ -124,26 +139,55 @@ function initializeEditarProductForm() {
     },
   });
 
+  // --- Lógica para la nueva UI de imagen ---
+  function revertImageChange() {
+    const originalImageUrl = form.dataset.originalImageUrl;
+
+    // Restaurar previews a la imagen original
+    previewImage.src = originalImageUrl;
+    currentImageThumbnail.src = originalImageUrl;
+
+    // Resetear el input de archivo para poder seleccionar el mismo archivo de nuevo si se desea
+    imagenFileInput.value = "";
+
+    // Ocultar/mostrar los elementos correspondientes
+    newImageFilename.classList.add("hidden");
+    cancelImageChangeBtn.classList.add("hidden");
+    changeImageLabel.classList.remove("hidden");
+    imageHelperText.classList.remove("hidden");
+    
+    updateFormStatus();
+  }
+
+  cancelImageChangeBtn.addEventListener('click', revertImageChange);
+
   // Previsualización de imagen
-  imagenUrlInput.oninput = function () {
-    // Usar oninput directamente para evitar duplicación de listeners
-    const url = this.value;
-    if (url) {
-      previewImage.src = url;
-      previewImage.onload = function () {
+  imagenFileInput.onchange = function (event) {
+    const file = event.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        // Actualizar AMBOS thumbnails para consistencia
+        previewImage.src = e.target.result;
+        currentImageThumbnail.src = e.target.result;
+
         previewImage.classList.remove("hidden");
         imagePlaceholder.classList.add("hidden");
       };
-      previewImage.onerror = function () {
-        previewImage.classList.add("hidden");
-        imagePlaceholder.classList.remove("hidden");
-      };
+      reader.readAsDataURL(file);
+
+      // Actualizar la UI para mostrar que se ha seleccionado un nuevo archivo
+      newImageFilename.textContent = `Nuevo archivo: ${file.name}`;
+      newImageFilename.classList.remove("hidden");
+      cancelImageChangeBtn.classList.remove("hidden");
+      changeImageLabel.classList.add("hidden");
+      imageHelperText.classList.add("hidden");
+
     } else {
-      previewImage.classList.add("hidden");
-      imagePlaceholder.classList.remove("hidden");
+      // Si el usuario cancela la ventana de selección de archivo, revertir
+      revertImageChange();
     }
     updateFormStatus();
-    updateFinancialMetrics();
   };
 
   // Validación de precios
@@ -438,8 +482,10 @@ function initializeEditarProductForm() {
   function updateFormStatus() {
     const nombre = document.getElementById("nombre").value;
     const descripcion = document.getElementById("descripcion").value;
-    const imagenUrl = document.getElementById("imagen_url").value;
-    const basicComplete = nombre && descripcion && imagenUrl;
+    const originalImageUrl = form.dataset.originalImageUrl;
+    const imagenFile = document.getElementById("imagen_file").files.length > 0;
+
+    const basicComplete = nombre && descripcion && (originalImageUrl || imagenFile);
     statusBasic.className = basicComplete ? "w-3 h-3 rounded-full bg-green-500 mr-2" : "w-3 h-3 rounded-full bg-red-500 mr-2";
 
     const categoryComplete = categoriaPrincipal.value && subcategoria.value && seudocategoria.value;
@@ -499,8 +545,12 @@ function initializeEditarProductForm() {
     const precio = document.getElementById("precio").value || "0.00";
     const costo = document.getElementById("costo").value || "0.00";
     const existencia = document.getElementById("existencia").value || "0";
-    const imagenUrl = document.getElementById("imagen_url").value || "https://via.placeholder.com/400";
-
+    
+    const imagenFile = document.getElementById("imagen_file").files[0];
+    const imagenUrl = imagenFile
+      ? URL.createObjectURL(imagenFile)
+      : form.dataset.originalImageUrl || "https://via.placeholder.com/400";
+      
     const categoriaPrincipalText = categoriaPrincipal.options[categoriaPrincipal.selectedIndex]?.text || "Categoría";
     const subcategoriaText = subcategoria.options[subcategoria.selectedIndex]?.text || "Subcategoría";
     const seudocategoriaText = seudocategoria.options[seudocategoria.selectedIndex]?.text || "Seudocategoría";
@@ -657,6 +707,12 @@ function initializeEditarProductForm() {
       }
     });
     formData.append("especificaciones", JSON.stringify(especificaciones));
+
+    // Asegurarse de que el archivo de imagen esté en el FormData si se seleccionó uno nuevo
+    const imagenFile = document.getElementById("imagen_file").files[0];
+    if (imagenFile) {
+      formData.append("imagen_file", imagenFile);
+    }
 
     submitBtn.classList.add("btn-disabled");
     submitText.innerHTML = '<span class="loading-spinner mr-2"></span> Guardando...';

@@ -1,5 +1,6 @@
 # app/__init__.py
 from flask import Flask, render_template, session, request
+import cloudinary
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
@@ -17,6 +18,11 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.jinja_env.add_extension('jinja2.ext.do')
     app.config.from_object(config_class)
+
+    # --- CLOUDINARY CONFIGURATION ---
+    # La librería de Cloudinary leerá automáticamente la variable de entorno CLOUDINARY_URL
+    cloudinary.config(secure=True)
+    app.logger.info('Cloudinary configurado profesionalmente.')
 
     # --- LOGGING PROFESIONAL ---
     import logging

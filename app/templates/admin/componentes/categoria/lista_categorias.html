@@ -1560,12 +1560,12 @@
                     if (data.success) { // Actualizar tabla
                         this.updateTable(data, tableBody);
                         // Actualizar paginación
-                        if (data.pagination) {
+                        if (data.pagination) { 
                             this.updatePagination(data.pagination);
                             this.updatePaginationInfo(data);
                         }
                     } else {
-                        tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
+                        tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
                         this.showNotification('Error al cargar datos', 'error');
                     }
                     this.isLoading = false;
@@ -1575,7 +1575,7 @@
                     }
                 }).catch(error => {
                     console.error('Error al cargar datos de tabla:', error);
-                    tableBody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
+                    tableBody.innerHTML = '<tr><td colspan="6" class="text-center py-4 text-red-500">Error al cargar datos</td></tr>';
                     this.showNotification('Error al cargar datos', 'error');
                     this.isLoading = false;
                 });
@@ -1589,7 +1589,6 @@
                             html += `
                                 <tr>
                                     <td>${category.nombre}</td>
-                                    <td>${category.slug}</td>
                                     <td>${category.subcategorias ? category.subcategorias.length : 0}</td>
                                     <td>
                                         <div class="flex items-center">
@@ -1626,7 +1625,7 @@
                             `;
                         });
                     } else {
-                        html = '<tr><td colspan="6" class="text-center py-4 text-gray-500">No se encontraron categorías principales que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva categoría principal.</td></tr>';
+                        html = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No se encontraron categorías principales que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva categoría principal.</td></tr>';
                     }
                 } else if (this.currentView === 'sub') {
                     if (data.subcategorias && data.subcategorias.length > 0) {
@@ -1634,7 +1633,6 @@
                             html += `
                                 <tr>
                                     <td>${subcategory.nombre}</td>
-                                    <td>${subcategory.slug}</td>
                                     <td>${subcategory.categoria_principal_nombre || '-'}</td>
                                     <td>${subcategory.seudocategorias ? subcategory.seudocategorias.length : 0}</td>
                                     <td>
@@ -1672,7 +1670,7 @@
                             `;
                         });
                     } else {
-                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron subcategorías que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva subcategoría.</td></tr>';
+                        html = '<tr><td colspan="6" class="text-center py-4 text-gray-500">No se encontraron subcategorías que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva subcategoría.</td></tr>';
                     }
                 } else if (this.currentView === 'pseudo') {
                     if (data.seudocategorias && data.seudocategorias.length > 0) {
@@ -1680,7 +1678,6 @@
                             html += `
                                 <tr>
                                     <td>${pseudocategory.nombre}</td>
-                                    <td>${pseudocategory.slug}</td>
                                     <td>${pseudocategory.subcategoria_nombre || '-'}</td>
                                     <td>${pseudocategory.categoria_principal_nombre || '-'}</td>
                                     <td>
@@ -1718,7 +1715,7 @@
                             `;
                         });
                     } else {
-                        html = '<tr><td colspan="7" class="text-center py-4 text-gray-500">No se encontraron seudocategorías que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva seudocategoría.</td></tr>';
+                        html = '<tr><td colspan="6" class="text-center py-4 text-gray-500">No se encontraron seudocategorías que coincidan con los criterios de búsqueda. Por favor, ajuste los filtros o cree una nueva seudocategoría.</td></tr>';
                     }
                 }
                 tableBody.innerHTML = html;

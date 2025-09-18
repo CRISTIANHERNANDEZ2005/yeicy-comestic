@@ -11,7 +11,6 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Slug</th>
                     <th>Subcategorías</th>
                     <th>Estado</th>
                     <th>Fecha de Creación</th>
@@ -23,7 +22,6 @@
                     {% for category in categories %}
                         <tr>
                             <td>{{ category.nombre }}</td>
-                            <td>{{ category.slug }}</td>
                             <td>{{ category.subcategorias | length }}</td>
                             <td data-category-id="{{ category.id }}" data-category-type="main">
                                 <div class="flex items-center">
@@ -60,7 +58,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="6" class="text-center py-4 text-gray-500">No se encontraron categorías principales</td>
+                        <td colspan="5" class="text-center py-4 text-gray-500">No se encontraron categorías principales</td>
                     </tr>
                 {% endif %}
             </tbody>
@@ -82,7 +80,6 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Slug</th>
                     <th>Categoría Principal</th>
                     <th>Seudocategorías</th>
                     <th>Estado</th>
@@ -95,7 +92,6 @@
                     {% for subcategory in subcategories %}
                         <tr>
                             <td>{{ subcategory.nombre }}</td>
-                            <td>{{ subcategory.slug }}</td>
                             <td>{{ subcategory.categoria_principal_nombre }}</td>
                             <td>{{ subcategory.seudocategorias | length }}</td>
                             <td data-category-id="{{ subcategory.id }}" data-category-type="sub">
@@ -133,7 +129,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-gray-500">No se encontraron subcategorías</td>
+                        <td colspan="6" class="text-center py-4 text-gray-500">No se encontraron subcategorías</td>
                     </tr>
                 {% endif %}
             </tbody>
@@ -155,7 +151,6 @@
             <thead>
                 <tr>
                     <th>Nombre</th>
-                    <th>Slug</th>
                     <th>Subcategoría</th>
                     <th>Categoría Principal</th>
                     <th>Estado</th>
@@ -168,7 +163,6 @@
                     {% for pseudo in pseudocategories %}
                         <tr>
                             <td>{{ pseudo.nombre }}</td>
-                            <td>{{ pseudo.slug }}</td>
                             <td>{{ pseudo.subcategoria_nombre }}</td>
                             <td>{{ pseudo.categoria_principal_nombre }}</td>
                             <td data-category-id="{{ pseudo.id }}" data-category-type="pseudo">
@@ -206,7 +200,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-gray-500">No se encontraron seudocategorías</td>
+                        <td colspan="6" class="text-center py-4 text-gray-500">No se encontraron seudocategorías</td>
                     </tr>
                 {% endif %}
             </tbody>

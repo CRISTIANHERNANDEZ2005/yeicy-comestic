@@ -69,6 +69,14 @@
   padding: 0;
   margin: 0;
 }
+.subcategory-header-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.subcategory-header-link:hover {
+  color: #db2777; /* Color rosa oscuro (pink-600) */
+}
 </style>
 <!-- Overlay para fondo oscuro (solo desktop si lo deseas, puedes quitar si no es necesario) -->
 <div class="mega-menu-overlay" id="megaMenuOverlay-desktop" style="display:none;"></div>
@@ -95,16 +103,19 @@ document.addEventListener('DOMContentLoaded', function () {
     {% for categoria in categorias_principales %}
     "{{ categoria.id }}": {
       "nombre": {{ categoria.nombre | tojson }},
+      "slug": {{ categoria.slug | tojson }},
       "subcategorias": [
         {% for sub in categoria.subcategorias %}
         {
           "id": "{{ sub.id }}",
           "nombre": {{ sub.nombre | tojson }},
+          "slug": {{ sub.slug | tojson }},
           "seudocategorias": [
             {% for seudo in sub.seudocategorias %}
             {
               "id": "{{ seudo.id }}",
-              "nombre": {{ seudo.nombre | tojson }}
+              "nombre": {{ seudo.nombre | tojson }},
+              "slug": {{ seudo.slug | tojson }}
             }{% if not loop.last %},{% endif %}
             {% endfor %}
           ]
@@ -120,16 +131,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!category) return '<div class="text-center py-8">Cargando...</div>';
     let html = '<div class="mega-menu-grid">';
     category.subcategorias.forEach(sub => {
-      const seudoCount = sub.seudocategorias.length;
       html += `
         <div class="category-section">
           <h3>
-            ${sub.nombre}
+            <a href="/${category.slug}/${sub.slug}" class="subcategory-header-link">
+              ${sub.nombre}
+            </a>
           </h3>
-          <ul class="subcategory-list">
+          <ul class="subcategory-list mt-2 space-y-1">
             ${sub.seudocategorias.map(seudo => `
               <li class="subcategory-item">
-                <a href="/products?seudocategoria=${seudo.id}" class="subcategory-link">
+                <a href="/${category.slug}/${sub.slug}/${seudo.slug}" class="subcategory-link block text-gray-600 hover:text-pink-600 py-1 px-2 rounded-md hover:bg-pink-50 transition-all duration-200">
                   ${seudo.nombre}
                 </a>
               </li>

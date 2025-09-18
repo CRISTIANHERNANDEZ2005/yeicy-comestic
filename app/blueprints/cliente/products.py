@@ -196,6 +196,110 @@ def productos_por_categoria(slug_categoria):
         marcas=marcas,
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
     )
+
+@products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>')
+def productos_por_subcategoria(slug_categoria_principal, slug_subcategoria):
+    """
+    Muestra la página de productos para una subcategoría específica, usando su slug y el de la categoría principal.
+    Filtra y muestra solo seudocategorías y productos relacionados con esta subcategoría.
+    """
+    # Buscar la subcategoría asegurando que pertenece a la categoría principal correcta y ambas están activas
+    subcategoria = Subcategorias.query.join(CategoriasPrincipales).filter(
+        Subcategorias.slug == slug_subcategoria,
+        CategoriasPrincipales.slug == slug_categoria_principal,
+        Subcategorias.estado == 'activo',
+        CategoriasPrincipales.estado == 'activo'
+    ).options(joinedload(Subcategorias.categoria_principal)).first_or_404()
+
+    categoria_principal = subcategoria.categoria_principal
+
+    # Obtener IDs de todas las seudocategorías activas bajo esta subcategoría
+    seudocategoria_ids = [s.id for s in subcategoria.seudocategorias if s.estado == 'activo']
+
+    # Obtener productos de esta subcategoría
+    productos = []
+    if seudocategoria_ids:
+        productos = Productos.query.filter(
+            Productos.seudocategoria_id.in_(seudocategoria_ids),
+            Productos.estado == 'activo',
+            Productos._existencia > 0
+        ).order_by(Productos.nombre.asc()).all()
+
+    productos_data = [producto_to_dict(p) for p in productos]
+
+    # Obtener marcas únicas para esta subcategoría
+    marcas_obj = []
+    if seudocategoria_ids:
+        marcas_obj = db.session.query(Productos.marca).filter(
+            Productos.seudocategoria_id.in_(seudocategoria_ids),
+            Productos.estado == 'activo',
+            Productos.marca.isnot(None),
+            Productos.marca != ''
+        ).distinct().order_by(Productos.marca).all()
+    marcas = [marca[0] for marca in marcas_obj]
+
+    # Obtener seudocategorías para los filtros (solo las relacionadas con esta subcategoría)
+    seudocategorias_obj = Seudocategorias.query.filter(
+        Seudocategorias.subcategoria_id == subcategoria.id,
+        Seudocategorias.estado == 'activo'
+    ).all()
+    seudocategorias = [s_dict for s in seudocategorias_obj if (s_dict := seudocategoria_to_dict(s)) is not None]
+
+    return render_template(
+        'cliente/componentes/subcategoria_producto.html',
+        categoria_principal=categoria_principal_to_dict(categoria_principal),
+        subcategoria_actual=subcategoria_to_dict(subcategoria),
+        seudocategorias=seudocategorias,
+        marcas=marcas,
+        title=f"{subcategoria.nombre} - YE & Ci Cosméticos"
+    )
+
+@products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>/<slug_seudocategoria>')
+def productos_por_seudocategoria(slug_categoria_principal, slug_subcategoria, slug_seudocategoria):
+    """
+    Muestra la página de productos para una seudocategoría específica, usando su slug y el de sus padres.
+    Filtra y muestra solo productos y marcas relacionados con esta seudocategoría.
+    """
+    # Buscar la seudocategoría asegurando que pertenece a la jerarquía correcta y todo está activo
+    seudocategoria = Seudocategorias.query.join(Subcategorias).join(CategoriasPrincipales).filter(
+        Seudocategorias.slug == slug_seudocategoria,
+        Subcategorias.slug == slug_subcategoria,
+        CategoriasPrincipales.slug == slug_categoria_principal,
+        Seudocategorias.estado == 'activo',
+        Subcategorias.estado == 'activo',
+        CategoriasPrincipales.estado == 'activo'
+    ).options(
+        joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal)
+    ).first_or_404()
+
+    subcategoria = seudocategoria.subcategoria
+    categoria_principal = subcategoria.categoria_principal
+
+    # Obtener productos de esta seudocategoría
+    productos = Productos.query.filter(
+        Productos.seudocategoria_id == seudocategoria.id,
+        Productos.estado == 'activo',
+        Productos._existencia > 0
+    ).order_by(Productos.nombre.asc()).all()
+
+    # Obtener marcas únicas para esta seudocategoría
+    marcas_obj = db.session.query(Productos.marca).filter(
+        Productos.seudocategoria_id == seudocategoria.id,
+        Productos.estado == 'activo',
+        Productos.marca.isnot(None),
+        Productos.marca != ''
+    ).distinct().order_by(Productos.marca).all()
+    marcas = [marca[0] for marca in marcas_obj]
+
+    return render_template(
+        'cliente/componentes/seudocategoria_producto.html',
+        categoria_principal=categoria_principal_to_dict(categoria_principal),
+        subcategoria_actual=subcategoria_to_dict(subcategoria),
+        seudocategoria_actual=seudocategoria_to_dict(seudocategoria),
+        marcas=marcas,
+        title=f"{seudocategoria.nombre} - YE & Ci Cosméticos"
+    )
+    
 @products_bp.route('/api/filtros/categorias')
 def get_categorias_filtradas():
     """

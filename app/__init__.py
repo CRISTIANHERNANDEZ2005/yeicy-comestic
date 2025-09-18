@@ -189,7 +189,8 @@ def create_app(config_class=Config):
             'categorias': categorias_data,
             'categorias_principales': categorias_obj,
             'total_favoritos': total_favoritos,
-            'usuario_autenticado': usuario_autenticado
+            'usuario_autenticado': usuario_autenticado,
+            'now': datetime.utcnow()
         }
 
     # Custom Jinja2 filters

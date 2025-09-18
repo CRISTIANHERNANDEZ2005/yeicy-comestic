@@ -548,21 +548,23 @@ def update_category_details(admin_user, category_type, category_id):
 
         # Check for name uniqueness if it has changed
         if category.nombre != nombre:
-            query = model.query.filter(model.nombre == nombre)
-            # For sub and pseudo, uniqueness is within the parent
-            if category_type == 'sub':
-                query = query.filter(model.categoria_principal_id == category.categoria_principal_id)
-            elif category_type == 'pseudo':
-                query = query.filter(model.subcategoria_id == category.subcategoria_id)
+            # 1. Check for name uniqueness
+            existing_name = model.query.filter(model.nombre == nombre, model.id != category.id).first()
+            if existing_name:
+                return jsonify({'success': False, 'message': f'Ya existe una categoría con el nombre "{nombre}".'}), 409
+
+            # 2. Check for slug uniqueness
+            new_slug = slugify(nombre)
+            existing_slug = model.query.filter(model.slug == new_slug, model.id != category.id).first()
+            if existing_slug:
+                return jsonify({'success': False, 'message': f'Ya existe una categoría con un nombre similar que genera un slug duplicado ("{new_slug}").'}), 409
             
-            existing = query.filter(model.id != category.id).first()
-            if existing:
-                return jsonify({'success': False, 'message': f'Ya existe una categoría con el nombre "{nombre}" en este nivel.'}), 409
+            # 3. If checks pass, update the slug
+            category.slug = new_slug
 
         # Update fields
         category.nombre = nombre
         category.descripcion = descripcion
-        category.slug = slugify(nombre)
 
         db.session.commit()
         
@@ -812,13 +814,14 @@ def filter_pseudocategories_api(admin_user):
 @admin_jwt_required
 def get_subcategories_for_category(admin_user, categoria_id):
     try:
-        subcategorias = Subcategorias.query.filter_by(
-            categoria_principal_id=categoria_id,
-            estado='activo'
-        ).all()
+        estado_filtro = request.args.get('estado')
+        query = Subcategorias.query.filter_by(categoria_principal_id=categoria_id)
+        if estado_filtro:
+            query = query.filter_by(estado=estado_filtro)
 
-        subcategorias_data = [subcategoria_to_dict(
-            sub) for sub in subcategorias]
+        subcategorias = query.all()
+
+        subcategorias_data = [subcategoria_to_dict(sub) for sub in subcategorias]
 
         return jsonify({
             'success': True,
@@ -850,7 +853,13 @@ def create_main_category(admin_user):
 
         # Check if category with same name already exists
         if CategoriasPrincipales.query.filter_by(nombre=nombre).first():
-            return jsonify({'success': False, 'message': 'Ya existe una categoría principal con este nombre'}), 409
+            return jsonify({'success': False, 'message': f'Ya existe una categoría principal con el nombre "{nombre}".'}), 409
+
+        # Check for slug uniqueness
+        slug = slugify(nombre)
+        if CategoriasPrincipales.query.filter_by(slug=slug).first():
+            return jsonify({'success': False, 'message': f'Ya existe una categoría principal con el nombre ("{slug}").'}), 409
+
 
         new_category = CategoriasPrincipales(
             nombre=nombre,
@@ -892,8 +901,14 @@ def create_subcategory(admin_user):
         if not main_category:
             return jsonify({'success': False, 'message': 'Categoría principal no encontrada'}), 404
         
-        if Subcategorias.query.filter_by(nombre=nombre, categoria_principal_id=categoria_principal_id).first():
-            return jsonify({'success': False, 'message': 'Ya existe una subcategoría con este nombre en la categoría principal seleccionada'}), 409
+        # Verificar unicidad global del nombre
+        if Subcategorias.query.filter_by(nombre=nombre).first():
+            return jsonify({'success': False, 'message': f'Ya existe una subcategoría con el nombre "{nombre}".'}), 409
+
+        # Check for slug uniqueness
+        slug = slugify(nombre)
+        if Subcategorias.query.filter_by(slug=slug).first():
+            return jsonify({'success': False, 'message': f'Ya existe una subcategoría con el nombre ("{slug}").'}), 409
 
         new_subcategory = Subcategorias(
             nombre=nombre,
@@ -936,8 +951,14 @@ def create_pseudocategory(admin_user):
         if not sub_category:
             return jsonify({'success': False, 'message': 'Subcategoría no encontrada'}), 404
         
-        if Seudocategorias.query.filter_by(nombre=nombre, subcategoria_id=subcategoria_id).first():
-            return jsonify({'success': False, 'message': 'Ya existe una seudocategoría con este nombre en la subcategoría seleccionada'}), 409
+        # Verificar unicidad global del nombre
+        if Seudocategorias.query.filter_by(nombre=nombre).first():
+            return jsonify({'success': False, 'message': f'Ya existe una seudocategoría con el nombre "{nombre}".'}), 409
+
+        # Check for slug uniqueness
+        slug = slugify(nombre)
+        if Seudocategorias.query.filter_by(slug=slug).first():
+            return jsonify({'success': False, 'message': f'Ya existe una seudocategoría con el nombre ("{slug}").'}), 409
 
         new_pseudocategory = Seudocategorias(
             nombre=nombre,

@@ -85,7 +85,18 @@ def create_product(admin_user):
             if errors:
                 return jsonify({'success': False, 'message': ' '.join(errors)}), 400
 
-            # --- 3. Subida de Imagen a Cloudinary ---
+            # --- 3. Verificación de Unicidad (Nombre y Slug) ---
+            from slugify import slugify
+            # Verificar unicidad del nombre
+            if Productos.query.filter_by(nombre=nombre).first():
+                return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre "{nombre}".'}), 409
+
+            # Verificar unicidad del slug
+            slug = slugify(nombre)
+            if Productos.query.filter_by(slug=slug).first():
+                return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre ("{slug}").'}), 409
+
+            # --- 4. Subida de Imagen a Cloudinary ---
             imagen_url = None
             try:
                 # El folder ayuda a organizar las imágenes en Cloudinary
@@ -96,15 +107,6 @@ def create_product(admin_user):
             except Exception as e:
                 current_app.logger.error(f"Error al subir imagen a Cloudinary: {e}", exc_info=True)
                 return jsonify({'success': False, 'message': 'Error al subir la imagen del producto.'}), 500
-
-            # --- 4. Verificación de Unicidad (Slug) ---
-            from slugify import slugify
-            slug = slugify(nombre)
-            if Productos.query.filter_by(slug=slug).first():
-                return jsonify({
-                    'success': False,
-                    'message': f'Ya existe un producto con el nombre "{nombre}". Por favor, elige otro.'
-                }), 409  # 409 Conflict es más apropiado aquí
 
             # --- 5. Verificación de Entidades Relacionadas ---
             seudocategoria = Seudocategorias.query.get(seudocategoria_id)

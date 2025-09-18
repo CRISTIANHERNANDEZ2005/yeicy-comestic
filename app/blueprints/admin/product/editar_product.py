@@ -117,14 +117,17 @@ def update_product_api(admin_user, product_slug):
         if errors:
             return jsonify({'success': False, 'message': ' '.join(errors)}), 400
 
-        # --- 3. Verificación de Unicidad (Slug) ---
-        # Solo verificar unicidad si el nombre ha cambiado
-        new_slug = slugify(nombre)
-        if new_slug != product.slug and Productos.query.filter_by(slug=new_slug).first():
-            return jsonify({
-                'success': False,
-                'message': f'Ya existe un producto con el nombre "{nombre}". Por favor, elige otro.'
-            }), 409
+        # --- 3. Verificación de Unicidad (Nombre y Slug) ---
+        if nombre != product.nombre:
+            # Verificar unicidad del nombre
+            if Productos.query.filter(Productos.nombre == nombre, Productos.id != product.id).first():
+                return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre "{nombre}".'}), 409
+
+            # Verificar unicidad del slug
+            new_slug = slugify(nombre)
+            if Productos.query.filter(Productos.slug == new_slug, Productos.id != product.id).first():
+                return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre ("{new_slug}").'}), 409
+            product.slug = new_slug
 
         # --- 4. Verificación de Entidades Relacionadas ---
         seudocategoria = Seudocategorias.query.get(seudocategoria_id)
@@ -182,7 +185,6 @@ def update_product_api(admin_user, product_slug):
         product.stock_maximo = int(stock_maximo_str)
         product.seudocategoria_id = seudocategoria_id
         product.especificaciones = especificaciones
-        product.slug = new_slug # Actualizar el slug si el nombre cambió
 
         # --- 6. Persistencia en Base de Datos ---
         db.session.commit()

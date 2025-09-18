@@ -2099,6 +2099,19 @@
                 const cancelBtn = document.getElementById('cancelBtn');
                 const categoryForm = document.getElementById('categoryForm');
                 const categoryLevel = document.getElementById('categoryLevel');
+                const mainCategoryModalSelect = document.getElementById('mainCategory');
+
+                // Mover el listener del select de categoría principal aquí para que se adjunte una sola vez
+                if (mainCategoryModalSelect) {
+                    mainCategoryModalSelect.addEventListener('change', () => {
+                        // Solo cargar si el nivel es 'pseudo'
+                        const level = document.getElementById('categoryLevel')?.value;
+                        if (level === 'pseudo') {
+                            this.loadSubcategoriesForModal();
+                        }
+                    });
+                }
+
                 if (addCategoryBtn) {
                     addCategoryBtn.addEventListener('click', () => {
                         if (modal) {
@@ -2134,17 +2147,20 @@
                 if (categoryForm) {
                     categoryForm.addEventListener('submit', (e) => {
                         e.preventDefault();
+                        const submitBtn = document.getElementById('submitBtn');
+                        const submitText = submitBtn.querySelector('.submit-text');
+                        const spinner = submitBtn.querySelector('.loading-spinner');
+
+
                         // Obtener datos del formulario
                         const categoryName = document.getElementById('categoryName');
                         const categoryDescription = document.getElementById('categoryDescription');
-                        const categoryStatus = document.getElementById('categoryStatus');
                         const mainCategory = document.getElementById('mainCategory');
                         const subCategory = document.getElementById('subCategory');
                         const formData = {
                             nombre: categoryName ? categoryName.value : '',
                             descripcion: categoryDescription ? categoryDescription.value : '',
-                            nivel: categoryLevel ? categoryLevel.value : 'main',
-                            estado: categoryStatus && categoryStatus.checked ? 'activo' : 'inactivo'
+                            nivel: categoryLevel ? categoryLevel.value : 'main'
                         };
                         // Agregar campos según el nivel
                         if (formData.nivel === 'sub' && mainCategory) {
@@ -2167,6 +2183,11 @@
                             apiUrl = '/admin/api/seudocategorias';
                             successMessage = 'Seudocategoría creada correctamente';
                         }
+                        // Mostrar estado de carga
+                        submitBtn.disabled = true;
+                        if(submitText) submitText.classList.add('hidden');
+                        if(spinner) spinner.classList.remove('hidden');
+
                         fetch(apiUrl, {
                             method: 'POST',
                             headers: {
@@ -2196,6 +2217,11 @@
                         .catch(error => {
                             console.error('Error al guardar categoría:', error);
                             this.showNotification(errorMessage, 'error');
+                        })
+                        .finally(() => {
+                            submitBtn.disabled = false;
+                            if(submitText) submitText.classList.remove('hidden');
+                            if(spinner) spinner.classList.add('hidden');
                         });
                     });
                 }
@@ -2260,45 +2286,45 @@
             // Función para actualizar campos dinámicos
             updateDynamicFields: function () {
                 const categoryLevel = document.getElementById('categoryLevel');
-                const dynamicFields = document.getElementById('dynamicFields');
-                if (! categoryLevel || ! dynamicFields) 
+                const mainCategoryContainer = document.getElementById('mainCategoryContainer');
+                const subCategoryContainer = document.getElementById('subCategoryContainer');
+                const mainCategorySelect = document.getElementById('mainCategory');
+                const subCategorySelect = document.getElementById('subCategory');
+
+                if (!categoryLevel || !mainCategoryContainer || !subCategoryContainer || !mainCategorySelect || !subCategorySelect) 
                     return;
                 
                 const level = categoryLevel.value;
-                dynamicFields.innerHTML = '';
-                if (level === 'sub') { // Para subcategoría: mostrar campo para seleccionar categoría principal
-                    dynamicFields.innerHTML = `
-                        <div>
-                            <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
-                            <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                <option value="">Seleccionar categoría principal</option>
-                            </select>
-                        </div>
-                    `;
-                    // Cargar categorías principales
+
+                // Reset state
+                mainCategoryContainer.classList.add('hidden');
+                subCategoryContainer.classList.add('hidden');
+                mainCategorySelect.required = false;
+                subCategorySelect.required = false;
+                subCategorySelect.disabled = true; // Deshabilitar por defecto al cambiar de nivel
+
+                if (level === 'sub') {
+                    // Mostrar campo de categoría principal
+                    mainCategoryContainer.classList.remove('hidden');
+                    mainCategoryContainer.classList.add('field-enter');
+                    mainCategorySelect.required = true;
                     this.loadMainCategoriesForModal();
-                } else if (level === 'pseudo') { // Para seudocategoría: mostrar campos para categoría principal y subcategoría
-                    dynamicFields.innerHTML = `
-                        <div>
-                            <label for="mainCategory" class="block text-sm font-medium text-gray-700 mb-1">Categoría Principal</label>
-                            <select id="mainCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                <option value="">Seleccionar categoría principal</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="subCategory" class="block text-sm font-medium text-gray-700 mb-1">Subcategoría</label>
-                            <select id="subCategory" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" required>
-                                <option value="">Seleccionar subcategoría</option>
-                            </select>
-                        </div>
-                    `;
-                    // Cargar categorías principales
+                } else if (level === 'pseudo') {
+                    // Mostrar ambos campos
+                    mainCategoryContainer.classList.remove('hidden');
+                    mainCategoryContainer.classList.add('field-enter');
+                    mainCategorySelect.required = true;
+                    
+                    subCategoryContainer.classList.remove('hidden');
+                    subCategoryContainer.classList.add('field-enter');
+                    subCategorySelect.required = true;
+
+                    // Mantener el campo de subcategoría deshabilitado y con un mensaje
+                    subCategorySelect.disabled = true;
+                    subCategorySelect.innerHTML = '<option value="">Seleccione primero una categoría principal</option>';
+
                     this.loadMainCategoriesForModal();
-                    // Agregar evento para cargar subcategorías cuando se seleccione una categoría principal
-                    const mainCategorySelect = document.getElementById('mainCategory');
-                    if (mainCategorySelect) {
-                        mainCategorySelect.addEventListener('change', () => this.loadSubcategoriesForModal());
-                    }
+                    // El evento 'change' en mainCategorySelect (adjuntado en setupEventListeners) cargará las subcategorías
                 }
             },
             // Función para cargar categorías principales para el modal
@@ -2332,21 +2358,37 @@
                     return;
                 
                 // Limpiar opciones actuales
-                subCategorySelect.innerHTML = '<option value="">Seleccionar subcategoría</option>';
-                if (mainCategoryId) { // Obtener subcategorías del servidor
-                    fetch (`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`).then(response => response.json()).then(data => {
-                        if (data.success && data.subcategorias) {
+                if (mainCategoryId) { // Si se ha seleccionado una categoría principal
+                    // Habilitar el select y mostrar un estado de carga
+                    subCategorySelect.disabled = false;
+                    subCategorySelect.innerHTML = '<option value="">Cargando...</option>';
+
+                    // Obtener subcategorías del servidor (solo las activas)
+                    fetch (`/admin/api/categorias-principales/${mainCategoryId}/subcategorias?estado=activo`).then(response => response.json()).then(data => {
+                        // Limpiar el select antes de poblarlo
+                        subCategorySelect.innerHTML = '<option value="">Seleccionar subcategoría</option>';
+                        if (data.success && data.subcategorias && data.subcategorias.length > 0) {
                             data.subcategorias.forEach(subcategory => {
                                 const option = document.createElement('option');
                                 option.value = subcategory.id;
                                 option.textContent = subcategory.nombre;
                                 subCategorySelect.appendChild(option);
                             });
+                        } else {
+                            // Si no hay subcategorías, mostrar un mensaje y deshabilitar
+                            subCategorySelect.innerHTML = '<option value="">No hay subcategorías activas</option>';
+                            subCategorySelect.disabled = true;
                         }
                     }).catch(error => {
                         console.error('Error al cargar subcategorías:', error);
                         this.showNotification('Error al cargar subcategorías', 'error');
+                        subCategorySelect.innerHTML = '<option value="">Error al cargar</option>';
+                        subCategorySelect.disabled = true;
                     });
+                } else {
+                    // Si no se ha seleccionado una categoría principal, deshabilitar y mostrar mensaje
+                    subCategorySelect.disabled = true;
+                    subCategorySelect.innerHTML = '<option value="">Seleccione primero una categoría principal</option>';
                 }
             }
         };

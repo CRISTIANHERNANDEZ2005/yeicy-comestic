@@ -1,11 +1,10 @@
-# categoria_detalle.py - Versión Mejorada
-
+# categoria_detalle.py - Versión Mejorada con Filtros Avanzados
 from flask import Blueprint, jsonify, request, current_app, render_template
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias, Productos
 from app.models.domains.order_models import Pedido, PedidoProducto
 from app.models.enums import EstadoPedido
-from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, producto_to_dict
+from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, admin_producto_to_dict
 from app.extensions import db
 from sqlalchemy import func, and_, or_, case, desc
 from sqlalchemy.orm import joinedload, subqueryload
@@ -14,17 +13,43 @@ import random
 
 admin_categoria_detalle_bp = Blueprint('admin_categoria_detalle', __name__, url_prefix='/admin')
 
-@admin_categoria_detalle_bp.route('/categorias-principales/<string:categoria_id>', methods=['GET'])
+@admin_categoria_detalle_bp.route('/categorias-principales/<string:category_slug>', methods=['GET'])
 @admin_jwt_required
-def view_category_details_page(admin_user, categoria_id):
+def view_category_details_page(admin_user, category_slug):
     """
-    Renderiza la página de detalles para una categoría principal específica.
+    Renderiza la página de detalles para una categoría principal específica con todos los datos precargados.
     """
-    categoria = CategoriasPrincipales.query.get(categoria_id)
-    if not categoria:
+    categoria_obj = CategoriasPrincipales.query.filter_by(slug=category_slug).first()
+    if not categoria_obj:
         return render_template('admin/404.html'), 404
     
-    return render_template('admin/componentes/categoria/detalles_categoria.html', categoria=categoria)
+    try:
+        # Obtener toda la información necesaria para la vista
+        metrics = get_category_metrics(categoria_obj.id)
+        trends = get_market_trends(categoria_obj.id)
+        subcategories = get_subcategories_performance(categoria_obj.id)
+        top_products = get_top_products(categoria_obj.id)
+        related_products_data = get_related_products(categoria_obj.id, page=1, per_page=10)
+        
+        # Convertir el objeto de categoría a un diccionario para que sea serializable en JSON
+        categoria_dict = categoria_principal_to_dict(categoria_obj)
+        
+        return render_template(
+            'admin/componentes/categoria/detalles_categoria.html', 
+            categoria=categoria_dict,
+            metrics=metrics,
+            trends=trends,
+            subcategories=subcategories,
+            top_products=top_products,
+            related_products=related_products_data['products'],
+            related_products_total=related_products_data['total'],
+            related_products_page=related_products_data['page'],
+            related_products_per_page=related_products_data['per_page'],
+            related_products_pages=related_products_data['pages']
+        )
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener detalles de la categoría {categoria_obj.id}: {str(e)}", exc_info=True)
+        return render_template('admin/500.html'), 500
 
 @admin_categoria_detalle_bp.route('/categorias-principales/<string:categoria_id>/detalle', methods=['GET'])
 @admin_jwt_required
@@ -39,29 +64,29 @@ def get_category_details(admin_user, categoria_id):
                 .subqueryload(Subcategorias.seudocategorias)
                 .subqueryload(Seudocategorias.productos)
         ).get(categoria_id)
-        
+
         if not categoria:
             return jsonify({
                 'success': False,
                 'message': 'Categoría no encontrada',
                 'error_code': 'CATEGORY_NOT_FOUND'
             }), 404
-        
+
         # Obtener métricas
         metrics = get_category_metrics(categoria_id)
-        
+
         # Obtener tendencias del mercado
         trends = get_market_trends(categoria_id)
-        
+
         # Obtener rendimiento de subcategorías
         subcategories = get_subcategories_performance(categoria_id)
-        
+
         # Obtener productos más vendidos
         top_products = get_top_products(categoria_id)
-        
+
         # Obtener productos relacionados
         related_products = get_related_products(categoria_id, page=1, per_page=10)
-        
+
         return jsonify({
             'success': True,
             'category': categoria_principal_to_dict(categoria),
@@ -79,6 +104,358 @@ def get_category_details(admin_user, categoria_id):
             'message': 'Error interno del servidor',
             'error_code': 'INTERNAL_ERROR'
         }), 500
+        
+# Nuevo endpoint para productos relacionados con filtros avanzados
+@admin_categoria_detalle_bp.route('/categorias-principales/<string:categoria_id>/productos-relacionados-advanced', methods=['GET'])
+@admin_jwt_required
+def get_related_products_advanced(admin_user, categoria_id):
+    """
+    Endpoint para obtener productos relacionados con filtros avanzados y paginación
+    """
+    try:
+        # Parámetros de paginación
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        # Parámetros de filtrado
+        search = request.args.get('search', '', type=str)
+        sort_by = request.args.get('sort_by', 'nombre', type=str)  # nombre, precio, fecha, etc.
+        order = request.args.get('order', 'asc', type=str)  # asc, desc
+        
+        # Parámetros de estado
+        estado = request.args.get('estado', '', type=str)  # activo, inactivo, todos
+        
+        # NUEVOS PARÁMETROS DE FILTRO DE CATEGORÍA
+        subcategoria_id = request.args.get('subcategoria_id', '', type=str)
+        seudocategoria_id = request.args.get('seudocategoria_id', '', type=str)
+
+        # Obtener productos
+        data = get_related_products_filtered(
+            categoria_id, 
+            page=page, 
+            per_page=per_page, 
+            search=search,
+            sort_by=sort_by,
+            order=order,
+            estado=estado,
+            subcategoria_id=subcategoria_id,
+            seudocategoria_id=seudocategoria_id
+        )
+        
+        return jsonify(data)
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener productos relacionados avanzados: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': 'Error interno del servidor',
+            'error_code': 'INTERNAL_ERROR'
+        }), 500
+
+def get_related_products_filtered(categoria_id, page=1, per_page=10, search='', sort_by='nombre', order='asc', estado='', subcategoria_id='', seudocategoria_id=''):
+    """
+    Obtiene productos relacionados con paginación, búsqueda y filtros avanzados
+    """
+    # Construir la consulta base con joins optimizados
+    query = db.session.query(Productos).join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+    ).join(
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+    ).filter(
+        Subcategorias.categoria_principal_id == categoria_id
+    ).options( # Eager loading para la ruta de categoría
+        joinedload(Productos.seudocategoria)
+        .joinedload(Seudocategorias.subcategoria)
+        .joinedload(Subcategorias.categoria_principal)
+    )
+    
+    # Aplicar filtros de categoría (el más específico tiene prioridad)
+    if seudocategoria_id:
+        query = query.filter(Productos.seudocategoria_id == seudocategoria_id)
+    elif subcategoria_id:
+        query = query.filter(Seudocategorias.subcategoria_id == subcategoria_id)
+    
+    # Aplicar filtro de estado si se proporciona
+    if estado and estado in ['activo', 'inactivo']:
+        query = query.filter(Productos.estado == estado)
+    
+    # Aplicar búsqueda si se proporciona
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                Productos.nombre.ilike(search_term),
+                Productos.descripcion.ilike(search_term),
+                Productos.marca.ilike(search_term)
+            )
+        )
+    
+    # Aplicar ordenamiento
+    if sort_by == 'nombre':
+        if order == 'asc':
+            query = query.order_by(Productos.nombre.asc())
+        else:
+            query = query.order_by(Productos.nombre.desc())
+    elif sort_by == 'precio':
+        if order == 'asc':
+            query = query.order_by(Productos.precio.asc())
+        else:
+            query = query.order_by(Productos.precio.desc())
+    elif sort_by == 'fecha':
+        if order == 'asc':
+            query = query.order_by(Productos.created_at.asc())
+        else:
+            query = query.order_by(Productos.created_at.desc())
+    elif sort_by == 'ventas':
+        # Ordenar por unidades vendidas (simulado, en un sistema real se calcularía)
+        query = query.order_by(func.random())  # Simulación, en realidad sería por ventas
+    else:  # Default: nombre asc
+        query = query.order_by(Productos.nombre.asc())
+    
+    # Contar total para paginación
+    total = query.count()
+    
+    # Aplicar paginación
+    productos = query.offset((page - 1) * per_page).limit(per_page).all()
+    
+    # Formatear resultados
+    products_data = []
+    for prod in productos:
+        prod_dict = admin_producto_to_dict(prod)
+        prod_dict['categoria_path'] = get_category_path(prod) # Añadir ruta completa
+        products_data.append(prod_dict)
+    
+    return {
+        'success': True,
+        'products': products_data,
+        'total': total,
+        'page': page,
+        'per_page': per_page,
+        'pages': (total + per_page - 1) // per_page
+    }
+
+# Nuevos endpoints para los filtros de categoría
+@admin_categoria_detalle_bp.route('/categorias-principales/<string:categoria_id>/subcategorias-filtro', methods=['GET'])
+@admin_jwt_required
+def get_subcategories_for_filter(admin_user, categoria_id):
+    """
+    Obtiene todas las subcategorías (activas e inactivas) para un filtro.
+    """
+    try:
+        # No se filtra por estado para permitir la búsqueda en todas
+        subcategorias = Subcategorias.query.filter_by(categoria_principal_id=categoria_id).order_by(Subcategorias.nombre).all()
+        return jsonify({
+            'success': True,
+            'subcategorias': [{'id': s.id, 'nombre': s.nombre} for s in subcategorias]
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener subcategorías para filtro: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+@admin_categoria_detalle_bp.route('/subcategorias/<string:subcategoria_id>/seudocategorias-filtro', methods=['GET'])
+@admin_jwt_required
+def get_pseudocategories_for_filter(admin_user, subcategoria_id):
+    """
+    Obtiene todas las seudocategorías (activas e inactivas) para un filtro.
+    """
+    try:
+        # No se filtra por estado
+        seudocategorias = Seudocategorias.query.filter_by(subcategoria_id=subcategoria_id).order_by(Seudocategorias.nombre).all()
+        return jsonify({
+            'success': True,
+            'seudocategorias': [{'id': s.id, 'nombre': s.nombre} for s in seudocategorias]
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener seudocategorías para filtro: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+# Nuevo endpoint para productos más vendidos con filtros avanzados
+@admin_categoria_detalle_bp.route('/categorias-principales/<string:categoria_id>/top-products-filtered', methods=['GET'])
+@admin_jwt_required
+def get_top_products_filtered(admin_user, categoria_id):
+    """
+    Endpoint para obtener productos más vendidos con filtros avanzados
+    """
+    try:
+        # Obtener parámetros de filtrado
+        period = request.args.get('period', '30', type=int)  # Período en días
+        sort_by = request.args.get('sort_by', 'ventas', type=str)
+        min_price = request.args.get('min_price', type=float)
+        max_price = request.args.get('max_price', type=float)
+        category_filter = request.args.get('category_filter', '', type=str)
+        status_filter = request.args.get('status_filter', '', type=str)
+        search = request.args.get('search', '', type=str)
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        # Calcular fechas según el período
+        now = datetime.utcnow()
+        start_date = now - timedelta(days=period)
+        
+        # Obtener IDs de productos de la categoría (activos e inactivos)
+        product_ids_query = db.session.query(Productos.id).join(
+            Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+        ).join(
+            Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+        ).filter(
+            Subcategorias.categoria_principal_id == categoria_id
+        )
+        
+        # Aplicar filtro de categoría si se proporciona
+        if category_filter:
+            if category_filter.startswith('pseudo-'):
+                # Filtrar por seudocategoría
+                pseudo_id = category_filter.replace('pseudo-', '')
+                product_ids_query = product_ids_query.filter(
+                    Seudocategorias.id == pseudo_id
+                )
+            else:
+                # Filtrar por subcategoría
+                product_ids_query = product_ids_query.filter(
+                    Subcategorias.id == category_filter
+                )
+        
+        product_ids_subquery = product_ids_query.subquery()
+        
+        # Construir subconsulta de ventas con ingresos por período
+        # CORRECCIÓN: Usar SUM en lugar de AVG para los ingresos de los períodos.
+        sales_subquery = db.session.query(
+            PedidoProducto.producto_id,
+            func.sum(PedidoProducto.cantidad).label('unidades_vendidas'),
+            func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('ingresos'),
+            func.sum(
+                case(
+                    (Pedido.created_at >= start_date, PedidoProducto.cantidad * PedidoProducto.precio_unitario),
+                    else_=0
+                )
+            ).label('ingresos_recientes'),
+            func.sum(
+                case(
+                    (Pedido.created_at < start_date, PedidoProducto.cantidad * PedidoProducto.precio_unitario),
+                    else_=0
+                )
+            ).label('ingresos_anteriores')
+        ).join(Pedido).filter(
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
+            PedidoProducto.producto_id.in_(product_ids_subquery)
+        ).group_by(PedidoProducto.producto_id).subquery()
+        
+        # MEJORA: Calcular la tendencia directamente en la consulta
+        tendencia_expr = case(
+            (sales_subquery.c.ingresos_anteriores > 0, 
+             (sales_subquery.c.ingresos_recientes - sales_subquery.c.ingresos_anteriores) * 100.0 / sales_subquery.c.ingresos_anteriores),
+            (sales_subquery.c.ingresos_recientes > 0, 100.0),
+            else_=0.0
+        ).label('tendencia')
+
+        query = db.session.query(
+            Productos,
+            sales_subquery.c.unidades_vendidas,
+            sales_subquery.c.ingresos,
+            tendencia_expr
+        ).join(
+            sales_subquery, Productos.id == sales_subquery.c.producto_id
+        ).options(
+            joinedload(Productos.seudocategoria)
+            .joinedload(Seudocategorias.subcategoria)
+            .joinedload(Subcategorias.categoria_principal)
+        )
+        
+        # Aplicar filtros adicionales
+        if min_price is not None:
+            query = query.filter(Productos.precio >= min_price)
+        if max_price is not None:
+            query = query.filter(Productos.precio <= max_price)
+        
+        if status_filter:
+            query = query.filter(Productos.estado == status_filter)
+        
+        if search:
+            search_term = f"%{search}%"
+            query = query.filter(
+                or_(
+                    Productos.nombre.ilike(search_term),
+                    Productos.marca.ilike(search_term),
+                )
+            )
+        
+        # Aplicar ordenamiento
+        if sort_by == 'ventas':
+            query = query.order_by(desc(sales_subquery.c.unidades_vendidas))
+        elif sort_by == 'ingresos':
+            query = query.order_by(desc(sales_subquery.c.ingresos))
+        elif sort_by == 'nombre':
+            query = query.order_by(Productos.nombre.asc())
+        elif sort_by == 'nombre-desc':
+            query = query.order_by(Productos.nombre.desc())
+        elif sort_by == 'precio-asc':
+            query = query.order_by(Productos.precio.asc())
+        elif sort_by == 'precio-desc':
+            query = query.order_by(Productos.precio.desc())
+        elif sort_by == 'tendencia':
+            query = query.order_by(desc('tendencia'))
+        else:  # Ordenamiento por defecto (ventas)
+            query = query.order_by(desc(sales_subquery.c.unidades_vendidas))
+        
+        # Paginar resultados
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        results = pagination.items
+        
+        # Formatear salida (lógica unificada)
+        output = []
+        for prod, unidades, ingresos, tendencia in results:
+            output.append({
+                'id': prod.id,
+                'slug': prod.slug,
+                'nombre': prod.nombre,
+                'marca': prod.marca,
+                'imagen_url': prod.imagen_url,
+                'precio': prod.precio,
+                'unidades_vendidas': unidades or 0,
+                'ingresos': ingresos or 0,
+                'tendencia': tendencia or 0,
+                'categoria_path': get_category_path(prod),
+                'estado': prod.estado
+            })
+        
+        return jsonify({
+            'success': True,
+            'products': output,
+            'pagination': {
+                'total': pagination.total,
+                'pages': pagination.pages,
+                'page': pagination.page,
+                'per_page': pagination.per_page,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev,
+                'next_num': pagination.next_num,
+                'prev_num': pagination.prev_num
+            }
+        })
+    
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener productos filtrados: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': 'Error interno del servidor',
+            'error_code': 'INTERNAL_ERROR'
+        }), 500
+
+def get_category_path(producto):
+    """
+    Función auxiliar para obtener la ruta de categoría de un producto
+    """
+    path_parts = []
+    
+    if producto.seudocategoria:
+        path_parts.append(producto.seudocategoria.nombre)
+        if producto.seudocategoria.subcategoria:
+            path_parts.append(producto.seudocategoria.subcategoria.nombre)
+            if producto.seudocategoria.subcategoria.categoria_principal:
+                path_parts.append(producto.seudocategoria.subcategoria.categoria_principal.nombre)
+    
+    # Invertir para mostrar de principal a seudocategoría
+    path_parts.reverse()
+    return ' > '.join(path_parts)
 
 def get_category_metrics(categoria_id):
     """
@@ -91,7 +468,6 @@ def get_category_metrics(categoria_id):
         Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
     ).filter(
         Subcategorias.categoria_principal_id == categoria_id
-        # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todos los productos
     ).subquery()
 
     total_productos = db.session.query(func.count()).select_from(product_ids_subquery).scalar() or 0
@@ -115,7 +491,6 @@ def get_category_metrics(categoria_id):
     periodo_anterior_inicio = periodo_actual_inicio - timedelta(days=30)
 
     # Ventas y unidades totales (histórico) - optimizado
-    # MODIFICACIÓN: Obtener ventas totales históricas (sin restricción de tiempo)
     query_total_historico = db.session.query(
         func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ventas'),
         func.sum(PedidoProducto.cantidad).label('unidades_vendidas')
@@ -190,8 +565,8 @@ def get_category_metrics(categoria_id):
     margen_tendencia = random.uniform(-2, 5)
 
     return {
-        'total_ventas': float(total_ventas_historico),  # MODIFICACIÓN: Usar ventas históricas
-        'unidades_vendidas': int(unidades_vendidas_historico),  # MODIFICACIÓN: Usar unidades históricas
+        'total_ventas': float(total_ventas_historico),
+        'unidades_vendidas': int(unidades_vendidas_historico),
         'total_productos': total_productos,
         'margen_promedio': margen_promedio,
         'ventas_tendencia': ventas_tendencia,
@@ -212,7 +587,6 @@ def get_market_trends(categoria_id):
         Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
     ).filter(
         Subcategorias.categoria_principal_id == categoria_id
-        # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todos los productos
     ).subquery()
     
     product_ids_result = db.session.query(product_ids_subquery).all()
@@ -252,33 +626,51 @@ def get_market_trends(categoria_id):
         'data': data_ventas
     }
 
-    # --- Comparación con otras categorías (Top 5) ---
-    # MODIFICACIÓN: Obtener ventas históricas totales para la comparación
-    all_categories_sales_query = db.session.query(
-        CategoriasPrincipales.nombre,
-        func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_sales')
-    ).join(Subcategorias, CategoriasPrincipales.id == Subcategorias.categoria_principal_id)\
-     .join(Seudocategorias, Subcategorias.id == Seudocategorias.subcategoria_id)\
-     .join(Productos, Seudocategorias.id == Productos.seudocategoria_id)\
-     .join(PedidoProducto, Productos.id == PedidoProducto.producto_id)\
-     .join(Pedido, PedidoProducto.pedido_id == Pedido.id)\
-     .filter(Pedido.estado_pedido == EstadoPedido.COMPLETADO.value)\
-     .group_by(CategoriasPrincipales.nombre)\
-     .order_by(desc(func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario)))\
-     .limit(5)
-    
-    all_categories_sales = all_categories_sales_query.all()
+    # --- Comparación con otras categorías (Top 5 en el último mes) ---
+    periodo_actual_fin = now
+    periodo_actual_inicio = now - timedelta(days=30)
+    periodo_anterior_fin = periodo_actual_inicio
+    periodo_anterior_inicio = periodo_actual_inicio - timedelta(days=30)
 
-    # Para datos anteriores, usaremos un porcentaje fijo de las ventas actuales
-    labels = [cat[0] for cat in all_categories_sales]
-    current_data = [float(cat[1]) for cat in all_categories_sales]
-    previous_data = [float(cat[1] * 0.8) for cat in all_categories_sales]  # 80% de las ventas actuales
+    # 1. Encontrar las 5 categorías principales con más ventas en el último mes
+    top_categories_query = db.session.query(
+        CategoriasPrincipales.id,
+        CategoriasPrincipales.nombre
+    ).join(Subcategorias).join(Seudocategorias).join(Productos).join(PedidoProducto).join(Pedido).filter(
+        Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
+        Pedido.created_at.between(periodo_actual_inicio, periodo_actual_fin)
+    ).group_by(CategoriasPrincipales.id, CategoriasPrincipales.nombre).order_by(
+        desc(func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario))
+    ).limit(5).all()
 
-    comparacion_categorias = {
-        'labels': labels,
-        'current_data': current_data,
-        'previous_data': previous_data
-    }
+    top_category_ids = [cat.id for cat in top_categories_query]
+    top_category_names = [cat.nombre for cat in top_categories_query]
+
+    if not top_category_ids:
+        # Si no hay ventas recientes, mostrar el gráfico vacío
+        comparacion_categorias = {
+            'labels': [], 'current_data': [], 'previous_data': []
+        }
+    else:
+        # 2. Obtener las ventas para estas categorías en el período actual y anterior
+        sales_data_query = db.session.query(
+            CategoriasPrincipales.id,
+            func.sum(case((Pedido.created_at.between(periodo_actual_inicio, periodo_actual_fin), PedidoProducto.cantidad * PedidoProducto.precio_unitario), else_=0)).label('ventas_actuales'),
+            func.sum(case((Pedido.created_at.between(periodo_anterior_inicio, periodo_anterior_fin), PedidoProducto.cantidad * PedidoProducto.precio_unitario), else_=0)).label('ventas_anteriores')
+        ).join(Subcategorias).join(Seudocategorias).join(Productos).join(PedidoProducto).join(Pedido).filter(
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
+            CategoriasPrincipales.id.in_(top_category_ids)
+        ).group_by(CategoriasPrincipales.id)
+
+        sales_data = {str(row.id): row for row in sales_data_query.all()}
+
+        # 3. Construir los datos para el gráfico, asegurando el orden
+        current_data = [float(sales_data.get(str(cat_id)).ventas_actuales) if sales_data.get(str(cat_id)) else 0 for cat_id in top_category_ids]
+        previous_data = [float(sales_data.get(str(cat_id)).ventas_anteriores) if sales_data.get(str(cat_id)) else 0 for cat_id in top_category_ids]
+
+        comparacion_categorias = {
+            'labels': top_category_names, 'current_data': current_data, 'previous_data': previous_data
+        }
 
     # --- Indicadores clave ---
     # Participación de mercado
@@ -321,6 +713,9 @@ def get_market_trends(categoria_id):
         elif ventas_ultimos_12m > 0:
             tasa_crecimiento = 100  # Crecimiento del 100% si no había ventas antes
 
+    # Clamp the growth rate for the progress circle (0 to 100)
+    tasa_crecimiento_clamped = min(100, max(0, tasa_crecimiento))
+
     # Satisfacción del cliente
     avg_rating = db.session.query(func.avg(Productos.calificacion_promedio_almacenada)).join(Seudocategorias).join(Subcategorias).filter(
         Subcategorias.categoria_principal_id == categoria_id,
@@ -333,6 +728,7 @@ def get_market_trends(categoria_id):
         'participacion_mercado': participacion_mercado,
         'participacion_mercado_desc': f"Representa el {participacion_mercado:.1f}% de las ventas totales en los últimos 6 meses.",
         'tasa_crecimiento': tasa_crecimiento,
+        'tasa_crecimiento_clamped': tasa_crecimiento_clamped,
         'tasa_crecimiento_desc': f"Crecimiento interanual del {tasa_crecimiento:.1f}%.",
         'satisfaccion_cliente': satisfaccion_cliente,
         'satisfaccion_cliente_desc': f"Calificación promedio de {avg_rating:.1f}/5 estrellas en los productos de esta categoría."
@@ -351,7 +747,6 @@ def get_subcategories_performance(categoria_id):
     # Obtener todas las subcategorías y seudocategorías de la categoría principal (activas e inactivas)
     subcategorias = Subcategorias.query.filter(
         Subcategorias.categoria_principal_id == categoria_id
-        # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todas las subcategorías
     ).options(
         joinedload(Subcategorias.seudocategorias).joinedload(Seudocategorias.productos)
     ).all()
@@ -367,7 +762,6 @@ def get_subcategories_performance(categoria_id):
     for sub in subcategorias:
         sub_to_products[sub.id] = []
         for seudo in sub.seudocategorias:
-            # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todos los productos
             product_ids_in_seudo = [p.id for p in seudo.productos]
             seudo_to_products[seudo.id] = product_ids_in_seudo
             sub_to_products[sub.id].extend(product_ids_in_seudo)
@@ -414,14 +808,14 @@ def get_subcategories_performance(categoria_id):
 
         seudos_data = []
         for seudo in sub.seudocategorias:
-            # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todas las seudocategorías
             seudo_product_ids = seudo_to_products.get(seudo.id, [])
             ventas_seudo = sum(sales_by_product[pid]['total'] for pid in seudo_product_ids)
             if ventas_seudo > 0:
                 seudos_data.append({
+                    'id': seudo.id,
                     'nombre': seudo.nombre,
                     'ventas': float(ventas_seudo),
-                    'estado': seudo.estado  # MODIFICACIÓN: Añadimos el estado
+                    'estado': seudo.estado
                 })
         
         if ventas_totales_sub > 0:
@@ -430,7 +824,7 @@ def get_subcategories_performance(categoria_id):
                 'nombre': sub.nombre,
                 'ventas': float(ventas_totales_sub),
                 'crecimiento': crecimiento,
-                'estado': sub.estado,  # MODIFICACIÓN: Añadimos el estado
+                'estado': sub.estado,
                 'seudocategorias': sorted(seudos_data, key=lambda x: x['ventas'], reverse=True)
             })
 
@@ -450,7 +844,6 @@ def get_top_products(categoria_id, limit=10):
         Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
     ).filter(
         Subcategorias.categoria_principal_id == categoria_id
-        # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todos los productos
     ).subquery()
     
     product_ids_result = db.session.query(product_ids_subquery).all()
@@ -515,6 +908,7 @@ def get_top_products(categoria_id, limit=10):
 
         result.append({
             'id': prod.id,
+            'slug': prod.slug,
             'nombre': prod.nombre,
             'marca': prod.marca,
             'imagen_url': prod.imagen_url,
@@ -523,7 +917,7 @@ def get_top_products(categoria_id, limit=10):
             'ingresos': float(ingresos) if ingresos else 0,
             'tendencia': tendencia,
             'categoria_path': categoria_path,
-            'estado': prod.estado  # MODIFICACIÓN: Añadimos el estado
+            'estado': prod.estado
         })
 
     return result
@@ -560,7 +954,6 @@ def get_related_products(categoria_id, page=1, per_page=10, search=''):
         Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
     ).filter(
         Subcategorias.categoria_principal_id == categoria_id
-        # MODIFICACIÓN: Eliminamos el filtro de estado para obtener todos los productos
     )
     
     # Aplicar búsqueda si se proporciona
@@ -583,7 +976,7 @@ def get_related_products(categoria_id, page=1, per_page=10, search=''):
     # Formatear resultados
     products_data = []
     for prod in productos:
-        products_data.append(producto_to_dict(prod))
+        products_data.append(admin_producto_to_dict(prod))
     
     return {
         'success': True,

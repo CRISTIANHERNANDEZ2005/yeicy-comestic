@@ -80,7 +80,7 @@ def create_app(config_class=Config):
     from app.blueprints.cliente.favorites import favorites_bp
     from app.blueprints.cliente.reviews import reviews_bp
     from app.blueprints.cliente.order import order_bp
-    
+
     # Registrar blueprints admin
     from app.blueprints.admin.auth import admin_auth_bp
     from app.blueprints.admin.dashboard import admin_dashboard_bp
@@ -101,7 +101,7 @@ def create_app(config_class=Config):
     app.register_blueprint(favorites_bp)
     app.register_blueprint(reviews_bp)
     app.register_blueprint(order_bp)
-    
+
     # admin
     app.register_blueprint(admin_auth_bp)
     app.register_blueprint(admin_dashboard_bp)
@@ -176,7 +176,7 @@ def create_app(config_class=Config):
                 .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))\
             )\
             .all()
-        
+
         # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
         categorias_data = [categoria_principal_to_dict(c) for c in categorias_obj]
 

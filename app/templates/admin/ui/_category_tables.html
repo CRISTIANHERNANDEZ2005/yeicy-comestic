@@ -46,9 +46,9 @@
                             <td>{{ category.created_at | format_date }}</td>
                             <td>
                                 <div class="flex">
-                                    <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('{{ category.id }}', 'main')">
+                                    <a href="{{ url_for('admin_categoria_detalle.view_category_details_page', category_slug=category.slug) }}" class="action-button view" title="Ver detalles">
                                         <i class="fas fa-eye"></i>
-                                    </button>
+                                    </a>
                                     <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ category.id }}', 'main')">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -117,9 +117,6 @@
                             <td>{{ subcategory.created_at | format_date }}</td>
                             <td>
                                 <div class="flex">
-                                    <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('{{ subcategory.id }}', 'sub')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
                                     <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ subcategory.id }}', 'sub')">
                                         <i class="fas fa-edit"></i>
                                     </button>
@@ -188,9 +185,6 @@
                             <td>{{ pseudo.created_at | format_date }}</td>
                             <td>
                                 <div class="flex">
-                                    <button class="action-button view" title="Ver detalles" onclick="categoriesApp.viewCategory('{{ pseudo.id }}', 'pseudo')">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
                                     <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ pseudo.id }}', 'pseudo')">
                                         <i class="fas fa-edit"></i>
                                     </button>

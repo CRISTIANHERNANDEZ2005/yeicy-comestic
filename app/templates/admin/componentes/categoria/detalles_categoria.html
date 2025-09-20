@@ -57,7 +57,7 @@
         }
         .progress-ring-circle {
             transition: stroke-dashoffset 0.35s;
-            stroke-dasharray: 251.2 251.2;
+            stroke-dasharray: 150.8 150.8; /* Circunferencia para r=24 (2 * PI * 24) */
         }
         .trend-up {
             color: #10b981;
@@ -1697,7 +1697,7 @@ function updateMarketTrends(trends) {
     
     // Actualizar círculos de progreso
     updateProgressCircle('market-share-circle', trends.indicadores.participacion_mercado);
-    updateProgressCircle('growth-rate-circle', trends.indicadores.tasa_crecimiento);
+    updateProgressCircle('growth-rate-circle', trends.indicadores.tasa_crecimiento_clamped);
     updateProgressCircle('satisfaction-circle', trends.indicadores.satisfaccion_cliente);
 }
 
@@ -1819,8 +1819,8 @@ function updateProgressCircle(circleId, percentage) {
     const circle = document.getElementById(circleId);
     if (!circle) return;
     
-    const circumference = 2 * Math.PI * 24;
-    const offset = circumference - (Math.min(100, Math.max(0, percentage)) / 100) * circumference;
+    const circumference = 150.8; // 2 * PI * 24 (radio del círculo SVG)
+    const offset = circumference - (Math.min(100, Math.max(0, parseFloat(percentage) || 0)) / 100) * circumference;
     circle.style.strokeDashoffset = offset;
 }
 

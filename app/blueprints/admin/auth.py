@@ -45,10 +45,11 @@ def login():
 
         # Generar JWT
         admin_jwt_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440) # Default to 24 hours if not set
-        access_token = create_access_token(identity=admin.id, additional_claims={"is_admin": True}, expires_delta=timedelta(minutes=admin_jwt_expiration_minutes))
+        expires_delta = timedelta(minutes=admin_jwt_expiration_minutes)
+        access_token = create_access_token(identity=admin.id, additional_claims={"is_admin": True}, expires_delta=expires_delta)
 
         response = make_response(jsonify({'success': True, 'redirect': url_for('admin_dashboard_bp.dashboard')}))
-        set_access_cookies(response, access_token)
+        set_access_cookies(response, access_token, max_age=expires_delta)
         return response
 
     return render_template('admin/page/login_admin.html')

@@ -1901,8 +1901,11 @@ function updateSubcategoryPerformance(subcategories) {
                     <div class="space-y-3">
                         ${subcategory.seudocategorias && subcategory.seudocategorias.length > 0 ? 
                             subcategory.seudocategorias.map(pseudo => `
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">${pseudo.nombre}</span>
+                                <div class="flex justify-between items-center text-sm">
+                                    <div class="flex items-center">
+                                        <span class="text-gray-600">${pseudo.nombre}</span>
+                                        ${pseudo.estado === 'inactivo' ? '<span class="status-badge status-inactive ml-2"><i class="fas fa-circle"></i>Inactivo</span>' : ''}
+                                    </div>
                                     <span class="text-sm font-medium">${formatCurrency(pseudo.ventas)}</span>
                                 </div>
                             `).join('') : 
@@ -1954,8 +1957,11 @@ function updateSubcategoryPerformance(subcategories) {
                     <div class="space-y-3">
                         ${subcategory.seudocategorias && subcategory.seudocategorias.length > 0 ? 
                             subcategory.seudocategorias.map(pseudo => `
-                                <div class="flex justify-between items-center">
-                                    <span class="text-gray-600">${pseudo.nombre}</span>
+                                <div class="flex justify-between items-center text-sm">
+                                    <div class="flex items-center">
+                                        <span class="text-gray-600">${pseudo.nombre}</span>
+                                        ${pseudo.estado === 'inactivo' ? '<span class="status-badge status-inactive ml-2"><i class="fas fa-circle"></i>Inactivo</span>' : ''}
+                                    </div>
                                     <span class="text-sm font-medium">${formatCurrency(pseudo.ventas)}</span>
                                 </div>
                             `).join('') : 

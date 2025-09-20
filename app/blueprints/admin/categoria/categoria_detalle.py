@@ -764,9 +764,6 @@ def get_subcategories_performance(categoria_id):
             sub_to_products[sub.id].extend(product_ids_in_seudo)
             all_product_ids.update(product_ids_in_seudo)
 
-    if not all_product_ids:
-        return []
-
     # Periodos de tiempo para tendencias
     now = datetime.utcnow()
     periodo_actual_inicio = now - timedelta(days=30)
@@ -779,7 +776,7 @@ def get_subcategories_performance(categoria_id):
         (PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('ingresos')
     ).join(Pedido).filter(
         Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
-        PedidoProducto.producto_id.in_(all_product_ids),
+        PedidoProducto.producto_id.in_(all_product_ids) if all_product_ids else [],
         Pedido.created_at >= periodo_anterior_inicio
     ).all()
 
@@ -807,23 +804,21 @@ def get_subcategories_performance(categoria_id):
         for seudo in sub.seudocategorias:
             seudo_product_ids = seudo_to_products.get(seudo.id, [])
             ventas_seudo = sum(sales_by_product[pid]['total'] for pid in seudo_product_ids)
-            if ventas_seudo > 0:
-                seudos_data.append({
-                    'id': seudo.id,
-                    'nombre': seudo.nombre,
-                    'ventas': float(ventas_seudo),
-                    'estado': seudo.estado
-                })
-        
-        if ventas_totales_sub > 0:
-            result.append({
-                'id': sub.id,
-                'nombre': sub.nombre,
-                'ventas': float(ventas_totales_sub),
-                'crecimiento': crecimiento,
-                'estado': sub.estado,
-                'seudocategorias': sorted(seudos_data, key=lambda x: x['ventas'], reverse=True)
+            seudos_data.append({
+                'id': seudo.id,
+                'nombre': seudo.nombre,
+                'ventas': float(ventas_seudo),
+                'estado': seudo.estado
             })
+        
+        result.append({
+            'id': sub.id,
+            'nombre': sub.nombre,
+            'ventas': float(ventas_totales_sub),
+            'crecimiento': crecimiento,
+            'estado': sub.estado,
+            'seudocategorias': sorted(seudos_data, key=lambda x: x['ventas'], reverse=True)
+        })
 
     # Ordenar por ventas (descendente)
     result.sort(key=lambda x: x['ventas'], reverse=True)

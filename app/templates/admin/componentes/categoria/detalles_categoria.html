@@ -871,9 +871,8 @@
             }
             
             .related-product-footer {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.5rem;
+                flex-direction: row; /* Cambiado a fila */
+                align-items: center; /* Centrado verticalmente */
             }
         }
         
@@ -1329,20 +1328,20 @@
                 </div>
                 
                 <!-- Vista de tabla -->
-                <div id="related-table-view" class="related-products-table-container overflow-x-auto">
-                    <table class="related-products-table min-w-full">
-                        <thead>
+                <div id="related-table-view" class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
                             <tr>
-                                <th>Producto</th>
-                                <th>Categoría</th>
-                                <th>Precio</th>
-                                <th>Stock</th>
-                                <th>Calificación</th>
-                                <th>Estado</th>
-                                <th>Acciones</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Producto</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Categorías</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Precio</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Stock</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Calificación</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="related-products-table-body">
+                        <tbody id="related-products-table-body" class="bg-white divide-y divide-gray-200">
                             <!-- Se llenará dinámicamente -->
                         </tbody>
                     </table>
@@ -2057,32 +2056,35 @@ function renderTopProductsTable(products) {
     products.forEach(product => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="px-2 md:px-6 py-6 align-top">
-                <div class="product-info">
-                    <img src="${product.imagen_url || 'https://via.placeholder.com/40'}" alt="${product.nombre}" class="product-img">
-                    <div>
-                        <div class="text-sm font-medium text-gray-900 break-words">${product.nombre}</div>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                        <img class="h-12 w-12 object-cover" src="${product.imagen_url || 'https://via.placeholder.com/40'}" alt="${product.nombre}">
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-sm font-semibold text-gray-900">${product.nombre}</div>
                         <div class="text-sm text-gray-500">${product.marca || 'Sin marca'}</div>
                     </div>
                 </div>
             </td>
-            <td class="px-2 md:px-6 py-6 align-top">
-                <div class="text-sm text-gray-900">${product.categoria_path}</div>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${product.categoria_principal_nombre || ''}</div>
+                <div class="text-sm text-gray-500">${product.subcategoria_nombre || ''} / ${product.seudocategoria_nombre || ''}</div>
             </td>
-            <td class="px-2 md:px-6 py-6 whitespace-nowrap text-sm text-gray-900 align-top">${formatCurrency(product.precio)}</td>
-            <td class="px-2 md:px-6 py-6 whitespace-nowrap text-sm text-gray-900 align-top">${product.unidades_vendidas}</td>
-            <td class="px-2 md:px-6 py-6 whitespace-nowrap text-sm text-gray-900 align-top">${formatCurrency(product.ingresos)}</td>
-            <td class="px-2 md:px-6 py-6 whitespace-nowrap align-top">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.precio)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.unidades_vendidas}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.ingresos)}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
                 <span class="trend-indicator ${product.tendencia > 0 ? 'trend-up' : 'trend-down'}">
                     <i class="fas fa-arrow-${product.tendencia > 0 ? 'up' : 'down'} mr-1"></i> ${formatPercentage(Math.abs(product.tendencia))}
                 </span>
             </td>
-            <td class="px-2 md:px-6 py-6 whitespace-nowrap align-top">
+            <td class="px-6 py-4 whitespace-nowrap">
                 <span class="status-badge ${product.estado === 'activo' ? 'status-active' : 'status-inactive'}">
                     <i class="fas fa-circle"></i>${product.estado === 'activo' ? 'Activo' : 'Inactivo'}
                 </span>
             </td>
-            <td class="px-2 md:px-6 py-6 whitespace-nowrap text-sm font-medium align-top">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <a href="/admin/producto/${product.slug}" class="text-blue-600 hover:text-blue-900">Ver</a>
             </td>
         `;
@@ -2130,7 +2132,10 @@ function renderTopProductsGrid(products) {
                     </div>
                 </div>
                 <div class="product-grid-footer">
-                    <span class="text-xs text-gray-500">${product.categoria_path.split(' > ')[0]}</span>
+                    <div>
+                        <div class="text-xs font-medium text-gray-800">${product.categoria_principal_nombre || ''}</div>
+                        <div class="text-xs text-gray-500">${product.subcategoria_nombre || ''} / ${product.seudocategoria_nombre || ''}</div>
+                    </div>
                     <a href="/admin/producto/${product.slug}" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Ver detalles</a>
                 </div>
             </div>
@@ -2364,36 +2369,39 @@ function renderRelatedProductsTable(products) {
     products.forEach(product => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td>
-                <div class="product-info">
-                    <img src="${product.imagen_url || 'https://via.placeholder.com/40'}" alt="${product.nombre}" class="product-img">
-                    <div>
-                        <div class="text-sm font-medium text-gray-900 break-words">${product.nombre}</div>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                        <img class="h-12 w-12 object-cover" src="${product.imagen_url || 'https://via.placeholder.com/40'}" alt="${product.nombre}">
+                    </div>
+                    <div class="ml-4">
+                        <div class="text-sm font-semibold text-gray-900">${product.nombre}</div>
                         <div class="text-sm text-gray-500">${product.marca || 'Sin marca'}</div>
                     </div>
                 </div>
             </td>
-            <td>
-                <div class="text-sm text-gray-900">${product.categoria_path || 'N/A'}</div>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">${product.categoria_principal_nombre || ''}</div>
+                <div class="text-sm text-gray-500">${product.subcategoria_nombre || ''} / ${product.seudocategoria_nombre || ''}</div>
             </td>
-            <td class="whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.precio)}</td>
-            <td class="whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.precio)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <span class="text-xs ${product.agotado ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'} px-2 py-1 rounded">
                     ${product.existencia}
                 </span>
             </td>
-            <td class="whitespace-nowrap text-sm text-gray-900">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                 <div class="flex items-center">
                     ${renderStars(product.calificacion_promedio)}
                     <span class="ml-1 text-sm text-gray-600">${product.calificacion_promedio ? product.calificacion_promedio.toFixed(1) : 'N/A'}</span>
                 </div>
             </td>
-            <td class="whitespace-nowrap">
+            <td class="px-6 py-4 whitespace-nowrap">
                 <span class="status-badge ${product.estado === 'activo' ? 'status-active' : 'status-inactive'}">
                     <i class="fas fa-circle"></i>${product.estado === 'activo' ? 'Activo' : 'Inactivo'}
                 </span>
             </td>
-            <td class="whitespace-nowrap text-sm font-medium">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <a href="/admin/producto/${product.slug}" class="text-blue-600 hover:text-blue-900">Ver</a>
             </td>
         `;
@@ -2457,7 +2465,10 @@ function renderRelatedProductsGrid(products) {
                     </div>
                 </div>
                 <div class="related-product-footer">
-                    <span class="related-product-category">${product.categoria_principal_nombre || 'N/A'}</span>
+                    <div>
+                        <div class="text-xs font-medium text-gray-800">${product.categoria_principal_nombre || ''}</div>
+                        <div class="text-xs text-gray-500">${product.subcategoria_nombre || ''} / ${product.seudocategoria_nombre || ''}</div>
+                    </div>
                     <a href="/admin/producto/${product.slug}" class="related-product-action">Ver detalles</a>
                 </div>
             </div>

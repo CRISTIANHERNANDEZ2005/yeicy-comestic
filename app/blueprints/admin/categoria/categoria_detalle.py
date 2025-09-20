@@ -221,7 +221,9 @@ def get_related_products_filtered(categoria_id, page=1, per_page=10, search='', 
     products_data = []
     for prod in productos:
         prod_dict = admin_producto_to_dict(prod)
-        prod_dict['categoria_path'] = get_category_path(prod) # Añadir ruta completa
+        prod_dict['categoria_principal_nombre'] = prod.seudocategoria.subcategoria.categoria_principal.nombre if prod.seudocategoria and prod.seudocategoria.subcategoria and prod.seudocategoria.subcategoria.categoria_principal else None
+        prod_dict['subcategoria_nombre'] = prod.seudocategoria.subcategoria.nombre if prod.seudocategoria and prod.seudocategoria.subcategoria else None
+        prod_dict['seudocategoria_nombre'] = prod.seudocategoria.nombre if prod.seudocategoria else None
         products_data.append(prod_dict)
     
     return {
@@ -403,7 +405,7 @@ def get_top_products_filtered(admin_user, categoria_id):
         # Formatear salida (lógica unificada)
         output = []
         for prod, unidades, ingresos, tendencia in results:
-            output.append({
+            prod_dict = {
                 'id': prod.id,
                 'slug': prod.slug,
                 'nombre': prod.nombre,
@@ -413,9 +415,12 @@ def get_top_products_filtered(admin_user, categoria_id):
                 'unidades_vendidas': unidades or 0,
                 'ingresos': ingresos or 0,
                 'tendencia': tendencia or 0,
-                'categoria_path': get_category_path(prod),
-                'estado': prod.estado
-            })
+                'estado': prod.estado,
+                'categoria_principal_nombre': prod.seudocategoria.subcategoria.categoria_principal.nombre if prod.seudocategoria and prod.seudocategoria.subcategoria and prod.seudocategoria.subcategoria.categoria_principal else None,
+                'subcategoria_nombre': prod.seudocategoria.subcategoria.nombre if prod.seudocategoria and prod.seudocategoria.subcategoria else None,
+                'seudocategoria_nombre': prod.seudocategoria.nombre if prod.seudocategoria else None
+            }
+            output.append(prod_dict)
         
         return jsonify({
             'success': True,
@@ -900,13 +905,7 @@ def get_top_products(categoria_id, limit=10):
         
         tendencia = ((ingresos_actual - ingresos_anterior) / ingresos_anterior) * 100 if ingresos_anterior > 0 else 100 if ingresos_actual > 0 else 0
 
-        # Obtener ruta de categoría
-        seudo = prod.seudocategoria
-        sub = seudo.subcategoria if seudo else None
-        cat = sub.categoria_principal if sub else None
-        categoria_path = f"{cat.nombre if cat else 'N/A'} > {sub.nombre if sub else 'N/A'} > {seudo.nombre if seudo else 'N/A'}"
-
-        result.append({
+        prod_dict = {
             'id': prod.id,
             'slug': prod.slug,
             'nombre': prod.nombre,
@@ -916,9 +915,12 @@ def get_top_products(categoria_id, limit=10):
             'unidades_vendidas': int(unidades) if unidades else 0,
             'ingresos': float(ingresos) if ingresos else 0,
             'tendencia': tendencia,
-            'categoria_path': categoria_path,
-            'estado': prod.estado
-        })
+            'estado': prod.estado,
+            'categoria_principal_nombre': prod.seudocategoria.subcategoria.categoria_principal.nombre if prod.seudocategoria and prod.seudocategoria.subcategoria and prod.seudocategoria.subcategoria.categoria_principal else None,
+            'subcategoria_nombre': prod.seudocategoria.subcategoria.nombre if prod.seudocategoria and prod.seudocategoria.subcategoria else None,
+            'seudocategoria_nombre': prod.seudocategoria.nombre if prod.seudocategoria else None
+        }
+        result.append(prod_dict)
 
     return result
 

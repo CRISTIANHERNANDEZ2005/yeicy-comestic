@@ -1,0 +1,1505 @@
+{% extends 'admin/page/base.html' %}
+{% block title %}
+    Detalles de {{ categoria.nombre }} - Panel de Administración
+{% endblock %}
+{% block content %}
+    <style>
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        .category-card {
+            transition: all 0.3s ease;
+        }
+        .category-card:hover {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .product-card {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .product-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.15);
+        }
+        .product-card:hover .product-overlay {
+            opacity: 1;
+        }
+        .product-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        .progress-ring {
+            transform: rotate(-90deg);
+        }
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.35s;
+            stroke-dasharray: 251.2 251.2;
+        }
+        .trend-up {
+            color: #10b981;
+        }
+        .trend-down {
+            color: #ef4444;
+        }
+        .market-indicator {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .pagination-btn {
+            transition: all 0.2s ease;
+        }
+        .pagination-btn:hover {
+            background-color: #f3f4f6;
+        }
+        .pagination-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .no-data-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+            border: 2px dashed #d1d5db;
+        }
+        .no-data-icon {
+            font-size: 3rem;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+        .no-data-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #4b5563;
+            margin-bottom: 0.5rem;
+        }
+        .no-data-message {
+            color: #6b7280;
+            max-width: 500px;
+        }
+        .empty-state-card {
+            background: linear-gradient(to right, #f3f4f6, #e5e7eb);
+            border: 1px dashed #9ca3af;
+            border-radius: 0.5rem;
+            padding: 1.5rem;
+            text-align: center;
+            color: #4b5563;
+        }
+        .empty-state-icon {
+            font-size: 2.5rem;
+            color: #9ca3af;
+            margin-bottom: 1rem;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 0.5rem;
+        }
+        .refresh-animation {
+            animation: spin 1s linear infinite;
+        }
+        /* Estilos para etiquetas de estado */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-active {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-inactive {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-badge i {
+            margin-right: 0.25rem;
+            font-size: 0.625rem;
+        }
+        /* Estilos para tarjetas de productos inactivos */
+        .product-card.inactive {
+            opacity: 0.7;
+            border: 1px dashed #d1d5db;
+        }
+        .product-card.inactive .product-overlay {
+            background: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Category Header -->
+        <div class="market-indicator rounded-xl shadow-lg p-6 mb-8 text-white">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                <div class="mb-4 md:mb-0">
+                    <div class="flex items-center mb-2">
+                        <h2 id="category-name" class="text-3xl font-bold mr-3">Cargando...</h2>
+                        <span id="category-status" class="bg-green-500 text-white text-xs font-medium px-2.5 py-0.5 rounded-full">Activo</span>
+                    </div>
+                    <p id="category-description" class="text-blue-100 max-w-3xl">Cargando descripción...</p>
+                </div>
+                <div class="flex space-x-2">
+                    <button id="refresh-data" class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-sync-alt mr-2"></i> Actualizar
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-blue-100 text-blue-600 mr-4">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Ventas Totales (Históricas)</p>
+                        <p id="total-sales" class="text-2xl font-bold text-gray-800">$0</p>
+                        <p id="sales-trend" class="text-green-600 text-sm flex items-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i> 0%
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-green-100 text-green-600 mr-4">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Unidades Vendidas</p>
+                        <p id="units-sold" class="text-2xl font-bold text-gray-800">0</p>
+                        <p id="units-trend" class="text-green-600 text-sm flex items-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i> 0%
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-purple-100 text-purple-600 mr-4">
+                        <i class="fas fa-box text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Productos</p>
+                        <p id="total-products" class="text-2xl font-bold text-gray-800">0</p>
+                        <p class="text-gray-600 text-sm flex items-center mt-1">
+                            <i class="fas fa-minus mr-1"></i> Total (activos e inactivos)
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white rounded-xl shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-amber-100 text-amber-600 mr-4">
+                        <i class="fas fa-percentage text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-gray-500 text-sm">Margen Promedio</p>
+                        <p id="avg-margin" class="text-2xl font-bold text-gray-800">0%</p>
+                        <p id="margin-trend" class="text-green-600 text-sm flex items-center mt-1">
+                            <i class="fas fa-arrow-up mr-1"></i> 0%
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabs for Market Analysis -->
+        <div class="bg-white rounded-xl shadow-md mb-8">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px">
+                    <button class="tab-btn py-4 px-6 text-center border-b-2 border-blue-500 font-medium text-sm text-blue-600" data-tab="market-trends">
+                        Tendencias del Mercado
+                    </button>
+                    <button class="tab-btn py-4 px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="subcategory-performance">
+                        Rendimiento de Subcategorías
+                    </button>
+                    <button class="tab-btn py-4 px-6 text-center border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300" data-tab="top-products">
+                        Productos Más Vendidos
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Market Trends Tab -->
+            <div id="market-trends" class="tab-content active p-6">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Evolución de Ventas</h3>
+                        <div class="chart-container">
+                            <canvas id="salesChart"></canvas>
+                            <div id="salesChartLoading" class="loading-overlay" style="display: none;">
+                                <div class="loading-spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-800 mb-4">Comparación de Ventas con Otras Categorías</h3>
+                        <div class="chart-container">
+                            <canvas id="categoryComparisonChart"></canvas>
+                            <div id="categoryComparisonChartLoading" class="loading-overlay" style="display: none;">
+                                <div class="loading-spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Indicadores Clave de Rendimiento</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-100">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium text-gray-700">Participación de Mercado</h4>
+                                <div class="relative w-16 h-16">
+                                    <svg class="progress-ring w-16 h-16">
+                                        <circle class="text-gray-200" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32"></circle>
+                                        <circle id="market-share-circle" class="progress-ring-circle text-blue-600" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32" style="stroke-dashoffset: 75.36;"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span id="market-share" class="text-sm font-bold text-gray-700">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p id="market-share-desc" class="text-gray-600 text-sm">Cargando información...</p>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-100">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium text-gray-700">Tasa de Crecimiento</h4>
+                                <div class="relative w-16 h-16">
+                                    <svg class="progress-ring w-16 h-16">
+                                        <circle class="text-gray-200" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32"></circle>
+                                        <circle id="growth-rate-circle" class="progress-ring-circle text-green-600" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32" style="stroke-dashoffset: 125.6;"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span id="growth-rate" class="text-sm font-bold text-gray-700">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p id="growth-rate-desc" class="text-gray-600 text-sm">Cargando información...</p>
+                        </div>
+
+                        <div class="bg-gradient-to-br from-purple-50 to-violet-50 rounded-lg p-5 border border-purple-100">
+                            <div class="flex justify-between items-center mb-3">
+                                <h4 class="font-medium text-gray-700">Satisfacción del Cliente</h4>
+                                <div class="relative w-16 h-16">
+                                    <svg class="progress-ring w-16 h-16">
+                                        <circle class="text-gray-200" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32"></circle>
+                                        <circle id="satisfaction-circle" class="progress-ring-circle text-purple-600" stroke="currentColor" stroke-width="4" fill="transparent" r="24" cx="32" cy="32" style="stroke-dashoffset: 37.68;"></circle>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span id="satisfaction" class="text-sm font-bold text-gray-700">0%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <p id="satisfaction-desc" class="text-gray-600 text-sm">Cargando información...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subcategory Performance Tab -->
+            <div id="subcategory-performance" class="tab-content p-6">
+                <h3 class="text-lg font-medium text-gray-800 mb-4">Rendimiento de Subcategorías</h3>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                    <div class="lg:col-span-2">
+                        <div class="chart-container">
+                            <canvas id="subcategoryChart"></canvas>
+                            <div id="subcategoryChartLoading" class="loading-overlay" style="display: none;">
+                                <div class="loading-spinner"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="font-medium text-gray-700 mb-3">Top Subcategorías por Ventas</h4>
+                        <div id="top-subcategories" class="space-y-3">
+                            <!-- Se llenará dinámicamente -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8" id="subcategory-cards">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+
+                <!-- Subcategorías con Menos Ventas -->
+                <div class="mt-10">
+                    <h3 class="text-lg font-medium text-gray-800 mb-4">Subcategorías con Menor Rendimiento</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="low-performing-subcategories">
+                        <!-- Se llenará dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products Tab -->
+            <div id="top-products" class="tab-content p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-medium text-gray-800">Productos Más Vendidos</h3>
+                    <div class="flex space-x-3">
+                        <select id="period-filter" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="30">Últimos 30 días</option>
+                            <option value="90">Últimos 90 días</option>
+                            <option value="365">Último año</option>
+                        </select>
+                        <div class="relative">
+                            <input type="text" id="product-search" placeholder="Buscar productos..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Marca</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unidades Vendidas</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ingresos</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tendencia</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="top-products-table" class="bg-white divide-y divide-gray-200">
+                            <!-- Se llenará dinámicamente -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Related Products Section -->
+        <div class="bg-white rounded-xl shadow-md p-6 mb-8">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-800">Productos Relacionados</h3>
+                    <p class="text-gray-600 text-sm mt-1">Explora nuestra selección de productos de la categoría <span id="related-category-name">Cargando...</span></p>
+                </div>
+                <div class="flex items-center space-x-4 mt-4 md:mt-0">
+                    <div class="flex items-center">
+                        <span class="text-gray-600 text-sm mr-2">Mostrar:</span>
+                        <select id="productsPerPage" class="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="10">10 productos</option>
+                            <option value="20">20 productos</option>
+                            <option value="30">30 productos</option>
+                            <option value="40">40 productos</option>
+                        </select>
+                    </div>
+                    <div class="relative">
+                        <input type="text" id="related-product-search" placeholder="Buscar productos..." class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6" id="productsGrid">
+                <!-- Se llenará dinámicamente -->
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex flex-col md:flex-row justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                <div id="pagination-info" class="text-sm text-gray-700 mb-4 md:mb-0">
+                    Mostrando <span class="font-medium">0</span> de <span class="font-medium">0</span> productos
+                </div>
+                <div id="pagination-controls" class="flex items-center space-x-2">
+                    <!-- Se llenará dinámicamente -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let categoriaId = "{{ categoria.id }}";
+        let salesChart, categoryComparisonChart, subcategoryChart;
+        let currentPage = 1;
+        let productsPerPage = 10;
+        let isLoading = false;
+        
+        // Función para mostrar indicador de carga
+        function showLoading(element) {
+            element.innerHTML = '<div class="loading-spinner"></div>';
+        }
+        
+        // Función para formatear moneda
+        function formatCurrency(value) {
+            if (value === null || value === undefined) return '$0';
+            return '$' + parseFloat(value).toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+        }
+        
+        // Función para formatear porcentaje
+        function formatPercentage(value) {
+            if (value === null || value === undefined) return '0%';
+            return parseFloat(value).toFixed(1) + '%';
+        }
+        
+        // Función para mostrar un contenedor vacío con mensaje profesional
+        function showEmptyState(container, title, message, icon = 'fa-inbox') {
+            container.innerHTML = `
+                <div class="no-data-container">
+                    <div class="no-data-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <h3 class="no-data-title">${title}</h3>
+                    <p class="no-data-message">${message}</p>
+                </div>
+            `;
+        }
+        
+        // Función para mostrar un estado vacío en tarjetas
+        function showEmptyCard(container, title, message, icon = 'fa-box-open') {
+            container.innerHTML = `
+                <div class="empty-state-card">
+                    <div class="empty-state-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <h3 class="font-medium text-gray-700">${title}</h3>
+                    <p class="text-gray-600 mt-2">${message}</p>
+                </div>
+            `;
+        }
+        
+        // Función para mostrar un estado vacío en tablas
+        function showEmptyTable(tableContainer, title, message, icon = 'fa-search', colspan = 9) {
+            tableContainer.innerHTML = `
+                <tr>
+                    <td colspan="${colspan}" class="px-6 py-8 text-center">
+                        <div class="flex flex-col items-center justify-center">
+                            <div class="text-gray-400 mb-4">
+                                <i class="fas ${icon} text-5xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">${title}</h3>
+                            <p class="text-gray-500">${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+        
+        // Función para obtener datos de la categoría
+        async function fetchCategoryData() {
+            if (isLoading) return;
+            isLoading = true;
+            
+            try {
+                // Mostrar indicadores de carga en los gráficos
+                document.getElementById('salesChartLoading').style.display = 'flex';
+                document.getElementById('categoryComparisonChartLoading').style.display = 'flex';
+                document.getElementById('subcategoryChartLoading').style.display = 'flex';
+                
+                const response = await fetch(`/admin/categorias-principales/${categoriaId}/detalle`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateCategoryHeader(data.category);
+                    updateMetrics(data.metrics);
+                    updateMarketTrends(data.trends);
+                    updateSubcategoryPerformance(data.subcategories);
+                    updateTopProducts(data.topProducts);
+                    updateRelatedProducts(data.relatedProducts);
+                } else {
+                    console.error('Error al cargar datos:', data.message);
+                    showErrorMessage('Error al cargar los datos de la categoría: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error en la solicitud:', error);
+                showErrorMessage('Error de conexión al servidor. Por favor, intente nuevamente más tarde.');
+            } finally {
+                // Ocultar indicadores de carga
+                document.getElementById('salesChartLoading').style.display = 'none';
+                document.getElementById('categoryComparisonChartLoading').style.display = 'none';
+                document.getElementById('subcategoryChartLoading').style.display = 'none';
+                isLoading = false;
+            }
+        }
+        
+        // Función para mostrar mensaje de error
+        function showErrorMessage(message) {
+            // Crear una notificación de error
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center';
+            notification.innerHTML = `
+                <div class="mr-3">
+                    <i class="fas fa-exclamation-circle text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold">Error</h4>
+                    <p>${message}</p>
+                </div>
+                <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-eliminar después de 5 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
+        }
+        
+        // Función para mostrar mensaje de éxito
+        function showSuccessMessage(message) {
+            // Crear una notificación de éxito
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-4 rounded-lg shadow-lg z-50 flex items-center';
+            notification.innerHTML = `
+                <div class="mr-3">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold">Éxito</h4>
+                    <p>${message}</p>
+                </div>
+                <button class="ml-4 text-white hover:text-gray-200" onclick="this.parentElement.remove()">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            document.body.appendChild(notification);
+            
+            // Auto-eliminar después de 3 segundos
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 3000);
+        }
+        
+        // Función para actualizar encabezado de categoría
+        function updateCategoryHeader(category) {
+            document.getElementById('category-name').textContent = category.nombre;
+            document.getElementById('category-description').textContent = category.descripcion;
+            document.getElementById('category-status').textContent = category.estado === 'activo' ? 'Activo' : 'Inactivo';
+            document.getElementById('category-status').className = category.estado === 'activo' 
+                ? 'bg-green-500 text-white text-xs font-medium px-2.5 py-0.5 rounded-full' 
+                : 'bg-red-500 text-white text-xs font-medium px-2.5 py-0.5 rounded-full';
+            document.getElementById('related-category-name').textContent = category.nombre;
+        }
+        
+        // Función para actualizar métricas
+        function updateMetrics(metrics) {
+            // Verificar si hay datos de productos
+            const hasProducts = metrics.total_productos > 0;
+            const hasSales = metrics.total_ventas > 0 || metrics.unidades_vendidas > 0;
+            
+            // Actualizar valores
+            document.getElementById('total-sales').textContent = hasSales ? formatCurrency(metrics.total_ventas) : 'Sin ventas';
+            document.getElementById('units-sold').textContent = hasSales ? metrics.unidades_vendidas.toLocaleString() : 'Sin ventas';
+            document.getElementById('total-products').textContent = metrics.total_productos;
+            document.getElementById('avg-margin').textContent = hasProducts && metrics.margen_promedio > 0 ? formatPercentage(metrics.margen_promedio) : 'Sin datos';
+            
+            // Actualizar tendencias
+            const salesTrend = document.getElementById('sales-trend');
+            const unitsTrend = document.getElementById('units-trend');
+            const marginTrend = document.getElementById('margin-trend');
+            
+            if (hasSales) {
+                salesTrend.innerHTML = metrics.ventas_tendencia > 0 
+                    ? `<i class="fas fa-arrow-up mr-1"></i> ${formatPercentage(metrics.ventas_tendencia)}` 
+                    : `<i class="fas fa-arrow-down mr-1"></i> ${formatPercentage(Math.abs(metrics.ventas_tendencia))}`;
+                salesTrend.className = metrics.ventas_tendencia > 0 
+                    ? 'text-green-600 text-sm flex items-center mt-1' 
+                    : 'text-red-600 text-sm flex items-center mt-1';
+            } else {
+                salesTrend.innerHTML = '<i class="fas fa-minus mr-1"></i> Sin datos';
+                salesTrend.className = 'text-gray-600 text-sm flex items-center mt-1';
+            }
+                
+            if (hasSales) {
+                unitsTrend.innerHTML = metrics.unidades_tendencia > 0 
+                    ? `<i class="fas fa-arrow-up mr-1"></i> ${formatPercentage(metrics.unidades_tendencia)}` 
+                    : `<i class="fas fa-arrow-down mr-1"></i> ${formatPercentage(Math.abs(metrics.unidades_tendencia))}`;
+                unitsTrend.className = metrics.unidades_tendencia > 0 
+                    ? 'text-green-600 text-sm flex items-center mt-1' 
+                    : 'text-red-600 text-sm flex items-center mt-1';
+            } else {
+                unitsTrend.innerHTML = '<i class="fas fa-minus mr-1"></i> Sin datos';
+                unitsTrend.className = 'text-gray-600 text-sm flex items-center mt-1';
+            }
+                
+            if (hasProducts && metrics.margen_promedio > 0) {
+                marginTrend.innerHTML = metrics.margen_tendencia > 0 
+                    ? `<i class="fas fa-arrow-up mr-1"></i> ${formatPercentage(metrics.margen_tendencia)}` 
+                    : `<i class="fas fa-arrow-down mr-1"></i> ${formatPercentage(Math.abs(metrics.margen_tendencia))}`;
+                marginTrend.className = metrics.margen_tendencia > 0 
+                    ? 'text-green-600 text-sm flex items-center mt-1' 
+                    : 'text-red-600 text-sm flex items-center mt-1';
+            } else {
+                marginTrend.innerHTML = '<i class="fas fa-minus mr-1"></i> Sin datos';
+                marginTrend.className = 'text-gray-600 text-sm flex items-center mt-1';
+            }
+        }
+        
+        // Función para actualizar tendencias del mercado
+        function updateMarketTrends(trends) {
+            // Verificar si hay datos de evolución de ventas
+            const hasSalesData = trends.evolucion_ventas.data.some(value => value > 0);
+            const salesChartContainer = document.getElementById('salesChart').parentElement;
+            
+            if (!hasSalesData) {
+                showEmptyChart(salesChartContainer, 'Sin datos de ventas', 'No hay información de ventas disponible para esta categoría en los últimos meses.');
+            } else {
+                // Restaurar el canvas si fue reemplazado
+                if (!document.getElementById('salesChart')) {
+                    salesChartContainer.innerHTML = '<canvas id="salesChart"></canvas><div id="salesChartLoading" class="loading-overlay" style="display: none;"><div class="loading-spinner"></div></div>';
+                    // Reinicializar el gráfico
+                    initializeSalesChart(trends.evolucion_ventas);
+                } else if (salesChart) {
+                    salesChart.data.labels = trends.evolucion_ventas.labels;
+                    salesChart.data.datasets[0].data = trends.evolucion_ventas.data;
+                    salesChart.update();
+                }
+            }
+            
+            // MODIFICACIÓN: Siempre mostrar el gráfico de comparación, incluso si no hay datos
+            const categoryComparisonContainer = document.getElementById('categoryComparisonChart').parentElement;
+            
+            // Restaurar el canvas si fue reemplazado
+            if (!document.getElementById('categoryComparisonChart')) {
+                categoryComparisonContainer.innerHTML = '<canvas id="categoryComparisonChart"></canvas><div id="categoryComparisonChartLoading" class="loading-overlay" style="display: none;"><div class="loading-spinner"></div></div>';
+                // Reinicializar el gráfico
+                initializeCategoryComparisonChart(trends.comparacion_categorias);
+            } else if (categoryComparisonChart) {
+                categoryComparisonChart.data.labels = trends.comparacion_categorias.labels;
+                categoryComparisonChart.data.datasets[0].data = trends.comparacion_categorias.current_data;
+                categoryComparisonChart.data.datasets[1].data = trends.comparacion_categorias.previous_data;
+                categoryComparisonChart.update();
+            }
+            
+            // Actualizar indicadores clave
+            document.getElementById('market-share').textContent = formatPercentage(trends.indicadores.participacion_mercado);
+            document.getElementById('market-share-desc').textContent = trends.indicadores.participacion_mercado_desc;
+            
+            document.getElementById('growth-rate').textContent = formatPercentage(trends.indicadores.tasa_crecimiento);
+            document.getElementById('growth-rate-desc').textContent = trends.indicadores.tasa_crecimiento_desc;
+            
+            document.getElementById('satisfaction').textContent = formatPercentage(trends.indicadores.satisfaccion_cliente);
+            document.getElementById('satisfaction-desc').textContent = trends.indicadores.satisfaccion_cliente_desc;
+            
+            // Actualizar círculos de progreso
+            updateProgressCircle('market-share-circle', trends.indicadores.participacion_mercado);
+            updateProgressCircle('growth-rate-circle', trends.indicadores.tasa_crecimiento);
+            updateProgressCircle('satisfaction-circle', trends.indicadores.satisfaccion_cliente);
+        }
+        
+        // Función para mostrar un estado vacío en gráficos
+        function showEmptyChart(chartContainer, title, message, icon = 'fa-chart-line') {
+            const chartId = chartContainer.querySelector('canvas').id;
+            chartContainer.innerHTML = `
+                <div class="no-data-container h-64">
+                    <div class="no-data-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <h3 class="no-data-title">${title}</h3>
+                    <p class="no-data-message">${message}</p>
+                </div>
+            `;
+        }
+        
+        // Función para inicializar el gráfico de evolución de ventas
+        function initializeSalesChart(data) {
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: data.data,
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Función para inicializar el gráfico de comparación de categorías
+        function initializeCategoryComparisonChart(data) {
+            const categoryComparisonCtx = document.getElementById('categoryComparisonChart').getContext('2d');
+            categoryComparisonChart = new Chart(categoryComparisonCtx, {
+                type: 'bar',
+                data: {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Ventas Actuales ($)',
+                        data: data.current_data,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(236, 72, 153, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }, {
+                        label: 'Ventas Anteriores ($)',
+                        data: data.previous_data,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.4)',
+                            'rgba(16, 185, 129, 0.4)',
+                            'rgba(245, 158, 11, 0.4)',
+                            'rgba(139, 92, 246, 0.4)',
+                            'rgba(236, 72, 153, 0.4)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': $' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Función para actualizar círculo de progreso
+        function updateProgressCircle(circleId, percentage) {
+            const circle = document.getElementById(circleId);
+            if (!circle) return;
+            
+            const circumference = 2 * Math.PI * 24;
+            const offset = circumference - (Math.min(100, Math.max(0, percentage)) / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+        }
+        
+        // Función para actualizar rendimiento de subcategorías
+        function updateSubcategoryPerformance(subcategories) {
+            // Verificar si hay datos de subcategorías
+            if (!subcategories || subcategories.length === 0) {
+                const subcategoryChartContainer = document.getElementById('subcategoryChart').parentElement;
+                showEmptyChart(subcategoryChartContainer, 'Sin subcategorías', 'No hay subcategorías disponibles para esta categoría.');
+                
+                document.getElementById('top-subcategories').innerHTML = '';
+                showEmptyCard(document.getElementById('subcategory-cards'), 'Sin subcategorías', 'No hay subcategorías disponibles para mostrar.');
+                showEmptyCard(document.getElementById('low-performing-subcategories'), 'Sin subcategorías', 'No hay subcategorías con bajo rendimiento para mostrar.');
+                
+                return;
+            }
+            
+            // Actualizar gráfico
+            const subcategoryChartContainer = document.getElementById('subcategoryChart').parentElement;
+            if (!document.getElementById('subcategoryChart')) {
+                subcategoryChartContainer.innerHTML = '<canvas id="subcategoryChart"></canvas><div id="subcategoryChartLoading" class="loading-overlay" style="display: none;"><div class="loading-spinner"></div></div>';
+                // Reinicializar el gráfico
+                initializeSubcategoryChart(subcategories);
+            } else if (subcategoryChart) {
+                subcategoryChart.data.labels = subcategories.map(s => s.nombre);
+                subcategoryChart.data.datasets[0].data = subcategories.map(s => s.ventas);
+                subcategoryChart.update();
+            }
+            
+            // Actualizar top subcategorías
+            const topSubcategoriesContainer = document.getElementById('top-subcategories');
+            topSubcategoriesContainer.innerHTML = '';
+            
+            const topSubcategories = subcategories.slice(0, 3);
+            if (topSubcategories.length === 0) {
+                showEmptyCard(topSubcategoriesContainer, 'Sin subcategorías destacadas', 'No hay subcategorías con ventas para mostrar.');
+            } else {
+                topSubcategories.forEach((subcategory, index) => {
+                    const colors = ['blue', 'green', 'purple'];
+                    const item = document.createElement('div');
+                    item.className = `flex items-center justify-between p-3 bg-${colors[index]}-50 rounded-lg`;
+                    item.innerHTML = `
+                        <div class="flex items-center">
+                            <div class="w-8 h-8 rounded-full bg-${colors[index]}-100 flex items-center justify-center mr-3">
+                                <span class="text-${colors[index]}-800 font-bold text-sm">${index + 1}</span>
+                            </div>
+                            <span class="font-medium text-gray-800">${subcategory.nombre}</span>
+                            ${subcategory.estado === 'inactivo' ? '<span class="status-badge status-inactive ml-2"><i class="fas fa-circle"></i>Inactivo</span>' : ''}
+                        </div>
+                        <span class="font-bold text-gray-800">${formatCurrency(subcategory.ventas)}</span>
+                    `;
+                    topSubcategoriesContainer.appendChild(item);
+                });
+            }
+            
+            // Actualizar tarjetas de subcategorías
+            const subcategoryCardsContainer = document.getElementById('subcategory-cards');
+            subcategoryCardsContainer.innerHTML = '';
+            
+            const topSubcategoryCards = subcategories.slice(0, 3);
+            if (topSubcategoryCards.length === 0) {
+                showEmptyCard(subcategoryCardsContainer, 'Sin subcategorías destacadas', 'No hay subcategorías con ventas para mostrar.');
+            } else {
+                topSubcategoryCards.forEach((subcategory, index) => {
+                    const colors = ['blue', 'green', 'purple'];
+                    const card = document.createElement('div');
+                    card.className = 'category-card bg-white border border-gray-200 rounded-xl overflow-hidden';
+                    card.innerHTML = `
+                        <div class="bg-gradient-to-r from-${colors[index]}-600 to-${colors[index]}-800 text-white p-4">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-lg">${subcategory.nombre}</h4>
+                                <span class="bg-${colors[index]}-900 text-xs font-medium px-2 py-1 rounded-full">Top ${index + 1}</span>
+                            </div>
+                            <p class="text-${colors[index]}-100 text-sm mt-1">Ventas: ${formatCurrency(subcategory.ventas)}</p>
+                        </div>
+                        <div class="p-4">
+                            <h5 class="font-medium text-gray-700 mb-3">Seudocategorías Destacadas</h5>
+                            <div class="space-y-3">
+                                ${subcategory.seudocategorias && subcategory.seudocategorias.length > 0 ? 
+                                    subcategory.seudocategorias.map(pseudo => `
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">${pseudo.nombre}</span>
+                                            <span class="text-sm font-medium">${formatCurrency(pseudo.ventas)}</span>
+                                        </div>
+                                    `).join('') : 
+                                    '<p class="text-gray-500 text-sm">No hay seudocategorías disponibles</p>'
+                                }
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Crecimiento mensual:</span>
+                                    <span class="${subcategory.crecimiento > 0 ? 'text-green-600' : 'text-red-600'} font-medium">
+                                        ${subcategory.crecimiento > 0 ? '+' : ''}${formatPercentage(subcategory.crecimiento)}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-sm mt-1">
+                                    <span class="text-gray-500">Estado:</span>
+                                    <span class="status-badge ${subcategory.estado === 'activo' ? 'status-active' : 'status-inactive'}">
+                                        <i class="fas fa-circle"></i>${subcategory.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    subcategoryCardsContainer.appendChild(card);
+                });
+            }
+            
+            // Actualizar subcategorías con bajo rendimiento
+            const lowPerformingContainer = document.getElementById('low-performing-subcategories');
+            lowPerformingContainer.innerHTML = '';
+            
+            const lowPerformingSubcategories = subcategories.slice(3);
+            if (lowPerformingSubcategories.length === 0) {
+                showEmptyCard(lowPerformingContainer, 'Sin subcategorías con bajo rendimiento', 'Todas las subcategorías tienen un rendimiento similar.');
+            } else {
+                lowPerformingSubcategories.forEach((subcategory, index) => {
+                    const colors = ['amber', 'rose', 'gray'];
+                    const card = document.createElement('div');
+                    card.className = 'category-card bg-white border border-gray-200 rounded-xl overflow-hidden';
+                    card.innerHTML = `
+                        <div class="bg-gradient-to-r from-${colors[index]}-600 to-${colors[index]}-800 text-white p-4">
+                            <div class="flex justify-between items-center">
+                                <h4 class="font-bold text-lg">${subcategory.nombre}</h4>
+                                <span class="bg-${colors[index]}-900 text-xs font-medium px-2 py-1 rounded-full">Top ${index + 4}</span>
+                            </div>
+                            <p class="text-${colors[index]}-100 text-sm mt-1">Ventas: ${formatCurrency(subcategory.ventas)}</p>
+                        </div>
+                        <div class="p-4">
+                            <h5 class="font-medium text-gray-700 mb-3">Seudocategorías</h5>
+                            <div class="space-y-3">
+                                ${subcategory.seudocategorias && subcategory.seudocategorias.length > 0 ? 
+                                    subcategory.seudocategorias.map(pseudo => `
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-gray-600">${pseudo.nombre}</span>
+                                            <span class="text-sm font-medium">${formatCurrency(pseudo.ventas)}</span>
+                                        </div>
+                                    `).join('') : 
+                                    '<p class="text-gray-500 text-sm">No hay seudocategorías disponibles</p>'
+                                }
+                            </div>
+                            <div class="mt-4 pt-4 border-t border-gray-200">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-500">Crecimiento mensual:</span>
+                                    <span class="${subcategory.crecimiento > 0 ? 'text-green-600' : 'text-red-600'} font-medium">
+                                        ${subcategory.crecimiento > 0 ? '+' : ''}${formatPercentage(subcategory.crecimiento)}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between text-sm mt-1">
+                                    <span class="text-gray-500">Estado:</span>
+                                    <span class="status-badge ${subcategory.estado === 'activo' ? 'status-active' : 'status-inactive'}">
+                                        <i class="fas fa-circle"></i>${subcategory.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    lowPerformingContainer.appendChild(card);
+                });
+            }
+        }
+        
+        // Función para inicializar el gráfico de subcategorías
+        function initializeSubcategoryChart(subcategories) {
+            const subcategoryCtx = document.getElementById('subcategoryChart').getContext('2d');
+            subcategoryChart = new Chart(subcategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: subcategories.map(s => s.nombre),
+                    datasets: [{
+                        data: subcategories.map(s => s.ventas),
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(244, 63, 94, 0.8)',
+                            'rgba(107, 114, 128, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': $' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Función para actualizar productos más vendidos
+        function updateTopProducts(products) {
+            const tableBody = document.getElementById('top-products-table');
+            
+            if (!products || products.length === 0) {
+                showEmptyTable(tableBody, 'No hay productos vendidos', 'No se encontraron productos con ventas en el período seleccionado.');
+                return;
+            }
+            
+            tableBody.innerHTML = '';
+            
+            products.forEach(product => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <img class="h-10 w-10 rounded-md object-cover" src="${product.imagen_url || 'https://via.placeholder.com/40'}" alt="">
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${product.nombre}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.marca || 'N/A'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm text-gray-900">${product.categoria_path}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.precio)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${product.unidades_vendidas}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.ingresos)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${product.tendencia > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            <i class="fas fa-arrow-${product.tendencia > 0 ? 'up' : 'down'} mr-1"></i> ${formatPercentage(Math.abs(product.tendencia))}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="status-badge ${product.estado === 'activo' ? 'status-active' : 'status-inactive'}">
+                            <i class="fas fa-circle"></i>${product.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <a href="/admin/productos/${product.id}" class="text-blue-600 hover:text-blue-900">Ver</a>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+        
+        // Función para actualizar productos relacionados
+        function updateRelatedProducts(products) {
+            const productsGrid = document.getElementById('productsGrid');
+            
+            if (!products || products.length === 0) {
+                showEmptyCard(productsGrid, 'No hay productos disponibles', 'No hay productos disponibles en esta categoría o con los filtros aplicados.');
+                return;
+            }
+            
+            productsGrid.innerHTML = '';
+            
+            products.forEach(product => {
+                const card = document.createElement('div');
+                // MODIFICACIÓN: Añadir clase inactive si el producto no está activo
+                card.className = `product-card bg-white border border-gray-200 rounded-xl overflow-hidden ${product.estado === 'inactivo' ? 'inactive' : ''}`;
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${product.imagen_url || 'https://via.placeholder.com/300x200'}" alt="${product.nombre}" class="w-full h-48 object-cover">
+                        ${product.es_nuevo ? '<span class="product-badge bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">Nuevo</span>' : ''}
+                        ${product.estado === 'inactivo' ? '<span class="product-badge bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">Inactivo</span>' : ''}
+                        <div class="product-overlay">
+                            <a href="/admin/productos/${product.id}" class="bg-white text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-lg transition duration-300 flex items-center">
+                                <i class="fas fa-eye mr-2"></i> Ver Detalles
+                            </a>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-bold text-gray-800 mb-1">${product.nombre}</h4>
+                        <p class="text-sm text-gray-600 mb-2">${product.descripcion ? product.descripcion.substring(0, 50) + '...' : 'Sin descripción'}</p>
+                        <div class="flex justify-between items-center mb-3">
+                            <span class="text-lg font-bold text-gray-900">${formatCurrency(product.precio)}</span>
+                            <div class="flex items-center text-sm text-amber-500">
+                                ${renderStars(product.calificacion_promedio)}
+                                <span class="text-gray-600 ml-1">${product.calificacion_promedio ? product.calificacion_promedio.toFixed(1) : 'N/A'}</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs ${product.agotado ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'} px-2 py-1 rounded">
+                                Stock: ${product.existencia}
+                            </span>
+                            <span class="status-badge ${product.estado === 'activo' ? 'status-active' : 'status-inactive'}">
+                                <i class="fas fa-circle"></i>${product.estado === 'activo' ? 'Activo' : 'Inactivo'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                productsGrid.appendChild(card);
+            });
+        }
+        
+        // Función para renderizar estrellas de calificación
+        function renderStars(rating) {
+            if (!rating) return '<i class="far fa-star"></i>'.repeat(5);
+            
+            let stars = '';
+            const fullStars = Math.floor(rating);
+            const hasHalfStar = rating % 1 >= 0.5;
+            
+            for (let i = 0; i < fullStars; i++) {
+                stars += '<i class="fas fa-star"></i>';
+            }
+            
+            if (hasHalfStar) {
+                stars += '<i class="fas fa-star-half-alt"></i>';
+            }
+            
+            const emptyStars = 5 - Math.ceil(rating);
+            for (let i = 0; i < emptyStars; i++) {
+                stars += '<i class="far fa-star"></i>';
+            }
+            
+            return stars;
+        }
+        
+        // Función para actualizar información de paginación
+        function updatePaginationInfo(current, total) {
+            document.getElementById('pagination-info').innerHTML = 
+                `Mostrando <span class="font-medium">${current}</span> de <span class="font-medium">${total}</span> productos`;
+            
+            // Actualizar controles de paginación
+            const paginationControls = document.getElementById('pagination-controls');
+            paginationControls.innerHTML = '';
+            
+            // Botón Anterior
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'pagination-btn px-3 py-1 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left mr-1"></i> Anterior';
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    fetchRelatedProducts();
+                }
+            });
+            paginationControls.appendChild(prevBtn);
+            
+            // Números de página
+            const totalPages = Math.ceil(total / productsPerPage);
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            if (startPage > 1) {
+                const firstPageBtn = document.createElement('button');
+                firstPageBtn.className = 'pagination-btn px-3 py-1 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-100';
+                firstPageBtn.textContent = '1';
+                firstPageBtn.addEventListener('click', () => {
+                    currentPage = 1;
+                    fetchRelatedProducts();
+                });
+                paginationControls.appendChild(firstPageBtn);
+                
+                if (startPage > 2) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'px-3 py-1 text-sm text-gray-500';
+                    ellipsis.textContent = '...';
+                    paginationControls.appendChild(ellipsis);
+                }
+            }
+            
+            for (let i = startPage; i <= endPage; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `pagination-btn px-3 py-1 rounded-md text-sm font-medium ${i === currentPage ? 'text-white bg-blue-500' : 'text-gray-500 hover:bg-gray-100'}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    fetchRelatedProducts();
+                });
+                paginationControls.appendChild(pageBtn);
+            }
+            
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'px-3 py-1 text-sm text-gray-500';
+                    ellipsis.textContent = '...';
+                    paginationControls.appendChild(ellipsis);
+                }
+                
+                const lastPageBtn = document.createElement('button');
+                lastPageBtn.className = 'pagination-btn px-3 py-1 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-100';
+                lastPageBtn.textContent = totalPages;
+                lastPageBtn.addEventListener('click', () => {
+                    currentPage = totalPages;
+                    fetchRelatedProducts();
+                });
+                paginationControls.appendChild(lastPageBtn);
+            }
+            
+            // Botón Siguiente
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'pagination-btn px-3 py-1 rounded-md text-sm font-medium text-gray-500 hover:bg-gray-100 disabled:opacity-50';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.innerHTML = 'Siguiente <i class="fas fa-chevron-right ml-1"></i>';
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    fetchRelatedProducts();
+                }
+            });
+            paginationControls.appendChild(nextBtn);
+        }
+        
+        // Función para obtener productos relacionados
+        async function fetchRelatedProducts() {
+            try {
+                const search = document.getElementById('related-product-search').value;
+                const response = await fetch(`/admin/categorias-principales/${categoriaId}/productos-relacionados?page=${currentPage}&per_page=${productsPerPage}&search=${search}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateRelatedProducts(data.products);
+                    updatePaginationInfo(data.products.length, data.total);
+                } else {
+                    console.error('Error al cargar productos:', data.message);
+                    showErrorMessage('Error al cargar los productos relacionados: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error en la solicitud:', error);
+                showErrorMessage('Error de conexión al cargar productos relacionados. Por favor, intente nuevamente más tarde.');
+            }
+        }
+        
+        // Función para restablecer filtros de productos relacionados
+        function resetRelatedProductsFilters() {
+            document.getElementById('related-product-search').value = '';
+            currentPage = 1;
+            fetchRelatedProducts();
+        }
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar gráficos
+            const salesCtx = document.getElementById('salesChart').getContext('2d');
+            salesChart = new Chart(salesCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Ventas ($)',
+                        data: [0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const categoryComparisonCtx = document.getElementById('categoryComparisonChart').getContext('2d');
+            categoryComparisonChart = new Chart(categoryComparisonCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Electrónica', 'Hogar', 'Ropa', 'Deportes', 'Juguetes'],
+                    datasets: [{
+                        label: 'Ventas Actuales ($)',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(236, 72, 153, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }, {
+                        label: 'Ventas Anteriores ($)',
+                        data: [0, 0, 0, 0, 0],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.4)',
+                            'rgba(16, 185, 129, 0.4)',
+                            'rgba(245, 158, 11, 0.4)',
+                            'rgba(139, 92, 246, 0.4)',
+                            'rgba(236, 72, 153, 0.4)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': $' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const subcategoryCtx = document.getElementById('subcategoryChart').getContext('2d');
+            subcategoryChart = new Chart(subcategoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(244, 63, 94, 0.8)',
+                            'rgba(107, 114, 128, 0.8)'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': $' + context.raw.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Cargar datos iniciales
+            fetchCategoryData();
+            
+            // Event listeners
+            document.getElementById('refresh-data').addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                icon.classList.add('refresh-animation');
+                fetchCategoryData().finally(() => {
+                    icon.classList.remove('refresh-animation');
+                });
+            });
+            
+            document.getElementById('period-filter').addEventListener('change', function() {
+                // Aquí podrías recargar los datos con el nuevo período
+                fetchCategoryData();
+            });
+            
+            document.getElementById('product-search').addEventListener('input', function(e) {
+                // Aquí podrías implementar la búsqueda en tiempo real
+                if (e.target.value.length > 2 || e.target.value.length === 0) {
+                    fetchCategoryData();
+                }
+            });
+            
+            document.getElementById('productsPerPage').addEventListener('change', function() {
+                productsPerPage = parseInt(this.value);
+                currentPage = 1;
+                fetchRelatedProducts();
+            });
+            
+            document.getElementById('related-product-search').addEventListener('input', function(e) {
+                // Aquí podrías implementar la búsqueda en tiempo real
+                if (e.target.value.length > 2 || e.target.value.length === 0) {
+                    currentPage = 1;
+                    fetchRelatedProducts();
+                }
+            });
+            
+            // Tab functionality
+            document.querySelectorAll('.tab-btn').forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    // Deactivate all tabs and contents
+                    document.querySelectorAll('.tab-btn').forEach(btn => {
+                        btn.classList.remove('border-blue-500', 'text-blue-600');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                    });
+                    document.querySelectorAll('.tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Activate selected tab and content
+                    button.classList.remove('border-transparent', 'text-gray-500');
+                    button.classList.add('border-blue-500', 'text-blue-600');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+{% endblock %}

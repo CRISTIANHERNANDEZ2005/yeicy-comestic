@@ -22,10 +22,10 @@
         {% include 'cliente/ui/auth_modals.html' %}
 
         <!-- Navbar principal -->
-        <div class="w-full">
-            <div class="bg-white border-b-2 border-pink-200 shadow-xl sticky top-0 z-50">
+        <div id="navbar-container" class="w-full sticky top-0 z-50 transition-transform duration-500 ease-in-out">
+            <div class="bg-white border-b-2 border-pink-200 shadow-xl">
                 <nav
-                    class="sticky top-0 z-50 w-full shadow-xl border-b-2 border-pink-200 flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 md:px-8 transition-all duration-300 animate-fade-in-down bg-white py-4" style="opacity: 1" role="navigation" aria-label="Navegación principal">
+                    class="w-full flex flex-col md:flex-row items-stretch md:items-center justify-between px-4 md:px-8 animate-fade-in-down bg-white py-4" style="opacity: 1" role="navigation" aria-label="Navegación principal">
 
                     <!-- Contenido principal de la barra de navegación -->
                     <!-- Fila superior: Logo + Íconos -->
@@ -110,7 +110,7 @@
 
             <!-- Barra secundaria de categorías principales -->
             <div
-                class="relative w-full" style="z-index: 20">
+                class="relative w-full bg-white" style="z-index: 20">
                 <!-- Navbar de categorías Desktop -->
                 <div class="hidden md:block">
                     {% include 'cliente/ui/navbar_categorias_desktop.html' %}

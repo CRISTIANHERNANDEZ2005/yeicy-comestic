@@ -4,8 +4,8 @@
   <div class="flex justify-center items-center w-full h-full overflow-hidden px-2">
     <!-- Contenedor interno con categorías -->
     <ul class="flex flex-row items-center justify-center gap-2 md:gap-4 px-2 py-2 w-full max-w-screen-xl mx-auto"
-      id="categories-container-desktop" aria-label="Categorías principales">
-      {% for categoria in categorias %}
+      id="categories-container-desktop" aria-label="Categorías principales"> 
+      {% for categoria in categorias_principales %}
       <li class="flex-shrink-0 category-item" data-category-id="{{ categoria.id }}">
         <a href="/{{ categoria.slug }}" class="category-link block px-4 py-2 md:px-6 md:py-2 rounded-full font-bold text-white bg-white/10 hover:bg-white/30 hover:text-yellow-300 shadow-md border border-white/20 transition-all duration-200 text-sm sm:text-base md:text-lg tracking-wide focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:ring-offset-2 focus:ring-offset-fuchsia-600 whitespace-nowrap"
           data-category-id="{{ categoria.id }}" tabindex="0">
@@ -69,6 +69,14 @@
   padding: 0;
   margin: 0;
 }
+.subcategory-header-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+.subcategory-header-link:hover {
+  color: #db2777; /* Color rosa oscuro (pink-600) */
+}
 </style>
 <!-- Overlay para fondo oscuro (solo desktop si lo deseas, puedes quitar si no es necesario) -->
 <div class="mega-menu-overlay" id="megaMenuOverlay-desktop" style="display:none;"></div>
@@ -91,24 +99,35 @@ document.addEventListener('DOMContentLoaded', function () {
   let isMenuOpen = false;
 
   // Datos de categorías (generados como JSON seguro)
-  const categoriesData = {
-    {% for categoria in categorias %}
+  const categoriesData = { 
+    {% for categoria in categorias_principales %}
     "{{ categoria.id }}": {
       "nombre": {{ categoria.nombre | tojson }},
+      "slug": {{ categoria.slug | tojson }},
       "subcategorias": [
+        {% set sub_joiner = joiner(", ") %}
         {% for sub in categoria.subcategorias %}
+        {% if sub.estado == 'activo' %}
+        {{ sub_joiner() }}
         {
           "id": "{{ sub.id }}",
           "nombre": {{ sub.nombre | tojson }},
+          "slug": {{ sub.slug | tojson }},
           "seudocategorias": [
+            {% set seudo_joiner = joiner(", ") %}
             {% for seudo in sub.seudocategorias %}
+            {% if seudo.estado == 'activo' %}
+            {{ seudo_joiner() }}
             {
               "id": "{{ seudo.id }}",
-              "nombre": {{ seudo.nombre | tojson }}
-            }{% if not loop.last %},{% endif %}
+              "nombre": {{ seudo.nombre | tojson }},
+              "slug": {{ seudo.slug | tojson }}
+            }
+            {% endif %}
             {% endfor %}
           ]
-        }{% if not loop.last %},{% endif %}
+        }
+        {% endif %}
         {% endfor %}
       ]
     }{% if not loop.last %},{% endif %}
@@ -120,16 +139,17 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!category) return '<div class="text-center py-8">Cargando...</div>';
     let html = '<div class="mega-menu-grid">';
     category.subcategorias.forEach(sub => {
-      const seudoCount = sub.seudocategorias.length;
       html += `
         <div class="category-section">
           <h3>
-            ${sub.nombre}
+            <a href="/${category.slug}/${sub.slug}" class="subcategory-header-link">
+              ${sub.nombre}
+            </a>
           </h3>
-          <ul class="subcategory-list">
+          <ul class="subcategory-list mt-2 space-y-1">
             ${sub.seudocategorias.map(seudo => `
               <li class="subcategory-item">
-                <a href="/products?seudocategoria=${seudo.id}" class="subcategory-link">
+                <a href="/${category.slug}/${sub.slug}/${seudo.slug}" class="subcategory-link block text-gray-600 hover:text-pink-600 py-1 px-2 rounded-md hover:bg-pink-50 transition-all duration-200">
                   ${seudo.nombre}
                 </a>
               </li>

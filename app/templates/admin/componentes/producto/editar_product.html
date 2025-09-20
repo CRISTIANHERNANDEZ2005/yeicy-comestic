@@ -28,6 +28,7 @@
                 <form id="product-form" class="bg-white rounded-xl card-shadow p-6"
                       data-product-id="{{ product.id }}"
                       data-product-slug="{{ product.slug }}"
+                      data-original-image-url="{{ product.imagen_url }}"
                       data-selected-seudocategoria-id="{{ selected_seudocategoria_id }}"
                       data-selected-subcategoria-id="{{ selected_subcategoria_id }}"
                       data-selected-categoria-principal-id="{{ selected_categoria_principal_id }}">
@@ -69,16 +70,35 @@
                             <textarea id="descripcion" name="descripcion" rows="3" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="Describe las características principales del producto">{{ product.descripcion }}</textarea>
                         </div>
 
+                        <!-- Imagen del Producto (UI Mejorada) -->
                         <div class="mt-6">
-                            <label for="imagen_url" class="block text-sm font-medium text-gray-700 mb-1">URL de la Imagen</label>
-                            <div class="relative">
-                                <input type="url" id="imagen_url" name="imagen_url" required class="w-full px-4 py-3 border border-gray-300 rounded-lg input-focus focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://ejemplo.com/imagen.jpg" value="{{ product.imagen_url }}">
-                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
-                                    <i class="fas fa-image text-gray-400"></i>
-                                    </div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Imagen del Producto</label>
+                            <div class="flex items-center gap-4" id="image-upload-container">
+                                <!-- Thumbnail de la imagen actual -->
+                                <img id="current-image-thumbnail" src="{{ product.imagen_url }}" alt="Imagen actual" class="w-20 h-20 rounded-lg object-cover border border-gray-200 shadow-sm">
+                                
+                                <div class="flex-1">
+                                    <!-- Input de archivo oculto pero funcional -->
+                                    <input type="file" id="imagen_file" name="imagen_file" accept="image/*" class="hidden">
+                                    
+                                    <!-- Botón para cambiar la imagen -->
+                                    <label for="imagen_file" id="change-image-label" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50">
+                                        <i class="fas fa-upload mr-2"></i>
+                                        Cambiar Imagen
+                                    </label>
+                                    
+                                    <!-- Botón para cancelar el cambio (inicialmente oculto) -->
+                                    <button type="button" id="cancel-image-change" class="hidden ml-2 inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-red-700 bg-red-100 hover:bg-red-200">
+                                        <i class="fas fa-times mr-2"></i>
+                                        Cancelar
+                                    </button>
+                                    
+                                    <p id="image-helper-text" class="text-xs text-gray-500 mt-2">La imagen actual se conservará si no subes una nueva.</p>
+                                    <p id="new-image-filename" class="hidden text-sm text-gray-800 font-medium mt-2"></p>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
                     <!-- Categorías -->
                     <div id="seccion-categorias" class="mb-8 p-4 rounded-lg transition-colors duration-300 ease-in-out">
@@ -271,7 +291,7 @@
                         <img id="preview-image" src="{{ product.imagen_url if product.imagen_url else 'https://via.placeholder.com/400' }}" alt="Previsualización" class="w-full h-full object-cover {% if not product.imagen_url %}hidden{% endif %}">
                         <div id="image-placeholder" class="text-center p-4 {% if product.imagen_url %}hidden{% endif %}">
                             <i class="fas fa-image text-gray-400 text-4xl mb-2"></i>
-                            <p class="text-gray-500">Ingresa una URL de imagen</p>
+                            <p class="text-gray-500">Sube una imagen para previsualizar</p>
                         </div>
                     </div>
                 </div>

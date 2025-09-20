@@ -533,19 +533,9 @@ def favoritos(usuario):
         favoritos = [producto_to_dict(like.producto) for like in likes if like.producto]
         app.logger.info(f"Se encontraron {len(favoritos)} productos favoritos para el usuario con ID {user_id}")
 
-        # Obtener categorías para el menú (se mantiene por si se usa en la base.html)
-        categorias = CategoriasPrincipales.query.filter_by(estado='activo')\
-            .options(
-                joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo')).joinedload(
-                    Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))
-        ).all()
-
-        if not categorias:
-            app.logger.info("No se encontraron categorías activas")
-
         app.logger.info("Renderizando la plantilla de favoritos.html con una lista única de favoritos.")
         # Renderizar la plantilla, pasando la lista única de favoritos
-        return render_template('cliente/componentes/favoritos.html', favoritos=favoritos, categorias=categorias), 200
+        return render_template('cliente/componentes/favoritos.html', favoritos=favoritos), 200
 
     except Exception as e:
         app.logger.error(

@@ -7,6 +7,7 @@ from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import joinedload, subqueryload
 from datetime import datetime
 from flask_wtf.csrf import generate_csrf
+from slugify import slugify
 
 admin_lista_categorias_bp = Blueprint('admin_categorias', __name__, url_prefix='/admin')
 
@@ -67,15 +68,15 @@ def get_all_categories(admin_user, view_type=None):
                 query = query.order_by(order_expression.desc())
             
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
             # Add total_general for initial load
-            pagination_data.total_general = db.session.query(CategoriasPrincipales.id).count()
+            pagination.total_general = db.session.query(CategoriasPrincipales.id).count()
             
             # Serializar datos
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in pagination_data.items]
+                cat) for cat in pagination.items]
                 
         elif current_view == 'sub':
             # Vista de subcategorías
@@ -104,15 +105,15 @@ def get_all_categories(admin_user, view_type=None):
                 query = query.order_by(order_expression.desc())
             
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
             # Add total_general for initial load
-            pagination_data.total_general = db.session.query(Subcategorias.id).count()
+            pagination.total_general = db.session.query(Subcategorias.id).count()
                 
             # Serializar datos
             subcategorias_data = [subcategoria_to_dict(
-                sub) for sub in pagination_data.items]
+                sub) for sub in pagination.items]
             
             # Obtener categorías principales para el filtro
             categorias_data = [categoria_principal_to_dict(
@@ -145,14 +146,14 @@ def get_all_categories(admin_user, view_type=None):
                 query = query.order_by(order_expression.desc())
             
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
-            pagination_data.total_general = db.session.query(Seudocategorias.id).count()
+            pagination.total_general = db.session.query(Seudocategorias.id).count()
                 
             # Serializar datos
             seudocategorias_data = [seudocategoria_to_dict(
-                seudo) for seudo in pagination_data.items]
+                seudo) for seudo in pagination.items]
             
             # Obtener subcategorías para el filtro
             subcategorias_data = [subcategoria_to_dict(
@@ -170,27 +171,28 @@ def get_all_categories(admin_user, view_type=None):
             query = query.order_by(CategoriasPrincipales.created_at.desc())
 
             # Paginación
-            pagination_data = query.paginate(
+            pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             
             # Add total_general for initial load (total count of main categories)
-            pagination_data.total_general = db.session.query(CategoriasPrincipales.id).count()
+            pagination.total_general = db.session.query(CategoriasPrincipales.id).count()
 
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in pagination_data.items]
+                cat) for cat in pagination.items]
 
-        # Convert pagination_data to a JSON-serializable dictionary
-        pagination_info = {
-            'page': pagination_data.page,
-            'pages': pagination_data.pages,
-            'per_page': pagination_data.per_page,
-            'total': pagination_data.total,
-            'total_general': getattr(pagination_data, 'total_general', pagination_data.total),
-            'has_next': pagination_data.has_next,
-            'has_prev': pagination_data.has_prev,
-            'next_num': pagination_data.next_num,
-            'prev_num': pagination_data.prev_num
-        }
+        if pagination:
+            # Convert pagination object to a JSON-serializable dictionary for JavaScript
+            pagination_info = {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'total_general': getattr(pagination, 'total_general', pagination.total),
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev,
+                'next_num': pagination.next_num,
+                'prev_num': pagination.prev_num
+            }
     
     except Exception as e:
         current_app.logger.error(
@@ -203,7 +205,8 @@ def get_all_categories(admin_user, view_type=None):
                            categorias=categorias_data,
                            subcategorias=subcategorias_data,
                            seudocategorias=seudocategorias_data,
-                           pagination=pagination_info,
+                           pagination=pagination,
+                           pagination_info=pagination_info,
                            current_view=current_view,
                            filter_params=request.args,
                            error_message=error_message,
@@ -459,6 +462,123 @@ def update_pseudocategory_status(admin_user, seudocategoria_id):
             'error_details': str(e) if current_app.debug else None
         }), 500
 
+# Endpoint para obtener detalles de una categoría para edición
+@admin_lista_categorias_bp.route('/api/categoria/<string:category_type>/<string:category_id>', methods=['GET'])
+@admin_jwt_required
+def get_category_details(admin_user, category_type, category_id):
+    try:
+        category = None
+        data = {}
+        
+        model_map = {
+            'main': CategoriasPrincipales,
+            'sub': Subcategorias,
+            'pseudo': Seudocategorias
+        }
+        
+        model = model_map.get(category_type)
+        if not model:
+            return jsonify({'success': False, 'message': 'Tipo de categoría no válido.'}), 400
+
+        if category_type == 'main':
+            category = model.query.get(category_id)
+            if category:
+                data = {
+                    'id': category.id,
+                    'nombre': category.nombre,
+                    'descripcion': category.descripcion,
+                    'nivel_display': 'Categoría Principal'
+                }
+        elif category_type == 'sub':
+            category = model.query.options(joinedload(model.categoria_principal)).get(category_id)
+            if category:
+                data = {
+                    'id': category.id,
+                    'nombre': category.nombre,
+                    'descripcion': category.descripcion,
+                    'nivel_display': 'Subcategoría',
+                    'categoria_principal_nombre': category.categoria_principal.nombre if category.categoria_principal else 'N/A'
+                }
+        elif category_type == 'pseudo':
+            category = model.query.options(joinedload(model.subcategoria).joinedload(Subcategorias.categoria_principal)).get(category_id)
+            if category:
+                data = {
+                    'id': category.id,
+                    'nombre': category.nombre,
+                    'descripcion': category.descripcion,
+                    'nivel_display': 'Seudocategoría',
+                    'subcategoria_nombre': category.subcategoria.nombre if category.subcategoria else 'N/A',
+                    'categoria_principal_nombre': category.subcategoria.categoria_principal.nombre if category.subcategoria and category.subcategoria.categoria_principal else 'N/A'
+                }
+        
+        if not category:
+            return jsonify({'success': False, 'message': 'Categoría no encontrada'}), 404
+            
+        return jsonify({'success': True, 'categoria': data})
+
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener detalles de la categoría {category_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+# Endpoint para actualizar detalles de una categoría
+@admin_lista_categorias_bp.route('/api/categoria/<string:category_type>/<string:category_id>', methods=['PUT'])
+@admin_jwt_required
+def update_category_details(admin_user, category_type, category_id):
+    try:
+        data = request.get_json()
+        nombre = data.get('nombre')
+        descripcion = data.get('descripcion')
+
+        if not nombre or not descripcion:
+            return jsonify({'success': False, 'message': 'El nombre y la descripción son obligatorios.'}), 400
+
+        model_map = {
+            'main': CategoriasPrincipales,
+            'sub': Subcategorias,
+            'pseudo': Seudocategorias
+        }
+
+        model = model_map.get(category_type)
+        if not model:
+            return jsonify({'success': False, 'message': 'Tipo de categoría no válido.'}), 400
+
+        category = model.query.get(category_id)
+        if not category:
+            return jsonify({'success': False, 'message': 'Categoría no encontrada.'}), 404
+
+        # Check for name uniqueness if it has changed
+        if category.nombre != nombre:
+            # 1. Check for name uniqueness
+            existing_name = model.query.filter(model.nombre == nombre, model.id != category.id).first()
+            if existing_name:
+                return jsonify({'success': False, 'message': f'Ya existe una categoría con el nombre "{nombre}".'}), 409
+
+            # 2. Check for slug uniqueness
+            new_slug = slugify(nombre)
+            existing_slug = model.query.filter(model.slug == new_slug, model.id != category.id).first()
+            if existing_slug:
+                return jsonify({'success': False, 'message': f'Ya existe una categoría con un nombre similar que genera un slug duplicado ("{new_slug}").'}), 409
+            
+            # 3. If checks pass, update the slug
+            category.slug = new_slug
+
+        # Update fields
+        category.nombre = nombre
+        category.descripcion = descripcion
+
+        db.session.commit()
+        
+        current_app.logger.info(
+            f"Categoría ({category_type}) ID {category.id} actualizada por administrador {admin_user.id} ('{admin_user.nombre}')"
+        )
+
+        return jsonify({'success': True, 'message': 'Categoría actualizada correctamente.'})
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al actualizar la categoría {category_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno del servidor al actualizar.'}), 500
+
 # Endpoint API para filtros en tiempo real - Categorías Principales
 @admin_lista_categorias_bp.route('/api/categorias-principales/filter', methods=['GET'])
 @admin_jwt_required
@@ -694,13 +814,14 @@ def filter_pseudocategories_api(admin_user):
 @admin_jwt_required
 def get_subcategories_for_category(admin_user, categoria_id):
     try:
-        subcategorias = Subcategorias.query.filter_by(
-            categoria_principal_id=categoria_id,
-            estado='activo'
-        ).all()
+        estado_filtro = request.args.get('estado')
+        query = Subcategorias.query.filter_by(categoria_principal_id=categoria_id)
+        if estado_filtro:
+            query = query.filter_by(estado=estado_filtro)
 
-        subcategorias_data = [subcategoria_to_dict(
-            sub) for sub in subcategorias]
+        subcategorias = query.all()
+
+        subcategorias_data = [subcategoria_to_dict(sub) for sub in subcategorias]
 
         return jsonify({
             'success': True,
@@ -732,7 +853,13 @@ def create_main_category(admin_user):
 
         # Check if category with same name already exists
         if CategoriasPrincipales.query.filter_by(nombre=nombre).first():
-            return jsonify({'success': False, 'message': 'Ya existe una categoría principal con este nombre'}), 409
+            return jsonify({'success': False, 'message': f'Ya existe una categoría principal con el nombre "{nombre}".'}), 409
+
+        # Check for slug uniqueness
+        slug = slugify(nombre)
+        if CategoriasPrincipales.query.filter_by(slug=slug).first():
+            return jsonify({'success': False, 'message': f'Ya existe una categoría principal con el nombre ("{slug}").'}), 409
+
 
         new_category = CategoriasPrincipales(
             nombre=nombre,
@@ -774,8 +901,14 @@ def create_subcategory(admin_user):
         if not main_category:
             return jsonify({'success': False, 'message': 'Categoría principal no encontrada'}), 404
         
-        if Subcategorias.query.filter_by(nombre=nombre, categoria_principal_id=categoria_principal_id).first():
-            return jsonify({'success': False, 'message': 'Ya existe una subcategoría con este nombre en la categoría principal seleccionada'}), 409
+        # Verificar unicidad global del nombre
+        if Subcategorias.query.filter_by(nombre=nombre).first():
+            return jsonify({'success': False, 'message': f'Ya existe una subcategoría con el nombre "{nombre}".'}), 409
+
+        # Check for slug uniqueness
+        slug = slugify(nombre)
+        if Subcategorias.query.filter_by(slug=slug).first():
+            return jsonify({'success': False, 'message': f'Ya existe una subcategoría con el nombre ("{slug}").'}), 409
 
         new_subcategory = Subcategorias(
             nombre=nombre,
@@ -818,8 +951,14 @@ def create_pseudocategory(admin_user):
         if not sub_category:
             return jsonify({'success': False, 'message': 'Subcategoría no encontrada'}), 404
         
-        if Seudocategorias.query.filter_by(nombre=nombre, subcategoria_id=subcategoria_id).first():
-            return jsonify({'success': False, 'message': 'Ya existe una seudocategoría con este nombre en la subcategoría seleccionada'}), 409
+        # Verificar unicidad global del nombre
+        if Seudocategorias.query.filter_by(nombre=nombre).first():
+            return jsonify({'success': False, 'message': f'Ya existe una seudocategoría con el nombre "{nombre}".'}), 409
+
+        # Check for slug uniqueness
+        slug = slugify(nombre)
+        if Seudocategorias.query.filter_by(slug=slug).first():
+            return jsonify({'success': False, 'message': f'Ya existe una seudocategoría con el nombre ("{slug}").'}), 409
 
         new_pseudocategory = Seudocategorias(
             nombre=nombre,

@@ -135,7 +135,6 @@ def seudocategoria_to_dict(seudo):
             categoria_principal_nombre = seudo.subcategoria.categoria_principal.nombre
     
     if hasattr(seudo, 'productos') and seudo.productos is not None:
-        print(f"Type of seudo.productos: {type(seudo.productos)}, Value of seudo.productos: {seudo.productos}") # Debug print
         total_products_in_pseudocategory = len(seudo.productos)
 
     return {

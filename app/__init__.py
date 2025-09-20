@@ -1,5 +1,6 @@
 # app/__init__.py
 from flask import Flask, render_template, session, request
+import cloudinary
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
@@ -11,12 +12,17 @@ from app.utils.jwt_utils import jwt_required
 from app.utils.admin_jwt_utils import decode_admin_jwt_token
 from datetime import datetime
 import pytz
-from sqlalchemy import func
+from sqlalchemy import func, not_, and_
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.jinja_env.add_extension('jinja2.ext.do')
     app.config.from_object(config_class)
+
+    # --- CLOUDINARY CONFIGURATION ---
+    # La librería de Cloudinary leerá automáticamente la variable de entorno CLOUDINARY_URL
+    cloudinary.config(secure=True)
+    app.logger.info('Cloudinary configurado profesionalmente.')
 
     # --- LOGGING PROFESIONAL ---
     import logging
@@ -83,6 +89,7 @@ def create_app(config_class=Config):
     from app.blueprints.admin.product.crear_product import admin_crear_product_bp
     from app.blueprints.admin.product.editar_product import admin_editar_product_bp
     from app.blueprints.admin.categoria.lista_categorias import admin_lista_categorias_bp
+    from app.blueprints.admin.categoria.categoria_detalle import admin_categoria_detalle_bp
     from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
     from app.blueprints.admin.pedido.api import admin_api_bp
     from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
@@ -103,6 +110,7 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_crear_product_bp)
     app.register_blueprint(admin_editar_product_bp)
     app.register_blueprint(admin_lista_categorias_bp)
+    app.register_blueprint(admin_categoria_detalle_bp)
     app.register_blueprint(admin_lista_pedidos_bp, url_prefix='/admin')
     app.register_blueprint(admin_ventas_bp, url_prefix='/admin')
     app.register_blueprint(admin_api_bp)
@@ -112,14 +120,24 @@ def create_app(config_class=Config):
     @app.route('/perfil')
     @jwt_required
     def root_perfil(usuario):
+        # Contar todos los pedidos excepto aquellos 'en proceso' que están 'inactivos'.
+        # Esto incluye:
+        # - Pedidos 'en proceso' y 'activos'.
+        # - Todos los pedidos 'completados' (activos e inactivos).
+        # - Todos los pedidos 'cancelados' (activos e inactivos).
         pedidos_realizados = Pedido.query.filter(
             Pedido.usuario_id == usuario.id,
-            Pedido.estado == EstadoEnum.ACTIVO.value
+            not_(
+                and_(
+                    Pedido.estado_pedido == EstadoPedido.EN_PROCESO.value,
+                    Pedido.estado == 'inactivo'
+                )
+            )
         ).count()
 
+        # El total de compras debe sumar todos los pedidos 'completados', sin importar si están activos o inactivos.
         total_compras_valor = db.session.query(func.sum(Pedido.total)).filter(
             Pedido.usuario_id == usuario.id,
-            Pedido.estado == EstadoEnum.ACTIVO.value,
             Pedido.estado_pedido == EstadoPedido.COMPLETADO.value
         ).scalar() or 0
 
@@ -158,14 +176,6 @@ def create_app(config_class=Config):
                 .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))\
             )\
             .all()
-
-        # Filtrar subcategorías y seudocategorías activas
-        for categoria in categorias_obj:
-            categoria.subcategorias = [
-                sub for sub in categoria.subcategorias if sub.estado == 'activo']
-            for subcategoria in categoria.subcategorias:
-                subcategoria.seudocategorias = [
-                    seudo for seudo in subcategoria.seudocategorias if seudo.estado == 'activo']
         
         # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
         categorias_data = [categoria_principal_to_dict(c) for c in categorias_obj]
@@ -187,7 +197,8 @@ def create_app(config_class=Config):
             'categorias': categorias_data,
             'categorias_principales': categorias_obj,
             'total_favoritos': total_favoritos,
-            'usuario_autenticado': usuario_autenticado
+            'usuario_autenticado': usuario_autenticado,
+            'now': datetime.utcnow()
         }
 
     # Custom Jinja2 filters

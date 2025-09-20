@@ -30,13 +30,17 @@ def get_ventas(admin_user):
         monto_min = request.args.get('monto_min', '')
         monto_max = request.args.get('monto_max', '')
         sort_by = request.args.get('sort_by', 'created_at')
+        estado = request.args.get('estado', 'todos')
         
-        # Construir consulta base - Solo pedidos completados y activos
+        # Construir consulta base - Solo pedidos completados
         query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == 'completado',
-            Pedido.estado == 'activo'
+            Pedido.estado_pedido == 'completado'
         )
         
+        # Aplicar filtro de estado (activo/inactivo)
+        if estado in ['activo', 'inactivo']:
+            query = query.filter(Pedido.estado == estado)
+
         # Aplicar filtros
         if cliente:
             query = query.join(Usuarios).filter(
@@ -138,13 +142,17 @@ def get_ventas_api(admin_user):
         monto_min = request.args.get('monto_min', '')
         monto_max = request.args.get('monto_max', '')
         sort_by = request.args.get('sort_by', 'created_at')
+        estado = request.args.get('estado', 'todos')
 
-        # Construir consulta base - Solo pedidos completados y activos
+        # Construir consulta base - Solo pedidos completados
         query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == 'completado',
-            Pedido.estado == 'activo'
+            Pedido.estado_pedido == 'completado'
         )
         
+        # Aplicar filtro de estado (activo/inactivo)
+        if estado in ['activo', 'inactivo']:
+            query = query.filter(Pedido.estado == estado)
+
         # Aplicar filtros
         if cliente:
             query = query.join(Usuarios).filter(
@@ -240,7 +248,7 @@ def get_venta_detalle(admin_user, venta_id):
             joinedload(Pedido.productos).joinedload(PedidoProducto.producto)
         ).get(venta_id)
         
-        if not venta or venta.estado_pedido != 'completado' or venta.estado != 'activo':
+        if not venta or venta.estado_pedido != 'completado':
             return jsonify({
                 'success': False,
                 'message': 'Venta no encontrada'
@@ -328,10 +336,9 @@ def get_ventas_estadisticas(admin_user):
         monto_min = request.args.get('monto_min', '')
         monto_max = request.args.get('monto_max', '')
         
-        # Construir consulta base - Solo pedidos completados y activos
+        # Construir consulta base - Solo pedidos completados
         query = Pedido.query.filter(
-            Pedido.estado_pedido == 'completado',
-            Pedido.estado == 'activo'
+            Pedido.estado_pedido == 'completado'
         )
         
         # Aplicar filtros de fecha
@@ -367,8 +374,7 @@ def get_ventas_estadisticas(admin_user):
         # Calcular estadísticas
         total_ventas = query.count()
         total_ingresos = db.session.query(func.sum(Pedido.total)).filter(
-            Pedido.estado_pedido == 'completado',
-            Pedido.estado == 'activo'
+            Pedido.estado_pedido == 'completado'
         )
         
         # Aplicar los mismos filtros a la consulta de ingresos
@@ -413,7 +419,6 @@ def get_ventas_estadisticas(admin_user):
         # Aplicar filtros de fecha a la consulta de gráfico
         grafico_query = Pedido.query.filter(
             Pedido.estado_pedido == 'completado',
-            Pedido.estado == 'activo',
             func.date(Pedido.created_at) >= hace_30_dias
         )
         
@@ -452,7 +457,6 @@ def get_ventas_estadisticas(admin_user):
             func.sum(Pedido.total).label('total')
         ).filter(
             Pedido.estado_pedido == 'completado',
-            Pedido.estado == 'activo',
             func.date(Pedido.created_at) >= hace_30_dias
         ).group_by(func.date(Pedido.created_at)).all()
         
@@ -513,7 +517,7 @@ def imprimir_factura(admin_user, venta_id):
             joinedload(Pedido.productos).joinedload(PedidoProducto.producto)
         ).get(venta_id)
         
-        if not venta or venta.estado_pedido != 'completado' or venta.estado != 'activo':
+        if not venta or venta.estado_pedido != 'completado':
             return jsonify({
                 'success': False,
                 'message': 'Venta no encontrada'

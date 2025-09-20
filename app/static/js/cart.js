@@ -384,10 +384,7 @@ if (typeof ShoppingCart === "undefined") {
         }
 
         // Si el vaciado en el backend es exitoso, limpiar localmente
-        this.clearStorage();
-        this.cartItems = [];
-        this.updateCartCounter();
-        this.refreshCartModal();
+        this.clearCartAndUI();
         this.showToast("Pedido confirmado y carrito vaciado", "success");
 
         // Obtener el enlace de WhatsApp
@@ -434,15 +431,13 @@ if (typeof ShoppingCart === "undefined") {
       const url = whatsappBtn.href;
       
       if (url && url !== "#") {
-        window.open(url, '_blank');
-        this.clearStorage();
-        this.cartItems = [];
-        this.updateCartCounter();
-        this.refreshCartModal();
+        window.open(url, "_blank");
+        this.clearCartAndUI();
       }
       
       this.hideUnauthenticatedWhatsAppModal();
     }
+
     async addToCart(button) {
       if (this.isUpdating) return;
       const productId = button.dataset.productId;
@@ -803,6 +798,14 @@ animateFooter(show) {
         }, 300); // Coincide con la duración de la transición
     }
 }
+
+    clearCartAndUI() {
+      this.cartItems = [];
+      this.clearStorage(); // Llama a updateCache, que ahora usará cartItems vacío
+      this.updateCartCounter();
+      this.refreshCartModal();
+    }
+
     clearCartOnLogout() {
       this.cartItems = [];
       this.saveToStorage();

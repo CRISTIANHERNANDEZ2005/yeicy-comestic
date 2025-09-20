@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Estado inicial de los filtros
   let currentFilters = {
     categoria_principal: window.appData.categoriaPrincipal.nombre,
-    subcategoria: 'all',
+    subcategoria: window.appData.subcategoriaActual.nombre, // Fijo
     pseudocategoria: 'all',
     marca: 'all',
     min_price: '',
@@ -22,7 +22,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const totalProductCount = document.getElementById("total-product-count");
   
   // Filtros
-  const subcategoryFilters = document.getElementById("subcategory-filters-content");
   const pseudocategoryFilters = document.getElementById("pseudocategory-filters-content");
   const brandFilters = document.getElementById("brand-filters-content");
   const sortSelect = document.getElementById("sort-select");
@@ -41,7 +40,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const filterDrawer = document.getElementById("filter-drawer");
   const filterBtn = document.getElementById("filter-btn");
   const closeFilterBtn = document.getElementById("close-filter-btn");
-  const applyFiltersBtn = document.getElementById("apply-filters");
   const filterModalOverlay = document.getElementById("filter-modal-overlay");
 
   // Contenedor de etiquetas de filtros aplicados
@@ -51,21 +49,25 @@ document.addEventListener("DOMContentLoaded", function () {
   const productsPerPage = 12;
   let currentDisplayedProducts = 0;
   let isFetching = false;
-  let isUpdatingFilters = false; // Nueva bandera para evitar actualizaciones simultáneas
+  let isUpdatingFilters = false;
 
   // Inicialización
   async function init() {
-    // Configurar event listeners
+    // Leer parámetros de la URL para pre-filtrar
+    const urlParams = new URLSearchParams(window.location.search);
+    const seudoFromUrl = urlParams.get('seudocategoria');
+    if (seudoFromUrl) {
+        // Decodificar el nombre de la seudocategoría desde la URL
+        currentFilters.pseudocategoria = decodeURIComponent(seudoFromUrl);
+    }
+
     setupEventListeners();
-    
-    // Cargar datos iniciales
     await updateAllFilters();
     await fetchProductsWithFilters();
     await fetchAndSetPriceRange();
   }
 
   function setupEventListeners() {
-    // Toggle para los filtros del drawer
     document.querySelectorAll(".filter-toggle").forEach((header) => {
       header.addEventListener("click", () => {
         const targetId = header.dataset.target;
@@ -84,27 +86,11 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     });
 
-    // Event listeners para el drawer de filtros
     if (filterBtn) filterBtn.addEventListener("click", () => toggleFilterDrawer(true));
     if (closeFilterBtn) closeFilterBtn.addEventListener("click", () => toggleFilterDrawer(false));
     if (filterModalOverlay) filterModalOverlay.addEventListener("click", () => toggleFilterDrawer(false));
     if (filterDrawer) filterDrawer.addEventListener("click", (event) => event.stopPropagation());
 
-    // Event listener para aplicar filtros desde el drawer
-    if (applyFiltersBtn) {
-      applyFiltersBtn.addEventListener("click", () => {
-        // Obtener valores seleccionados en el drawer
-        currentFilters.subcategoria = filterDrawer.querySelector('input[name="subcategory"]:checked')?.value || "all";
-        currentFilters.pseudocategoria = filterDrawer.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
-        currentFilters.marca = filterDrawer.querySelector('input[name="brand"]:checked')?.value || "all";
-        
-        // Aplicar los cambios
-        applyFilters();
-        toggleFilterDrawer(false);
-      });
-    }
-
-    // Event listener para restablecer filtros desde el drawer
     if (resetFiltersBtn) {
       resetFiltersBtn.addEventListener("click", () => {
         resetAllFilters();
@@ -112,7 +98,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // Event listeners para los inputs de precio
     if (minPriceInput) {
       minPriceInput.addEventListener("input", () => {
         updatePriceLabels();
@@ -127,7 +112,6 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // Event listener para el ordenamiento
     if (sortSelect) {
       sortSelect.addEventListener("change", () => {
         currentFilters.ordenar_por = sortSelect.value;
@@ -135,12 +119,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    // Event listener para limpiar filtros
     if (clearFiltersBtn) {
       clearFiltersBtn.addEventListener("click", resetAllFilters);
     }
 
-    // Load More / Show Less functionality
     if (loadMoreBtn) {
       loadMoreBtn.addEventListener("click", loadMoreProducts);
     }
@@ -149,14 +131,12 @@ document.addEventListener("DOMContentLoaded", function () {
       showLessBtn.addEventListener("click", showLessProducts);
     }
 
-    // Event listener para el botón de limpiar búsqueda en no resultados
     const clearSearchBtn = document.getElementById("clear-search-btn");
     if (clearSearchBtn) {
       clearSearchBtn.addEventListener("click", resetAllFilters);
     }
   }
 
-  // Función para abrir/cerrar el drawer de filtros
   function toggleFilterDrawer(forceOpen = null) {
     const isOpen = filterDrawer.classList.contains("open");
     const shouldOpen = forceOpen !== null ? forceOpen : !isOpen;
@@ -175,42 +155,30 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Sincronizar los filtros del drawer con los valores actuales
   function syncFiltersWithCurrentValues() {
-    // Sincronizar subcategorías
-    const subcategoryInput = filterDrawer.querySelector(`input[name="subcategory"][value="${currentFilters.subcategoria}"]`);
-    if (subcategoryInput) subcategoryInput.checked = true;
-    
-    // Sincronizar pseudocategorías
     const pseudocategoryInput = filterDrawer.querySelector(`input[name="pseudocategory"][value="${currentFilters.pseudocategoria}"]`);
     if (pseudocategoryInput) pseudocategoryInput.checked = true;
 
-    // Sincronizar marcas
     const brandInput = filterDrawer.querySelector(`input[name="brand"][value="${currentFilters.marca}"]`);
     if (brandInput) brandInput.checked = true;
     
-    // Sincronizar precios
     minPriceInput.value = currentFilters.min_price || '';
     maxPriceInput.value = currentFilters.max_price || '';
     
-    // Actualizar etiquetas de precio
     updatePriceLabels();
   }
 
-  // Actualizar etiquetas de precio
   function updatePriceLabels() {
     minPriceLabel.textContent = minPriceInput.value ? `$${minPriceInput.value}` : '$0';
     maxPriceLabel.textContent = maxPriceInput.value ? `$${maxPriceInput.value}` : '$0';
   }
 
-  // Función para actualizar todos los filtros (subcategorías, seudocategorías, marcas)
   async function updateAllFilters() {
     if (isUpdatingFilters) return;
     isUpdatingFilters = true;
     
     try {
       await Promise.all([
-        updateSubcategoryFilters(),
         updatePseudocategoryFilters(),
         updateBrandFilters()
       ]);
@@ -222,117 +190,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Función para actualizar las opciones de subcategoría
-  async function updateSubcategoryFilters() {
-    try {
-      const params = new URLSearchParams();
-      if (currentFilters.categoria_principal) params.append('categoria_principal', currentFilters.categoria_principal);
-      if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
-      if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
-      
-      const response = await fetch(`/api/filtros/subcategorias?${params.toString()}`);
-      
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-      
-      const subcategorias = await response.json();
-      
-      const targetElement = subcategoryFilters;
-      targetElement.innerHTML = "";
-
-      const allOptionHtml = `
-        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-          <input
-            type="radio"
-            name="subcategory"
-            value="all"
-            class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-            ${currentFilters.subcategoria === 'all' ? 'checked' : ''}
-          />
-          <span class="ml-3 text-gray-700 font-medium">Todas las subcategorías</span>
-        </label>
-      `;
-      targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-
-      subcategorias.forEach((sub) => {
-        const subcategoryHtml = `
-          <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-            <input
-              type="radio"
-              name="subcategory"
-              value="${sub.nombre}"
-              class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-              ${currentFilters.subcategoria === sub.nombre ? 'checked' : ''}
-            />
-            <span class="ml-3 text-gray-700">${sub.nombre}</span>
-          </label>
-        `;
-        targetElement.insertAdjacentHTML("beforeend", subcategoryHtml);
-      });
-
-      // Agregar event listeners a los nuevos inputs
-      targetElement.querySelectorAll('input[name="subcategory"]').forEach(input => {
-        input.addEventListener('change', (e) => {
-          currentFilters.subcategoria = e.target.value;
-          applyFilters();
-        });
-      });
-    } catch (error) {
-      console.error('Error al actualizar subcategorías:', error);
-      // En caso de error, mostrar todas las subcategorías disponibles
-      showAllSubcategories();
-    }
-  }
-
-  // Función para mostrar todas las subcategorías disponibles
-  function showAllSubcategories() {
-    const targetElement = subcategoryFilters;
-    targetElement.innerHTML = "";
-
-    const allOptionHtml = `
-      <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-        <input
-          type="radio"
-          name="subcategory"
-          value="all"
-          class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-          ${currentFilters.subcategoria === 'all' ? 'checked' : ''}
-        />
-        <span class="ml-3 text-gray-700 font-medium">Todas las subcategorías</span>
-      </label>
-    `;
-    targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
-
-    // Mostrar todas las subcategorías disponibles en window.appData
-    if (window.appData.subcategorias) {
-      window.appData.subcategorias.forEach((sub) => {
-        const subcategoryHtml = `
-          <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
-            <input
-              type="radio"
-              name="subcategory"
-              value="${sub.nombre}"
-              class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300"
-              ${currentFilters.subcategoria === sub.nombre ? 'checked' : ''}
-            />
-            <span class="ml-3 text-gray-700">${sub.nombre}</span>
-          </label>
-        `;
-        targetElement.insertAdjacentHTML("beforeend", subcategoryHtml);
-      });
-
-      // Agregar event listeners a los nuevos inputs
-      targetElement.querySelectorAll('input[name="subcategory"]').forEach(input => {
-        input.addEventListener('change', (e) => {
-          currentFilters.subcategoria = e.target.value;
-          applyFilters();
-        });
-      });
-    }
-  }
-
-  // Función para actualizar las opciones de seudocategoría
   async function updatePseudocategoryFilters() {
     try {
       const params = new URLSearchParams();
@@ -381,7 +238,6 @@ document.addEventListener("DOMContentLoaded", function () {
         targetElement.insertAdjacentHTML("beforeend", pseudocategoryHtml);
       });
 
-      // Agregar event listeners a los nuevos inputs
       targetElement.querySelectorAll('input[name="pseudocategory"]').forEach(input => {
         input.addEventListener('change', (e) => {
           currentFilters.pseudocategoria = e.target.value;
@@ -390,12 +246,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     } catch (error) {
       console.error('Error al actualizar seudocategorías:', error);
-      // En caso de error, mostrar todas las seudocategorías disponibles
       showAllPseudocategories();
     }
   }
 
-  // Función para mostrar todas las seudocategorías disponibles
   function showAllPseudocategories() {
     const targetElement = pseudocategoryFilters;
     targetElement.innerHTML = "";
@@ -414,7 +268,6 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
     targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
 
-    // Mostrar todas las seudocategorías disponibles en window.appData
     if (window.appData.seudocategorias) {
       window.appData.seudocategorias.forEach((pseudo) => {
         const pseudocategoryHtml = `
@@ -432,7 +285,6 @@ document.addEventListener("DOMContentLoaded", function () {
         targetElement.insertAdjacentHTML("beforeend", pseudocategoryHtml);
       });
 
-      // Agregar event listeners a los nuevos inputs
       targetElement.querySelectorAll('input[name="pseudocategory"]').forEach(input => {
         input.addEventListener('change', (e) => {
           currentFilters.pseudocategoria = e.target.value;
@@ -442,7 +294,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Función para actualizar las opciones de marcas
   async function updateBrandFilters() {
     try {
       const params = new URLSearchParams();
@@ -491,7 +342,6 @@ document.addEventListener("DOMContentLoaded", function () {
         targetElement.insertAdjacentHTML("beforeend", brandHtml);
       });
 
-      // Agregar event listeners a los nuevos inputs
       targetElement.querySelectorAll('input[name="brand"]').forEach(input => {
         input.addEventListener('change', (e) => {
           currentFilters.marca = e.target.value;
@@ -500,12 +350,10 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     } catch (error) {
       console.error('Error al actualizar marcas:', error);
-      // En caso de error, mostrar todas las marcas disponibles
       showAllBrands();
     }
   }
 
-  // Función para mostrar todas las marcas disponibles
   function showAllBrands() {
     const targetElement = brandFilters;
     targetElement.innerHTML = "";
@@ -524,7 +372,6 @@ document.addEventListener("DOMContentLoaded", function () {
     `;
     targetElement.insertAdjacentHTML("beforeend", allOptionHtml);
 
-    // Mostrar todas las marcas disponibles en window.appData
     if (window.appData.marcas) {
       window.appData.marcas.forEach((marca) => {
         const brandHtml = `
@@ -542,7 +389,6 @@ document.addEventListener("DOMContentLoaded", function () {
         targetElement.insertAdjacentHTML("beforeend", brandHtml);
       });
 
-      // Agregar event listeners a los nuevos inputs
       targetElement.querySelectorAll('input[name="brand"]').forEach(input => {
         input.addEventListener('change', (e) => {
           currentFilters.marca = e.target.value;
@@ -552,13 +398,11 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Función para actualizar las etiquetas de filtros aplicados
   function updateAppliedFiltersTags() {
     if (!appliedFiltersContainer) return;
     
     appliedFiltersContainer.innerHTML = '';
     
-    // Función para crear una etiqueta de filtro
     const createFilterTag = (key, value, displayValue) => {
       if (value === 'all' || value === '') return null;
       
@@ -571,7 +415,6 @@ document.addEventListener("DOMContentLoaded", function () {
         </button>
       `;
       
-      // Event listener para quitar el filtro
       tag.querySelector('button').addEventListener('click', () => {
         removeFilter(key);
       });
@@ -579,15 +422,10 @@ document.addEventListener("DOMContentLoaded", function () {
       return tag;
     };
     
-    // Crear etiquetas para cada filtro
     const tags = [];
     
-    if (currentFilters.subcategoria !== 'all') {
-      tags.push(createFilterTag('subcategoria', currentFilters.subcategoria, currentFilters.subcategoria));
-    }
-    
     if (currentFilters.pseudocategoria !== 'all') {
-      tags.push(createFilterTag('seudocategoria', currentFilters.pseudocategoria, currentFilters.pseudocategoria));
+      tags.push(createFilterTag('pseudocategoria', currentFilters.pseudocategoria, currentFilters.pseudocategoria));
     }
     
     if (currentFilters.marca !== 'all') {
@@ -602,12 +440,10 @@ document.addEventListener("DOMContentLoaded", function () {
       tags.push(createFilterTag('max_price', currentFilters.max_price, `Max: $${currentFilters.max_price}`));
     }
     
-    // Agregar las etiquetas al contenedor
     tags.forEach(tag => {
       if (tag) appliedFiltersContainer.appendChild(tag);
     });
     
-    // Mostrar u ocultar el contenedor
     if (tags.some(tag => tag !== null)) {
       appliedFiltersContainer.classList.remove('hidden');
     } else {
@@ -615,13 +451,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Función para quitar un filtro específico
   function removeFilter(filterKey) {
     switch (filterKey) {
-      case 'subcategoria':
-        currentFilters.subcategoria = 'all';
-        break;
-      case 'seudocategoria':
+      case 'pseudocategoria':
         currentFilters.pseudocategoria = 'all';
         break;
       case 'marca':
@@ -641,24 +473,18 @@ document.addEventListener("DOMContentLoaded", function () {
     applyFilters();
   }
 
-  // Función para aplicar los filtros
   async function applyFilters() {
-    // Actualizar los valores de los inputs de precio
     currentFilters.min_price = minPriceInput.value;
     currentFilters.max_price = maxPriceInput.value;
     
-    // Actualizar los filtros disponibles
     await updateAllFilters();
-    
-    // Obtener los productos filtrados
     await fetchProductsWithFilters();
   }
 
-  // Función para restablecer todos los filtros
   function resetAllFilters() {
     currentFilters = {
       categoria_principal: window.appData.categoriaPrincipal.nombre,
-      subcategoria: 'all',
+      subcategoria: window.appData.subcategoriaActual.nombre,
       pseudocategoria: 'all',
       marca: 'all',
       min_price: '',
@@ -666,25 +492,25 @@ document.addEventListener("DOMContentLoaded", function () {
       ordenar_por: 'newest'
     };
     
-    // Restablecer los inputs de precio
     minPriceInput.value = '';
     maxPriceInput.value = '';
     updatePriceLabels();
     
-    // Restablecer el ordenamiento
     sortSelect.value = 'newest';
     
-    // Aplicar los cambios
     applyFilters();
   }
 
-  // Función para obtener y establecer el rango de precios
   async function fetchAndSetPriceRange() {
     try {
       const categoriaPrincipalNombre = window.appData.categoriaPrincipal.nombre;
+      const subcategoriaNombre = window.appData.subcategoriaActual.nombre;
       const params = new URLSearchParams();
       if (categoriaPrincipalNombre) {
         params.append("categoria_principal", categoriaPrincipalNombre);
+      }
+      if (subcategoriaNombre) {
+        params.append("subcategoria", subcategoriaNombre);
       }
       const url = `/api/productos/precios_rango?${params.toString()}`;
 
@@ -706,7 +532,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Función para cargar productos con filtros
   async function fetchProductsWithFilters() {
     if (isFetching) return;
     isFetching = true;
@@ -716,7 +541,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     const params = new URLSearchParams();
     
-    // Agregar todos los filtros actuales
     Object.keys(currentFilters).forEach(key => {
       if (currentFilters[key] !== 'all' && currentFilters[key] !== '') {
         params.append(key, currentFilters[key]);
@@ -750,7 +574,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  // Función para mostrar el mensaje de no resultados
   function displayDynamicNoResultsMessage() {
     const titleEl = document.getElementById('no-results-title');
     const suggestionEl = document.getElementById('no-results-suggestion');
@@ -761,7 +584,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const activeFilters = [];
     if (currentFilters.marca && currentFilters.marca !== 'all') activeFilters.push(`de la marca <strong>"${currentFilters.marca}"</strong>`);
     if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') activeFilters.push(`en <strong>"${currentFilters.pseudocategoria}"</strong>`);
-    else if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') activeFilters.push(`en la subcategoría <strong>"${currentFilters.subcategoria}"</strong>`);
 
     if (currentFilters.min_price && currentFilters.max_price) {
         activeFilters.push(`con precios entre <strong>$${currentFilters.min_price}</strong> y <strong>$${currentFilters.max_price}</strong>`);
@@ -773,14 +595,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (activeFilters.length > 0) {
         titleEl.textContent = 'No se encontraron productos con tu selección';
-        let suggestionText = `Dentro de <strong>${window.appData.categoriaPrincipal.nombre}</strong>, no hemos podido encontrar productos `;
+        let suggestionText = `Dentro de <strong>${window.appData.subcategoriaActual.nombre}</strong>, no hemos podido encontrar productos `;
         suggestionText += activeFilters.join(' y ');
         suggestionText += '.<br><br><strong>Sugerencia:</strong> Intenta ajustar o eliminar algunos filtros para ver más resultados.';
         suggestionEl.innerHTML = suggestionText;
         clearBtn.classList.remove('hidden');
     } else {
         titleEl.textContent = '¡Vaya! No encontramos productos';
-        suggestionEl.innerHTML = `Parece que no hay productos disponibles en la categoría <strong>${window.appData.categoriaPrincipal.nombre}</strong> en este momento. Vuelve a intentarlo más tarde.`;
+        suggestionEl.innerHTML = `Parece que no hay productos disponibles en la subcategoría <strong>${window.appData.subcategoriaActual.nombre}</strong> en este momento. Vuelve a intentarlo más tarde.`;
         clearBtn.classList.add('hidden');
     }
 
@@ -788,37 +610,20 @@ document.addEventListener("DOMContentLoaded", function () {
     noResultsMessage.classList.remove("hidden");
   }
 
-  // Función para actualizar el título y breadcrumbs
   function updateCategoryInfo() {
     const categoriaPrincipal = window.appData.categoriaPrincipal;
-    let title = categoriaPrincipal.nombre;
-    let description = categoriaPrincipal.descripcion || `Productos de la categoría ${categoriaPrincipal.nombre}.`;
+    const subcategoriaActual = window.appData.subcategoriaActual;
+    let title = subcategoriaActual.nombre;
+    let description = subcategoriaActual.descripcion || `Productos de la subcategoría ${subcategoriaActual.nombre}.`;
     let breadcrumbsHtml = `
       <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
         <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
       </a>
       <span class="text-gray-300">/</span>
-      <span class="text-gray-700 font-medium">${categoriaPrincipal.nombre}</span>
+      <a href="/${categoriaPrincipal.slug}" class="text-pink-600 hover:text-pink-800 transition-colors">${categoriaPrincipal.nombre}</a>
+      <span class="text-gray-300">/</span>
+      <span class="text-gray-700 font-medium">${subcategoriaActual.nombre}</span>
     `;
-
-    if (currentFilters.subcategoria && currentFilters.subcategoria !== "all") {
-      const subcategoriaObj = window.appData.subcategorias.find(s => s.nombre === currentFilters.subcategoria);
-      title = currentFilters.subcategoria;
-      if (subcategoriaObj && subcategoriaObj.descripcion) {
-        description = subcategoriaObj.descripcion;
-      } else {
-        description = `Descubre la variedad en la subcategoría ${currentFilters.subcategoria}.`;
-      }
-      breadcrumbsHtml = `
-        <a href="/" class="text-pink-600 hover:text-pink-800 transition-colors duration-200 flex items-center">
-          <i class="fas fa-home mr-1.5 text-sm"></i> Inicio
-        </a>
-        <span class="text-gray-300">/</span>
-        <a href="/${categoriaPrincipal.slug}" class="text-pink-600 hover:text-pink-800 transition-colors">${categoriaPrincipal.nombre}</a>
-        <span class="text-gray-300">/</span>
-        <span class="text-gray-700 font-medium">${currentFilters.subcategoria}</span>
-      `;
-    }
 
     if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== "all") {
       const pseudocategoriaObj = window.appData.seudocategorias.find(p => p.nombre === currentFilters.pseudocategoria);
@@ -828,7 +633,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         description = `Encuentra lo mejor en ${currentFilters.pseudocategoria}.`;
       }
-      // Asume que la subcategoría ya está en el breadcrumb
       breadcrumbsHtml += `
         <span class="text-gray-300">/</span>
         <span class="text-gray-700 font-medium">${currentFilters.pseudocategoria}</span>
@@ -840,7 +644,6 @@ document.addEventListener("DOMContentLoaded", function () {
     breadcrumbs.innerHTML = breadcrumbsHtml;
   }
 
-  // Función para mostrar el loader
   function showLoader() {
     productListingContainer.classList.remove("hidden");
     productGrid.style.display = "none";
@@ -851,12 +654,10 @@ document.addEventListener("DOMContentLoaded", function () {
     if (showLessBtn) showLessBtn.style.display = "none";
   }
 
-  // Función para ocultar el loader
   function hideLoader() {
     productGridLoader.style.display = "none";
   }
 
-  // Función para renderizar los productos
   function renderProducts(productsToRender, isInitialRender = false) {
     if (isInitialRender) {
       productGrid.innerHTML = "";
@@ -882,24 +683,19 @@ document.addEventListener("DOMContentLoaded", function () {
     showLessBtn.style.display = currentDisplayedProducts > productsPerPage ? "block" : "none";
   }
 
-  // Función para cargar más productos
   function loadMoreProducts() {
     const nextBatch = allProducts.slice(
       currentDisplayedProducts,
       currentDisplayedProducts + productsPerPage
     );
-    // Con la nueva función renderProducts, pasar 'false' significa que no es un render inicial,
-    // por lo que los productos se añadirán en lugar de reemplazar.
     renderProducts(nextBatch, false); 
   }
 
-  // Función para mostrar menos productos
   function showLessProducts() {
     renderProducts(allProducts.slice(0, productsPerPage), true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // Función para debounce
   let debounceTimeout;
   function debounceFilterProducts() {
     clearTimeout(debounceTimeout);
@@ -908,6 +704,5 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 500);
   }
 
-  // Iniciar la aplicación
   init();
 });

@@ -3,6 +3,8 @@ from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.serializers import producto_to_dict
+import cloudinary.uploader
+import cloudinary.api
 from app.extensions import db
 import json
 from slugify import slugify
@@ -61,7 +63,7 @@ def update_product_api(admin_user, product_slug):
         nombre = data.get('nombre')
         marca = data.get('marca')
         descripcion = data.get('descripcion')
-        imagen_url = data.get('imagen_url')
+        imagen_file = request.files.get('imagen_file')
         precio_str = data.get('precio')
         costo_str = data.get('costo')
         existencia_str = data.get('existencia')
@@ -78,8 +80,8 @@ def update_product_api(admin_user, product_slug):
             errors.append('La marca del producto es obligatoria.')
         if not descripcion:
             errors.append('La descripción del producto es obligatoria.')
-        if not imagen_url:
-            errors.append('La URL de la imagen es obligatoria.')
+        if not imagen_file and not product.imagen_url:
+            errors.append('La imagen del producto es obligatoria.')
         if not seudocategoria_id:
             errors.append('Debe seleccionar una seudocategoría.')
 
@@ -115,14 +117,17 @@ def update_product_api(admin_user, product_slug):
         if errors:
             return jsonify({'success': False, 'message': ' '.join(errors)}), 400
 
-        # --- 3. Verificación de Unicidad (Slug) ---
-        # Solo verificar unicidad si el nombre ha cambiado
-        new_slug = slugify(nombre)
-        if new_slug != product.slug and Productos.query.filter_by(slug=new_slug).first():
-            return jsonify({
-                'success': False,
-                'message': f'Ya existe un producto con el nombre "{nombre}". Por favor, elige otro.'
-            }), 409
+        # --- 3. Verificación de Unicidad (Nombre y Slug) ---
+        if nombre != product.nombre:
+            # Verificar unicidad del nombre
+            if Productos.query.filter(Productos.nombre == nombre, Productos.id != product.id).first():
+                return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre "{nombre}".'}), 409
+
+            # Verificar unicidad del slug
+            new_slug = slugify(nombre)
+            if Productos.query.filter(Productos.slug == new_slug, Productos.id != product.id).first():
+                return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre ("{new_slug}").'}), 409
+            product.slug = new_slug
 
         # --- 4. Verificación de Entidades Relacionadas ---
         seudocategoria = Seudocategorias.query.get(seudocategoria_id)
@@ -140,10 +145,39 @@ def update_product_api(admin_user, product_slug):
         except json.JSONDecodeError:
             especificaciones = {}
 
+        # --- Manejo de la imagen ---
+        imagen_url_final = product.imagen_url  # Mantener la URL antigua por defecto
+
+        if imagen_file:
+            # A. Subir nueva imagen
+            try:
+                upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
+                imagen_url_final = upload_result.get('secure_url')
+                if not imagen_url_final:
+                    raise Exception("La subida a Cloudinary no devolvió una URL.")
+            except Exception as e:
+                current_app.logger.error(f"Error al subir nueva imagen a Cloudinary para producto {product.slug}: {e}", exc_info=True)
+                return jsonify({'success': False, 'message': 'Error al subir la nueva imagen.'}), 500
+
+            # B. Eliminar imagen antigua de Cloudinary (práctica profesional para no dejar basura)
+            if product.imagen_url:
+                try:
+                    # Extraer el public_id de la URL antigua.
+                    # El public_id incluye el nombre de la carpeta.
+                    start_index = product.imagen_url.find('yeicy-cosmetic/products/')
+                    if start_index != -1:
+                        end_index = product.imagen_url.rfind('.')
+                        public_id = product.imagen_url[start_index:end_index]
+                        cloudinary.api.delete_resources([public_id])
+                        current_app.logger.info(f"Imagen antigua '{public_id}' eliminada de Cloudinary para producto {product.slug}.")
+                except Exception as e:
+                    # No es un error crítico si no se puede borrar la imagen vieja, solo loguearlo
+                    current_app.logger.error(f"No se pudo eliminar la imagen antigua '{product.imagen_url}' de Cloudinary: {e}", exc_info=True)
+
         product.nombre = nombre
         product.marca = marca
         product.descripcion = descripcion
-        product.imagen_url = imagen_url
+        product.imagen_url = imagen_url_final
         product.precio = precio
         product.costo = costo
         product.existencia = int(existencia_str)
@@ -151,7 +185,6 @@ def update_product_api(admin_user, product_slug):
         product.stock_maximo = int(stock_maximo_str)
         product.seudocategoria_id = seudocategoria_id
         product.especificaciones = especificaciones
-        product.slug = new_slug # Actualizar el slug si el nombre cambió
 
         # --- 6. Persistencia en Base de Datos ---
         db.session.commit()

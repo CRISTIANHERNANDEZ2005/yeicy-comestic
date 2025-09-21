@@ -686,7 +686,7 @@
                     <div class="help-section">
                         <div class="help-description">¿Tienes preguntas sobre tu pedido? Contáctanos y te ayudaremos.</div>
                         <div class="help-links">
-                            <a href="#" class="help-link">
+                            <a href="#" id="whatsapp-help-link" data-pedido-id="{{ pedido.id }}" class="help-link" target="_blank" rel="noopener noreferrer">
                                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
                                 </svg>
@@ -985,6 +985,16 @@
                 window.toast.error('Error de conexión. Por favor, intenta de nuevo más tarde.');
             }
         });
+        
+        // WhatsApp help link
+        const whatsappHelpLink = document.getElementById('whatsapp-help-link');
+        if (whatsappHelpLink) {
+            const pedidoId = whatsappHelpLink.getAttribute('data-pedido-id');
+            const phoneNumber = '573044931438';
+            const message = `¡Hola! 👋 Necesito ayuda con mi pedido número #${pedidoId}. ¿Podrían asistirme, por favor?`;
+            const encodedMessage = encodeURIComponent(message);
+            whatsappHelpLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
+        }
         
         // Función para obtener una cookie por nombre
         function getCookie(name) {

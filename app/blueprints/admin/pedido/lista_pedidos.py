@@ -629,7 +629,7 @@ def update_pedido_estado(admin_user, pedido_id):
                             'success': False,
                             'message': f'Stock insuficiente para reactivar el pedido. Producto: {producto.nombre if producto else "ID " + str(item.producto_id)}.'
                         }), 400
-                
+
                 # Si hay stock, restarlo
                 for item in pedido.productos:
                     producto = Productos.query.get(item.producto_id)
@@ -644,7 +644,7 @@ def update_pedido_estado(admin_user, pedido_id):
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.ENTREGADO.value
                 if not nota_por_defecto: # Si no se ha establecido una nota (ej. de en proceso a completado)
-                    nota_por_defecto = "El Pedido estancompletado"
+                    nota_por_defecto = "El Pedido esta completado"
             elif nuevo_estado == EstadoPedido.CANCELADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.CANCELADO
                 seguimiento_cambiado = True

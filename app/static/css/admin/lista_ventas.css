@@ -1,0 +1,458 @@
+body.no-scroll {
+    overflow: hidden;
+}
+/* Animación de pulso lenta para el botón flotante */
+@keyframes pulse-slow {
+    0% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulse-slow 3s infinite;
+}
+
+/* Estilos para los selects personalizados */
+.custom-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background-color: white;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.custom-select-trigger:hover {
+    border-color: #9ca3af;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.custom-select-trigger:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+}
+
+.custom-select-value {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.custom-select-arrow {
+    width: 1.25rem;
+    height: 1.25rem;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    color: #6b7280;
+}
+
+.custom-select.open .custom-select-arrow {
+    transform: rotate(180deg);
+}
+
+.custom-select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 0.5rem;
+    background-color: white;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 10;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.3s ease;
+    max-height: 200px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #d1d5db #f3f4f6;
+}
+
+.custom-select.open .custom-select-options {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.custom-select-option {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0.25rem;
+    margin: 0.25rem;
+}
+
+.custom-select-option:hover {
+    background-color: #f3f4f6;
+}
+
+.custom-select-option.selected {
+    background-color: #eff6ff;
+    color: #1d4ed8;
+    font-weight: 600;
+}
+
+/* Estilos para el scrollbar */
+.custom-select-options::-webkit-scrollbar {
+    width: 8px;
+}
+
+.custom-select-options::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 4px;
+}
+
+.custom-select-options::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 4px;
+}
+
+.custom-select-options::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+/* Estilos para las secciones de filtros */
+.filter-section {
+    position: relative;
+    padding-bottom: 1rem;
+}
+
+.filter-section:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #e5e7eb, transparent);
+}
+
+/* Estilos para la modal de detalles */
+#venta-detail-modal.active #modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Estilos para la modal de confirmación */
+#confirm-status-modal.active #confirm-modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Estilos para las tarjetas de información */
+.info-card {
+    background: linear-gradient(to bottom right, #ffffff, #f9fafb);
+    border-radius: 1rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.info-card-header {
+    background: linear-gradient(to right, #f3f4f6, #e5e7eb);
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.info-card-body {
+    padding: 1rem;
+}
+
+/* Estilos para la tabla de productos */
+.product-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.product-table thead th {
+    background: linear-gradient(to right, #4b5563, #374151);
+    color: white;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.product-table tbody tr:nth-child(odd) {
+    background-color: #f9fafb;
+}
+
+.product-table tbody tr:nth-child(even) {
+    background-color: #ffffff;
+}
+
+.product-table tbody tr:hover {
+    background-color: #f3f4f6;
+}
+
+.product-table td {
+    padding: 0.75rem 1rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+/* Estilos para el resumen de la venta */
+.summary-card {
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+    border-radius: 1rem;
+    color: white;
+    padding: 1.5rem;
+    box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3), 0 4px 6px -2px rgba(59, 130, 246, 0.2);
+}
+
+.summary-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.summary-item:last-child {
+    border-bottom: none;
+    font-weight: 700;
+    font-size: 1.25rem;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+}
+
+/* Estilos mejorados para la tabla de ventas */
+#ventas-table-body tr {
+    transition: all 0.2s ease;
+}
+
+#ventas-table-body tr:hover {
+    background-color: #f8fafc;
+    transform: scale(1.005);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Estilos para badges de estado mejorados */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+.status-badge i {
+    margin-right: 0.375rem;
+}
+
+.status-badge.active {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #065f46;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.status-badge.inactive {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #991b1b;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-badge:hover {
+    transform: scale(1.05);
+}
+
+/* Estilos para botones de acción mejorados */
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    margin: 0 0.25rem;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn i {
+    font-size: 1.1rem;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn:active {
+    transform: translateY(0);
+}
+
+.action-btn.view {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #1d4ed8;
+}
+
+.action-btn.view:hover {
+    background-color: rgba(59, 130, 246, 0.2);
+}
+
+.action-btn.toggle {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #4b5563;
+}
+
+.action-btn.toggle.active {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #b91c1c;
+}
+
+.action-btn.toggle.inactive {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #047857;
+}
+
+.action-btn.toggle:hover {
+    background-color: rgba(107, 114, 128, 0.2);
+}
+
+.action-btn.toggle.active:hover {
+    background-color: rgba(239, 68, 68, 0.2);
+}
+
+.action-btn.toggle.inactive:hover {
+    background-color: rgba(16, 185, 129, 0.2);
+}
+
+/* Efecto de onda para botones */
+.action-btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 5px;
+    height: 5px;
+    background: rgba(255, 255, 255, 0.5);
+    opacity: 0;
+    border-radius: 100%;
+    transform: scale(1, 1) translate(-50%);
+    transform-origin: 50% 50%;
+}
+
+.action-btn:focus:not(:active)::after {
+    animation: ripple 1s ease-out;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0, 0);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(20, 20);
+        opacity: 0;
+    }
+}
+
+/* Contenedor de acciones mejorado */
+.actions-container {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+/* Tooltip para botones mejorado */
+.tooltip {
+    position: relative;
+}
+
+.tooltip::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #1f2937;
+    color: white;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 50;
+    transform: translateX(-50%) translateY(5px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 115%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #1f2937 transparent transparent transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 50;
+}
+
+.tooltip:hover::before,
+.tooltip:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Animación para la fila actualizada */
+@keyframes highlightRow {
+    0% {
+        background-color: rgba(251, 191, 36, 0.2);
+    }
+    100% {
+        background-color: transparent;
+    }
+}
+
+.row-updated {
+    animation: highlightRow 2s ease-in-out;
+}

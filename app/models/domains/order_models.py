@@ -3,7 +3,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import ForeignKey, Enum as SAEnum
 from typing import TYPE_CHECKING, List
 from app.models.mixins import UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin
-from app.models.enums import EstadoPedido
+from app.models.enums import EstadoPedido, EstadoSeguimiento # Cambiado a EstadoSeguimiento
 
 if TYPE_CHECKING:
     from app.models.domains.user_models import Usuarios
@@ -11,19 +11,22 @@ if TYPE_CHECKING:
 
 class Pedido(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
     __tablename__ = 'pedidos'
-
+ 
     usuario_id: Mapped[str] = mapped_column(ForeignKey('usuarios.id'), nullable=False)
     total: Mapped[float] = mapped_column(db.Float, nullable=False)
-    estado_pedido: Mapped[str] = mapped_column(SAEnum(EstadoPedido, name='estado_pedido_enum'), nullable=False, default=EstadoPedido.EN_PROCESO.value)
+    estado_pedido: Mapped[EstadoPedido] = mapped_column(
+        SAEnum(EstadoPedido, name='estado_pedido_enum', native_enum=True),
+        nullable=False, default=EstadoPedido.EN_PROCESO
+    )
+    seguimiento_estado: Mapped[EstadoSeguimiento] = mapped_column(
+        SAEnum(EstadoSeguimiento, name='seguimiento_estado_enum', native_enum=True),
+        nullable=False, default=EstadoSeguimiento.RECIBIDO
+    )
+    seguimiento_historial = db.Column(db.JSON, nullable=True)
+    notas_seguimiento: Mapped[str] = mapped_column(db.Text, nullable=True)
 
     usuario: Mapped["Usuarios"] = relationship(back_populates='pedidos')
     productos: Mapped[List["PedidoProducto"]] = relationship(back_populates='pedido', cascade="all, delete-orphan")
-
-    def __init__(self, usuario_id, total, estado_pedido=EstadoPedido.EN_PROCESO, estado='activo'):
-        self.usuario_id = usuario_id
-        self.total = total
-        self.estado_pedido = estado_pedido
-        self.estado = estado
 
 class PedidoProducto(db.Model):
     __tablename__ = 'pedido_productos'

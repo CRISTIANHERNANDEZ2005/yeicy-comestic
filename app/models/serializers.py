@@ -458,11 +458,57 @@ def pedido_to_dict(pedido):
         'usuario_id': pedido.usuario_id,
         'usuario_nombre': usuario_nombre,
         'total': pedido.total,
-        'estado_pedido': pedido.estado_pedido,
+        'estado_pedido': pedido.estado_pedido.value if pedido.estado_pedido else None,
         'estado': pedido.estado,
+        'seguimiento_estado': pedido.seguimiento_estado.value if pedido.seguimiento_estado else None,
+        'seguimiento_historial': pedido.seguimiento_historial or [],
+        'notas_seguimiento': pedido.notas_seguimiento,
         'created_at': pedido.created_at.isoformat() if pedido.created_at else None,
         'updated_at': pedido.updated_at.isoformat() if pedido.updated_at else None,
         'productos_count': len(pedido.productos) if pedido.productos else 0
+    }
+
+def pedido_detalle_to_dict(pedido):
+    """Convierte un objeto Pedido a un diccionario con detalles completos."""
+    if not pedido:
+        return None
+        
+    usuario_info = None
+    if pedido.usuario:
+        usuario_info = {
+            'id': pedido.usuario.id,
+            'nombre': pedido.usuario.nombre,
+            'apellido': pedido.usuario.apellido,
+            'numero': pedido.usuario.numero
+        }
+
+    productos_info = []
+    if pedido.productos:
+        for pp in pedido.productos:
+            productos_info.append({
+                'producto_id': pp.producto_id,
+                'producto_nombre': pp.producto.nombre if pp.producto else 'Producto no disponible',
+                'producto_imagen_url': pp.producto.imagen_url if pp.producto else None,
+                'producto_marca': pp.producto.marca if pp.producto else 'N/A',
+                'producto_existencia': pp.producto.existencia if pp.producto else 0,
+                'cantidad': pp.cantidad,
+                'precio_unitario': pp.precio_unitario,
+                'subtotal': pp.cantidad * pp.precio_unitario
+            })
+
+    return {
+        'id': pedido.id,
+        'usuario': usuario_info,
+        'total': pedido.total,
+        'estado_pedido': pedido.estado_pedido.value if pedido.estado_pedido else None,
+        'estado': pedido.estado,
+        'seguimiento_estado': pedido.seguimiento_estado.value if pedido.seguimiento_estado else None,
+        'seguimiento_historial': pedido.seguimiento_historial or [],
+        'notas_seguimiento': pedido.notas_seguimiento,
+        'created_at': pedido.created_at.isoformat() if pedido.created_at else None,
+        'updated_at': pedido.updated_at.isoformat() if pedido.updated_at else None,
+        'productos': productos_info,
+        'productos_count': len(productos_info)
     }
 
 def pedido_detalle_cliente_to_dict(pedido):
@@ -509,50 +555,12 @@ def pedido_detalle_cliente_to_dict(pedido):
         'usuario': usuario_info,
         'subtotal_productos': calculated_total, # Nuevo campo para el subtotal de los productos
         'total': final_total,
-        'estado_pedido': pedido.estado_pedido,
+        'estado_pedido': pedido.estado_pedido.value if pedido.estado_pedido else None,
         'estado': pedido.estado,
+        'seguimiento_estado': pedido.seguimiento_estado.value if pedido.seguimiento_estado else None,
+        'seguimiento_historial': pedido.seguimiento_historial or [],
         'created_at': pedido.created_at if pedido.created_at else None,
         'updated_at': pedido.updated_at if pedido.updated_at else None,
         'productos': productos_info,
         'productos_count': len(productos_info)
-    }
-
-def pedido_detalle_to_dict(pedido):
-    """Convierte un objeto Pedido a un diccionario con detalles completos."""
-    if not pedido:
-        return None
-        
-    usuario_info = None
-    if pedido.usuario:
-        usuario_info = {
-            'id': pedido.usuario.id,
-            'nombre': pedido.usuario.nombre,
-            'apellido': pedido.usuario.apellido,
-            'numero': pedido.usuario.numero
-        }
-
-    productos_info = []
-    if pedido.productos:
-        for pp in pedido.productos:
-            productos_info.append({
-                'producto_id': pp.producto_id,
-                'producto_nombre': pp.producto.nombre if pp.producto else 'Producto no disponible',
-                'producto_imagen_url': pp.producto.imagen_url if pp.producto else None,
-                'producto_marca': pp.producto.marca if pp.producto else 'N/A',  # Añadimos esta línea
-                'producto_existencia': pp.producto.existencia if pp.producto else 0,
-                'cantidad': pp.cantidad,
-                'precio_unitario': pp.precio_unitario,
-                'subtotal': pp.cantidad * pp.precio_unitario
-            })
-
-    return {
-        'id': pedido.id,
-        'usuario': usuario_info,
-        'total': pedido.total,
-        'estado_pedido': pedido.estado_pedido,
-        'estado': pedido.estado,
-        'created_at': pedido.created_at.isoformat() if pedido.created_at else None,
-        'updated_at': pedido.updated_at.isoformat() if pedido.updated_at else None,
-        'productos': productos_info,
-        'productos_count': len(productos_info)  # Añadimos esta línea
     }

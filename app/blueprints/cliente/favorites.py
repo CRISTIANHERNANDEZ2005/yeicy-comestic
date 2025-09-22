@@ -2,6 +2,7 @@
 Módulo para manejar las operaciones relacionadas con los favoritos del usuario.
 """
 from app.extensions import db
+from app.models.enums import EstadoEnum
 from app.utils.jwt_utils import jwt_required
 from datetime import datetime
 from app.models.domains.product_models import Productos, CategoriasPrincipales, Subcategorias, Seudocategorias
@@ -57,8 +58,8 @@ def manejar_favoritos(usuario):
             ) if sort_order == 'asc' else valid_sort_fields[sort_by].desc()
 
             # Consulta de favoritos
-            query = Likes.query.filter_by(usuario_id=usuario.id, estado='activo')\
-                .join(Productos).filter(Productos.estado == 'activo')\
+            query = Likes.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO)\
+                .join(Productos).filter(Productos.estado == EstadoEnum.ACTIVO)\
                 .options(
                     joinedload(Likes.producto).joinedload(
                         Productos.seudocategoria)
@@ -161,7 +162,7 @@ def manejar_favoritos(usuario):
             # Verificar si el producto existe y está activo
             producto = Productos.query.filter_by(
                 id=producto_id,
-                estado='activo'
+                estado=EstadoEnum.ACTIVO
             ).first()
 
             if not producto:
@@ -180,11 +181,11 @@ def manejar_favoritos(usuario):
             # Determinar la acción a realizar
             if accion == 'toggle':
                 accion = 'eliminar' if (
-                    favorito and favorito.estado == 'activo') else 'agregar'
+                    favorito and favorito.estado == EstadoEnum.ACTIVO) else 'agregar'
 
             # Procesar la acción
             if accion == 'eliminar':
-                if not favorito or favorito.estado == 'inactivo':
+                if not favorito or favorito.estado == EstadoEnum.INACTIVO:
                     return jsonify({
                         'success': True,
                         'message': 'El producto no está en favoritos',
@@ -194,7 +195,7 @@ def manejar_favoritos(usuario):
                     }), 200
 
                 # Marcar como inactivo (eliminación lógica)
-                favorito.estado = 'inactivo'
+                favorito.estado = EstadoEnum.INACTIVO
                 favorito.fecha_actualizacion = datetime.utcnow()
                 db.session.commit()
 
@@ -211,7 +212,7 @@ def manejar_favoritos(usuario):
 
             else:  # accion == 'agregar'
                 if favorito:
-                    if favorito.estado == 'activo':
+                    if favorito.estado == EstadoEnum.ACTIVO:
                         return jsonify({
                             'success': True,
                             'message': 'El producto ya está en favoritos',
@@ -221,7 +222,7 @@ def manejar_favoritos(usuario):
                         }), 200
                     else:
                         # Reactivar favorito existente
-                        favorito.estado = 'activo'
+                        favorito.estado = EstadoEnum.ACTIVO
                         favorito.fecha = datetime.utcnow()
                         accion_realizada = 'reactivado'
                 else:
@@ -229,7 +230,7 @@ def manejar_favoritos(usuario):
                     favorito = Likes(
                         usuario_id=usuario.id,
                         producto_id=producto_id,
-                        estado='activo'
+                        estado=EstadoEnum.ACTIVO
                     )
                     db.session.add(favorito)
                     accion_realizada = 'agregado'
@@ -272,7 +273,7 @@ def eliminar_favorito(usuario, producto_id):
         # Verificar si el producto existe y está activo
         producto = Productos.query.filter_by(
             id=producto_id,
-            estado='activo'
+            estado=EstadoEnum.ACTIVO
         ).first()
 
         if not producto:
@@ -289,7 +290,7 @@ def eliminar_favorito(usuario, producto_id):
         ).first()
 
         # Si no existe o ya está inactivo, devolver éxito
-        if not favorito or favorito.estado == 'inactivo':
+        if not favorito or favorito.estado == EstadoEnum.INACTIVO:
             return jsonify({
                 'success': True,
                 'message': 'El producto no estaba en favoritos',
@@ -299,7 +300,7 @@ def eliminar_favorito(usuario, producto_id):
             }), 200
 
         # Marcar como inactivo (eliminación lógica)
-        favorito.estado = 'inactivo'
+        favorito.estado = EstadoEnum.INACTIVO
         favorito.fecha_actualizacion = datetime.utcnow()
         db.session.commit()
 
@@ -369,8 +370,8 @@ def sincronizar_favoritos(usuario):
             fav[0] for fav in db.session.query(Likes.producto_id)
             .filter(
                 Likes.usuario_id == usuario.id,
-                Likes.estado == 'activo',
-                Productos.estado == 'activo'
+                Likes.estado == EstadoEnum.ACTIVO,
+                Productos.estado == EstadoEnum.ACTIVO
             )
             .join(Productos)
             .all()
@@ -415,7 +416,7 @@ def sincronizar_favoritos(usuario):
             Likes.query.filter(
                 Likes.usuario_id == usuario.id,
                 Likes.producto_id.in_(acciones_por_tipo['eliminar'])
-            ).update({'estado': 'inactivo'}, synchronize_session='fetch')
+            ).update({'estado': EstadoEnum.INACTIVO.value}, synchronize_session='fetch')
 
             # Actualizar conjunto local
             favoritos_actuales.difference_update(acciones_por_tipo['eliminar'])
@@ -434,7 +435,7 @@ def sincronizar_favoritos(usuario):
                     pid[0] for pid in db.session.query(Productos.id)
                     .filter(
                         Productos.id.in_(productos_a_agregar),
-                        Productos.estado == 'activo'
+                        Productos.estado == EstadoEnum.ACTIVO
                     )
                     .all()
                 )
@@ -444,7 +445,7 @@ def sincronizar_favoritos(usuario):
                     {
                         'usuario_id': usuario.id,
                         'producto_id': pid,
-                        'estado': 'activo',
+                        'estado': EstadoEnum.ACTIVO.value,
                         'fecha': datetime.utcnow()
                     }
                     for pid in productos_validos
@@ -474,8 +475,8 @@ def sincronizar_favoritos(usuario):
             f"Favoritos sincronizados para usuario {usuario.id}")
 
         # Obtener la lista completa de favoritos actualizada
-        favoritos_actuales = Likes.query.filter_by(
-            usuario_id=usuario.id, estado='activo').all()
+        favoritos_actuales_obj = Likes.query.filter_by(
+            usuario_id=usuario.id, estado=EstadoEnum.ACTIVO).all()
         todos_favoritos = [{
             'id': fav.producto.id,
             'nombre': fav.producto.nombre,
@@ -484,7 +485,7 @@ def sincronizar_favoritos(usuario):
             'marca': fav.producto.marca,
             'existencia': fav.producto._existencia,
             'es_favorito': True
-        } for fav in favoritos_actuales if fav.producto and fav.producto.estado == 'activo']
+        } for fav in favoritos_actuales_obj if fav.producto and fav.producto.estado == EstadoEnum.ACTIVO]
 
         return jsonify({
             'success': True,

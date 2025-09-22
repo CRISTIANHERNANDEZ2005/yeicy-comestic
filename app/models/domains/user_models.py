@@ -45,7 +45,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     # Propiedades requeridas por Flask-Login
     @property
     def is_active(self):
-        return self.estado == 'activo'
+        return self.estado == EstadoEnum.ACTIVO
     
     @property
     def is_authenticated(self):
@@ -138,7 +138,7 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
     # Propiedades requeridas por Flask-Login
     @property
     def is_active(self):
-        return self.estado == 'activo'
+        return self.estado == EstadoEnum.ACTIVO
 
     @property
     def is_authenticated(self):

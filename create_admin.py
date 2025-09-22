@@ -16,7 +16,7 @@ def create_admin():
     """Crea un nuevo usuario administrador en la base de datos."""
     with app.app_context():
         print("--- Creación de un nuevo administrador ---")
-        
+
         # Validar y obtener cédula
         while True:
             cedula = input("Cédula: ").strip()

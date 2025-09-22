@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, session, render_template, current
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.cart_models import CartItem
 from app.models.domains.order_models import Pedido, PedidoProducto
-from app.models.enums import EstadoPedido
+from app.models.enums import EstadoPedido, EstadoEnum
 from app.extensions import db
 from datetime import datetime, timedelta
 import uuid
@@ -29,25 +29,25 @@ def get_cart_items(cart_info):
         # Usuario autenticado - obtener de BD
         items = CartItem.query.filter_by(user_id=cart_info['user_id'])\
             .join(CartItem.product)\
-            .filter(Productos.estado == 'activo')\
+            .filter(Productos.estado == EstadoEnum.ACTIVO)\
             .join(Productos.seudocategoria)\
-            .filter(Seudocategorias.estado == 'activo')\
+            .filter(Seudocategorias.estado == EstadoEnum.ACTIVO)\
             .join(Seudocategorias.subcategoria)\
-            .filter(Subcategorias.estado == 'activo')\
+            .filter(Subcategorias.estado == EstadoEnum.ACTIVO)\
             .join(Subcategorias.categoria_principal)\
-            .filter(CategoriasPrincipales.estado == 'activo')\
+            .filter(CategoriasPrincipales.estado == EstadoEnum.ACTIVO)\
             .all()
     else:
         # Usuario no autenticado - obtener de BD por session_id
         items = CartItem.query.filter_by(session_id=cart_info['session_id'])\
             .join(CartItem.product)\
-            .filter(Productos.estado == 'activo')\
+            .filter(Productos.estado == EstadoEnum.ACTIVO)\
             .join(Productos.seudocategoria)\
-            .filter(Seudocategorias.estado == 'activo')\
+            .filter(Seudocategorias.estado == EstadoEnum.ACTIVO)\
             .join(Seudocategorias.subcategoria)\
-            .filter(Subcategorias.estado == 'activo')\
+            .filter(Subcategorias.estado == EstadoEnum.ACTIVO)\
             .join(Subcategorias.categoria_principal)\
-            .filter(CategoriasPrincipales.estado == 'activo')\
+            .filter(CategoriasPrincipales.estado == EstadoEnum.ACTIVO)\
             .all()
     return [item.to_dict() for item in items]
 
@@ -92,7 +92,7 @@ def add_to_cart():
         return jsonify({'success': False, 'message': 'Producto no especificado'})
 
     product = Productos.query.get(str(product_id))
-    if not product or product.estado != 'activo':
+    if not product or product.estado != EstadoEnum.ACTIVO:
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
     cart_info = get_or_create_cart()
@@ -158,7 +158,7 @@ def add_to_cart_optimized():
         return jsonify({'success': False, 'message': 'Producto no especificado'})
 
     product = Productos.query.get(str(product_id))
-    if not product or product.estado != 'activo':
+    if not product or product.estado != EstadoEnum.ACTIVO:
         return jsonify({'success': False, 'message': 'Producto no disponible'})
 
     if quantity > product._existencia :
@@ -246,7 +246,7 @@ def sync_cart(usuario):
                 continue
 
             product = Productos.query.get(str(product_id))
-            if not product or product.estado != 'activo':
+            if not product or product.estado != EstadoEnum.ACTIVO:
                 current_app.logger.warning(f"Product {product_id} not found or inactive during sync.")
                 continue
 
@@ -342,13 +342,13 @@ def load_cart(usuario):
         user_id = usuario.id
         items = CartItem.query.filter_by(user_id=user_id)\
             .join(CartItem.product)\
-            .filter(Productos.estado == 'activo')\
+            .filter(Productos.estado == EstadoEnum.ACTIVO)\
             .join(Productos.seudocategoria)\
-            .filter(Seudocategorias.estado == 'activo')\
+            .filter(Seudocategorias.estado == EstadoEnum.ACTIVO)\
             .join(Seudocategorias.subcategoria)\
-            .filter(Subcategorias.estado == 'activo')\
+            .filter(Subcategorias.estado == EstadoEnum.ACTIVO)\
             .join(Subcategorias.categoria_principal)\
-            .filter(CategoriasPrincipales.estado == 'activo')\
+            .filter(CategoriasPrincipales.estado == EstadoEnum.ACTIVO)\
             .all()
         cart_items_response = [item.to_dict() for item in items]
 
@@ -370,7 +370,7 @@ def get_product_details(product_id):
     """Obtiene los detalles de un producto específico"""
     product = Productos.query.get(product_id)
 
-    if not product or product.estado != 'activo':
+    if not product or product.estado != EstadoEnum.ACTIVO:
         return jsonify({'error': 'Producto no encontrado'}), 404
 
     return jsonify({
@@ -465,7 +465,7 @@ def create_order(usuario):
 
         for item in cart_items:
             product = Productos.query.get(item.product_id)
-            if not product or product.estado != 'activo':
+            if not product or product.estado != EstadoEnum.ACTIVO:
                 db.session.rollback()
                 return jsonify({'success': False, 'message': f'Producto {item.product_id} no disponible.'}), 400
             
@@ -485,8 +485,8 @@ def create_order(usuario):
         nuevo_pedido = Pedido(
             usuario_id=user_id,
             total=total_pedido,
-            estado_pedido=EstadoPedido.EN_PROCESO.value,
-            estado='inactivo'
+            estado_pedido=EstadoPedido.EN_PROCESO,
+            estado=EstadoEnum.INACTIVO
         )
         db.session.add(nuevo_pedido)
         db.session.flush()

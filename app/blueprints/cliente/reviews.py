@@ -5,6 +5,7 @@ Implementa autenticación y CRUD completo para usuarios autenticados.
 from flask import Blueprint, request, jsonify, current_app
 from sqlalchemy.orm import joinedload
 from app.models.domains.product_models import Productos
+from app.models.enums import EstadoEnum
 from app.models.domains.review_models import Reseñas
 from app.models.domains.user_models import Usuarios
 from app.models.serializers import resena_to_dict
@@ -60,7 +61,7 @@ def listar_reviews(producto_id):
 
     # Verificar si el producto existe y está activo
     producto = Productos.query.get(producto_id)
-    if not producto or producto.estado != 'activo':
+    if not producto or producto.estado != EstadoEnum.ACTIVO:
         current_app.logger.warning(f"Producto {producto_id} no encontrado o inactivo")
         return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
 
@@ -179,7 +180,7 @@ def crear_review(usuario, producto_id):
 
     # Verificar producto
     producto = Productos.query.filter_by(id=producto_id).first()
-    if not producto or producto.estado != 'activo':
+    if not producto or producto.estado != EstadoEnum.ACTIVO:
         return jsonify({'success': False, 'error': 'Producto no encontrado'}), 404
 
     # Verificar si ya tiene reseña

@@ -3,6 +3,7 @@ from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 import cloudinary.uploader
+from app.models.enums import EstadoEnum
 from app.extensions import db
 import json
 
@@ -175,7 +176,7 @@ def get_subcategorias(admin_user, categoria_id):
     try:
         subcategorias = Subcategorias.query.filter_by(
             categoria_principal_id=categoria_id,
-            estado='activo'
+            estado=EstadoEnum.ACTIVO
         ).all()
         
         return jsonify({
@@ -201,7 +202,7 @@ def get_seudocategorias(admin_user, subcategoria_id):
     try:
         seudocategorias = Seudocategorias.query.filter_by(
             subcategoria_id=subcategoria_id,
-            estado='activo'
+            estado=EstadoEnum.ACTIVO
         ).all()
         
         return jsonify({
@@ -225,7 +226,7 @@ def get_categorias_principales(admin_user):
     Obtiene todas las categorías principales activas.
     """
     try:
-        categorias = CategoriasPrincipales.query.filter_by(estado='activo').all()
+        categorias = CategoriasPrincipales.query.filter_by(estado=EstadoEnum.ACTIVO).all()
         return jsonify({
             'success': True,
             'categorias': [

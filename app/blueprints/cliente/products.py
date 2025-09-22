@@ -7,6 +7,7 @@ from app.models.serializers import producto_to_dict, categoria_principal_to_dict
 from app.extensions import db
 from sqlalchemy import func, and_
 from sqlalchemy.orm import joinedload
+from app.models.enums import EstadoEnum
 from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 from app.utils.jwt_utils import jwt_required
 from flask_login import current_user
@@ -23,7 +24,7 @@ def index():
     # Buscar la categoría principal "Maquillaje"
     categoria_maquillaje = CategoriasPrincipales.query.filter(
         func.lower(CategoriasPrincipales.nombre) == 'maquillaje',
-        CategoriasPrincipales.estado == 'activo'
+        CategoriasPrincipales.estado == EstadoEnum.ACTIVO
     ).first()
 
     # Inicializar productos como una lista vacía por defecto
@@ -38,8 +39,8 @@ def index():
             .join(Subcategorias)\
             .filter(
                 Subcategorias.categoria_principal_id == categoria_maquillaje.id,
-                Subcategorias.estado == 'activo', # Asegurarse de que la subcategoría también esté activa
-                Seudocategorias.estado == 'activo'
+                Subcategorias.estado == EstadoEnum.ACTIVO, # Asegurarse de que la subcategoría también esté activa
+                Seudocategorias.estado == EstadoEnum.ACTIVO
         ).all()
 
         seudocategoria_ids = [id[0] for id in seudocategoria_ids]
@@ -49,7 +50,7 @@ def index():
             productos = Productos.query\
                 .filter(
                     Productos.seudocategoria_id.in_(seudocategoria_ids),
-                    Productos.estado == 'activo',
+                    Productos.estado == EstadoEnum.ACTIVO,
                     Productos._existencia  > 0
                 )\
                 .order_by(func.random())\
@@ -90,13 +91,13 @@ def productos_page():
 
     # Estas consultas son específicas para los filtros de esta página,
     # obteniendo todas las categorías activas para el sidebar de filtros.
-    categorias_obj = CategoriasPrincipales.query.filter_by(estado='activo').all()
-    subcategorias_obj = Subcategorias.query.filter_by(estado='activo').all()
-    seudocategorias_obj = Seudocategorias.query.filter_by(estado='activo').all()
+    categorias_obj = CategoriasPrincipales.query.filter_by(estado=EstadoEnum.ACTIVO).all()
+    subcategorias_obj = Subcategorias.query.filter_by(estado=EstadoEnum.ACTIVO).all()
+    seudocategorias_obj = Seudocategorias.query.filter_by(estado=EstadoEnum.ACTIVO).all()
 
     # NEW: Get all unique brands from active products
     marcas_obj = db.session.query(Productos.marca).filter(
-        Productos.estado == 'activo', 
+        Productos.estado == EstadoEnum.ACTIVO, 
         Productos.marca.isnot(None), 
         Productos.marca != ''
     ).distinct().order_by(Productos.marca).all()
@@ -130,15 +131,15 @@ def productos_por_categoria(slug_categoria):
     Filtra y muestra solo subcategorías, seudocategorías y productos relacionados con esta categoría.
     """
     from flask import abort # Importar abort aquí para evitar circular imports si se usa en otro lugar
-    categoria_principal = CategoriasPrincipales.query.filter_by(slug=slug_categoria, estado='activo').first_or_404()
+    categoria_principal = CategoriasPrincipales.query.filter_by(slug=slug_categoria, estado=EstadoEnum.ACTIVO).first_or_404()
 
     # Obtener IDs de todas las seudocategorías bajo esta categoría principal
     seudocategoria_ids = db.session.query(Seudocategorias.id)\
         .join(Subcategorias)\
         .filter(
             Subcategorias.categoria_principal_id == categoria_principal.id,
-            Subcategorias.estado == 'activo', # Asegurarse de que la subcategoría también esté activa
-            Seudocategorias.estado == 'activo'
+            Subcategorias.estado == EstadoEnum.ACTIVO, # Asegurarse de que la subcategoría también esté activa
+            Seudocategorias.estado == EstadoEnum.ACTIVO
         ).all()
     seudocategoria_ids = [id[0] for id in seudocategoria_ids]
 
@@ -146,7 +147,7 @@ def productos_por_categoria(slug_categoria):
     productos = Productos.query\
         .filter(
             Productos.seudocategoria_id.in_(seudocategoria_ids),
-            Productos.estado == 'activo',
+            Productos.estado == EstadoEnum.ACTIVO,
             Productos._existencia  > 0
         )\
         .order_by(Productos.nombre.asc())\
@@ -158,7 +159,7 @@ def productos_por_categoria(slug_categoria):
     # NEW: Get unique brands for this category
     marcas_obj = db.session.query(Productos.marca).filter(
         Productos.seudocategoria_id.in_(seudocategoria_ids),
-        Productos.estado == 'activo',
+        Productos.estado == EstadoEnum.ACTIVO,
         Productos.marca.isnot(None),
         Productos.marca != ''
     ).distinct().order_by(Productos.marca).all()
@@ -169,13 +170,13 @@ def productos_por_categoria(slug_categoria):
     # Obtener subcategorías activas que pertenecen a la categoría principal actual
     subcategorias_obj = Subcategorias.query.filter_by(
         categoria_principal_id=categoria_principal.id,
-        estado='activo'
+        estado=EstadoEnum.ACTIVO
     ).all()
 
     # Obtener pseudocategorías activas que pertenecen a las subcategorías de esta categoría principal
     seudocategorias_obj = Seudocategorias.query.join(Subcategorias).filter(
         Subcategorias.categoria_principal_id == categoria_principal.id,
-        Seudocategorias.estado == 'activo'
+        Seudocategorias.estado == EstadoEnum.ACTIVO
     ).all()
 
     subcategorias = [subcategoria_to_dict(s) for s in subcategorias_obj]
@@ -207,21 +208,21 @@ def productos_por_subcategoria(slug_categoria_principal, slug_subcategoria):
     subcategoria = Subcategorias.query.join(CategoriasPrincipales).filter(
         Subcategorias.slug == slug_subcategoria,
         CategoriasPrincipales.slug == slug_categoria_principal,
-        Subcategorias.estado == 'activo',
-        CategoriasPrincipales.estado == 'activo'
+        Subcategorias.estado == EstadoEnum.ACTIVO,
+        CategoriasPrincipales.estado == EstadoEnum.ACTIVO
     ).options(joinedload(Subcategorias.categoria_principal)).first_or_404()
 
     categoria_principal = subcategoria.categoria_principal
 
     # Obtener IDs de todas las seudocategorías activas bajo esta subcategoría
-    seudocategoria_ids = [s.id for s in subcategoria.seudocategorias if s.estado == 'activo']
+    seudocategoria_ids = [s.id for s in subcategoria.seudocategorias if s.estado == EstadoEnum.ACTIVO]
 
     # Obtener productos de esta subcategoría
     productos = []
     if seudocategoria_ids:
         productos = Productos.query.filter(
             Productos.seudocategoria_id.in_(seudocategoria_ids),
-            Productos.estado == 'activo',
+            Productos.estado == EstadoEnum.ACTIVO,
             Productos._existencia > 0
         ).order_by(Productos.nombre.asc()).all()
 
@@ -232,7 +233,7 @@ def productos_por_subcategoria(slug_categoria_principal, slug_subcategoria):
     if seudocategoria_ids:
         marcas_obj = db.session.query(Productos.marca).filter(
             Productos.seudocategoria_id.in_(seudocategoria_ids),
-            Productos.estado == 'activo',
+            Productos.estado == EstadoEnum.ACTIVO,
             Productos.marca.isnot(None),
             Productos.marca != ''
         ).distinct().order_by(Productos.marca).all()
@@ -241,7 +242,7 @@ def productos_por_subcategoria(slug_categoria_principal, slug_subcategoria):
     # Obtener seudocategorías para los filtros (solo las relacionadas con esta subcategoría)
     seudocategorias_obj = Seudocategorias.query.filter(
         Seudocategorias.subcategoria_id == subcategoria.id,
-        Seudocategorias.estado == 'activo'
+        Seudocategorias.estado == EstadoEnum.ACTIVO
     ).all()
     seudocategorias = [s_dict for s in seudocategorias_obj if (s_dict := seudocategoria_to_dict(s)) is not None]
 
@@ -265,9 +266,9 @@ def productos_por_seudocategoria(slug_categoria_principal, slug_subcategoria, sl
         Seudocategorias.slug == slug_seudocategoria,
         Subcategorias.slug == slug_subcategoria,
         CategoriasPrincipales.slug == slug_categoria_principal,
-        Seudocategorias.estado == 'activo',
-        Subcategorias.estado == 'activo',
-        CategoriasPrincipales.estado == 'activo'
+        Seudocategorias.estado == EstadoEnum.ACTIVO,
+        Subcategorias.estado == EstadoEnum.ACTIVO,
+        CategoriasPrincipales.estado == EstadoEnum.ACTIVO
     ).options(
         joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal)
     ).first_or_404()
@@ -278,14 +279,14 @@ def productos_por_seudocategoria(slug_categoria_principal, slug_subcategoria, sl
     # Obtener productos de esta seudocategoría
     productos = Productos.query.filter(
         Productos.seudocategoria_id == seudocategoria.id,
-        Productos.estado == 'activo',
+        Productos.estado == EstadoEnum.ACTIVO,
         Productos._existencia > 0
     ).order_by(Productos.nombre.asc()).all()
 
     # Obtener marcas únicas para esta seudocategoría
     marcas_obj = db.session.query(Productos.marca).filter(
         Productos.seudocategoria_id == seudocategoria.id,
-        Productos.estado == 'activo',
+        Productos.estado == EstadoEnum.ACTIVO,
         Productos.marca.isnot(None),
         Productos.marca != ''
     ).distinct().order_by(Productos.marca).all()
@@ -310,7 +311,7 @@ def get_categorias_filtradas():
         subcategoria_nombre = request.args.get('subcategoria')
         seudocategoria_nombre = request.args.get('seudocategoria')
 
-        query = db.session.query(CategoriasPrincipales).filter(CategoriasPrincipales.estado == 'activo').distinct()
+        query = db.session.query(CategoriasPrincipales).filter(CategoriasPrincipales.estado == EstadoEnum.ACTIVO).distinct()
 
         # Unir tablas si algún filtro lo requiere
         needs_join = (marca and marca != 'all') or \
@@ -322,7 +323,7 @@ def get_categorias_filtradas():
 
         # Aplicar filtros
         if marca and marca != 'all':
-            query = query.filter(Productos.marca == marca, Productos.estado == 'activo', Productos._existencia > 0)
+            query = query.filter(Productos.marca == marca, Productos.estado == EstadoEnum.ACTIVO, Productos._existencia > 0)
         if subcategoria_nombre and subcategoria_nombre != 'all':
             query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
         if seudocategoria_nombre and seudocategoria_nombre != 'all':
@@ -344,7 +345,7 @@ def get_subcategorias_filtradas():
         marca = request.args.get('marca')
         seudocategoria_nombre = request.args.get('seudocategoria')
 
-        query = db.session.query(Subcategorias).filter(Subcategorias.estado == 'activo').distinct()
+        query = db.session.query(Subcategorias).filter(Subcategorias.estado == EstadoEnum.ACTIVO).distinct()
 
         # Determinar qué uniones son necesarias
         needs_seudocategorias_join = (marca and marca != 'all') or (seudocategoria_nombre and seudocategoria_nombre != 'all')
@@ -362,7 +363,7 @@ def get_subcategorias_filtradas():
 
         # Aplicar filtros que dependen de las uniones
         if marca and marca != 'all':
-            query = query.filter(Productos.marca == marca, Productos.estado == 'activo', Productos._existencia > 0)
+            query = query.filter(Productos.marca == marca, Productos.estado == EstadoEnum.ACTIVO, Productos._existencia > 0)
 
         if seudocategoria_nombre and seudocategoria_nombre != 'all':
             query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
@@ -384,7 +385,7 @@ def get_seudocategorias_filtradas():
         subcategoria_nombre = request.args.get('subcategoria')
         marca = request.args.get('marca')
 
-        query = db.session.query(Seudocategorias).filter(Seudocategorias.estado == 'activo').distinct()
+        query = db.session.query(Seudocategorias).filter(Seudocategorias.estado == EstadoEnum.ACTIVO).distinct()
 
         # Unir tablas si algún filtro lo requiere
         if (categoria_principal_nombre and categoria_principal_nombre != 'all') or \
@@ -403,7 +404,7 @@ def get_seudocategorias_filtradas():
             query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
 
         if marca and marca != 'all':
-            query = query.filter(Productos.marca == marca, Productos.estado == 'activo', Productos._existencia > 0)
+            query = query.filter(Productos.marca == marca, Productos.estado == EstadoEnum.ACTIVO, Productos._existencia > 0)
 
         seudocategorias = query.all()
         return jsonify([seudocategoria_to_dict(s) for s in seudocategorias])
@@ -422,7 +423,7 @@ def get_marcas_filtradas():
         seudocategoria_nombre = request.args.get('seudocategoria')
 
         query = db.session.query(Productos.marca).filter(
-            Productos.estado == 'activo',
+            Productos.estado == EstadoEnum.ACTIVO,
             Productos._existencia > 0,
             Productos.marca.isnot(None),
             Productos.marca != ''
@@ -470,17 +471,17 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
     ).filter(
         Productos.slug == slug_producto,
-        Productos.estado == 'activo', # Add this filter
+        Productos.estado == EstadoEnum.ACTIVO, # Add this filter
         Seudocategorias.slug == slug_seudocategoria,
-        Seudocategorias.estado == 'activo', # Add this filter
+        Seudocategorias.estado == EstadoEnum.ACTIVO, # Add this filter
         Subcategorias.slug == slug_subcategoria,
-        Subcategorias.estado == 'activo', # Add this filter
+        Subcategorias.estado == EstadoEnum.ACTIVO, # Add this filter
         CategoriasPrincipales.slug == slug_categoria_principal,
-        CategoriasPrincipales.estado == 'activo' # Add this filter
+        CategoriasPrincipales.estado == EstadoEnum.ACTIVO # Add this filter
     ).first_or_404()
     
     # Verificar si el producto está activo
-    if producto.estado != 'activo':
+    if producto.estado != EstadoEnum.ACTIVO:
         from flask import abort
         abort(404)
     
@@ -499,7 +500,7 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
             Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
         ).filter(
             Productos.id != producto.id,
-            Productos.estado == 'activo',
+            Productos.estado == EstadoEnum.ACTIVO,
             Productos._existencia  > 0,
             Subcategorias.categoria_principal_id == categoria_principal_id
         ).limit(8).all()
@@ -531,7 +532,7 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         like = Likes.query.filter_by(
             usuario_id=session['user'].get('id'),
             producto_id=producto.id,
-            estado='activo'
+            estado=EstadoEnum.ACTIVO
         ).first()
         es_favorito = like is not None
     
@@ -595,7 +596,7 @@ def buscar():
                 Productos.marca.ilike(f'{query}%'),
                 Productos.descripcion.ilike(f'{query}%')
             ),
-            Productos.estado == 'activo',
+            Productos.estado == EstadoEnum.ACTIVO,
             Productos._existencia  > 0
         ).order_by(
             # Priorizar coincidencias exactas al inicio
@@ -677,14 +678,14 @@ def _extraer_terminos_de_producto(product_id, query):
         terminos.add(producto.marca)
 
     # 3. Comparar con las categorías
-    if producto.seudocategoria and producto.seudocategoria.estado == 'activo': # Add estado check
+    if producto.seudocategoria and producto.seudocategoria.estado == EstadoEnum.ACTIVO: # Add estado check
         if query in producto.seudocategoria.nombre.lower():
             terminos.add(producto.seudocategoria.nombre)
-        if producto.seudocategoria.subcategoria and producto.seudocategoria.subcategoria.estado == 'activo': # Add estado check
+        if producto.seudocategoria.subcategoria and producto.seudocategoria.subcategoria.estado == EstadoEnum.ACTIVO: # Add estado check
             if query in producto.seudocategoria.subcategoria.nombre.lower():
                 terminos.add(producto.seudocategoria.subcategoria.nombre)
             if producto.seudocategoria.subcategoria.categoria_principal and \
-               producto.seudocategoria.subcategoria.categoria_principal.estado == 'activo' and \
+               producto.seudocategoria.subcategoria.categoria_principal.estado == EstadoEnum.ACTIVO and \
                query in producto.seudocategoria.subcategoria.categoria_principal.nombre.lower():
                 terminos.add(producto.seudocategoria.subcategoria.categoria_principal.nombre)
                 
@@ -704,15 +705,15 @@ def filter_products():
     max_price_str = request.args.get('max_price')
 
     query = db.session.query(Productos).select_from(Productos).join(
-        Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == 'activo')
+        Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == EstadoEnum.ACTIVO)
     ).join(
-        Subcategorias, and_(Seudocategorias.subcategoria_id == Subcategorias.id, Subcategorias.estado == 'activo')
+        Subcategorias, and_(Seudocategorias.subcategoria_id == Subcategorias.id, Subcategorias.estado == EstadoEnum.ACTIVO)
     ).join(
-        CategoriasPrincipales, and_(Subcategorias.categoria_principal_id == CategoriasPrincipales.id, CategoriasPrincipales.estado == 'activo')
+        CategoriasPrincipales, and_(Subcategorias.categoria_principal_id == CategoriasPrincipales.id, CategoriasPrincipales.estado == EstadoEnum.ACTIVO)
     )
 
     # Always filter by product status and availability
-    query = query.filter(Productos.estado == 'activo', Productos._existencia  > 0)
+    query = query.filter(Productos.estado == EstadoEnum.ACTIVO, Productos._existencia  > 0)
 
     # Apply filters based on provided names
     if main_category_name and main_category_name != 'all':
@@ -764,7 +765,7 @@ def get_all_products():
     """
     Devuelve todos los productos activos en formato JSON.
     """
-    productos = Productos.query.filter_by(estado='activo').filter(Productos._existencia  > 0).all()
+    productos = Productos.query.filter_by(estado=EstadoEnum.ACTIVO).filter(Productos._existencia  > 0).all()
     return jsonify([producto_to_dict(p) for p in productos])
 
 
@@ -773,19 +774,19 @@ def get_products_by_category(nombre_categoria):
     """
     Devuelve productos de una categoría principal específica en formato JSON.
     """
-    categoria = CategoriasPrincipales.query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(nombre_categoria), CategoriasPrincipales.estado == 'activo').first()
+    categoria = CategoriasPrincipales.query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(nombre_categoria), CategoriasPrincipales.estado == EstadoEnum.ACTIVO).first()
     
     if not categoria:
         return jsonify({'error': 'Categoría no encontrada'}), 404
 
     seudocategoria_ids = db.session.query(Seudocategorias.id)\
         .join(Subcategorias)\
-        .filter(Subcategorias.categoria_principal_id == categoria.id, Seudocategorias.estado == 'activo').all()
+        .filter(Subcategorias.categoria_principal_id == categoria.id, Seudocategorias.estado == EstadoEnum.ACTIVO).all()
     
     seudocategoria_ids = [id[0] for id in seudocategoria_ids]
     
     productos = Productos.query\
-        .filter(Productos.seudocategoria_id.in_(seudocategoria_ids), Productos.estado == 'activo', Productos._existencia  > 0)\
+        .filter(Productos.seudocategoria_id.in_(seudocategoria_ids), Productos.estado == EstadoEnum.ACTIVO, Productos._existencia  > 0)\
         .all()
         
     return jsonify([producto_to_dict(p) for p in productos])
@@ -800,20 +801,20 @@ def get_price_range():
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('seudocategoria')
 
-    query = db.session.query(Productos).filter(Productos.estado == 'activo', Productos._existencia  > 0)
+    query = db.session.query(Productos).filter(Productos.estado == EstadoEnum.ACTIVO, Productos._existencia  > 0)
 
     if main_category_name:
-        query = query.join(Seudocategorias, and_(Seudocategorias.estado == 'activo')).join(Subcategorias, and_(Subcategorias.estado == 'activo')).join(CategoriasPrincipales, and_(CategoriasPrincipales.estado == 'activo')).filter(
+        query = query.join(Seudocategorias, and_(Seudocategorias.estado == EstadoEnum.ACTIVO)).join(Subcategorias, and_(Subcategorias.estado == EstadoEnum.ACTIVO)).join(CategoriasPrincipales, and_(CategoriasPrincipales.estado == EstadoEnum.ACTIVO)).filter(
             func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name)
         )
     
     if subcategory_name:
-        query = query.join(Seudocategorias, and_(Seudocategorias.estado == 'activo')).join(Subcategorias, and_(Subcategorias.estado == 'activo')).filter(
+        query = query.join(Seudocategorias, and_(Seudocategorias.estado == EstadoEnum.ACTIVO)).join(Subcategorias, and_(Subcategorias.estado == EstadoEnum.ACTIVO)).filter(
             func.lower(Subcategorias.nombre) == func.lower(subcategory_name)
         )
 
     if pseudocategory_name:
-        query = query.join(Seudocategorias, and_(Seudocategorias.estado == 'activo')).filter(
+        query = query.join(Seudocategorias, and_(Seudocategorias.estado == EstadoEnum.ACTIVO)).filter(
             func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name)
         )
 

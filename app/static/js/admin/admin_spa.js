@@ -2,6 +2,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const mainContentContainer = document.getElementById('main-content-container');
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
     const loadingOverlay = document.getElementById('loading-overlay');
+
+    // Almacén para scripts ya cargados por el SPA
+    window.spaLoadedScripts = window.spaLoadedScripts || new Set();
     
     function showLoadingOverlay() {
         loadingOverlay.classList.remove('hidden');
@@ -55,45 +58,94 @@ document.addEventListener('DOMContentLoaded', function() {
                 document.title = newTitle;
             }
             
-            // Ejecutar scripts de la página cargada
-            const scripts = doc.querySelectorAll('script');
-            scripts.forEach(script => {
-                if (script.src) {
-                    // Script externo
-                    const newScript = document.createElement('script');
-                    newScript.src = script.src;
-                    document.body.appendChild(newScript);
-                } else if (script.type === '' || script.type === 'text/javascript') {
-                    // Script inline (solo si es JavaScript)
-                    try {
-                        eval(script.innerText);
-                    } catch (e) {
-                        console.error('Error executing script:', e);
+            // Cargar y ejecutar scripts de la página cargada.
+            // Se buscan scripts SOLO dentro del contenedor principal para no
+            // volver a ejecutar scripts globales de base.html.
+            // Esto soluciona el error "Identifier '...' has already been declared".
+            const scripts = Array.from(mainContent.querySelectorAll('script'));
+            
+            const executeScripts = async () => {
+                // Limpiar scripts de la carga anterior para evitar duplicados y fugas de memoria.
+                // Se buscan scripts que fueron añadidos por el SPA (tienen un atributo 'data-spa-managed').
+                // Ya no es necesario removerlos, ya que no los volveremos a añadir si ya existen.
+
+                for (const script of scripts) {
+                    // Omitir scripts que no son de JS ejecutable (ej. application/json)
+                    if (script.type && !['text/javascript', 'application/javascript', ''].includes(script.type)) {
+                        continue;
+                    }
+                    
+                    if (script.src) {
+                        const scriptURL = new URL(script.src, window.location.origin).href;
+                        
+                        // Si el script ya fue cargado, llamar a su función de reinicialización si existe
+                        if (window.spaLoadedScripts.has(scriptURL)) {
+                            if (typeof window.reinitializePage === 'function') {
+                                console.log(`Re-initializing content for ${scriptURL}`);
+                                window.reinitializePage();
+                            }
+                            continue; // No volver a cargar el script
+                        }
+
+                        // Si es un script nuevo, cargarlo
+                        const newScript = document.createElement('script');
+                        script.getAttributeNames().forEach(attr => newScript.setAttribute(attr, script.getAttribute(attr)));
+                        newScript.setAttribute('data-spa-managed', 'true');
+
+                        try {
+                            await new Promise((resolve, reject) => {
+                                newScript.onload = () => {
+                                    window.spaLoadedScripts.add(scriptURL);
+                                    console.log(`Script loaded and registered: ${scriptURL}`);
+                                    resolve();
+                                };
+                                newScript.onerror = reject;
+                                document.body.appendChild(newScript);
+                            });
+                        } catch (error) {
+                            console.error(`Failed to load script: ${scriptURL}`, error);
+                        }
+                    } else {
+                        // Para scripts inline, simplemente los añadimos para que se ejecuten
+                        const newScript = document.createElement('script');
+                        script.getAttributeNames().forEach(attr => newScript.setAttribute(attr, script.getAttribute(attr)));
+                        newScript.setAttribute('data-spa-managed', 'true');
+                        newScript.textContent = script.innerText;
+                        document.body.appendChild(newScript);
                     }
                 }
-            });
+            };
             
-            // Disparar evento personalizado
-            document.dispatchEvent(new CustomEvent('content-loaded', { 
-                detail: { container: mainContentContainer, url: url } 
-            }));
-            
-            if (pushState) {
-                history.pushState({ path: url }, '', url);
-            }
-            
-            updateActiveLink(url);
-            
-            const mobileSidebar = document.getElementById('mobile-sidebar');
-            const mobileSidebarContent = mobileSidebar.querySelector('.sidebar-transition');
-            if (!mobileSidebar.classList.contains('hidden')) {
-                mobileSidebarContent.classList.add('-translate-x-full');
-                setTimeout(() => {
-                    mobileSidebar.classList.add('hidden');
-                }, 300);
-            }
-            
-            hideLoadingOverlay();
+            executeScripts()
+                .then(() => {
+                    // Disparar evento personalizado DESPUÉS de que los scripts se hayan cargado
+                    document.dispatchEvent(new CustomEvent('content-loaded', { 
+                        detail: { container: mainContentContainer, url: url } 
+                    }));
+
+                    // Devolver una promesa que se resuelva cuando el contenido esté completamente listo
+                    // Esto es útil si 'content-loaded' desencadena más operaciones asíncronas.
+                    return new Promise(resolve => setTimeout(resolve, 0));
+                })
+                .then(() => {
+                    // Una vez que los scripts se han ejecutado y el evento 'content-loaded' se ha procesado,
+                    // actualizamos el estado de la aplicación y la UI.
+                    if (pushState) {
+                        history.pushState({ path: url }, '', url);
+                    }
+                    updateActiveLink(url);
+
+                    // Cerrar el menú lateral en móvil si está abierto
+                    const mobileSidebar = document.getElementById('mobile-sidebar');
+                    if (mobileSidebar && !mobileSidebar.classList.contains('hidden')) {
+                        const mobileSidebarContent = mobileSidebar.querySelector('.sidebar-transition');
+                        mobileSidebarContent.classList.add('-translate-x-full');
+                        setTimeout(() => mobileSidebar.classList.add('hidden'), 300);
+                    }
+
+                    // Finalmente, ocultar el overlay de carga, ya que la página está lista para ser interactiva.
+                    hideLoadingOverlay();
+                });
         })
         .catch(e => {
             console.error('Error loading content:', e);

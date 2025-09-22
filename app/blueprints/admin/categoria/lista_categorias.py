@@ -2,6 +2,7 @@ from flask import Blueprint, jsonify, request, render_template, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
 from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict
+from app.models.enums import EstadoEnum
 from app.extensions import db
 from sqlalchemy import or_, and_, func
 from sqlalchemy.orm import joinedload, subqueryload
@@ -117,7 +118,7 @@ def get_all_categories(admin_user, view_type=None):
             
             # Obtener categorías principales para el filtro
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in CategoriasPrincipales.query.filter_by(estado='activo').all()]
+                cat) for cat in CategoriasPrincipales.query.filter_by(estado=EstadoEnum.ACTIVO).all()]
             
         elif current_view == 'pseudo':
             # Vista de seudocategorías
@@ -157,11 +158,11 @@ def get_all_categories(admin_user, view_type=None):
             
             # Obtener subcategorías para el filtro
             subcategorias_data = [subcategoria_to_dict(
-                sub) for sub in Subcategorias.query.filter_by(estado='activo').all()]
+                sub) for sub in Subcategorias.query.filter_by(estado=EstadoEnum.ACTIVO).all()]
             
             # Obtener categorías principales para el filtro
             categorias_data = [categoria_principal_to_dict(
-                cat) for cat in CategoriasPrincipales.query.filter_by(estado='activo').all()]
+                cat) for cat in CategoriasPrincipales.query.filter_by(estado=EstadoEnum.ACTIVO).all()]
                 
         else:  # Vista 'all' - jerárquica
             # Obtener todas las categorías principales con sus relaciones
@@ -817,7 +818,7 @@ def get_subcategories_for_category(admin_user, categoria_id):
         estado_filtro = request.args.get('estado')
         query = Subcategorias.query.filter_by(categoria_principal_id=categoria_id)
         if estado_filtro:
-            query = query.filter_by(estado=estado_filtro)
+            query = query.filter_by(estado=EstadoEnum(estado_filtro))
 
         subcategorias = query.all()
 

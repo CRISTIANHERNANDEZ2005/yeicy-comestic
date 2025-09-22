@@ -3,14 +3,82 @@ from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.order_models import Pedido, PedidoProducto
 from app.models.domains.user_models import Usuarios
 from app.models.domains.product_models import Productos
+from app.models.enums import EstadoPedido, EstadoSeguimiento, EstadoEnum
 from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
 from sqlalchemy import or_, and_, func, desc
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, timedelta
 from flask_wtf.csrf import generate_csrf
 
 admin_lista_pedidos_bp = Blueprint('admin_lista_pedidos', __name__)
+
+# Mapa para convertir strings de la URL a miembros del Enum de forma segura
+ESTADO_PEDIDO_MAP = {
+    'en proceso': EstadoPedido.EN_PROCESO,
+    'completado': EstadoPedido.COMPLETADO,
+    'cancelado': EstadoPedido.CANCELADO,
+}
+
+def _build_pedidos_query(estado_pedido_filter, cliente, fecha_inicio, fecha_fin, status_filter, sort_by, sort_order):
+    """
+    Función auxiliar para construir y filtrar la consulta de pedidos, evitando la duplicación de código.
+    """
+    # Construir consulta base
+    query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
+        Pedido.estado_pedido == estado_pedido_filter
+    )
+
+    # Aplicar el filtro de estado (activo/inactivo)
+    if status_filter != 'all':
+        query = query.filter(Pedido.estado == status_filter)
+
+    # Aplicar filtros de búsqueda
+    if cliente:
+        query = query.join(Usuarios).filter(
+            or_(
+                Usuarios.nombre.ilike(f'%{cliente}%'),
+                Usuarios.apellido.ilike(f'%{cliente}%'),
+                Usuarios.numero.ilike(f'%{cliente}%')
+            )
+        )
+        
+    if fecha_inicio:
+        try:
+            fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            query = query.filter(Pedido.created_at >= fecha_inicio_dt)
+        except ValueError:
+            current_app.logger.warning(f"Formato de fecha_inicio inválido: {fecha_inicio}")
+            pass
+            
+    if fecha_fin:
+        try:
+            fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Pedido.created_at < fecha_fin_dt)
+        except ValueError:
+            current_app.logger.warning(f"Formato de fecha_fin inválido: {fecha_fin}")
+            pass
+    
+    # Aplicar ordenamiento
+    if sort_by == 'cliente':
+        query = query.join(Pedido.usuario)
+        if sort_order == 'asc':
+            query = query.order_by(Usuarios.nombre.asc(), Usuarios.apellido.asc())
+        else:
+            query = query.order_by(Usuarios.nombre.desc(), Usuarios.apellido.desc())
+    elif sort_by == 'total':
+        if sort_order == 'asc':
+            query = query.order_by(Pedido.total.asc())
+        else:
+            query = query.order_by(Pedido.total.desc())
+    else:  # Por defecto ordenar por fecha
+        if sort_order == 'asc':
+            query = query.order_by(Pedido.created_at.asc())
+        else:
+            query = query.order_by(Pedido.created_at.desc())
+            
+    return query
 
 @admin_lista_pedidos_bp.route('/lista-pedidos', methods=['GET'])
 @admin_lista_pedidos_bp.route('/lista-pedidos/<string:estado>', methods=['GET'])
@@ -21,16 +89,13 @@ def get_all_pedidos(admin_user, estado=None):
     pagination = None
     pagination_info = {}
     
-    # Determinar el estado a mostrar
-    if estado == 'completados':
-        current_estado = 'completados'
-        estado_pedido_filter = 'completado'
-    elif estado == 'cancelados':
-        current_estado = 'cancelados'
-        estado_pedido_filter = 'cancelado'
-    else:
-        current_estado = 'en-proceso'
-        estado_pedido_filter = 'en proceso'
+    # Mapeo de estados de URL a valores de Enum
+    estado_map = {
+        'completados': ('completados', EstadoPedido.COMPLETADO),
+        'cancelados': ('cancelados', EstadoPedido.CANCELADO),
+        'en-proceso': ('en-proceso', EstadoPedido.EN_PROCESO)
+    }
+    current_estado, estado_pedido_filter = estado_map.get(estado, ('en-proceso', EstadoPedido.EN_PROCESO))
 
     try:
         # Obtener parámetros de filtro
@@ -39,54 +104,15 @@ def get_all_pedidos(admin_user, estado=None):
         cliente = request.args.get('cliente', '')
         fecha_inicio = request.args.get('fecha_inicio', '')
         fecha_fin = request.args.get('fecha_fin', '')
+        status_filter = request.args.get('status', 'all')
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
         
         # Construir consulta base
-        query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == estado_pedido_filter
+        query = _build_pedidos_query(
+            estado_pedido_filter, cliente, fecha_inicio, fecha_fin, 
+            status_filter, sort_by, sort_order
         )
-        
-        # Aplicar filtros
-        if cliente:
-            query = query.join(Usuarios).filter(
-                or_(
-                    Usuarios.nombre.ilike(f'%{cliente}%'),
-                    Usuarios.apellido.ilike(f'%{cliente}%'),
-                    Usuarios.numero.ilike(f'%{cliente}%')
-                )
-            )
-            
-        if fecha_inicio:
-            try:
-                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                query = query.filter(Pedido.created_at >= fecha_inicio_dt)
-            except ValueError:
-                pass
-                
-        if fecha_fin:
-            try:
-                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
-                query = query.filter(Pedido.created_at < fecha_fin_dt)
-            except ValueError:
-                pass
-        
-        # Aplicar ordenamiento
-        if sort_by == 'cliente':
-            if sort_order == 'asc':
-                query = query.join(Usuarios).order_by(Usuarios.nombre.asc(), Usuarios.apellido.asc())
-            else:
-                query = query.join(Usuarios).order_by(Usuarios.nombre.desc(), Usuarios.apellido.desc())
-        elif sort_by == 'total':
-            if sort_order == 'asc':
-                query = query.order_by(Pedido.total.asc())
-            else:
-                query = query.order_by(Pedido.total.desc())
-        else:  # Por defecto ordenar por fecha
-            if sort_order == 'asc':
-                query = query.order_by(Pedido.created_at.asc())
-            else:
-                query = query.order_by(Pedido.created_at.desc())
         
         # Paginación
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -137,11 +163,6 @@ def get_pedido_detalle(admin_user, pedido_id):
                 'message': 'Pedido no encontrado'
             }), 404
         
-        # Ajustar el stock de los productos en el pedido para la edición
-        for item in pedido.productos:
-            if item.producto:
-                item.producto.existencia += item.cantidad
-            
         pedido_data = pedido_detalle_to_dict(pedido)
         
         return jsonify({
@@ -154,161 +175,6 @@ def get_pedido_detalle(admin_user, pedido_id):
         return jsonify({
             'success': False,
             'message': 'Error al obtener detalle del pedido'
-        }), 500
-
-
-
-@admin_lista_pedidos_bp.route('/api/pedidos/filter', methods=['GET'])
-@admin_jwt_required
-def filter_pedidos_api(admin_user):
-    try:
-        # Obtener parámetros de filtro
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        cliente = request.args.get('cliente', '')
-        fecha_inicio = request.args.get('fecha_inicio', '')
-        fecha_fin = request.args.get('fecha_fin', '')
-        estado_pedido_filter = request.args.get('estado', 'en proceso') # This is for estado_pedido (en proceso, completado, cancelado)
-        status_filter = request.args.get('status', 'all') # This is for the new activo/inactivo status
-        sort_by = request.args.get('sort_by', 'created_at')
-        sort_order = request.args.get('sort_order', 'desc')
-
-        # Construir consulta base
-        query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == estado_pedido_filter
-        )
-        
-        # Aplicar el nuevo filtro de estado (activo/inactivo)
-        if status_filter != 'all':
-            query = query.filter(Pedido.estado == status_filter)
-        
-        # Aplicar filtros
-        if cliente:
-            query = query.join(Usuarios).filter(
-                or_(
-                    Usuarios.nombre.ilike(f'%{cliente}%'),
-                    Usuarios.apellido.ilike(f'%{cliente}%'),
-                    Usuarios.numero.ilike(f'%{cliente}%')
-                )
-            )
-            
-        if fecha_inicio:
-            try:
-                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                query = query.filter(Pedido.created_at >= fecha_inicio_dt)
-            except ValueError:
-                pass
-                
-        if fecha_fin:
-            try:
-                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
-                query = query.filter(Pedido.created_at < fecha_fin_dt)
-            except ValueError:
-                pass
-        
-        # Aplicar ordenamiento
-        if sort_by == 'cliente':
-            if sort_order == 'asc':
-                query = query.join(Usuarios).order_by(Usuarios.nombre.asc(), Usuarios.apellido.asc())
-            else:
-                query = query.join(Usuarios).order_by(Usuarios.nombre.desc(), Usuarios.apellido.desc())
-        elif sort_by == 'total':
-            if sort_order == 'asc':
-                query = query.order_by(Pedido.total.asc())
-            else:
-                query = query.order_by(Pedido.total.desc())
-        else:  # Por defecto ordenar por fecha
-            if sort_order == 'asc':
-                query = query.order_by(Pedido.created_at.asc())
-            else:
-                query = query.order_by(Pedido.created_at.desc())
-
-        # Paginación
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        
-        # Serializar datos
-        pedidos_data = [pedido_to_dict(pedido) for pedido in pagination.items]
-
-        # Preparar respuesta
-        response_data = {
-            'pedidos': pedidos_data,
-            'pagination': {
-                'page': pagination.page,
-                'pages': pagination.pages,
-                'per_page': pagination.per_page,
-                'total': pagination.total,
-                'has_next': pagination.has_next,
-                'has_prev': pagination.has_prev,
-                'next_num': pagination.next_num,
-                'prev_num': pagination.prev_num
-            },
-            'success': True
-        }
-
-        return jsonify(response_data)
-
-    except Exception as e:
-        current_app.logger.error(f"Error en filtro AJAX de pedidos: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Error al filtrar pedidos'
-        }), 500
-
-@admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/estado-activo', methods=['POST'])
-@admin_jwt_required
-def update_pedido_estado_activo(admin_user, pedido_id):
-    try:
-        pedido = Pedido.query.get(pedido_id)
-        if not pedido:
-            return jsonify({
-                'success': False,
-                'message': 'Pedido no encontrado'
-            }), 404
-
-        data = request.get_json()
-        if not data or 'estado' not in data:
-            return jsonify({
-                'success': False,
-                'message': 'Datos incompletos'
-            }), 400
-
-        nuevo_estado = data.get('estado')
-        if nuevo_estado not in ['activo', 'inactivo']:
-            return jsonify({
-                'success': False,
-                'message': 'Estado no válido'
-            }), 400
-
-        if pedido.estado == nuevo_estado:
-            return jsonify({
-                'success': True,
-                'message': f'El pedido ya estaba {nuevo_estado}',
-                'status_unchanged': True,
-                'current_status': nuevo_estado
-            }), 200
-
-        old_status = pedido.estado
-        pedido.estado = nuevo_estado
-        db.session.commit()
-
-        current_app.logger.info(
-            f"Pedido {pedido_id} cambiado de estado (activo/inactivo) de {old_status} a {nuevo_estado} "
-            f"por administrador {admin_user.id} ('{admin_user.nombre}')"
-        )
-
-        return jsonify({
-            'success': True,
-            'message': f'El pedido ha sido marcado como {nuevo_estado} correctamente',
-            'pedido_id': pedido_id,
-            'new_status': nuevo_estado
-        })
-
-    except Exception as e:
-        db.session.rollback()
-        current_app.logger.error(f"Error al cambiar estado (activo/inactivo) del pedido {pedido_id}: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Error al cambiar el estado del pedido'
         }), 500
 
 
@@ -365,8 +231,17 @@ def create_pedido(admin_user):
         nuevo_pedido = Pedido(
             usuario_id=usuario_id,
             total=total_pedido,
-            estado_pedido='en proceso',
-            estado='activo'
+            estado_pedido=EstadoPedido.EN_PROCESO,
+            estado=EstadoEnum.ACTIVO.value,
+            # MEJORA PROFESIONAL: Inicializar el historial de seguimiento al crear el pedido.
+            # Esto asegura que el estado 'recibido' siempre tenga un timestamp.
+            seguimiento_estado=EstadoSeguimiento.RECIBIDO,
+            notas_seguimiento="Pedido creado por administrador.",
+            seguimiento_historial=[{
+                'estado': EstadoSeguimiento.RECIBIDO.value,
+                'notas': "Pedido creado y recibido en el sistema.",
+                'timestamp': datetime.utcnow().isoformat() + "Z"
+            }]
         )
         db.session.add(nuevo_pedido)
         db.session.flush() # Para obtener el ID del nuevo pedido antes del commit
@@ -411,7 +286,7 @@ def update_pedido(admin_user, pedido_id):
                 'message': 'Pedido no encontrado'
             }), 404
 
-        if pedido.estado_pedido != 'en proceso':
+        if pedido.estado_pedido != EstadoPedido.EN_PROCESO:
             return jsonify({
                 'success': False,
                 'message': 'Solo se pueden editar pedidos en proceso'
@@ -517,15 +392,216 @@ def update_pedido(admin_user, pedido_id):
         return jsonify({'success': False, 'message': 'Error interno al actualizar el pedido'}), 500
 
 
+# lista_pedidos.py - MEJORADO PARA ACTUALIZACIONES EN TIEMPO REAL
+
+@admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/seguimiento', methods=['POST'])
+@admin_jwt_required
+def update_pedido_seguimiento(admin_user, pedido_id):
+    """
+    MEJORADO: Actualización en tiempo real del estado de seguimiento con sincronización bidireccional
+    """
+    try:
+        # Obtener el pedido con sus productos y usuario para sincronización completa
+        pedido = Pedido.query.options(
+            joinedload(Pedido.productos).joinedload(PedidoProducto.producto),
+            joinedload(Pedido.usuario)
+        ).get(pedido_id)
+        
+        if not pedido:
+            return jsonify({
+                'success': False,
+                'message': 'Pedido no encontrado'
+            }), 404
+
+        if pedido.estado == EstadoEnum.INACTIVO:
+            return jsonify({
+                'success': False,
+                'message': 'No se puede cambiar el estado de un pedido inactivo',
+                'inactive_order': True
+            }), 400
+
+        data = request.get_json()
+        nuevo_seguimiento_str = data.get('seguimiento_estado')
+        notas = data.get('notas', '').strip()
+
+        # MEJORA: Validar que el estado y las notas no estén vacíos
+        if not nuevo_seguimiento_str:
+            return jsonify({'success': False, 'message': 'El estado de seguimiento es obligatorio.'}), 400
+        if not notas:
+            return jsonify({'success': False, 'message': 'Las notas de seguimiento son obligatorias.'}), 400
+
+        try:
+            nuevo_seguimiento_enum = EstadoSeguimiento(nuevo_seguimiento_str)
+        except ValueError:
+            return jsonify({'success': False, 'message': 'Estado de seguimiento no válido'}), 400
+
+        old_seguimiento = pedido.seguimiento_estado
+        old_estado_pedido = pedido.estado_pedido
+
+        # MEJORA PROFESIONAL: Permitir la actualización de la nota incluso si el estado no cambia.
+        if old_seguimiento == nuevo_seguimiento_enum:
+            # Es una actualización de nota para el estado actual.
+            if not pedido.seguimiento_historial:
+                # Caso improbable, pero seguro.
+                return jsonify({'success': False, 'message': 'Historial de seguimiento no encontrado, no se puede actualizar la nota.'}), 500
+
+            last_history_entry = pedido.seguimiento_historial[-1]
+
+            # Si la nota es la misma, no hacer nada.
+            if last_history_entry.get('notas') == notas:
+                return jsonify({
+                    'success': True,
+                    'message': 'No se realizaron cambios. La nota es la misma.',
+                    'status_unchanged': True,
+                    'current_status': nuevo_seguimiento_enum.value
+                }), 200
+            
+            # La nota ha cambiado. Actualizar la última entrada del historial.
+            last_history_entry['notas'] = notas
+            last_history_entry['timestamp'] = datetime.utcnow().isoformat() + "Z"
+            
+            # Marcar el campo JSON como modificado para que SQLAlchemy lo guarde.
+            flag_modified(pedido, "seguimiento_historial")
+
+            # Actualizar también el campo de nota principal en el pedido.
+            pedido.notas_seguimiento = notas
+            pedido.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+
+            current_app.logger.info(
+                f"Nota de seguimiento para pedido {pedido_id} (estado {nuevo_seguimiento_enum.value}) actualizada por {admin_user.id}"
+            )
+
+            return jsonify({
+                'success': True,
+                'message': 'La nota de seguimiento ha sido actualizada correctamente.',
+                'pedido_id': pedido_id,
+                'new_seguimiento': nuevo_seguimiento_enum.value,
+                'timestamp': datetime.utcnow().isoformat(),
+                'estado_pedido_cambiado': False
+            })
+
+        # Iniciar transacción para atomicidad
+        try:
+            estado_pedido_cambiado = False
+            nuevo_estado_pedido = None
+
+            # 1. Si el nuevo estado de seguimiento es CANCELADO
+            if nuevo_seguimiento_enum == EstadoSeguimiento.CANCELADO:
+                if old_estado_pedido != EstadoPedido.CANCELADO:
+                    pedido.estado_pedido = EstadoPedido.CANCELADO
+                    estado_pedido_cambiado = True
+                    nuevo_estado_pedido = EstadoPedido.CANCELADO.value
+                    
+                    # Devolver stock
+                    for item in pedido.productos:
+                        producto = Productos.query.get(item.producto_id)
+                        if producto:
+                            producto.existencia += item.cantidad
+                    current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_estado_pedido} -> cancelado).")
+
+            # 2. Si el nuevo estado de seguimiento es ENTREGADO
+            elif nuevo_seguimiento_enum == EstadoSeguimiento.ENTREGADO:
+                if old_estado_pedido != EstadoPedido.COMPLETADO:
+                    pedido.estado_pedido = EstadoPedido.COMPLETADO
+                    estado_pedido_cambiado = True
+                    nuevo_estado_pedido = EstadoPedido.COMPLETADO.value
+                    current_app.logger.info(f"Pedido {pedido.id} movido a 'completado' a través del seguimiento.")
+
+            # 3. Si el nuevo estado de seguimiento implica que está EN PROCESO
+            elif nuevo_seguimiento_enum in [EstadoSeguimiento.RECIBIDO, EstadoSeguimiento.EN_PREPARACION, EstadoSeguimiento.EN_CAMINO]:
+                if old_estado_pedido != EstadoPedido.EN_PROCESO:
+                    # Si venimos de 'cancelado', hay que re-validar y restar stock
+                    if old_estado_pedido == EstadoPedido.CANCELADO:
+                        for item in pedido.productos:
+                            producto = Productos.query.get(item.producto_id)
+                            if not producto or producto.existencia < item.cantidad:
+                                db.session.rollback()
+                                return jsonify({
+                                    'success': False,
+                                    'message': f'Stock insuficiente para reactivar el pedido. Producto: {producto.nombre if producto else "ID " + str(item.producto_id)}.'
+                                }), 400
+                        for item in pedido.productos:
+                            producto = Productos.query.get(item.producto_id)
+                            if producto:
+                                producto.existencia -= item.cantidad
+                        current_app.logger.info(f"Stock restado para pedido {pedido.id} reactivado (cancelado -> en proceso) a través del seguimiento.")
+                    
+                    pedido.estado_pedido = EstadoPedido.EN_PROCESO
+                    estado_pedido_cambiado = True
+                    nuevo_estado_pedido = EstadoPedido.EN_PROCESO.value
+                    current_app.logger.info(f"Pedido {pedido.id} movido a 'en proceso' a través del seguimiento.")
+
+            # MEJORA: Actualizar el historial de seguimiento, además del estado y notas actuales.
+            # Esto asume que tienes una columna `seguimiento_historial` de tipo JSON en tu modelo Pedido.
+            if pedido.seguimiento_historial is None:
+                pedido.seguimiento_historial = []
+            
+            new_history_entry = {
+                'estado': nuevo_seguimiento_enum.value,
+                'notas': notas,
+                'timestamp': datetime.utcnow().isoformat() + "Z" # MEJORA: Marcar explícitamente como UTC para un manejo profesional de zonas horarias.
+            }
+            
+            pedido.seguimiento_historial = pedido.seguimiento_historial + [new_history_entry]
+            pedido.seguimiento_estado = nuevo_seguimiento_enum
+            pedido.notas_seguimiento = notas
+            pedido.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+
+            current_app.logger.info(
+                f"Pedido {pedido_id} cambiado de estado de seguimiento de {old_seguimiento.value} a {nuevo_seguimiento_enum.value} "
+                f"por administrador {admin_user.id} ('{admin_user.nombre}')"
+            )
+
+            # Respuesta mejorada con información de sincronización
+            response_data = {
+                'success': True,
+                'message': f'El estado de seguimiento del pedido ha sido actualizado a {nuevo_seguimiento_enum.value} correctamente',
+                'pedido_id': pedido_id,
+                'old_seguimiento': old_seguimiento.value,
+                'new_seguimiento': nuevo_seguimiento_enum.value,
+                'timestamp': datetime.utcnow().isoformat(),
+                'estado_pedido_cambiado': estado_pedido_cambiado
+            }
+            
+            # Incluir información del estado del pedido si cambió
+            if estado_pedido_cambiado:
+                response_data['nuevo_estado_pedido'] = nuevo_estado_pedido
+                response_data['old_estado_pedido'] = old_estado_pedido.value
+
+            return jsonify(response_data)
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error al cambiar estado de seguimiento del pedido {pedido_id}: {e}", exc_info=True)
+            return jsonify({'success': False, 'message': 'Error al cambiar el estado de seguimiento del pedido'}), 500
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al cambiar estado de seguimiento del pedido {pedido_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error al cambiar el estado de seguimiento del pedido'}), 500
+
+
 @admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/estado', methods=['POST'])
 @admin_jwt_required
 def update_pedido_estado(admin_user, pedido_id):
+    """
+    MEJORADO: Actualización en tiempo real del estado del pedido con sincronización completa
+    """
     try:
-        pedido = Pedido.query.options(joinedload(Pedido.productos)).get(pedido_id)
+        # Obtener el pedido con sus productos y usuario para sincronización completa
+        pedido = Pedido.query.options(
+            joinedload(Pedido.productos).joinedload(PedidoProducto.producto),
+            joinedload(Pedido.usuario)
+        ).get(pedido_id)
+        
         if not pedido:
             return jsonify({'success': False, 'message': 'Pedido no encontrado'}), 404
 
-        if pedido.estado == 'inactivo':
+        if pedido.estado == EstadoEnum.INACTIVO:
             return jsonify({
                 'success': False,
                 'message': 'No se puede cambiar el estado de un pedido inactivo',
@@ -536,12 +612,253 @@ def update_pedido_estado(admin_user, pedido_id):
         if not data or 'estado' not in data:
             return jsonify({'success': False, 'message': 'Datos incompletos'}), 400
 
-        nuevo_estado = data.get('estado')
-        if nuevo_estado not in ['completado', 'cancelado', 'en proceso']:
+        nuevo_estado_str = data.get('estado')
+        if nuevo_estado_str not in ['completado', 'cancelado', 'en proceso']:
+            return jsonify({'success': False, 'message': 'Estado no válido'}), 400
+
+        try:
+            nuevo_estado = EstadoPedido(nuevo_estado_str)
+        except ValueError:
             return jsonify({'success': False, 'message': 'Estado no válido'}), 400
 
         old_status = pedido.estado_pedido
         if old_status == nuevo_estado:
+            return jsonify({
+                'success': True,
+                'message': f'El pedido ya estaba {nuevo_estado.value}',
+                'status_unchanged': True,
+                'current_status': nuevo_estado.value
+            }), 200
+
+        try:
+            seguimiento_cambiado = False
+            nuevo_seguimiento = None
+
+            # 1. Mover a 'cancelado' (desde 'en proceso' o 'completado')
+            if nuevo_estado == EstadoPedido.CANCELADO and old_status in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
+                for item in pedido.productos:
+                    producto = Productos.query.get(item.producto_id)
+                    if producto:
+                        producto.existencia += item.cantidad
+                current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
+
+            # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
+            elif old_status == EstadoPedido.CANCELADO and nuevo_estado in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
+                # Verificar stock antes de hacer cambios
+                for item in pedido.productos:
+                    producto = Productos.query.get(item.producto_id)
+                    if not producto or producto.existencia < item.cantidad:
+                        db.session.rollback()
+                        return jsonify({
+                            'success': False,
+                            'message': f'Stock insuficiente para reactivar el pedido. Producto: {producto.nombre if producto else "ID " + str(item.producto_id)}.'
+                        }), 400
+                
+                # Si hay stock, restarlo
+                for item in pedido.productos:
+                    producto = Productos.query.get(item.producto_id)
+                    if producto:
+                        producto.existencia -= item.cantidad
+                current_app.logger.info(f"Stock restado para pedido {pedido.id} reactivado (cancelado -> {nuevo_estado}).")
+
+            # Sincronizar estado de seguimiento automáticamente
+            if nuevo_estado == EstadoPedido.COMPLETADO:
+                pedido.seguimiento_estado = EstadoSeguimiento.ENTREGADO
+                seguimiento_cambiado = True
+                nuevo_seguimiento = EstadoSeguimiento.ENTREGADO.value
+            elif nuevo_estado == EstadoPedido.CANCELADO:
+                pedido.seguimiento_estado = EstadoSeguimiento.CANCELADO
+                seguimiento_cambiado = True
+                nuevo_seguimiento = EstadoSeguimiento.CANCELADO.value
+            elif nuevo_estado == EstadoPedido.EN_PROCESO:
+                pedido.seguimiento_estado = EstadoSeguimiento.RECIBIDO
+                seguimiento_cambiado = True
+                nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
+
+            pedido.estado_pedido = nuevo_estado
+            pedido.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+
+            current_app.logger.info(
+                f"Pedido {pedido_id} cambiado de estado de {old_status.value} a {nuevo_estado.value} "
+                f"por administrador {admin_user.id} ('{admin_user.nombre}')"
+            )
+
+            # Respuesta mejorada con información de sincronización
+            response_data = {
+                'success': True,
+                'message': f'El pedido ha sido marcado como {nuevo_estado.value} correctamente',
+                'pedido_id': pedido_id,
+                'old_status': old_status.value,
+                'new_status': nuevo_estado.value,
+                'timestamp': datetime.utcnow().isoformat(),
+                'seguimiento_cambiado': seguimiento_cambiado
+            }
+            
+            # Incluir información del seguimiento si cambió
+            if seguimiento_cambiado:
+                response_data['nuevo_seguimiento'] = nuevo_seguimiento
+                response_data['old_seguimiento'] = pedido.seguimiento_estado.value if not seguimiento_cambiado else old_status.value
+
+            return jsonify(response_data)
+
+        except Exception as e:
+            db.session.rollback()
+            current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}", exc_info=True)
+            return jsonify({'success': False, 'message': 'Error al cambiar el estado del pedido'}), 500
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error al cambiar el estado del pedido'}), 500
+
+
+@admin_lista_pedidos_bp.route('/api/pedidos/filter', methods=['GET'])
+@admin_jwt_required
+def filter_pedidos_api(admin_user):
+    """
+    MEJORADO: Filtrado de pedidos con mejor rendimiento y sincronización en tiempo real
+    """
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        cliente = request.args.get('cliente', '')
+        fecha_inicio = request.args.get('fecha_inicio', '')
+        fecha_fin = request.args.get('fecha_fin', '')
+        estado_str = request.args.get('estado', 'en proceso')
+        status_filter = request.args.get('status', 'all')
+        sort_by = request.args.get('sort_by', 'created_at')
+        sort_order = request.args.get('sort_order', 'desc')
+
+        # Validar estado
+        estado_pedido_filter = ESTADO_PEDIDO_MAP.get(estado_str, EstadoPedido.EN_PROCESO)
+        
+        # Construir consulta base con joins optimizados para rendimiento
+        query = Pedido.query.options(
+            joinedload(Pedido.usuario),
+            joinedload(Pedido.productos).joinedload(PedidoProducto.producto)
+        ).filter(
+            Pedido.estado_pedido == estado_pedido_filter
+        )
+
+        # Aplicar el filtro de estado (activo/inactivo)
+        if status_filter != 'all':
+            query = query.filter(Pedido.estado == status_filter)
+
+        # Aplicar filtros de búsqueda
+        if cliente:
+            query = query.join(Usuarios).filter(
+                or_(
+                    Usuarios.nombre.ilike(f'%{cliente}%'),
+                    Usuarios.apellido.ilike(f'%{cliente}%'),
+                    Usuarios.numero.ilike(f'%{cliente}%')
+                )
+            )
+            
+        if fecha_inicio:
+            try:
+                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+                query = query.filter(Pedido.created_at >= fecha_inicio_dt)
+            except ValueError:
+                current_app.logger.warning(f"Formato de fecha_inicio inválido: {fecha_inicio}")
+                
+        if fecha_fin:
+            try:
+                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
+                query = query.filter(Pedido.created_at < fecha_fin_dt)
+            except ValueError:
+                current_app.logger.warning(f"Formato de fecha_fin inválido: {fecha_fin}")
+        
+        # Aplicar ordenamiento
+        if sort_by == 'cliente':
+            if sort_order == 'asc':
+                query = query.order_by(Usuarios.nombre.asc(), Usuarios.apellido.asc())
+            else:
+                query = query.order_by(Usuarios.nombre.desc(), Usuarios.apellido.desc())
+        elif sort_by == 'total':
+            if sort_order == 'asc':
+                query = query.order_by(Pedido.total.asc())
+            else:
+                query = query.order_by(Pedido.total.desc())
+        else:  # Por defecto ordenar por fecha
+            if sort_order == 'asc':
+                query = query.order_by(Pedido.created_at.asc())
+            else:
+                query = query.order_by(Pedido.created_at.desc())
+        
+        # Paginación
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        
+        # Serializar datos con información completa para sincronización
+        pedidos_data = []
+        for pedido in pagination.items:
+            pedido_dict = pedido_to_dict(pedido)
+            # Incluir información completa del seguimiento para actualizaciones en tiempo real
+            pedido_dict['seguimiento_estado'] = pedido.seguimiento_estado.value if pedido.seguimiento_estado else 'recibido'
+            pedido_dict['notas_seguimiento'] = pedido.notas_seguimiento or ''
+            pedidos_data.append(pedido_dict)
+
+        # Preparar respuesta con metadatos para sincronización
+        response_data = {
+            'pedidos': pedidos_data,
+            'pagination': {
+                'page': pagination.page,
+                'pages': pagination.pages,
+                'per_page': pagination.per_page,
+                'total': pagination.total,
+                'has_next': pagination.has_next,
+                'has_prev': pagination.has_prev,
+                'next_num': pagination.next_num,
+                'prev_num': pagination.prev_num
+            },
+            'success': True,
+            'timestamp': datetime.utcnow().isoformat(),
+            'estado_actual': estado_pedido_filter.value
+        }
+
+        return jsonify(response_data)
+
+    except Exception as e:
+        current_app.logger.error(f"Error en filtro AJAX de pedidos: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': 'Error al filtrar pedidos'
+        }), 500
+
+
+@admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/estado-activo', methods=['POST'])
+@admin_jwt_required
+def update_pedido_estado_activo(admin_user, pedido_id):
+    """
+    MEJORADO: Actualización del estado activo/inactivo con sincronización completa
+    """
+    try:
+        pedido = Pedido.query.options(
+            joinedload(Pedido.productos).joinedload(PedidoProducto.producto),
+            joinedload(Pedido.usuario)
+        ).get(pedido_id)
+        if not pedido:
+            return jsonify({
+                'success': False,
+                'message': 'Pedido no encontrado'
+            }), 404
+
+        data = request.get_json()
+        if not data or 'estado' not in data:
+            return jsonify({
+                'success': False,
+                'message': 'Datos incompletos'
+            }), 400
+
+        nuevo_estado = data.get('estado')
+        if nuevo_estado not in ['activo', 'inactivo']:
+            return jsonify({
+                'success': False,
+                'message': 'Estado no válido'
+            }), 400
+
+        if pedido.estado == nuevo_estado:
             return jsonify({
                 'success': True,
                 'message': f'El pedido ya estaba {nuevo_estado}',
@@ -549,57 +866,39 @@ def update_pedido_estado(admin_user, pedido_id):
                 'current_status': nuevo_estado
             }), 200
 
-        # --- Lógica de stock refactorizada ---
-        
-        # 1. Mover a 'cancelado' (desde 'en proceso' o 'completado')
-        if nuevo_estado == 'cancelado' and old_status in ['en proceso', 'completado']:
-            for item in pedido.productos:
-                producto = Productos.query.get(item.producto_id)
-                if producto:
-                    producto.existencia += item.cantidad
-            current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
-
-        # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
-        elif old_status == 'cancelado' and nuevo_estado in ['en proceso', 'completado']:
-            # Verificar stock antes de hacer cambios
-            for item in pedido.productos:
-                producto = Productos.query.get(item.producto_id)
-                if not producto or producto.existencia < item.cantidad:
-                    db.session.rollback()
-                    return jsonify({
-                        'success': False,
-                        'message': f'Stock insuficiente para reactivar el pedido. Producto: {producto.nombre if producto else "ID " + str(item.producto_id)}.'
-                    }), 400
-            
-            # Si hay stock, restarlo
-            for item in pedido.productos:
-                producto = Productos.query.get(item.producto_id)
-                if producto:
-                    producto.existencia -= item.cantidad
-            current_app.logger.info(f"Stock restado para pedido {pedido.id} reactivado (cancelado -> {nuevo_estado}).")
-
-        # --- Fin de la lógica de stock ---
-
-        pedido.estado_pedido = nuevo_estado
+        old_status = pedido.estado
+        pedido.estado = nuevo_estado
         pedido.updated_at = datetime.utcnow()
-        
         db.session.commit()
 
         current_app.logger.info(
-            f"Pedido {pedido_id} cambiado de estado de {old_status} a {nuevo_estado} "
+            f"Pedido {pedido_id} cambiado de estado (activo/inactivo) de {old_status} a {nuevo_estado} "
             f"por administrador {admin_user.id} ('{admin_user.nombre}')"
         )
 
-        return jsonify({
+        # Respuesta mejorada con información completa para sincronización
+        response_data = {
             'success': True,
             'message': f'El pedido ha sido marcado como {nuevo_estado} correctamente',
             'pedido_id': pedido_id,
-            'old_status': old_status,
             'new_status': nuevo_estado,
-            'timestamp': datetime.utcnow().isoformat()
-        })
+            'old_status': old_status,
+            'timestamp': datetime.utcnow().isoformat(),
+            'pedido_info': {
+                'id': pedido.id,
+                'usuario_nombre': f"{pedido.usuario.nombre} {pedido.usuario.apellido}" if pedido.usuario else 'N/A',
+                'total': pedido.total,
+                'estado_pedido': pedido.estado_pedido.value,
+                'seguimiento_estado': pedido.seguimiento_estado.value if pedido.seguimiento_estado else 'recibido'
+            }
+        }
+
+        return jsonify(response_data)
 
     except Exception as e:
         db.session.rollback()
-        current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}", exc_info=True)
-        return jsonify({'success': False, 'message': 'Error al cambiar el estado del pedido'}), 500
+        current_app.logger.error(f"Error al cambiar estado (activo/inactivo) del pedido {pedido_id}: {e}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': 'Error al cambiar el estado del pedido'
+        }), 500

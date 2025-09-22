@@ -652,28 +652,8 @@
                     <h2 class="card-title">Seguimiento del Pedido</h2>
                 </div>
                 <div class="card-body">
-                    <div class="timeline">
-                        <div class="timeline-item completed">
-                            <div class="timeline-date">{{ pedido.created_at | datetimeformat('%d de %B') }}</div>
-                            <div class="timeline-title">Pedido recibido</div>
-                            <div class="timeline-description">Tu pedido ha sido recibido y está siendo procesado</div>
-                        </div>
-                        <div class="timeline-item {% if pedido.estado_pedido == 'en proceso' %}active{% elif pedido.estado_pedido == 'completado' %}completed{% endif %}">
-                            <div class="timeline-date">{{ pedido.created_at | datetimeformat('%d de %B') }}</div>
-                            <div class="timeline-title">En preparación</div>
-                            <div class="timeline-description">Tu pedido está siendo preparado para el envío</div>
-                        </div>
-                        <div class="timeline-item {% if pedido.estado_pedido == 'completado' %}active{% endif %}">
-                            <div class="timeline-date">{% if pedido.estado_pedido == 'completado' %}{{ pedido.updated_at | datetimeformat('%d de %B') }}{% else %}Pendiente{% endif %}</div>
-                            <div class="timeline-title">En camino</div>
-                            <div class="timeline-description">Tu pedido está en camino a tu dirección</div>
-                        </div>
-                        <div class="timeline-item {% if pedido.estado_pedido == 'completado' %}completed{% endif %}">
-                            <div class="timeline-date">{% if pedido.estado_pedido == 'completado' %}{{ pedido.updated_at | datetimeformat('%d de %B') }}{% else %}Pendiente{% endif %}</div>
-                            <div class="timeline-title">Entregado</div>
-                            <div class="timeline-description">Tu pedido ha sido entregado con éxito</div>
-                        </div>
-                    </div>
+                    <!-- MEJORA PROFESIONAL: Contenedor para la línea de tiempo dinámica -->
+                    <div id="seguimiento-timeline-container" class="space-y-6"></div>
                 </div>
             </div>
             
@@ -736,6 +716,117 @@
         </div>
     </div>
 </div>
+
+<!-- MEJORA PROFESIONAL: Script para renderizar la línea de tiempo dinámica -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Inyectamos los datos del pedido desde Jinja2 a JavaScript de forma segura.
+        const pedidoData = {{ pedido | tojson }};
+
+        const timelineContainer = document.getElementById('seguimiento-timeline-container');
+
+        function formatTimestamp(isoString) {
+            if (!isoString) return 'Pendiente';
+            const date = new Date(isoString);
+            const dateOptions = { day: '2-digit', month: 'long', year: 'numeric', timeZone: 'America/Bogota' };
+            const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/Bogota' };
+            return `${date.toLocaleDateString('es-CO', dateOptions)}, ${date.toLocaleTimeString('es-CO', timeOptions)}`;
+        }
+
+        function getIconForState(estado) {
+            const icons = {
+                'recibido': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>',
+                'en preparacion': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>',
+                'en camino': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>',
+                'entregado': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>',
+                'cancelado': '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>'
+            };
+            return icons[estado] || icons['recibido'];
+        }
+
+        function renderTimeline(pedido) {
+            if (!timelineContainer) return;
+
+            let historial = pedido.seguimiento_historial || [];
+            const ultimoEstado = pedido.seguimiento_estado || 'recibido';
+
+            // Aseguramos que el estado 'recibido' siempre esté presente.
+            const tieneEstadoRecibido = historial.some(e => e.estado === 'recibido');
+            if (!tieneEstadoRecibido) {
+                historial = [{
+                    estado: 'recibido',
+                    notas: 'Pedido recibido en el sistema.',
+                    timestamp: pedido.created_at
+                }, ...historial];
+            }
+
+            const statusHistoryMap = {};
+            historial.forEach(entry => {
+                statusHistoryMap[entry.estado] = entry;
+            });
+
+            const estadosOrden = ['recibido', 'en preparacion', 'en camino', 'entregado'];
+            const ultimoEstadoIndex = estadosOrden.indexOf(ultimoEstado);
+
+            let timelineHTML = '<div class="relative">';
+            // Línea vertical del timeline
+            timelineHTML += '<div class="absolute left-4 top-0 h-full w-0.5 bg-gray-200"></div>';
+
+            const estadosAMostrar = ultimoEstado === 'cancelado' ? ['recibido', 'cancelado'] : estadosOrden;
+
+            estadosAMostrar.forEach((estado, index) => {
+                const itemIndex = estadosOrden.indexOf(estado);
+                // MEJORA PROFESIONAL: Solo obtener la entrada del historial si el estado es el actual o uno anterior.
+                // Esto evita mostrar al cliente estados futuros que se registraron por error.
+                const entry = (ultimoEstado === 'cancelado' || itemIndex <= ultimoEstadoIndex) ? statusHistoryMap[estado] : null;
+
+                let dotClass = 'bg-gray-200 text-gray-500';
+                let estadoVisual = 'pendiente';
+
+                if (entry) {
+                    if (ultimoEstado === 'cancelado') {
+                        if (estado === 'cancelado') {
+                            estadoVisual = 'activo';
+                            dotClass = 'bg-red-500 text-white';
+                        } else {
+                            estadoVisual = 'completado';
+                            dotClass = 'bg-green-500 text-white';
+                        }
+                    } else {
+                        const itemIndex = estadosOrden.indexOf(estado);
+                        if (itemIndex < ultimoEstadoIndex || ultimoEstado === 'entregado') {
+                            estadoVisual = 'completado';
+                            dotClass = 'bg-green-500 text-white';
+                        } else if (itemIndex === ultimoEstadoIndex) {
+                            estadoVisual = 'activo';
+                            dotClass = 'bg-blue-600 text-white';
+                        }
+                    }
+                }
+
+                timelineHTML += `
+                    <div class="relative pl-12 pb-8">
+                        <div class="absolute left-0 top-0">
+                            <div class="flex items-center justify-center w-8 h-8 rounded-full ${dotClass} transform -translate-x-1/2">
+                                ${getIconForState(estado)}
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-500">${formatTimestamp(entry?.timestamp)}</p>
+                            <h4 class="font-semibold text-gray-800 mt-1">${estado.charAt(0).toUpperCase() + estado.slice(1)}</h4>
+                            <p class="text-sm text-gray-600 mt-1">${entry?.notas || 'Pendiente de actualización.'}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            timelineHTML += '</div>';
+            timelineContainer.innerHTML = timelineHTML;
+        }
+
+        renderTimeline(pedidoData);
+    });
+</script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {

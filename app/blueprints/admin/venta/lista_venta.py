@@ -3,6 +3,7 @@ from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.order_models import Pedido, PedidoProducto
 from app.models.domains.user_models import Usuarios
 from app.models.domains.product_models import Productos
+from app.models.enums import EstadoPedido
 from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
 from sqlalchemy import or_, and_, func, desc
@@ -34,7 +35,7 @@ def get_ventas(admin_user):
         
         # Construir consulta base - Solo pedidos completados
         query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == 'completado'
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO
         )
         
         # Aplicar filtro de estado (activo/inactivo)
@@ -146,7 +147,7 @@ def get_ventas_api(admin_user):
 
         # Construir consulta base - Solo pedidos completados
         query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == 'completado'
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO
         )
         
         # Aplicar filtro de estado (activo/inactivo)
@@ -248,7 +249,7 @@ def get_venta_detalle(admin_user, venta_id):
             joinedload(Pedido.productos).joinedload(PedidoProducto.producto)
         ).get(venta_id)
         
-        if not venta or venta.estado_pedido != 'completado':
+        if not venta or venta.estado_pedido != EstadoPedido.COMPLETADO:
             return jsonify({
                 'success': False,
                 'message': 'Venta no encontrada'
@@ -273,7 +274,7 @@ def get_venta_detalle(admin_user, venta_id):
 def update_venta_estado(admin_user, venta_id):
     try:
         venta = Pedido.query.get(venta_id)
-        if not venta or venta.estado_pedido != 'completado':
+        if not venta or venta.estado_pedido != EstadoPedido.COMPLETADO:
             return jsonify({
                 'success': False,
                 'message': 'Venta no encontrada'
@@ -338,7 +339,7 @@ def get_ventas_estadisticas(admin_user):
         
         # Construir consulta base - Solo pedidos completados
         query = Pedido.query.filter(
-            Pedido.estado_pedido == 'completado'
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO
         )
         
         # Aplicar filtros de fecha
@@ -374,7 +375,7 @@ def get_ventas_estadisticas(admin_user):
         # Calcular estadísticas
         total_ventas = query.count()
         total_ingresos = db.session.query(func.sum(Pedido.total)).filter(
-            Pedido.estado_pedido == 'completado'
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO
         )
         
         # Aplicar los mismos filtros a la consulta de ingresos
@@ -418,7 +419,7 @@ def get_ventas_estadisticas(admin_user):
         
         # Aplicar filtros de fecha a la consulta de gráfico
         grafico_query = Pedido.query.filter(
-            Pedido.estado_pedido == 'completado',
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO,
             func.date(Pedido.created_at) >= hace_30_dias
         )
         
@@ -456,7 +457,7 @@ def get_ventas_estadisticas(admin_user):
             func.count(Pedido.id).label('cantidad'),
             func.sum(Pedido.total).label('total')
         ).filter(
-            Pedido.estado_pedido == 'completado',
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO,
             func.date(Pedido.created_at) >= hace_30_dias
         ).group_by(func.date(Pedido.created_at)).all()
         
@@ -517,7 +518,7 @@ def imprimir_factura(admin_user, venta_id):
             joinedload(Pedido.productos).joinedload(PedidoProducto.producto)
         ).get(venta_id)
         
-        if not venta or venta.estado_pedido != 'completado':
+        if not venta or venta.estado_pedido != EstadoPedido.COMPLETADO:
             return jsonify({
                 'success': False,
                 'message': 'Venta no encontrada'

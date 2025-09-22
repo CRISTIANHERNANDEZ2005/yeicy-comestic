@@ -3,6 +3,7 @@ from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.user_models import Usuarios
 from app.models.domains.product_models import Productos
 from app.models.domains.order_models import Pedido, PedidoProducto
+from app.models.enums import EstadoPedido, EstadoEnum
 from app.models.serializers import usuario_to_dict, producto_to_dict, pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
 from sqlalchemy import or_
@@ -69,7 +70,7 @@ def search_products(admin_user):
                 Productos.nombre.ilike(f'%{search_term}%'),
                 Productos.descripcion.ilike(f'%{search_term}%')
             ),
-            Productos.estado == 'ACTIVO'
+            Productos.estado == EstadoEnum.ACTIVO.value
         )
 
         # Excluir los productos que ya están en el pedido
@@ -107,7 +108,12 @@ def get_all_pedidos(admin_user):
         sort_by = request.args.get('sort_by', 'created_at', type=str)
         sort_order = request.args.get('sort_order', 'desc', type=str)
 
-        query = Pedido.query.join(Usuarios).filter(Pedido.estado_pedido == estado_filter)
+        # Convertir el string del estado a un miembro del Enum para la consulta
+        try:
+            estado_enum = EstadoPedido(estado_filter)
+        except ValueError:
+            return jsonify({'success': False, 'message': f'Estado no válido: {estado_filter}'}), 400
+        query = Pedido.query.join(Usuarios).filter(Pedido.estado_pedido == estado_enum)
 
         if cliente_filter:
             query = query.filter(or_(

@@ -267,7 +267,9 @@ window.pedidosApp = {
   selectSeguimientoEstado: function (estado) {
     this.selectedSeguimientoEstado = estado;
 
-    const seguimientoButtons = document.querySelectorAll(".seguimiento-btn");
+    // MEJORA PROFESIONAL: Acotar el selector para que solo afecte a los botones de la sección principal de seguimiento,
+    // evitando conflictos con los botones del modal.
+    const seguimientoButtons = document.querySelectorAll("#mainSeguimientoButtons .seguimiento-btn");
     seguimientoButtons.forEach((btn) => {
       btn.classList.remove("active");
       if (btn.getAttribute("data-estado") === estado) {
@@ -277,22 +279,8 @@ window.pedidosApp = {
   },
 
   // Actualizar estado de seguimiento
-  updateSeguimiento: function (pedidoId, nuevoEstado) {
+  updateSeguimiento: function (pedidoId, nuevoEstado, notas, onSuccessCallback = null) {
     if (this.isLoading) return;
-
-    const notasTextarea = document.getElementById("seguimientoNotas");
-    const notas = notasTextarea.value.trim();
-
-    // MEJORA: Validar que las notas no estén vacías.
-    if (!notas) {
-        window.toast.error("Las notas de seguimiento son obligatorias.");
-        notasTextarea.focus();
-        notasTextarea.classList.add('border-red-500', 'ring-red-500');
-        setTimeout(() => {
-            notasTextarea.classList.remove('border-red-500', 'ring-red-500');
-        }, 3000);
-        return;
-    }
 
     const seguimientoContent = document.getElementById("seguimientoContent");
     if (seguimientoContent) {
@@ -316,6 +304,11 @@ window.pedidosApp = {
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
+          // MEJORA PROFESIONAL: Ejecutar callback de éxito si existe (para cerrar modales, etc.)
+          if (onSuccessCallback) {
+            onSuccessCallback();
+          }
+
           window.toast.success(data.message);
 
           // Si el estado principal del pedido cambió (ej. a 'completado' o 'cancelado'),
@@ -1413,25 +1406,48 @@ window.pedidosApp = {
       }`;
     }
 
-    const seguimientoNotas = document.getElementById("currentSeguimientoNotas");
-    if (seguimientoNotas) {
-      seguimientoNotas.textContent =
-        pedido.notas_seguimiento || "No hay notas de seguimiento";
+    // MEJORA PROFESIONAL: Mostrar la nota específica del estado actual en el modal.
+    // Esto da un contexto más preciso al administrador.
+    const historial = pedido.seguimiento_historial || [];
+    const estadoActual = pedido.seguimiento_estado || 'recibido';
+    let notaActual = pedido.notas_seguimiento || "No hay notas de seguimiento"; // Fallback
+
+    // Buscar la última entrada en el historial que coincida con el estado actual del pedido.
+    const entradaActual = historial.slice().reverse().find(e => e.estado === estadoActual);
+    if (entradaActual && entradaActual.notas) {
+        notaActual = entradaActual.notas;
     }
 
-    const seguimientoNotasModal = document.getElementById(
-      "seguimientoNotasModal"
-    );
+    const seguimientoNotas = document.getElementById("currentSeguimientoNotas");
+    if (seguimientoNotas) {
+      seguimientoNotas.textContent = notaActual;
+    }
+
+    const seguimientoNotasModal = document.getElementById("seguimientoNotasModal");
     if (seguimientoNotasModal) {
-      seguimientoNotasModal.value = pedido.notas_seguimiento || "";
+      seguimientoNotasModal.value = notaActual === "No hay notas de seguimiento" ? "" : notaActual;
     }
 
     const seguimientoButtons = document.getElementById("seguimientoButtons");
     if (seguimientoButtons) {
-      seguimientoButtons.innerHTML = this.generateSeguimientoButtons(
-        pedido.seguimiento_estado || "recibido"
-      );
+      // MEJORA PROFESIONAL: Deshabilitar controles si el pedido está inactivo.
+      const isInactive = pedido.estado === 'inactivo';
+      seguimientoButtons.innerHTML = this.generateSeguimientoButtons(pedido.seguimiento_estado || "recibido", isInactive);
+
+      const seguimientoModalContainer = document.getElementById("seguimientoModalContainer");
+      if (seguimientoModalContainer) {
+        if (isInactive) {
+          seguimientoModalContainer.classList.add('opacity-50', 'pointer-events-none');
+          seguimientoModalContainer.setAttribute('title', 'Activa el pedido para gestionar su seguimiento.');
+        } else {
+          seguimientoModalContainer.classList.remove('opacity-50', 'pointer-events-none');
+          seguimientoModalContainer.removeAttribute('title');
+        }
+      }
     }
+
+    // MEJORA: Seleccionar el estado actual en el modal al abrirlo para que tenga color y esté pre-seleccionado.
+    this.selectSeguimientoEstadoModal(pedido.seguimiento_estado || "recibido");
 
     this.setupSeguimientoModalUpdate(pedido.id);
 
@@ -1441,7 +1457,7 @@ window.pedidosApp = {
     modalContent.offsetHeight;
   },
 
-  generateSeguimientoButtons: function (currentEstado) {
+  generateSeguimientoButtons: function (currentEstado, isInactive = false) {
     const estados = [
       { value: "recibido", label: "Recibido", icon: "inbox", color: "blue" },
       {
@@ -1474,14 +1490,18 @@ window.pedidosApp = {
 
     estados.forEach((estado) => {
       const isActive = currentEstado === estado.value;
-      const disabled =
-        (currentEstado === "cancelado" && estado.value !== "cancelado") ||
-        (currentEstado === "entregado" && estado.value !== "entregado");
+      // MEJORA PROFESIONAL: Permitir cambiar el estado desde 'entregado' o 'cancelado',
+      // pero manteniendo la restricción para pedidos inactivos.
+      const disabled = isInactive;
+      const isFinalState = currentEstado === 'entregado' || currentEstado === 'cancelado';
+      const isRevertAction = isFinalState && estado.value !== currentEstado;
+      
+      const formattedValue = estado.value.replace(/ /g, "-");
 
       buttonsHtml += `
                 <button class="seguimiento-btn ${isActive ? "active" : ""} ${
         disabled ? "disabled" : ""
-      } seguimiento-btn-${estado.color}" 
+      } ${isRevertAction ? "revert-action" : ""} seguimiento-btn-${formattedValue}"
                         data-estado="${estado.value}" 
                         onclick="pedidosApp.selectSeguimientoEstadoModal('${
                           estado.value
@@ -1538,7 +1558,22 @@ window.pedidosApp = {
 
       this.seguimientoModalUpdateHandler = () => {
         if (this.selectedSeguimientoEstadoModal) {
-          this.updateSeguimiento(pedidoId, this.selectedSeguimientoEstadoModal);
+          // MEJORA: Leer notas del modal, validar y llamar a la función de actualización.
+          const notasTextarea = document.getElementById("seguimientoNotasModal");
+          const notas = notasTextarea.value.trim();
+
+          if (!notas) {
+              window.toast.error("Las notas de seguimiento son obligatorias.");
+              notasTextarea.focus();
+              notasTextarea.classList.add('border-red-500', 'ring-red-500');
+              setTimeout(() => {
+                  notasTextarea.classList.remove('border-red-500', 'ring-red-500');
+              }, 3000);
+              return;
+          }
+
+          // Llamar a updateSeguimiento con un callback para cerrar el modal al éxito.
+          this.updateSeguimiento(pedidoId, this.selectedSeguimientoEstadoModal, notas, () => this.closePedidoModal());
         } else {
           window.toast.warning(
             "Por favor, selecciona un estado de seguimiento"
@@ -1626,9 +1661,11 @@ window.pedidosApp = {
     // --- Delegación para la sección de SEGUIMIENTO ---
     document.body.removeEventListener('click', this._handleSeguimientoClick);
     this._handleSeguimientoClick = (e) => {
-        const seguimientoBtn = e.target.closest('.seguimiento-btn');
-        if (seguimientoBtn) {
-            const estado = seguimientoBtn.getAttribute("data-estado");
+        // MEJORA PROFESIONAL: Hacer el selector específico para los botones de la sección principal.
+        // Esto evita que este listener se dispare para los botones del modal, que tienen su propio `onclick`.
+        const mainSeguimientoBtn = e.target.closest('#mainSeguimientoButtons .seguimiento-btn');
+        if (mainSeguimientoBtn) {
+            const estado = mainSeguimientoBtn.getAttribute("data-estado");
             this.selectSeguimientoEstado(estado);
             return;
         }
@@ -1636,7 +1673,19 @@ window.pedidosApp = {
         const updateBtn = e.target.closest('#updateSeguimientoBtn');
         if (updateBtn) {
             if (this.selectedPedidoId && this.selectedSeguimientoEstado) {
-                this.updateSeguimiento(this.selectedPedidoId, this.selectedSeguimientoEstado);
+                const notasTextarea = document.getElementById("seguimientoNotas");
+                const notas = notasTextarea.value.trim();
+
+                if (!notas) {
+                    window.toast.error("Las notas de seguimiento son obligatorias.");
+                    notasTextarea.focus();
+                    notasTextarea.classList.add('border-red-500', 'ring-red-500');
+                    setTimeout(() => {
+                        notasTextarea.classList.remove('border-red-500', 'ring-red-500');
+                    }, 3000);
+                    return;
+                }
+                this.updateSeguimiento(this.selectedPedidoId, this.selectedSeguimientoEstado, notas);
             } else {
                 window.toast.warning("Por favor, selecciona un pedido y un estado de seguimiento");
             }

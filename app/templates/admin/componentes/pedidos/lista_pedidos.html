@@ -326,7 +326,7 @@
                                 <!-- Selector de estado -->
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Nuevo estado:</label>
-                                    <div class="grid grid-cols-2 gap-3">
+                                    <div id="mainSeguimientoButtons" class="grid grid-cols-2 gap-3">
                                         <button class="seguimiento-btn seguimiento-btn-recibido" data-estado="recibido">
                                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
@@ -475,9 +475,9 @@
                         <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
                         </svg>
-                        Seguimiento del Pedido
+                        Seguimiento del Pedido 
                     </h3>
-                    <div class="bg-gray-50 rounded-xl p-6 border border-gray-200">
+                    <div id="seguimientoModalContainer" class="bg-gray-50 rounded-xl p-6 border border-gray-200">
                         <div class="mb-4">
                             <div class="flex items-center justify-between mb-2">
                                 <span class="text-sm font-medium text-gray-700">Estado actual:</span>
@@ -489,23 +489,26 @@
                                 No hay notas de seguimiento
                             </div>
                         </div>
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Actualizar estado:</label>
-                            <div class="flex flex-wrap gap-2" id="seguimientoButtons">
-                                <!-- Los botones se generarán dinámicamente según el estado actual -->
+
+                        <!-- MEJORA: Contenedor para deshabilitar controles si el pedido está inactivo -->
+                        <div id="seguimientoModalControls">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Actualizar estado:</label>
+                                <div class="flex flex-wrap gap-2" id="seguimientoButtons">
+                                    <!-- Los botones se generarán dinámicamente según el estado actual -->
+                                </div>
                             </div>
-                        </div>
-                        
-                        <div class="mt-4">
-                            <label for="seguimientoNotasModal" class="block text-sm font-medium text-gray-700 mb-2">Notas de seguimiento:</label>
-                            <textarea id="seguimientoNotasModal" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Añadir notas sobre el seguimiento del pedido..."></textarea>
-                        </div>
-                        
-                        <div class="mt-4 flex justify-end">
-                            <button id="updateSeguimientoModalBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
-                                Actualizar Seguimiento
-                            </button>
+                            
+                            <div class="mt-4">
+                                <label for="seguimientoNotasModal" class="block text-sm font-medium text-gray-700 mb-2">Notas de seguimiento:</label>
+                                <textarea id="seguimientoNotasModal" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Añadir notas sobre el seguimiento del pedido..."></textarea>
+                            </div>
+                            
+                            <div class="mt-4 flex justify-end">
+                                <button id="updateSeguimientoModalBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors">
+                                    Actualizar Seguimiento
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

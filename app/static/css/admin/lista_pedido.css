@@ -498,6 +498,12 @@ tr[data-estado="inactivo"] td {
   background-color: #f3f4f6;
   color: #6b7280;
   margin-bottom: 0.5rem;
+  cursor: pointer;
+}
+
+.seguimiento-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .seguimiento-btn:hover {
@@ -505,6 +511,14 @@ tr[data-estado="inactivo"] td {
   color: #4b5563;
   transform: translateY(-2px);
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* MEJORA: Estilo profesional para acciones de reversión de estado */
+.seguimiento-btn.revert-action:hover {
+  background-color: #fffbeb; /* bg-yellow-50 */
+  color: #b45309; /* text-yellow-700 */
+  border-color: #fde68a; /* border-yellow-300 */
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
 }
 
 .seguimiento-btn.active {

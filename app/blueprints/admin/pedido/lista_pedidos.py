@@ -438,50 +438,6 @@ def update_pedido_seguimiento(admin_user, pedido_id):
         old_seguimiento = pedido.seguimiento_estado
         old_estado_pedido = pedido.estado_pedido
 
-        # MEJORA PROFESIONAL: Permitir la actualización de la nota incluso si el estado no cambia.
-        if old_seguimiento == nuevo_seguimiento_enum:
-            # Es una actualización de nota para el estado actual.
-            if not pedido.seguimiento_historial:
-                # Caso improbable, pero seguro.
-                return jsonify({'success': False, 'message': 'Historial de seguimiento no encontrado, no se puede actualizar la nota.'}), 500
-
-            last_history_entry = pedido.seguimiento_historial[-1]
-
-            # Si la nota es la misma, no hacer nada.
-            if last_history_entry.get('notas') == notas:
-                return jsonify({
-                    'success': True,
-                    'message': 'No se realizaron cambios. La nota es la misma.',
-                    'status_unchanged': True,
-                    'current_status': nuevo_seguimiento_enum.value
-                }), 200
-            
-            # La nota ha cambiado. Actualizar la última entrada del historial.
-            last_history_entry['notas'] = notas
-            last_history_entry['timestamp'] = datetime.utcnow().isoformat() + "Z"
-            
-            # Marcar el campo JSON como modificado para que SQLAlchemy lo guarde.
-            flag_modified(pedido, "seguimiento_historial")
-
-            # Actualizar también el campo de nota principal en el pedido.
-            pedido.notas_seguimiento = notas
-            pedido.updated_at = datetime.utcnow()
-            
-            db.session.commit()
-
-            current_app.logger.info(
-                f"Nota de seguimiento para pedido {pedido_id} (estado {nuevo_seguimiento_enum.value}) actualizada por {admin_user.id}"
-            )
-
-            return jsonify({
-                'success': True,
-                'message': 'La nota de seguimiento ha sido actualizada correctamente.',
-                'pedido_id': pedido_id,
-                'new_seguimiento': nuevo_seguimiento_enum.value,
-                'timestamp': datetime.utcnow().isoformat(),
-                'estado_pedido_cambiado': False
-            })
-
         # Iniciar transacción para atomicidad
         try:
             estado_pedido_cambiado = False
@@ -538,13 +494,30 @@ def update_pedido_seguimiento(admin_user, pedido_id):
             if pedido.seguimiento_historial is None:
                 pedido.seguimiento_historial = []
             
+            # MEJORA PROFESIONAL: Si el estado es el mismo, actualizamos la última nota. Si es diferente, creamos una nueva entrada.
+            # Esto asegura que el historial refleje correctamente cada cambio de estado con su nota.
+            is_new_state = old_seguimiento != nuevo_seguimiento_enum
+            last_entry = pedido.seguimiento_historial[-1] if pedido.seguimiento_historial else None
+
+            if not is_new_state and last_entry and last_entry['estado'] == nuevo_seguimiento_enum.value:
+                # Actualizar la nota de la entrada existente para el mismo estado.
+                last_entry['notas'] = notas
+                last_entry['timestamp'] = datetime.utcnow().isoformat() + "Z"
+                flag_modified(pedido, "seguimiento_historial") # Notificar a SQLAlchemy del cambio en el JSON.
+            else:
+                # Crear una nueva entrada en el historial para el nuevo estado.
+                new_history_entry = {
+                    'estado': nuevo_seguimiento_enum.value,
+                    'notas': notas,
+                    'timestamp': datetime.utcnow().isoformat() + "Z"
+                }
+                pedido.seguimiento_historial = pedido.seguimiento_historial + [new_history_entry]
+
             new_history_entry = {
                 'estado': nuevo_seguimiento_enum.value,
                 'notas': notas,
                 'timestamp': datetime.utcnow().isoformat() + "Z" # MEJORA: Marcar explícitamente como UTC para un manejo profesional de zonas horarias.
             }
-            
-            pedido.seguimiento_historial = pedido.seguimiento_historial + [new_history_entry]
             pedido.seguimiento_estado = nuevo_seguimiento_enum
             pedido.notas_seguimiento = notas
             pedido.updated_at = datetime.utcnow()
@@ -633,6 +606,8 @@ def update_pedido_estado(admin_user, pedido_id):
         try:
             seguimiento_cambiado = False
             nuevo_seguimiento = None
+            # MEJORA PROFESIONAL: Añadir una nota por defecto al historial de seguimiento.
+            nota_por_defecto = ""
 
             # 1. Mover a 'cancelado' (desde 'en proceso' o 'completado')
             if nuevo_estado == EstadoPedido.CANCELADO and old_status in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
@@ -641,6 +616,7 @@ def update_pedido_estado(admin_user, pedido_id):
                     if producto:
                         producto.existencia += item.cantidad
                 current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
+                nota_por_defecto = "El Pedido fue cancelado"
 
             # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
             elif old_status == EstadoPedido.CANCELADO and nuevo_estado in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
@@ -660,12 +636,15 @@ def update_pedido_estado(admin_user, pedido_id):
                     if producto:
                         producto.existencia -= item.cantidad
                 current_app.logger.info(f"Stock restado para pedido {pedido.id} reactivado (cancelado -> {nuevo_estado}).")
+                nota_por_defecto = f"El Pedido fue recibio"
 
             # Sincronizar estado de seguimiento automáticamente
             if nuevo_estado == EstadoPedido.COMPLETADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.ENTREGADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.ENTREGADO.value
+                if not nota_por_defecto: # Si no se ha establecido una nota (ej. de en proceso a completado)
+                    nota_por_defecto = "El Pedido estancompletado"
             elif nuevo_estado == EstadoPedido.CANCELADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.CANCELADO
                 seguimiento_cambiado = True
@@ -674,6 +653,21 @@ def update_pedido_estado(admin_user, pedido_id):
                 pedido.seguimiento_estado = EstadoSeguimiento.RECIBIDO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
+
+            # MEJORA PROFESIONAL: Si el estado de seguimiento cambió, añadir una entrada al historial.
+            if seguimiento_cambiado and nota_por_defecto:
+                if pedido.seguimiento_historial is None:
+                    pedido.seguimiento_historial = []
+                
+                new_history_entry = {
+                    'estado': nuevo_seguimiento,
+                    'notas': nota_por_defecto,
+                    'timestamp': datetime.utcnow().isoformat() + "Z"
+                }
+                # Usar flag_modified para asegurar que el cambio en el JSON se guarde.
+                pedido.seguimiento_historial = pedido.seguimiento_historial + [new_history_entry]
+                flag_modified(pedido, "seguimiento_historial")
+                pedido.notas_seguimiento = nota_por_defecto
 
             pedido.estado_pedido = nuevo_estado
             pedido.updated_at = datetime.utcnow()

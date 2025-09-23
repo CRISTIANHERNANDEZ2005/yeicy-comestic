@@ -110,6 +110,11 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
             }
             window.toast.success(data.message);
 
+            // Recargar la tabla para reflejar cambios (como la aparición/desaparición del botón de editar)
+            if (window.categoriesApp && typeof window.categoriesApp.loadTableData === 'function') {
+                window.categoriesApp.loadTableData(false); // false para no resetear la paginación
+            }
+
         } else {
             // Revertir el toggle visualmente y mostrar error si success is false
             toggle.checked = originalChecked;

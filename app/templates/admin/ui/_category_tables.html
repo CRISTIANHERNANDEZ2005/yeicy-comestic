@@ -49,9 +49,11 @@
                                     <a href="{{ url_for('admin_categoria_detalle.view_category_details_page', category_slug=category.slug) }}" class="action-button view" title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </a>
+                                    {% if category.estado == 'activo' %}
                                     <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ category.id }}', 'main')">
                                         <i class="fas fa-edit"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -117,9 +119,11 @@
                             <td>{{ subcategory.created_at | format_date }}</td>
                             <td>
                                 <div class="flex">
+                                    {% if subcategory.estado == 'activo' %}
                                     <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ subcategory.id }}', 'sub')">
                                         <i class="fas fa-edit"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
@@ -185,9 +189,11 @@
                             <td>{{ pseudo.created_at | format_date }}</td>
                             <td>
                                 <div class="flex">
+                                    {% if pseudo.estado == 'activo' %}
                                     <button class="action-button edit" title="Editar" onclick="categoriesApp.editCategory('{{ pseudo.id }}', 'pseudo')">
                                         <i class="fas fa-edit"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>

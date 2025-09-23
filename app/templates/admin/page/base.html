@@ -1,203 +1,233 @@
 <!DOCTYPE html>
 <html lang="es" class="h-full">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token }}">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{{ csrf_token }}" />
     <title>{% block title %}Panel de Administración{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/styles.css') }}">
-    <style>
-        /* Transiciones suaves */
-        .sidebar-transition {
-            transition: transform 0.3s ease-in-out;
-        }
-        
-        /* Animación para el mensaje principal */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .fade-in {
-            animation: fadeIn 0.8s ease-out;
-        }
-        
-        /* Efecto hover para enlaces del sidebar */
-        .sidebar-link {
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .sidebar-link::before {
-            content: "";
-            position: absolute;
-            left: 0;
-            top: 0;
-            height: 100%;
-            width: 3px;
-            background-color: #3b82f6;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease;
-        }
-        
-        .sidebar-link:hover::before,
-        .sidebar-link.active::before {
-            transform: translateX(0);
-        }
-    </style>
-</head>
-<body class="bg-gray-50 font-sans">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/admin/styles.css') }}"
+    />
+  </head>
+  <body class="bg-gray-50 font-sans">
     <!-- Header para móvil -->
-    <header class="bg-white shadow-md p-4 flex justify-between items-center lg:hidden">
-        <div class="flex items-center">
-            <button id="mobile-menu-button" class="text-gray-500 hover:text-gray-600 focus:outline-none focus:text-gray-600">
-                <i class="fas fa-bars text-xl"></i>
-            </button>
-            <h1 class="ml-3 text-2xl font-semibold text-gray-800">YE&CI Management</h1>
+    <header
+      class="bg-white shadow-md p-4 flex justify-between items-center lg:hidden"
+    >
+      <div class="flex items-center">
+        <button
+          id="mobile-menu-button"
+          class="text-gray-500 hover:text-gray-600 focus:outline-none focus:text-gray-600"
+        >
+          <i class="fas fa-bars text-xl"></i>
+        </button>
+        <h1 class="ml-3 text-2xl font-semibold text-gray-800">
+          YE&CI Management
+        </h1>
+      </div>
+      <div class="flex items-center space-x-3">
+        <div
+          class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold"
+        >
+          {% if admin_user %}{{ admin_user.nombre[0]|upper }}{{
+          admin_user.apellido[0]|upper }}{% endif %}
         </div>
-        <div class="flex items-center space-x-3">
-            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                {% if admin_user %}{{ admin_user.nombre[0]|upper }}{{ admin_user.apellido[0]|upper }}{% endif %}
-            </div>
-        </div>
+      </div>
     </header>
 
     <!-- Sidebar para móvil (oculto por defecto) -->
-    <div id="mobile-sidebar" class="fixed inset-0 z-40 bg-gray-900 bg-opacity-50 hidden lg:hidden">
-        {% include 'admin/ui/menu_movil.html' %}
+    <div
+      id="mobile-sidebar"
+      class="fixed inset-0 z-40 bg-gray-900 bg-opacity-50 hidden lg:hidden"
+    >
+      {% include 'admin/ui/menu_movil.html' %}
     </div>
 
     <div class="flex h-screen">
-        <!-- Sidebar para desktop (siempre visible) -->
-        {% include 'admin/ui/sidebar.html' %}
+      <!-- Sidebar para desktop (siempre visible) -->
+      {% include 'admin/ui/sidebar.html' %}
 
-        <!-- Contenido principal -->
-        <div class="flex flex-col w-0 flex-1 main-content-area">
-            <!-- Header para desktop -->
-            <header class="bg-white shadow-sm hidden lg:block">
-                <div class="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8">
-                    <div class="flex items-center">
-                        <h2 class="text-lg font-medium text-gray-900">Panel de Control</h2>
-                    </div>
-                    <div class="flex items-center space-x-4">
-                        <div class="flex items-center">
-                            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold">
-                                {% if admin_user %}{{ admin_user.nombre[0]|upper }}{{ admin_user.apellido[0]|upper }}{% endif %}
-                            </div>
-                            <span class="ml-2 text-sm font-medium text-gray-700">{% if admin_user %}{{ admin_user.nombre | title }} {{ admin_user.apellido | title }}{% endif %}</span>
-                        </div>
-                    </div>
+      <!-- Contenido principal -->
+      <div class="flex flex-col w-0 flex-1 main-content-area">
+        <!-- Header para desktop -->
+        <header class="bg-white shadow-sm hidden lg:block">
+          <div
+            class="flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8"
+          >
+            <div class="flex items-center">
+              <h2 class="text-lg font-medium text-gray-900">
+                Panel de Control
+              </h2>
+            </div>
+            <div class="flex items-center space-x-4">
+              <div class="flex items-center">
+                <div
+                  class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold"
+                >
+                  {% if admin_user %}{{ admin_user.nombre[0]|upper }}{{
+                  admin_user.apellido[0]|upper }}{% endif %}
                 </div>
-            </header>
+                <span class="ml-2 text-sm font-medium text-gray-700"
+                  >{% if admin_user %}{{ admin_user.nombre | title }} {{
+                  admin_user.apellido | title }}{% endif %}</span
+                >
+              </div>
+            </div>
+          </div>
+        </header>
 
-            <!-- Contenido de la página -->
-            <main id="main-content-container" class="flex-1 relative focus:outline-none">
-                {% block content %}
-                {% endblock %}
-            </main>
-        </div>
+        <!-- Contenido de la página -->
+        <main
+          id="main-content-container"
+          class="flex-1 relative focus:outline-none"
+        >
+          {% block content %} {% endblock %}
+        </main>
+      </div>
     </div>
 
     <!-- Logout Modal -->
-    <div id="logout-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <div class="mt-3 text-center">
-                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                    <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-                </div>
-                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">Cerrar Sesión</h3>
-                <div class="mt-2 px-7 py-3">
-                    <p class="text-sm text-gray-500">¿Estás seguro de que quieres cerrar la sesión?</p>
-                </div>
-                <div class="items-center px-4 py-3">
-                    <button id="cancel-logout-button" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2 hover:bg-gray-300">Cancelar</button>
-                    <button id="confirm-logout-button" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Cerrar Sesión</button>
-                </div>
-            </div>
+    <div
+      id="logout-modal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden"
+    >
+      <div
+        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
+      >
+        <div class="mt-3 text-center">
+          <div
+            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
+          >
+            <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+          </div>
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">
+            Cerrar Sesión
+          </h3>
+          <div class="mt-2 px-7 py-3">
+            <p class="text-sm text-gray-500">
+              ¿Estás seguro de que quieres cerrar la sesión?
+            </p>
+          </div>
+          <div class="items-center px-4 py-3">
+            <button
+              id="cancel-logout-button"
+              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2 hover:bg-gray-300"
+            >
+              Cancelar
+            </button>
+            <button
+              id="confirm-logout-button"
+              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
         </div>
+      </div>
     </div>
 
     <script>
-        // Funcionalidad para el sidebar móvil
-        const mobileMenuButton = document.getElementById('mobile-menu-button');
-        const mobileSidebar = document.getElementById('mobile-sidebar');
-        const closeMobileSidebar = document.getElementById('close-mobile-sidebar');
-        const mobileSidebarContent = mobileSidebar.querySelector('.sidebar-transition');
-        
-        mobileMenuButton.addEventListener('click', function() {
-            mobileSidebar.classList.remove('hidden');
-            setTimeout(() => {
-                mobileSidebarContent.classList.remove('-translate-x-full');
-            }, 10);
-        });
-        
-        closeMobileSidebar.addEventListener('click', function() {
-            mobileSidebarContent.classList.add('-translate-x-full');
-            setTimeout(() => {
-                mobileSidebar.classList.add('hidden');
-            }, 300);
-        });
-        
-        // Cerrar sidebar móvil al hacer clic fuera
-        mobileSidebar.addEventListener('click', function(e) {
-            if (e.target === mobileSidebar) {
-                mobileSidebarContent.classList.add('-translate-x-full');
-                setTimeout(() => {
-                    mobileSidebar.classList.add('hidden');
-                }, 300);
-            }
-        });
+      // Funcionalidad para el sidebar móvil
+      const mobileMenuButton = document.getElementById("mobile-menu-button");
+      const mobileSidebar = document.getElementById("mobile-sidebar");
+      const closeMobileSidebar = document.getElementById(
+        "close-mobile-sidebar"
+      );
+      const mobileSidebarContent = mobileSidebar.querySelector(
+        ".sidebar-transition"
+      );
 
-        // Logout functionality
-        const logoutModal = document.getElementById('logout-modal');
-        const cancelLogoutButton = document.getElementById('cancel-logout-button');
-        const confirmLogoutButton = document.getElementById('confirm-logout-button');
-        const logoutButtonDesktop = document.getElementById('logout-button-desktop');
-        const logoutButtonMobile = document.getElementById('logout-button-mobile');
+      mobileMenuButton.addEventListener("click", function () {
+        mobileSidebar.classList.remove("hidden");
+        setTimeout(() => {
+          mobileSidebarContent.classList.remove("-translate-x-full");
+        }, 10);
+      });
 
-        function openLogoutModal() {
-            logoutModal.classList.remove('hidden');
+      closeMobileSidebar.addEventListener("click", function () {
+        mobileSidebarContent.classList.add("-translate-x-full");
+        setTimeout(() => {
+          mobileSidebar.classList.add("hidden");
+        }, 300);
+      });
+
+      // Cerrar sidebar móvil al hacer clic fuera
+      mobileSidebar.addEventListener("click", function (e) {
+        if (e.target === mobileSidebar) {
+          mobileSidebarContent.classList.add("-translate-x-full");
+          setTimeout(() => {
+            mobileSidebar.classList.add("hidden");
+          }, 300);
         }
+      });
 
-        function closeLogoutModal() {
-            logoutModal.classList.add('hidden');
+      // Logout functionality
+      const logoutModal = document.getElementById("logout-modal");
+      const cancelLogoutButton = document.getElementById(
+        "cancel-logout-button"
+      );
+      const confirmLogoutButton = document.getElementById(
+        "confirm-logout-button"
+      );
+      const logoutButtonDesktop = document.getElementById(
+        "logout-button-desktop"
+      );
+      const logoutButtonMobile = document.getElementById(
+        "logout-button-mobile"
+      );
+
+      function openLogoutModal() {
+        logoutModal.classList.remove("hidden");
+      }
+
+      function closeLogoutModal() {
+        logoutModal.classList.add("hidden");
+      }
+
+      logoutButtonDesktop.addEventListener("click", openLogoutModal);
+      logoutButtonMobile.addEventListener("click", openLogoutModal);
+      cancelLogoutButton.addEventListener("click", closeLogoutModal);
+
+      confirmLogoutButton.addEventListener("click", async () => {
+        try {
+          const response = await fetch("/admin/logout", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (response.ok) {
+            window.location.href = "/administracion";
+          } else {
+            console.error("Error al cerrar la sesión");
+          }
+        } catch (error) {
+          console.error("Error de red al cerrar la sesión", error);
         }
-
-        logoutButtonDesktop.addEventListener('click', openLogoutModal);
-        logoutButtonMobile.addEventListener('click', openLogoutModal);
-        cancelLogoutButton.addEventListener('click', closeLogoutModal);
-
-        confirmLogoutButton.addEventListener('click', async () => {
-            try {
-                const response = await fetch('/admin/logout', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (response.ok) {
-                    window.location.href = '/administracion';
-                } else {
-                    console.error('Error al cerrar la sesión');
-                }
-            } catch (error) {
-                console.error('Error de red al cerrar la sesión', error);
-            }
-        });
+      });
     </script>
     {% include 'admin/ui/notifications.html' %}
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin/filtro_producto.js') }}"></script>
-
-    <!-- Chart.js CDN -->
-    <!-- Loading Overlay -->
-    <div id="loading-overlay" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity duration-300 opacity-0">
-        <div class="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"></div>
+    
+    <div
+      id="loading-overlay"
+      class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity duration-300 opacity-0"
+    >
+      <div
+        class="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"
+      ></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <script src="{{ url_for('static', filename='js/admin/admin_spa.js') }}"></script>
-</body>
+  </body>
 </html>

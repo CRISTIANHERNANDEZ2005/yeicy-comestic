@@ -1,0 +1,587 @@
+.initial-load > tr {
+  display: none;
+}
+/* Animaciones personalizadas */
+.fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.slide-down {
+  animation: slideDown 0.3s ease-in-out;
+}
+@keyframes slideDown {
+  from {
+    max-height: 0;
+    opacity: 0;
+  }
+  to {
+    max-height: 500px;
+    opacity: 1;
+  }
+}
+/* Estilos para el modal */
+.modal-backdrop {
+  backdrop-filter: blur(4px);
+}
+
+/* Animación de pulso lenta para el botón flotante */
+@keyframes pulse-slow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite;
+}
+
+/* Estilos para la paginación */
+.pagination-container {
+  background-color: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 1rem;
+  margin-top: 1.5rem;
+}
+.pagination-info {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 0.75rem;
+}
+.pagination-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.pagination-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.pagination-button:hover:not(.active):not(:disabled) {
+  background-color: #f3f4f6;
+}
+.pagination-button.active {
+  background-color: #3b82f6;
+  color: white;
+}
+.pagination-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pagination-nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+.pagination-nav-button:hover:not(:disabled) {
+  background-color: #f3f4f6;
+}
+.pagination-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pagination-per-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+.pagination-per-page select {
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+/* Estilos para las tablas */
+.table-container {
+  overflow-x: auto;
+}
+.category-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.category-table th {
+  background-color: #f9fafb;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+}
+.category-table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+.category-table tr:hover {
+  background-color: #f9fafb;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.status-badge.active {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+.status-badge.inactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+.action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.375rem;
+  margin-right: 0.25rem;
+  transition: all 0.2s;
+}
+.action-button:hover {
+  background-color: #f3f4f6;
+}
+.action-button.view:hover {
+  color: #3b82f6;
+  background-color: #eff6ff;
+}
+.action-button.edit:hover {
+  color: #10b981;
+  background-color: #ecfdf5;
+}
+.action-button.delete:hover {
+  color: #ef4444;
+  background-color: #fef2f2;
+}
+/* Mejoras para móviles */
+@media (max-width: 768px) {
+  /* Ajustes generales */
+  .category-card,
+  .subcategory-card,
+  .pseudocategory-card {
+    border-radius: 0.5rem;
+  }
+  /* Ajustes para las tarjetas de categorías */
+  .category-card > div,
+  .subcategory-card > div,
+  .pseudocategory-card > div {
+    padding: 0.75rem;
+  }
+  /* Hacer los botones más grandes para móviles */
+  .toggle-btn {
+    width: 2rem;
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.25rem;
+  }
+  /* Ajustar el tamaño de los iconos */
+  .toggle-btn i {
+    font-size: 1rem;
+  }
+  /* Ajustar el espaciado entre elementos */
+  .space-y-4 > * + * {
+    margin-top: 1rem;
+  }
+  /* Ajustar el espaciado en subcategorías y seudocategorías */
+  .ml-6 {
+    margin-left: 1rem;
+  }
+  /* Hacer los toggles de estado más grandes */
+  .relative.inline-block.w-10 {
+    width: 2.5rem;
+  }
+  .relative.inline-block.w-10 label {
+    height: 1.5rem;
+  }
+  .relative.inline-block.w-10 label span {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+  /* Ajustar los botones de acción */
+  button.p-2 {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  button.p-1.5 {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Mejorar la visualización del texto en móviles */
+  h4 {
+    font-size: 1.125rem;
+    line-height: 1.375rem;
+  }
+  h6 {
+    font-size: 1rem;
+    line-height: 1.25rem;
+  }
+  /* Ajustar el espaciado de los metadatos */
+  .flex.items-center.mt-1.text-xs {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+  .flex.items-center.mt-1.text-xs span.mx-2 {
+    margin: 0 0.25rem;
+  }
+  /* Ajustar la estructura de las tarjetas para móviles */
+  .category-card > div > div.flex.justify-between.items-start {
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .category-card
+    > div
+    > div.flex.justify-between.items-start
+    > div:first-child {
+    width: 100%;
+  }
+  .category-card > div > div.flex.justify-between.items-start > div:last-child {
+    align-self: flex-end;
+  }
+  /* Ajustar la estructura de las subcategorías para móviles */
+  .subcategory-card > div,
+  .pseudocategory-card > div {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .subcategory-card > div > div:first-child,
+  .pseudocategory-card > div > div:first-child {
+    width: 100%;
+  }
+  .subcategory-card > div > div:last-child,
+  .pseudocategory-card > div > div:last-child {
+    align-self: flex-end;
+  }
+  /* Ajustar el menú lateral para móviles */
+  #filtersPanel {
+    width: 90%;
+    max-width: 320px;
+  }
+  /* Ajustar los tabs para móviles */
+  nav.flex {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+  nav.flex::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge */
+  }
+  nav.flex > button {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+  /* Ajustes para las tablas en móviles */
+  .table-container {
+    margin: 0 -1rem;
+    padding: 0 1rem;
+  }
+  .category-table {
+    font-size: 0.875rem;
+  }
+  .category-table th,
+  .category-table td {
+    padding: 0.5rem;
+  }
+  .action-button {
+    width: 1.75rem;
+    height: 1.75rem;
+  }
+}
+/* Clase para ocultar el botón de filtro */
+.hidden-filter {
+  display: none !important;
+}
+/* Estilos para los campos de filtro dinámicos */
+.filter-field {
+  transition: all 0.3s ease;
+}
+.filter-field.hidden {
+  display: none;
+}
+/* Estilos para el toggle de estado */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 50px;
+  height: 24px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+.toggle-slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+input:checked + .toggle-slider {
+  background-color: #10b981;
+}
+input:checked + .toggle-slider:before {
+  transform: translateX(26px);
+}
+/* Estilos para la vista jerárquica */
+.hierarchical-view .category-card {
+  margin-bottom: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.hierarchical-view .category-header {
+  padding: 1rem;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hierarchical-view .category-info {
+  display: flex;
+  align-items: flex-start;
+}
+.hierarchical-view .category-toggle {
+  margin-right: 0.75rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+.hierarchical-view .category-toggle.open {
+  transform: rotate(90deg);
+}
+.hierarchical-view .category-details h4 {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.hierarchical-view .category-details p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+.hierarchical-view .category-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.hierarchical-view .category-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hierarchical-view .subcategory-list {
+  background-color: #f9fafb;
+  padding: 1rem;
+  border-top: 1px solid #e5e7eb;
+  display: none;
+}
+.hierarchical-view .subcategory-list.open {
+  display: block;
+}
+.hierarchical-view .subcategory-card {
+  margin-bottom: 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  overflow: hidden;
+}
+.hierarchical-view .subcategory-header {
+  padding: 0.75rem;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hierarchical-view .subcategory-info {
+  display: flex;
+  align-items: flex-start;
+}
+.hierarchical-view .subcategory-toggle {
+  margin-right: 0.75rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: transform 0.2s;
+}
+.hierarchical-view .subcategory-toggle.open {
+  transform: rotate(90deg);
+}
+.hierarchical-view .subcategory-details h6 {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.hierarchical-view .subcategory-details p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+.hierarchical-view .subcategory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.hierarchical-view .subcategory-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.hierarchical-view .pseudocategory-list {
+  padding: 0.75rem;
+  margin-left: 1.5rem;
+  display: none;
+}
+.hierarchical-view .pseudocategory-list.open {
+  display: block;
+}
+.hierarchical-view .pseudocategory-card {
+  margin-bottom: 0.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  padding: 0.75rem;
+  background-color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.hierarchical-view .pseudocategory-info h6 {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.hierarchical-view .pseudocategory-info p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+.hierarchical-view .pseudocategory-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.hierarchical-view .pseudocategory-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* Estilos para los botones de paginación */
+.pagination-nav-button,
+.pagination-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 0.75rem;
+  margin: 0 0.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  border-radius: 0.375rem;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  color: #374151;
+  transition: all 0.15s ease-in-out;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.pagination-nav-button:hover,
+.pagination-button:hover {
+  background-color: #f3f4f6;
+  border-color: #9ca3af;
+  color: #1f2937;
+  text-decoration: none;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+.pagination-nav-button:active,
+.pagination-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+.pagination-nav-button.disabled,
+.pagination-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.pagination-button.active {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+  font-weight: 600;
+}
+.pagination-button.active:hover {
+  background-color: #1d4ed8;
+  border-color: #1d4ed8;
+}
+/* Estilo para elipsis en paginación */
+.pagination-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.5rem;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+}

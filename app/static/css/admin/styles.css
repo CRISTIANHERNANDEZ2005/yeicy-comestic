@@ -1,35 +1,80 @@
 /* Estilos generales */
 body {
-    font-family: 'Poppins', sans-serif;
-    background-color: #f8f9fa;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    margin: 0;
+  font-family: "Poppins", sans-serif;
+  background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
 }
 
 main {
-    flex: 1;
+  flex: 1;
 }
 
 /* Estilos para el sidebar fijo */
 .admin-sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    height: 100vh; /* Ocupa el 100% de la altura de la ventana */
-    z-index: 1000; /* Asegura que esté por encima de otros elementos */
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh; /* Ocupa el 100% de la altura de la ventana */
+  z-index: 1000; /* Asegura que esté por encima de otros elementos */
 }
 
 /* Estilo para modales que deben estar por encima de todo */
 .z-modal-top {
-    z-index: 1050;
+  z-index: 1050;
 }
 
 /* Ajuste para el contenido principal para que no quede oculto detrás del sidebar */
 /* Esto asume que el sidebar tiene un ancho de w-64 (256px) */
-@media (min-width: 1024px) { /* lg breakpoint en Tailwind CSS */
-    .main-content-area {
-        margin-left: 256px; /* Ajusta el margen izquierdo para dejar espacio al sidebar */
-    }
+@media (min-width: 1024px) {
+  /* lg breakpoint en Tailwind CSS */
+  .main-content-area {
+    margin-left: 256px; /* Ajusta el margen izquierdo para dejar espacio al sidebar */
+  }
+}
+
+/* Transiciones suaves */
+.sidebar-transition {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Animación para el mensaje principal */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.8s ease-out;
+}
+
+/* Efecto hover para enlaces del sidebar */
+.sidebar-link {
+  position: relative;
+  overflow: hidden;
+}
+
+.sidebar-link::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 3px;
+  background-color: #3b82f6;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+}
+
+.sidebar-link:hover::before,
+.sidebar-link.active::before {
+  transform: translateX(0);
 }

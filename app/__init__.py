@@ -14,7 +14,6 @@ import pytz
 from sqlalchemy import func, not_, and_
 from app.models.serializers import format_currency_cop
 
-
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.jinja_env.add_extension('jinja2.ext.do')
@@ -254,7 +253,7 @@ def create_app(config_class=Config):
         # Ensure the datetime object is timezone-aware (assuming UTC if naive)
         if value.tzinfo is None:
             value = pytz.utc.localize(value)
-        
+
         # Convert to Colombian time (America/Bogota)
         colombia_tz = pytz.timezone('America/Bogota')
         colombian_time = value.astimezone(colombia_tz)

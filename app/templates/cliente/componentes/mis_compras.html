@@ -1194,11 +1194,12 @@
         comprasContainer.innerHTML = `
           <ul class="divide-y divide-gray-200">
             ${compras.map((compra, index) => {
-              const fecha =parsePythonDatetime(compra.created_at);
+              const fecha = new Date(compra.created_at);
               const fechaFormateada = fecha.toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: '2-digit',
-                year: 'numeric'
+                year: 'numeric',
+                timeZone: 'America/Bogota'
               });
               
               return `
@@ -1254,7 +1255,8 @@
               const fechaFormateada = fecha.toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: '2-digit',
-                year: 'numeric'
+                year: 'numeric',
+                timeZone: 'America/Bogota'
               });
               
               return `
@@ -1404,8 +1406,7 @@
         day: '2-digit',
         month: '2-digit',
         year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        timeZone: 'America/Bogota'
       });
       
       let productosHtml = data.productos.map((producto, index) => `
@@ -1661,21 +1662,18 @@
       return "$ " + value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
-    // Función para parsear fechas de Python (YYYY-MM-DD HH:MM:SS.ffffff)
+    // Función para parsear fechas de Python (YYYY-MM-DD HH:MM:SS.ffffff) - MEJORADA
     function parsePythonDatetime(dtString) {
         if (!dtString) return null;
-        // Reemplazar 'T' si existe (para ISO format) o simplemente dividir por espacios y delimitadores
-        const parts = dtString.replace('T', ' ').split(/[- :.]/);
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // Mes es 0-indexado en JavaScript
-        const day = parseInt(parts[2]);
-        const hour = parseInt(parts[3] || 0);
-        const minute = parseInt(parts[4] || 0);
-        const second = parseInt(parts[5] || 0);
-        // Tomar los primeros 3 dígitos para milisegundos si existen
-        const millisecond = parseInt((parts[6] || '0').substring(0, 3)); 
-
-        return new Date(year, month, day, hour, minute, second, millisecond);
+        // new Date() es robusto y puede parsear directamente formatos ISO 8601,
+        // que es el estándar que ahora envía el backend.
+        const date = new Date(dtString);
+        // Verificar si la fecha es válida. Si no, new Date() devuelve un objeto Date inválido.
+        if (isNaN(date.getTime())) {
+            console.error("Fecha inválida recibida:", dtString);
+            return null; // Devolver null para manejar el error elegantemente en la UI
+        }
+        return date;
     }
     
     // Detectar cambios en el tamaño de la pantalla para ajustar la vista automáticamente

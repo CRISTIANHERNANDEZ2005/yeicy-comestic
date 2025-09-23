@@ -299,12 +299,13 @@ def api_pedido_detalle(usuario, order_id):
         # Convertir a diccionario
         pedido_dict = pedido_detalle_cliente_to_dict(pedido)
         
-        return jsonify({
-            'success': True,
-            'productos': pedido_dict['productos'],
-            'total': pedido_dict['total']
-        })
-    
+        # MEJORA: Devolver el diccionario completo del pedido, no solo partes.
+        # Esto asegura que todos los datos, incluida la fecha, estén disponibles en el frontend.
+        response_data = {'success': True}
+        response_data.update(pedido_dict)
+        
+        return jsonify(response_data)
+
     except Exception as e:
         current_app.logger.error(f"Error al cargar detalles del pedido {order_id}: {str(e)}")
         return jsonify({

@@ -532,7 +532,7 @@ def pedido_detalle_cliente_to_dict(pedido):
         for pp in pedido.productos:
             subtotal = pp.cantidad * pp.precio_unitario
             calculated_total += subtotal
-            
+
             productos_info.append({
                 'producto_id': pp.producto_id,
                 'producto_nombre': pp.producto.nombre if pp.producto else 'Producto no disponible',
@@ -559,8 +559,8 @@ def pedido_detalle_cliente_to_dict(pedido):
         'estado': pedido.estado,
         'seguimiento_estado': pedido.seguimiento_estado.value if pedido.seguimiento_estado else None,
         'seguimiento_historial': pedido.seguimiento_historial or [],
-        'created_at': pedido.created_at if pedido.created_at else None,
-        'updated_at': pedido.updated_at if pedido.updated_at else None,
+        'created_at': pedido.created_at.isoformat() if pedido.created_at else None,
+        'updated_at': pedido.updated_at.isoformat() if pedido.updated_at else None,
         'productos': productos_info,
         'productos_count': len(productos_info)
     }

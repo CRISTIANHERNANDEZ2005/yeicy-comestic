@@ -653,26 +653,26 @@ window.pedidosApp = {
     if (nuevoEstado === "completado") {
       if (pedido.estado_pedido === "en proceso") {
         confirmMessage =
-          "Está a punto de marcar este pedido como completado. El cliente recibirá una notificación y se procesará el envío.";
+          "Está a punto de marcar este pedido como completado. El cliente recibirá una notificación.";
       } else if (pedido.estado_pedido === "cancelado") {
         confirmMessage =
-          "Está a punto de cambiar este pedido de cancelado a completado. El stock se ajustará automáticamente.";
+          "Está a punto de cambiar este pedido de cancelado a completado. La existencia se ajustará automáticamente y el cliente recibirá una notificación.";
       }
     } else if (nuevoEstado === "cancelado") {
       if (pedido.estado_pedido === "en proceso") {
         confirmMessage =
-          "Está a punto de cancelar este pedido. El stock de los productos será devuelto al inventario y el cliente recibirá una notificación.";
+          "Está a punto de cancelar este pedido. La existencia de los productos será devuelta y el cliente recibirá una notificación.";
       } else if (pedido.estado_pedido === "completado") {
         confirmMessage =
-          "Está a punto de cambiar este pedido de completado a cancelado. El stock será devuelto al inventario.";
+          "Está a punto de cambiar este pedido de completado a cancelado. La existencia será devuelto al producto y el cliente recibirá una notificación.";
       }
     } else if (nuevoEstado === "en proceso") {
       if (pedido.estado_pedido === "completado") {
         confirmMessage =
-          "Está a punto de cambiar este pedido de completado a en proceso. El estado del pedido se actualizará pero no se afectará el stock.";
+          "Está a punto de cambiar este pedido de completado a en proceso. El estado del pedido se actualizará pero no se afectará la existencia y el cliente recibirá una notificación.";
       } else if (pedido.estado_pedido === "cancelado") {
         confirmMessage =
-          "Está a punto de reactivar este pedido cancelado. El stock se ajustará automáticamente y el pedido volverá a estar en proceso.";
+          "Está a punto de reactivar este pedido cancelado. La existencia se ajustará automáticamente y el pedido volverá a estar en proceso y el cliente recibirá una notificación.";
       }
     }
 

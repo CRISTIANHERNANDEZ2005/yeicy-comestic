@@ -6,7 +6,6 @@ from .extensions import db, bcrypt, migrate, login_manager, jwt
 from .models.domains.user_models import Usuarios, Admins
 from .models.domains.order_models import Pedido, PedidoProducto
 from .models.enums import EstadoPedido, EstadoEnum
-from app.models.serializers import categoria_principal_to_dict, format_currency_cop
 from app.blueprints.cliente.auth import perfil
 from app.utils.jwt_utils import jwt_required
 from app.utils.admin_jwt_utils import decode_admin_jwt_token
@@ -51,6 +50,7 @@ def create_app(config_class=Config):
     bcrypt.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+
     jwt.init_app(app)
 
     # Configuración de login_manager después de asociar la app
@@ -80,6 +80,7 @@ def create_app(config_class=Config):
     from app.blueprints.cliente.favorites import favorites_bp
     from app.blueprints.cliente.reviews import reviews_bp
     from app.blueprints.cliente.order import order_bp
+    from app.blueprints.cliente.events import events_bp
 
     # Registrar blueprints admin
     from app.blueprints.admin.auth import admin_auth_bp
@@ -101,6 +102,7 @@ def create_app(config_class=Config):
     app.register_blueprint(favorites_bp)
     app.register_blueprint(reviews_bp)
     app.register_blueprint(order_bp)
+    app.register_blueprint(events_bp)
 
     # admin
     app.register_blueprint(admin_auth_bp)
@@ -156,6 +158,7 @@ def create_app(config_class=Config):
     # Context processor para el carrito y categorías
     @app.context_processor
     def inject_global_data():
+        from app.models.serializers import categoria_principal_to_dict
         from app.blueprints.cliente.cart import get_or_create_cart, get_cart_items
         from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
         from sqlalchemy.orm import joinedload
@@ -207,6 +210,7 @@ def create_app(config_class=Config):
     app.jinja_env.filters['slugify'] = slugify_filter
 
     def format_date_filter(value):
+        from app.models.serializers import format_currency_cop
         if value is None:
             return ""
         if isinstance(value, str):

@@ -1,0 +1,146 @@
+<!-- MEJORA PROFESIONAL: Modal de Notificación en Tiempo Real -->
+<div id="realtime-notification-modal" class="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-[9999] hidden transition-opacity duration-300">
+    <div id="realtime-notification-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 transform transition-all duration-300 scale-95 opacity-0 overflow-hidden">
+        
+        <!-- Cabecera con color de estado -->
+        <div id="notification-header" class="h-2 w-full transition-all duration-500"></div>
+        
+        <!-- Contenido de la Modal -->
+        <div class="p-8 text-center">
+            <!-- Icono dinámico con animación -->
+            <div id="notification-icon-container" class="w-24 h-24 mx-auto mb-6 rounded-full flex items-center justify-center shadow-lg transform transition-all duration-300 hover:scale-110">
+                <!-- El SVG del icono se insertará aquí dinámicamente -->
+            </div>
+
+            <!-- Título dinámico -->
+            <h3 id="notification-title" class="text-2xl font-bold text-gray-800 mb-3 transition-all duration-300">
+                <!-- Título se insertará aquí -->
+            </h3>
+
+            <!-- Mensaje dinámico -->
+            <p id="notification-message" class="text-gray-600 mb-8 transition-all duration-300">
+                <!-- Mensaje se insertará aquí -->
+            </p>
+
+            <!-- Detalles del pedido -->
+            <div id="notification-details" class="bg-gray-50 rounded-xl p-4 mb-6 text-left transition-all duration-300">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm font-medium text-gray-500">Estado actual:</span>
+                    <span id="notification-status" class="text-sm font-semibold px-3 py-1 rounded-full">
+                        <!-- Estado se insertará aquí -->
+                    </span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span class="text-sm font-medium text-gray-500">Pedido #:</span>
+                    <span id="notification-order-id" class="text-sm font-mono font-semibold">
+                        <!-- ID se insertará aquí -->
+                    </span>
+                </div>
+            </div>
+
+            <!-- Botones de acción -->
+            <div class="flex justify-center gap-4">
+                <button id="notification-close-btn" class="px-6 py-3 bg-gray-100 text-gray-800 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-opacity-50">
+                    Cerrar
+                </button>
+                <a href="#" id="notification-action-btn" class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 shadow-md">
+                    Ver Pedido
+                </a>
+            </div>
+        </div>
+        
+        <!-- Footer con marca de tiempo -->
+        <div class="bg-gray-50 px-8 py-3 text-center border-t border-gray-100">
+            <p id="notification-timestamp" class="text-xs text-gray-500">
+                <!-- Timestamp se insertará aquí -->
+            </p>
+        </div>
+    </div>
+</div>
+
+<style>
+    #realtime-notification-modal.show {
+        opacity: 1;
+    }
+    #realtime-notification-modal.show #realtime-notification-content {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    /* Estados de cabecera */
+    .header-recibido {
+        background: linear-gradient(90deg, #3B82F6, #60A5FA);
+    }
+    .header-en-preparacion {
+        background: linear-gradient(90deg, #F59E0B, #FBBF24);
+    }
+    .header-en-camino {
+        background: linear-gradient(90deg, #6366F1, #818CF8);
+    }
+    .header-entregado {
+        background: linear-gradient(90deg, #22C55E, #4ADE80);
+    }
+    .header-cancelado {
+        background: linear-gradient(90deg, #EF4444, #F87171);
+    }
+
+    /* Icon Styles */
+    .icon-recibido {
+        background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+        color: #3B82F6;
+    }
+    .icon-en-preparacion {
+        background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+        color: #F59E0B;
+    }
+    .icon-en-camino {
+        background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+        color: #6366F1;
+    }
+    .icon-entregado {
+        background: linear-gradient(135deg, #F0FDF4, #D1FAE5);
+        color: #22C55E;
+    }
+    .icon-cancelado {
+        background: linear-gradient(135deg, #FEF2F2, #FECACA);
+        color: #EF4444;
+    }
+    
+    /* Estados de badge */
+    .badge-recibido {
+        background-color: #EFF6FF;
+        color: #3B82F6;
+    }
+    .badge-en-preparacion {
+        background-color: #FFFBEB;
+        color: #F59E0B;
+    }
+    .badge-en-camino {
+        background-color: #EEF2FF;
+        color: #6366F1;
+    }
+    .badge-entregado {
+        background-color: #F0FDF4;
+        color: #22C55E;
+    }
+    .badge-cancelado {
+        background-color: #FEF2F2;
+        color: #EF4444;
+    }
+    
+    /* Animación de entrada */
+    @keyframes slideIn {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    #notification-details {
+        animation: slideIn 0.5s ease-out forwards;
+    }
+</style>

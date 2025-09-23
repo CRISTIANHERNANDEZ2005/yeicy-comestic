@@ -12,6 +12,8 @@ from app.utils.admin_jwt_utils import decode_admin_jwt_token
 from datetime import datetime
 import pytz
 from sqlalchemy import func, not_, and_
+from app.models.serializers import format_currency_cop
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
@@ -122,6 +124,7 @@ def create_app(config_class=Config):
     @app.route('/perfil')
     @jwt_required
     def root_perfil(usuario):
+
         # Contar todos los pedidos excepto aquellos 'en proceso' que están 'inactivos'.
         # Esto incluye:
         # - Pedidos 'en proceso' y 'activos'.
@@ -210,7 +213,6 @@ def create_app(config_class=Config):
     app.jinja_env.filters['slugify'] = slugify_filter
 
     def format_date_filter(value):
-        from app.models.serializers import format_currency_cop
         if value is None:
             return ""
         if isinstance(value, str):

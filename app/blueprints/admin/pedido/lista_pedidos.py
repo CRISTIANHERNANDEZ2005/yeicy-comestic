@@ -236,10 +236,10 @@ def create_pedido(admin_user):
             # MEJORA PROFESIONAL: Inicializar el historial de seguimiento al crear el pedido.
             # Esto asegura que el estado 'recibido' siempre tenga un timestamp.
             seguimiento_estado=EstadoSeguimiento.RECIBIDO,
-            notas_seguimiento="Pedido creado por administrador.",
+            notas_seguimiento="El Pedido fue recibido",
             seguimiento_historial=[{
                 'estado': EstadoSeguimiento.RECIBIDO.value,
-                'notas': "Pedido creado y recibido en el sistema.",
+                'notas': "El Pedido fue recibido",
                 'timestamp': datetime.utcnow().isoformat() + "Z"
             }]
         )

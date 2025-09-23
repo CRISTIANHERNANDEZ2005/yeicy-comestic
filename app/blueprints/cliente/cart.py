@@ -3,7 +3,7 @@ from flask import Blueprint, request, jsonify, session, render_template, current
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.cart_models import CartItem
 from app.models.domains.order_models import Pedido, PedidoProducto
-from app.models.enums import EstadoPedido, EstadoEnum
+from app.models.enums import EstadoPedido, EstadoEnum, EstadoSeguimiento
 from app.extensions import db
 from datetime import datetime, timedelta
 import uuid
@@ -482,11 +482,21 @@ def create_order(usuario):
             })
 
         # Crear el pedido
+        # MEJORA PROFESIONAL: Inicializar el historial de seguimiento al crear el pedido.
+        # Esto asegura que el estado 'recibido' siempre tenga un timestamp y una nota inicial.
+        nota_inicial = "Tu pedido ha sido recibido y está pendiente de confirmación por parte de nuestro equipo."
         nuevo_pedido = Pedido(
             usuario_id=user_id,
             total=total_pedido,
             estado_pedido=EstadoPedido.EN_PROCESO,
-            estado=EstadoEnum.INACTIVO
+            estado=EstadoEnum.INACTIVO,
+            seguimiento_estado=EstadoSeguimiento.RECIBIDO,
+            notas_seguimiento=nota_inicial,
+            seguimiento_historial=[{
+                'estado': EstadoSeguimiento.RECIBIDO.value,
+                'notas': nota_inicial,
+                'timestamp': datetime.utcnow().isoformat() + "Z"
+            }]
         )
         db.session.add(nuevo_pedido)
         db.session.flush()

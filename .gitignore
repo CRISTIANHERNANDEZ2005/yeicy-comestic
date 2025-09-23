@@ -104,3 +104,6 @@ env/
 migrations/
 
 script_registrar_admin.py
+
+# IDX configuration
+.idx/dev.nix

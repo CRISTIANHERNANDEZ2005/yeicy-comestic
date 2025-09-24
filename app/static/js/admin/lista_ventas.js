@@ -878,6 +878,7 @@ const VentasPageModule = (() => {
   // Función para contar filtros activos
   function countActiveFilters() {
     let count = 0;
+    const venta_id = document.getElementById("venta_id")?.value || "";
     const cliente = document.getElementById("cliente")?.value || "";
     const fecha_inicio = document.getElementById("fecha_inicio")?.value || "";
     const fecha_fin = document.getElementById("fecha_fin")?.value || "";
@@ -886,6 +887,7 @@ const VentasPageModule = (() => {
     const sort_by = document.getElementById("sort_by")?.value || "created_at";
     const estado = document.getElementById("estado")?.value || "todos";
 
+    if (venta_id) count++;
     if (cliente) count++;
     if (fecha_inicio) count++;
     if (fecha_fin) count++;
@@ -927,6 +929,7 @@ const VentasPageModule = (() => {
   function applyFilters() {
     // Actualizar parámetros de filtro
     currentFilterParams = new URLSearchParams();
+    const venta_id = document.getElementById("venta_id")?.value || "";
     const cliente = document.getElementById("cliente")?.value || "";
     const fecha_inicio = document.getElementById("fecha_inicio")?.value || "";
     const fecha_fin = document.getElementById("fecha_fin")?.value || "";
@@ -935,6 +938,7 @@ const VentasPageModule = (() => {
     const sort_by = document.getElementById("sort_by")?.value || "created_at";
     const estado = document.getElementById("estado")?.value || "todos";
 
+    if (venta_id) currentFilterParams.set("venta_id", venta_id);
     if (cliente) currentFilterParams.set("cliente", cliente);
     if (fecha_inicio) currentFilterParams.set("fecha_inicio", fecha_inicio);
     if (fecha_fin) currentFilterParams.set("fecha_fin", fecha_fin);
@@ -1041,6 +1045,14 @@ const VentasPageModule = (() => {
   }
 
   // Eventos para filtros automáticos (con debounce)
+  const ventaIdInput = document.getElementById("venta_id");
+  if (ventaIdInput) {
+    ventaIdInput.addEventListener("input", function () {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(applyFilters, 500);
+    });
+  }
+
   const clienteInput = document.getElementById("cliente");
   if (clienteInput) {
     clienteInput.addEventListener("input", function () {
@@ -1173,6 +1185,7 @@ const VentasPageModule = (() => {
 
     // Limpiar filtros
     if (e.target.closest("#reset-filters") || e.target.closest("#clear-filters")) {
+      document.getElementById("venta_id").value = "";
       document.getElementById("filter-form")?.reset();
       const sortBySelect = document.querySelector('.custom-select[data-name="sort_by"]');
       if (sortBySelect) {
@@ -1229,7 +1242,7 @@ const VentasPageModule = (() => {
     // Listeners de 'change' y 'input' que no necesitan delegación porque los elementos son estáticos
     document.getElementById("per-page-select")?.addEventListener("change", function () {
       currentPerPage = parseInt(this.value);
-      loadVentas(1, currentPerPage, true);
+      applyFilters();
     });
 
     const filterForm = document.getElementById("filter-form");

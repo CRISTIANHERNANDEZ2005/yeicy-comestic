@@ -35,6 +35,8 @@ window.pedidosApp = {
     this.initializeView();
 
     // Resetear filtros de forma segura
+    const pedidoIdFilter = document.getElementById("pedidoIdFilter");
+    if (pedidoIdFilter) pedidoIdFilter.value = "";
     const clienteFilter = document.getElementById("clienteFilter");
     if (clienteFilter) clienteFilter.value = "";
     const fechaInicioFilter = document.getElementById("fechaInicioFilter");
@@ -454,6 +456,7 @@ window.pedidosApp = {
 
   // Verificar si hay filtros activos
   checkActiveFilters: function () {
+    const pedidoId = document.getElementById("pedidoIdFilter")?.value || "";
     const cliente = document.getElementById("clienteFilter")?.value || "";
     const fechaInicio =
       document.getElementById("fechaInicioFilter")?.value || "";
@@ -464,6 +467,7 @@ window.pedidosApp = {
       document.getElementById("statusFilter")?.value || "all";
 
     this.hasActiveFilters = !!(
+      pedidoId ||
       cliente ||
       fechaInicio ||
       fechaFin ||
@@ -787,6 +791,7 @@ window.pedidosApp = {
       this.currentPage = 1;
     }
 
+    const pedidoId = document.getElementById("pedidoIdFilter")?.value || "";
     const cliente = document.getElementById("clienteFilter")?.value || "";
     const fechaInicio =
       document.getElementById("fechaInicioFilter")?.value || "";
@@ -802,6 +807,7 @@ window.pedidosApp = {
       this.itemsPerPage
     }&estado=${this.getEstadoFromView()}`;
 
+    if (pedidoId) apiUrl += `&pedido_id=${encodeURIComponent(pedidoId)}`;
     if (cliente) apiUrl += `&cliente=${encodeURIComponent(cliente)}`;
     if (fechaInicio) apiUrl += `&fecha_inicio=${fechaInicio}`;
     if (fechaFin) apiUrl += `&fecha_fin=${fechaFin}`;
@@ -1707,6 +1713,7 @@ window.pedidosApp = {
   },
 
   clearFilters: function () {
+    document.getElementById("pedidoIdFilter").value = "";
     document.getElementById("clienteFilter").value = "";
     document.getElementById("fechaInicioFilter").value = "";
     document.getElementById("fechaFinFilter").value = "";
@@ -1840,6 +1847,11 @@ window.pedidosApp = {
       debounceTimeout = setTimeout(() => {
         this.loadPedidos();
       }, 500);
+    };
+
+    const pedidoIdFilterInput = document.getElementById("pedidoIdFilter");
+    if (pedidoIdFilterInput) {
+      pedidoIdFilterInput.addEventListener("keyup", debounceLoadData);
     };
 
     const clienteFilterInput = document.getElementById("clienteFilter");

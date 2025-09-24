@@ -21,7 +21,7 @@ ESTADO_PEDIDO_MAP = {
     'cancelado': EstadoPedido.CANCELADO,
 }
 
-def _build_pedidos_query(estado_pedido_filter, cliente, fecha_inicio, fecha_fin, status_filter, sort_by, sort_order):
+def _build_pedidos_query(estado_pedido_filter, pedido_id, cliente, fecha_inicio, fecha_fin, status_filter, sort_by, sort_order):
     """
     Función auxiliar para construir y filtrar la consulta de pedidos, evitando la duplicación de código.
     """
@@ -35,6 +35,10 @@ def _build_pedidos_query(estado_pedido_filter, cliente, fecha_inicio, fecha_fin,
         query = query.filter(Pedido.estado == status_filter)
 
     # Aplicar filtros de búsqueda
+    if pedido_id:
+        # Usamos ilike para permitir búsquedas parciales del ID
+        query = query.filter(Pedido.id.ilike(f'%{pedido_id}%'))
+
     if cliente:
         query = query.join(Usuarios).filter(
             or_(
@@ -101,6 +105,7 @@ def get_all_pedidos(admin_user, estado=None):
         # Obtener parámetros de filtro
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
+        pedido_id = request.args.get('pedido_id', '')
         cliente = request.args.get('cliente', '')
         fecha_inicio = request.args.get('fecha_inicio', '')
         fecha_fin = request.args.get('fecha_fin', '')
@@ -110,7 +115,7 @@ def get_all_pedidos(admin_user, estado=None):
         
         # Construir consulta base
         query = _build_pedidos_query(
-            estado_pedido_filter, cliente, fecha_inicio, fecha_fin, 
+            estado_pedido_filter, pedido_id, cliente, fecha_inicio, fecha_fin, 
             status_filter, sort_by, sort_order
         )
         
@@ -715,6 +720,7 @@ def filter_pedidos_api(admin_user):
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
+        pedido_id = request.args.get('pedido_id', '')
         cliente = request.args.get('cliente', '')
         fecha_inicio = request.args.get('fecha_inicio', '')
         fecha_fin = request.args.get('fecha_fin', '')
@@ -739,6 +745,10 @@ def filter_pedidos_api(admin_user):
             query = query.filter(Pedido.estado == status_filter)
 
         # Aplicar filtros de búsqueda
+        if pedido_id:
+            # Usamos ilike para permitir búsquedas parciales del ID
+            query = query.filter(Pedido.id.ilike(f'%{pedido_id}%'))
+
         if cliente:
             query = query.join(Usuarios).filter(
                 or_(

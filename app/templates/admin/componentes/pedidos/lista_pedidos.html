@@ -675,6 +675,17 @@
             
             <!-- Formulario de filtros -->
             <form id="filterForm" class="space-y-6" onsubmit="return false;">
+                <!-- Búsqueda por ID de Pedido -->
+                <div class="filter-field">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        ID de Pedido
+                    </label>
+                    <input type="text" id="pedidoIdFilter" placeholder="Buscar por ID..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+                </div>
+
                 <!-- Búsqueda por cliente -->
                 <div class="filter-field">
                     <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">

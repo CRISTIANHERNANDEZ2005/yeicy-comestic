@@ -25,6 +25,7 @@ def get_ventas(admin_user):
         # Obtener parámetros de filtro
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
+        venta_id = request.args.get('venta_id', '')
         cliente = request.args.get('cliente', '')
         fecha_inicio = request.args.get('fecha_inicio', '')
         fecha_fin = request.args.get('fecha_fin', '')
@@ -43,6 +44,10 @@ def get_ventas(admin_user):
             query = query.filter(Pedido.estado == estado)
 
         # Aplicar filtros
+        if venta_id:
+            # Usamos ilike para permitir búsquedas parciales del ID
+            query = query.filter(Pedido.id.ilike(f'%{venta_id}%'))
+
         if cliente:
             query = query.join(Usuarios).filter(
                 or_(
@@ -137,6 +142,7 @@ def get_ventas_api(admin_user):
         # Obtener parámetros de filtro
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
+        venta_id = request.args.get('venta_id', '')
         cliente = request.args.get('cliente', '')
         fecha_inicio = request.args.get('fecha_inicio', '')
         fecha_fin = request.args.get('fecha_fin', '')
@@ -155,6 +161,10 @@ def get_ventas_api(admin_user):
             query = query.filter(Pedido.estado == estado)
 
         # Aplicar filtros
+        if venta_id:
+            # Usamos ilike para permitir búsquedas parciales del ID
+            query = query.filter(Pedido.id.ilike(f'%{venta_id}%'))
+
         if cliente:
             query = query.join(Usuarios).filter(
                 or_(

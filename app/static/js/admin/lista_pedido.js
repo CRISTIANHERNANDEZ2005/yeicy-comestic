@@ -2527,14 +2527,6 @@ function initializePedidosApp() {
   }
 }
 
-/**
- * Esta función es el punto de entrada para la reinicialización de la página por el SPA.
- */
-window.reinitializePage = function () {
-  console.log("Reinitializing Pedidos Page via reinitializePage...");
-  initializePedidosApp();
-};
-
 // Se usa una bandera para asegurar que los listeners se adjunten solo una vez por carga de página completa.
 if (!window.pedidosAppInitialized) {
   // Para la carga directa de la página

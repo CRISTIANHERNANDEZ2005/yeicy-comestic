@@ -65,10 +65,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const scripts = Array.from(mainContent.querySelectorAll('script'));
             
             const executeScripts = async () => {
-                // Limpiar scripts de la carga anterior para evitar duplicados y fugas de memoria.
-                // Se buscan scripts que fueron añadidos por el SPA (tienen un atributo 'data-spa-managed').
-                // Ya no es necesario removerlos, ya que no los volveremos a añadir si ya existen.
-
                 for (const script of scripts) {
                     // Omitir scripts que no son de JS ejecutable (ej. application/json)
                     if (script.type && !['text/javascript', 'application/javascript', ''].includes(script.type)) {
@@ -80,10 +76,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Si el script ya fue cargado, llamar a su función de reinicialización si existe
                         if (window.spaLoadedScripts.has(scriptURL)) {
-                            if (typeof window.reinitializePage === 'function') {
-                                console.log(`Re-initializing content for ${scriptURL}`);
-                                window.reinitializePage();
-                            }
+                            // El script ya está cargado. Su listener 'content-loaded' se encargará de la reinicialización.
+                            console.log(`Script ${scriptURL} already loaded. Skipping re-execution.`);
                             continue; // No volver a cargar el script
                         }
 

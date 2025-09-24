@@ -1,8 +1,22 @@
 
-   // Función de inicialización global para que el SPA pueda llamarla
-   window.initializePage = function() {
-    // Variables globales
-    let ventasChart;
+   // MEJORA PROFESIONAL: Declarar la instancia del gráfico fuera de la función de inicialización.
+   // Esto permite que la referencia al gráfico persista entre las navegaciones de la SPA,
+   // para que podamos destruirla correctamente antes de volver a crearla.
+   // MEJORA PROFESIONAL #2: Se adjunta a `window` para evitar el error 'has already been declared' en recargas de SPA.
+   window.ventasChart = window.ventasChart || null;
+
+    /**
+    * Función de inicialización para la página de Lista de Ventas.
+    * MEJORA PROFESIONAL: Encapsulamos toda la lógica en esta función para evitar
+    * conflictos globales y asegurar que solo se ejecute en el contexto correcto.
+    */
+   function initializeVentasPage() {
+    // MEJORA PROFESIONAL: Guardia de contexto para SPA.
+    // Si no encontramos un elemento clave de la página de ventas, no continuamos.
+    if (!document.getElementById('ventas-chart')) {
+        return;
+    }
+    // Variables locales para la inicialización
     let currentFilterParams = new URLSearchParams(window.location.search);
     let debounceTimer;
     let currentPage = 1;
@@ -84,13 +98,16 @@
         const canvas = document.getElementById('ventas-chart');
         if (!canvas) return;
         
-        const ctx = canvas.getContext('2d');
-        
-        if (ventasChart) {
-            ventasChart.destroy();
+        // MEJORA PROFESIONAL: Destruir la instancia ANTERIOR del gráfico si existe.
+        // Como `ventasChart` ahora es una variable a nivel de script, mantendrá su valor
+        // de la visita anterior a la página, permitiéndonos destruirla.
+        if (window.ventasChart) {
+            window.ventasChart.destroy();
         }
         
-        ventasChart = new Chart(ctx, {
+        const ctx = canvas.getContext('2d');
+
+        window.ventasChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: graficoData.fechas,
@@ -1183,10 +1200,12 @@
     
     // Actualizar indicadores de filtros
     updateFilterIndicators();
-};
-// Si el evento DOMContentLoaded ya ha ocurrido, inicializar la página inmediatamente
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    window.initializePage();
-} else {
-    document.addEventListener('DOMContentLoaded', window.initializePage);
 }
+
+// Event listeners para la carga inicial y la navegación SPA.
+// Esto asegura que la página de ventas se inicialice correctamente en ambos escenarios.
+document.addEventListener('DOMContentLoaded', initializeVentasPage);
+document.addEventListener('content-loaded', function() {
+    console.log("Ventas page content-loaded event fired. Initializing...");
+    initializeVentasPage();
+});

@@ -301,13 +301,24 @@ def create_venta(admin_user):
                 'precio_unitario': producto.precio
             })
 
+        # MEJORA PROFESIONAL: Añadir historial de seguimiento para notificar al cliente.
+        # Al crear una venta directa, se genera una notificación de "Entregado".
+        nota_seguimiento = "Tu pedido esta completado con exito."
+        historial_inicial = [{
+            'estado': EstadoSeguimiento.ENTREGADO.value,
+            'notas': nota_seguimiento,
+            'timestamp': datetime.utcnow().isoformat() + "Z",
+            'notified_to_client': False  # Clave para que se muestre la notificación al cliente.
+        }]
+
         nueva_venta = Pedido(
             usuario_id=usuario_id,
             total=total_venta,
             estado_pedido=EstadoPedido.COMPLETADO, # La diferencia clave: se crea como COMPLETADO
             estado=EstadoEnum.ACTIVO.value,
             seguimiento_estado=EstadoSeguimiento.ENTREGADO,
-            notas_seguimiento="Venta creada directamente desde el panel de administración."
+            notas_seguimiento=nota_seguimiento,
+            seguimiento_historial=historial_inicial
         )
         db.session.add(nueva_venta)
         db.session.flush()

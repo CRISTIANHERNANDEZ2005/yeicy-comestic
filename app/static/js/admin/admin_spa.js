@@ -3,6 +3,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
     const loadingOverlay = document.getElementById('loading-overlay');
 
+    // MEJORA PROFESIONAL: Registrar los scripts ya cargados en la página inicial.
+    // Esto evita que el SPA intente volver a cargarlos después de un hard refresh.
+    function registerInitialScripts() {
+        window.spaLoadedScripts = window.spaLoadedScripts || new Set();
+        document.querySelectorAll('script[src]').forEach(script => {
+            const scriptURL = new URL(script.src, window.location.origin).href;
+            window.spaLoadedScripts.add(scriptURL);
+        });
+    }
+
     // Almacén para scripts ya cargados por el SPA
     window.spaLoadedScripts = window.spaLoadedScripts || new Set();
     
@@ -210,5 +220,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    // MEJORA PROFESIONAL: Ejecutar el registro de scripts iniciales.
+    registerInitialScripts();
+
     updateActiveLink(window.location.pathname + window.location.search);
 });

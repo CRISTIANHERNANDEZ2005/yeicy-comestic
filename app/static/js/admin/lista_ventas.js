@@ -1202,10 +1202,18 @@
     updateFilterIndicators();
 }
 
-// Event listeners para la carga inicial y la navegación SPA.
-// Esto asegura que la página de ventas se inicialice correctamente en ambos escenarios.
-document.addEventListener('DOMContentLoaded', initializeVentasPage);
-document.addEventListener('content-loaded', function() {
-    console.log("Ventas page content-loaded event fired. Initializing...");
+// MEJORA PROFESIONAL: Patrón de inicialización robusto para SPA.
+const runVentasInitialization = () => {
+    // La función `initializeVentasPage` ya tiene una guardia de contexto.
+    console.log("Attempting to initialize Ventas Page...");
     initializeVentasPage();
-});
+};
+
+// Event listeners para la carga inicial y la navegación SPA.
+document.addEventListener('content-loaded', runVentasInitialization);
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runVentasInitialization);
+} else {
+    runVentasInitialization();
+}

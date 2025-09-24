@@ -2527,22 +2527,23 @@ function initializePedidosApp() {
   }
 }
 
-// Se usa una bandera para asegurar que los listeners se adjunten solo una vez por carga de página completa.
-if (!window.pedidosAppInitialized) {
-  // Para la carga directa de la página
-  document.addEventListener("DOMContentLoaded", initializePedidosApp);
+// MEJORA PROFESIONAL: Patrón de inicialización robusto para SPA.
+// Este bloque asegura que la inicialización se ejecute correctamente en cualquier escenario.
 
-  // Para la navegación SPA (cuando se carga contenido dinámicamente)
-  document.addEventListener("content-loaded", function (e) {
-    // Verificar si el contenido cargado es la página de pedidos
-    if (
-      e.detail.container &&
-      e.detail.container.querySelector("#pedidosTableBody")
-    ) {
-      console.log("Initializing Pedidos Page via content-loaded...");
-      initializePedidosApp();
-    }
-  });
+const runPedidosInitialization = () => {
+  // La función `initializePedidosApp` ya tiene una guardia de contexto,
+  // por lo que es seguro llamarla.
+  initializePedidosApp();
+};
 
-  window.pedidosAppInitialized = true;
+// 1. Para navegación SPA: Escuchar el evento personalizado de admin_spa.js
+document.addEventListener("content-loaded", runPedidosInitialization);
+
+// 2. Para carga de página directa:
+// Si el DOM ya está cargado cuando el script se ejecuta (común en SPA), inicializar de inmediato.
+// Si no, esperar al evento DOMContentLoaded.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', runPedidosInitialization);
+} else {
+  runPedidosInitialization();
 }

@@ -625,8 +625,11 @@ document.addEventListener('DOMContentLoaded', initializeCategoriesApp);
 
 // Re-inicializar para navegación SPA
 document.addEventListener('content-loaded', function(e) {
-    // Asegurarse de que estamos en la página de categorías antes de inicializar
-    if (e.detail.container && e.detail.container.querySelector('#categoriesContainer')) {
+    // MEJORA PROFESIONAL: Verificación de contexto para SPA.
+    // Asegurarse de que estamos en la página de categorías antes de inicializar,
+    // buscando un elemento clave en el `document` actual.
+    if (document.querySelector('#categoriesContainer')) {
+        console.log("Categories page detected on content-loaded. Initializing...");
         initializeCategoriesApp();
     }
 });

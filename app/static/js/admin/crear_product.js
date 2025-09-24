@@ -836,7 +836,11 @@ document.addEventListener("DOMContentLoaded", initializeCrearProductForm);
 // Escuchar el evento personalizado 'content-loaded' de admin_spa.js
 document.addEventListener("content-loaded", function (event) {
   // Verificar si el contenido cargado incluye el formulario de creación de producto
-  if (event.detail.container.querySelector("#product-form")) {
+  // MEJORA PROFESIONAL: Usar `document` en lugar de `event.detail.container` para asegurar
+  // que la búsqueda se realiza en todo el DOM después de la actualización de la SPA.
+  // Esto es más robusto.
+  if (document.querySelector("#product-form")) {
+    console.log("Product form detected on content-loaded. Initializing...");
     initializeCrearProductForm();
   }
 });

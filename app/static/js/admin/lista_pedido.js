@@ -2494,6 +2494,14 @@ window.crearPedidoApp = {
 function initializePedidosApp() {
   console.log("Running initializePedidosApp...");
 
+  // MEJORA PROFESIONAL: Verificación de contexto para SPA.
+  // Antes de inicializar, nos aseguramos de que estamos en la página de pedidos
+  // buscando un elemento clave que solo existe en `lista_pedidos.html`.
+  if (!document.getElementById("pedidosTableBody")) {
+    console.log("Not on the pedidos page. Skipping initialization.");
+    return; // Salir si no estamos en la página correcta.
+  }
+
   let paginationData = {};
   const paginationScript = document.getElementById("pagination-data");
   if (paginationScript) {

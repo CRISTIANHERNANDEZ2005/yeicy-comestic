@@ -89,7 +89,7 @@ const VentasPageModule = (() => {
   // Función para cargar estadísticas
   async function loadEstadisticas() {
     const chartLoader = document.getElementById('chart-loading-overlay');
-    if (chartLoader) chartLoader.classList.remove('hidden');
+    if (chartLoader) chartLoader.classList.replace('hidden', 'flex');
 
     // Añadir el período del gráfico a los parámetros
     const statsParams = new URLSearchParams(currentFilterParams);
@@ -143,7 +143,7 @@ const VentasPageModule = (() => {
       console.error("Error al cargar estadísticas:", error);
       window.toast.error("Error al cargar estadísticas");
     } finally {
-      if (chartLoader) chartLoader.classList.add('hidden');
+      if (chartLoader) chartLoader.classList.replace('flex', 'hidden');
     }
   }
 

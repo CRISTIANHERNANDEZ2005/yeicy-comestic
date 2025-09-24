@@ -567,7 +567,7 @@ if (typeof FavoritesManager === "undefined") {
       this.syncQueue = this.syncQueue.then(async () => {
         try {
           const token =
-            window.auth?.getAuthToken?.() || this.getCookie("access_token");
+            window.auth?.getAuthToken?.() || this.getCookie("token");
           if (!token)
             throw new Error("No se encontró el token de autenticación");
 
@@ -823,7 +823,7 @@ if (typeof FavoritesManager === "undefined") {
           const parts = value.split(`; ${name}=`);
           if (parts.length === 2) return parts.pop().split(";").shift();
         };
-        const token = getCookie("access_token");
+        const token = getCookie("token");
 
         const headers = {
           "Content-Type": "application/json",
@@ -897,7 +897,7 @@ if (typeof FavoritesManager === "undefined") {
           const parts = value.split(`; ${name}=`);
           if (parts.length === 2) return parts.pop().split(";").shift();
         };
-        const token = getCookie("access_token");
+        const token = getCookie("token");
 
         const headers = {};
 
@@ -1198,7 +1198,7 @@ if (typeof FavoritesManager === "undefined") {
 
         // Obtener el token de autenticación
         const token =
-          window.auth?.getAuthToken?.() || this.getCookie("access_token");
+          window.auth?.getAuthToken?.() || this.getCookie("token");
         if (!token) {
           throw new Error("No se encontró el token de autenticación");
         }

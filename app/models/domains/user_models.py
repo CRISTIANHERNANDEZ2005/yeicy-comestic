@@ -1,5 +1,6 @@
 # Serializadores
 from app.models.serializers import usuario_to_dict, admin_to_dict
+from datetime import datetime, timedelta
 from app.extensions import db, bcrypt
 from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -100,6 +101,8 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
     contraseña: Mapped[str] = mapped_column(db.String(128), nullable=False)
+    reset_token: Mapped[str] = mapped_column(db.String(256), nullable=True, unique=True)
+    reset_token_expiration: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
     # estado ya está en el mixin
     likes: Mapped[List['Likes']] = relationship('Likes', back_populates='usuario', lazy=True)
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='usuario', lazy=True)
@@ -130,6 +133,39 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
 
     def verificar_contraseña(self, contraseña):
         return bcrypt.check_password_hash(self.contraseña, contraseña)
+
+    def generar_codigo_recuperacion(self):
+        """Genera un código numérico de 6 dígitos para verificación y lo guarda en la base de datos."""
+        import random
+        from datetime import datetime, timedelta
+        # Generamos un código numérico de 6 dígitos
+        self.reset_token = str(random.randint(100000, 999999))
+        self.reset_token_expiration = datetime.utcnow() + timedelta(minutes=10) # El código expira en 10 minutos
+        db.session.add(self)
+        db.session.commit()
+        return self.reset_token
+
+    def generar_token_seguro_reseteo(self):
+        """Genera un token de reseteo seguro (largo) y lo guarda en la base de datos."""
+        import secrets
+        from datetime import datetime, timedelta
+        self.reset_token = secrets.token_urlsafe(32)
+        self.reset_token_expiration = datetime.utcnow() + timedelta(minutes=10) # El código expira en 10 minutos
+        db.session.add(self)
+        db.session.commit()
+        return self.reset_token
+
+    @staticmethod
+    def verificar_reset_token(token):
+        """Verifica si un token de reseteo es válido y no ha expirado."""
+        from datetime import datetime
+        usuario = Usuarios.query.filter_by(reset_token=token).first()
+        if usuario and usuario.reset_token_expiration and usuario.reset_token_expiration > datetime.utcnow():
+            return usuario
+        return None
+
+
+
 
 
 class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):

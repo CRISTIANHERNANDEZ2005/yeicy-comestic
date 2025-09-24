@@ -51,11 +51,12 @@ window.fetch = async function (resource, options = {}) {
     const clonedResponse = response.clone();
 
     // Si la respuesta es 401 (No autorizado), manejar según el contexto
+    // MEJORA PROFESIONAL: Si la petición es a cualquier endpoint de autenticación,
+    // no redirigir. Dejar que el script que hizo la llamada (ej: auth_modals.js) maneje el error.
     if (response.status === 401) {
-      // Si la petición es de login o register, no redirigir, solo devolver el error
       if (
         typeof resource === "string" &&
-        (resource.includes("/auth/login") || resource.includes("/auth/register"))
+        (resource.includes("/auth/login") || resource.includes("/auth/register") || resource.includes("/auth/request-reset") || resource.includes("/auth/verify-reset-code"))
       ) {
         return response;
       }

@@ -39,10 +39,11 @@
               d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
               clip-rule="evenodd"
             />
-          </svg>
-          <span class="text-gray-600 font-medium"
-            >{{ main_category_name }}</span
-          >
+          </svg> 
+          <a href="{{ url_for('products.productos_por_categoria', slug_categoria=main_category_slug) }}"
+             class="text-gray-600 hover:text-pink-600 transition-all duration-300 font-medium">
+            {{ main_category_name }}
+          </a>
         </li>
         {% endif %} {% if subcategory_name %}
         <li class="flex items-center">
@@ -57,7 +58,9 @@
               clip-rule="evenodd"
             />
           </svg>
-          <span class="text-gray-600 font-medium">{{ subcategory_name }}</span>
+          <a href="{{ url_for('products.productos_por_subcategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug) }}"
+             class="text-gray-600 hover:text-pink-600 transition-all duration-300 font-medium">
+            {{ subcategory_name }}</a>
         </li>
         {% endif %} {% if pseudocategory_name %}
         <li class="flex items-center">
@@ -72,9 +75,10 @@
               clip-rule="evenodd"
             />
           </svg>
-          <span class="text-gray-600 font-medium"
-            >{{ pseudocategory_name }}</span
-          >
+          <a href="{{ url_for('products.productos_por_seudocategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug, slug_seudocategoria=pseudocategory_slug) }}"
+             class="text-gray-600 hover:text-pink-600 transition-all duration-300 font-medium">
+            {{ pseudocategory_name }}
+          </a>
         </li>
         {% endif %}
 

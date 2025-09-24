@@ -1,5 +1,6 @@
 # app/blueprints/auth.py
-from flask import Blueprint, request, jsonify, session, g, render_template, redirect, url_for
+from flask import Blueprint, request, jsonify, session, g, render_template, redirect, url_for, flash, current_app
+from urllib.parse import quote
 from app.models.domains.user_models import Usuarios
 from app.models.serializers import usuario_to_dict
 from app.extensions import db, bcrypt, login_manager
@@ -173,6 +174,127 @@ def login():
         'redirect': request.args.get('next') or url_for('products.index')
     }), 200
 
+# --- INICIO: FUNCIONALIDAD DE OLVIDÉ MI CONTRASEÑA ---
+
+@auth_bp.route('/request-reset', methods=['POST'])
+def request_reset():
+    """
+    Paso 1: El usuario ingresa su número.
+    Genera un código de 6 dígitos y lo devuelve al frontend para que el usuario lo vea.
+    """
+    try:
+        data = request.get_json()
+        numero = data.get('numero', '').strip()
+        nombre = data.get('nombre', '').strip()
+        current_app.logger.info(f"Solicitud de reseteo de contraseña para el número: {numero} y nombre: {nombre[:3]}...")
+
+        if not numero or not nombre:
+            current_app.logger.warning("Solicitud de reseteo fallida: faltan campos (número o nombre).")
+            return jsonify({'error': 'El número de teléfono y el nombre son requeridos.'}), 400
+
+        # Búsqueda insensible a mayúsculas/minúsculas para el nombre
+        usuario = Usuarios.query.filter(
+            Usuarios.numero == numero,
+            Usuarios.nombre.ilike(nombre),
+            Usuarios.estado == 'activo'
+        ).first()
+
+        if not usuario:
+            # Por seguridad, no revelamos si el número existe o no.
+            current_app.logger.warning(f"Solicitud de reseteo fallida: combinación de número/nombre no encontrada o usuario inactivo para el número {numero}.")
+            return jsonify({'error': 'Credenciales incorrectas. Verifica tu número y nombre.'}), 401
+
+        # Generar código de 6 dígitos
+        codigo = usuario.generar_codigo_recuperacion()
+        current_app.logger.info(f"Código de recuperación generado para el usuario {usuario.id}")
+
+        # Devolvemos el código directamente al frontend
+        return jsonify({
+            'success': True,
+            'codigo': codigo
+        }), 200
+
+    except Exception as e:
+        current_app.logger.error(f"Error inesperado en request_reset: {str(e)}", exc_info=True)
+        db.session.rollback()
+        return jsonify({
+            'success': False,
+            'error': 'Ocurrió un error inesperado al procesar tu solicitud. Por favor, intenta de nuevo.'
+        }), 500
+
+
+@auth_bp.route('/verify-reset-code', methods=['POST'])
+def verify_reset_code():
+    """
+    Paso 2: El usuario introduce el código que envió por WhatsApp.
+    Verifica el código y si es válido, le permite cambiar la contraseña.
+    """
+    current_app.logger.info("Intento de verificación de código de reseteo.")
+    data = request.get_json()
+    codigo = data.get('codigo')
+
+    if not codigo:
+        current_app.logger.warning("Verificación de código fallida: no se proporcionó código.")
+        return jsonify({'error': 'El código es requerido.'}), 400
+
+    usuario = Usuarios.verificar_reset_token(codigo)
+
+    if not usuario:
+        current_app.logger.warning(f"Verificación de código fallida: código inválido o expirado '{codigo}'.")
+        return jsonify({'error': 'El código es inválido o ha expirado. Por favor, solicita uno nuevo.'}), 401
+
+    # El código es válido. Generamos un token seguro de un solo uso para la página de reseteo final.
+    # Esto evita que alguien pueda reusar el código numérico para cambiar la contraseña.
+    final_token = usuario.generar_token_seguro_reseteo() # Generamos un token largo y seguro.
+
+    return jsonify({
+        'success': True,
+        'message': 'Código verificado. Ahora puedes crear tu nueva contraseña.',
+        'message': 'Código verificado. Ahora puedes crear tu nueva contraseña.',
+        'reset_token': final_token
+    }), 200
+
+@auth_bp.route('/reset-password/<token>', methods=['POST'])
+def reset_password_api(token):
+    """
+    Paso 3 (API): Procesa el cambio de contraseña.
+    Este endpoint solo es accesible con el token seguro generado en `verify_reset_code`
+    y solo acepta peticiones POST con la nueva contraseña.
+    """
+    usuario = Usuarios.verificar_reset_token(token)
+    if not usuario:
+        return jsonify({'error': 'El token para restablecer la contraseña es inválido o ha expirado.'}), 404
+
+    data = request.get_json()
+    nueva_contraseña = data.get('contraseña')
+    confirm_contraseña = data.get('confirm_contraseña')
+
+    # Validar la nueva contraseña con el mismo patrón que el frontend
+    # Mínimo 8 caracteres, una mayúscula, una minúscula y un número
+    password_pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$"
+    import re
+    if not nueva_contraseña or not re.match(password_pattern, nueva_contraseña):
+        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.'}), 400
+    
+    # MEJORA PROFESIONAL: Validar que las contraseñas coincidan en el backend
+    if nueva_contraseña != confirm_contraseña:
+        return jsonify({'error': 'Las contraseñas no coinciden. Por favor, verifica.', 'field': 'confirm_contraseña'}), 400
+
+    # Actualizar contraseña
+    usuario.contraseña = bcrypt.generate_password_hash(nueva_contraseña).decode('utf-8')
+    # Invalidar el token para que no pueda ser reutilizado
+    usuario.reset_token = None
+    usuario.reset_token_expiration = None
+    # MEJORA: Invalidar también el código numérico por si acaso.
+    usuario.reset_code = None
+    usuario.reset_code_expiration = None
+    db.session.commit()
+
+    current_app.logger.info(f"Contraseña restablecida exitosamente para el usuario {usuario.id}.")
+    return jsonify({'success': True, 'message': '¡Contraseña actualizada con éxito! Redirigiendo para iniciar sesión.'}), 200
+
+
+# --- FIN: FUNCIONALIDAD DE OLVIDÉ MI CONTRASEÑA ---
 # Cerrar sesión
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
@@ -183,6 +305,7 @@ def logout():
         
         # Limpiar datos de sesión
         session.pop('user', None)
+        session.pop('cart_id', None) # MEJORA: Limpiar también el carrito de sesión anónima
         session.modified = True
         
         # Crear respuesta y limpiar cookie del token
@@ -268,4 +391,3 @@ def update_profile(usuario):
         db.session.rollback()
         app.logger.error(f"Error al actualizar perfil para el usuario ID: {user_id}: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error al actualizar el perfil'}), 500
-

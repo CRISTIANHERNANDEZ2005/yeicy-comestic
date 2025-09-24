@@ -3,8 +3,6 @@
  * @description Scripts principales para la interfaz de usuario.
  * Contiene la inicialización de componentes, manejadores de eventos globales
  * y la lógica de la interfaz de usuario no asociada a un módulo específico.
- * @author Gemini
- * @version 2.3.0
  */
 
 /**

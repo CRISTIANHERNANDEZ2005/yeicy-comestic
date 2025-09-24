@@ -537,16 +537,23 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         es_favorito = like is not None
     
     # Obtener nombres de categoría, subcategoría y seudocategoría para el breadcrumb
+    # MEJORA: Obtener también los slugs para crear los enlaces en el breadcrumb.
     main_category_name = None
+    main_category_slug = None
     subcategory_name = None
+    subcategory_slug = None
     pseudocategory_name = None
+    pseudocategory_slug = None
 
     if producto.seudocategoria:
         pseudocategory_name = producto.seudocategoria.nombre
+        pseudocategory_slug = producto.seudocategoria.slug
         if producto.seudocategoria.subcategoria:
             subcategory_name = producto.seudocategoria.subcategoria.nombre
+            subcategory_slug = producto.seudocategoria.subcategoria.slug
             if producto.seudocategoria.subcategoria.categoria_principal:
                 main_category_name = producto.seudocategoria.subcategoria.categoria_principal.nombre
+                main_category_slug = producto.seudocategoria.subcategoria.categoria_principal.slug
 
     return render_template(
         'cliente/componentes/producto_detalle.html',
@@ -557,8 +564,11 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         es_favorito=es_favorito,
         title=f"{producto.nombre} - YE & Ci Cosméticos",
         main_category_name=main_category_name,
+        main_category_slug=main_category_slug,
         subcategory_name=subcategory_name,
+        subcategory_slug=subcategory_slug,
         pseudocategory_name=pseudocategory_name,
+        pseudocategory_slug=pseudocategory_slug,
         current_user=current_user, # Pasar el usuario actual al template
         es_nuevo=producto.es_nuevo, # Pasar el indicador de producto nuevo
         reseñas_count=reseñas_count # Pasar el conteo de reseñas
@@ -802,21 +812,31 @@ def get_price_range():
     pseudocategory_name = request.args.get('seudocategoria')
 
     query = db.session.query(Productos).filter(Productos.estado == EstadoEnum.ACTIVO, Productos._existencia  > 0)
-
+    
+    # MEJORA: Refactorizar los joins para evitar duplicados.
+    # Se unen las tablas una sola vez y luego se aplican los filtros.
+    
+    # Determinar si se necesita unir con las tablas de categorías
+    needs_join = main_category_name or subcategory_name or pseudocategory_name
+    
+    if needs_join:
+        query = query.join(Seudocategorias, and_(Productos.seudocategoria_id == Seudocategorias.id, Seudocategorias.estado == EstadoEnum.ACTIVO))
+    
+    if main_category_name or subcategory_name:
+        query = query.join(Subcategorias, and_(Seudocategorias.subcategoria_id == Subcategorias.id, Subcategorias.estado == EstadoEnum.ACTIVO))
+    
     if main_category_name:
-        query = query.join(Seudocategorias, and_(Seudocategorias.estado == EstadoEnum.ACTIVO)).join(Subcategorias, and_(Subcategorias.estado == EstadoEnum.ACTIVO)).join(CategoriasPrincipales, and_(CategoriasPrincipales.estado == EstadoEnum.ACTIVO)).filter(
-            func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name)
-        )
+        query = query.join(CategoriasPrincipales, and_(Subcategorias.categoria_principal_id == CategoriasPrincipales.id, CategoriasPrincipales.estado == EstadoEnum.ACTIVO))
+    
+    # Aplicar los filtros sobre la consulta ya construida
+    if main_category_name:
+        query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(main_category_name))
     
     if subcategory_name:
-        query = query.join(Seudocategorias, and_(Seudocategorias.estado == EstadoEnum.ACTIVO)).join(Subcategorias, and_(Subcategorias.estado == EstadoEnum.ACTIVO)).filter(
-            func.lower(Subcategorias.nombre) == func.lower(subcategory_name)
-        )
+        query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategory_name))
 
     if pseudocategory_name:
-        query = query.join(Seudocategorias, and_(Seudocategorias.estado == EstadoEnum.ACTIVO)).filter(
-            func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name)
-        )
+        query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(pseudocategory_name))
 
     min_price = query.with_entities(func.min(Productos.precio)).scalar()
     max_price = query.with_entities(func.max(Productos.precio)).scalar()

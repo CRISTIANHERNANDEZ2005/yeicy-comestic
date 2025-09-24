@@ -31,6 +31,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadContent(url, pushState = true) {
+        // MEJORA PROFESIONAL: Disparar un evento ANTES de cargar el nuevo contenido.
+        // Esto permite que los módulos de página actuales (como lista_ventas.js)
+        // limpien sus propios event listeners y timers, evitando "fugas de memoria" y conflictos.
+        document.dispatchEvent(new CustomEvent('content-will-load'));
+        console.log(`Event 'content-will-load' dispatched for URL: ${url}`);
+
         showLoadingOverlay();
         fetch(url, {
             headers: {

@@ -3,34 +3,52 @@
 // y permite una reinicialización segura en un entorno SPA.
 
 const VentasPageModule = (() => {
-  // Variable para la instancia del gráfico, privada dentro del módulo.
+  // Estado del módulo
   let ventasChart = null;
   let isInitialized = false;
-
-  // Variables locales para la inicialización
   let currentFilterParams = new URLSearchParams(window.location.search);
+  let eventListenersAttached = false;
   let debounceTimer;
   let currentPage = 1;
   let currentPerPage = 20;
-  let ventaIdToToggle = null;
-  let newStatusToSet = null;
 
   /**
    * Función principal de inicialización/re-inicialización.
    */
   function init() {
     // Guardia de contexto: si no estamos en la página de ventas, no hacer nada.
+    // Y si ya está inicializado, tampoco.
     if (!document.getElementById("ventas-chart")) {
       console.log("Not on the Ventas page. Skipping initialization.");
       return;
     }
-    console.log("Attempting to initialize Ventas Page...");
+    if (isInitialized) {
+        console.log("Ventas page already initialized. Skipping.");
+        return;
+    }
+    console.log("Initializing Ventas Page...");
 
-    // Restablecer estado y configurar todo de nuevo.
-    resetState();
     setupEventListeners();
     loadInitialData();
     isInitialized = true;
+  }
+
+  /**
+   * Función de limpieza para cuando el usuario navega fuera de la página.
+   * Esencial para el correcto funcionamiento de la SPA.
+   */
+  function destroy() {
+    if (!isInitialized) {
+      return;
+    }
+    console.log("Destroying Ventas Page module...");
+    removeEventListeners();
+    if (ventasChart) {
+      ventasChart.destroy();
+      ventasChart = null;
+    }
+    clearTimeout(debounceTimer);
+    isInitialized = false;
   }
 
   // Función para formatear moneda
@@ -409,31 +427,6 @@ const VentasPageModule = (() => {
         showConfirmModal(ventaId, newStatus);
       });
     });
-  }
-
-  // Función para mostrar la modal de confirmación
-  function showConfirmModal(ventaId, newStatus) {
-    ventaIdToToggle = ventaId;
-    newStatusToSet = newStatus;
-
-    const modal = document.getElementById("confirm-status-modal");
-    const modalContent = document.getElementById("confirm-modal-content");
-    const actionText = document.getElementById("confirm-action-text");
-
-    // Configurar el texto según la acción
-    if (newStatus === "inactivo") {
-      actionText.textContent = "inactivar";
-    } else {
-      actionText.textContent = "activar";
-    }
-
-    // Mostrar modal con animación
-    modal.classList.remove("hidden");
-    setTimeout(() => {
-      modal.classList.add("active");
-      modalContent.style.transform = "scale(1)";
-      modalContent.style.opacity = "1";
-    }, 10);
   }
 
   // Función para renderizar la paginación
@@ -1098,172 +1091,207 @@ const VentasPageModule = (() => {
     });
   }
 
+  // Función para mostrar la modal de confirmación
+  function showConfirmModal(ventaId, newStatus) {
+    const modal = document.getElementById("confirm-status-modal");
+    const modalContent = document.getElementById("confirm-modal-content");
+    const actionText = document.getElementById("confirm-action-text");
+    const confirmBtn = document.getElementById("confirm-action");
+
+    if (!modal || !modalContent || !actionText || !confirmBtn) return;
+
+    // Almacenar datos en el botón de confirmación
+    confirmBtn.dataset.ventaId = ventaId;
+    confirmBtn.dataset.newStatus = newStatus;
+
+    actionText.textContent = newStatus === "inactivo" ? "inactivar" : "activar";
+
+    modal.classList.remove("hidden");
+    setTimeout(() => {
+      modal.classList.add("active");
+      modalContent.style.transform = "scale(1)";
+      modalContent.style.opacity = "1";
+    }, 10);
+  }
+
+  // Función para cerrar cualquier modal abierto
+  function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+      modal.classList.remove("active");
+      setTimeout(() => modal.classList.add("hidden"), 300);
+    }
+  }
+
+  // --- MANEJO DE EVENTOS CENTRALIZADO ---
+
+  function handlePageClick(e) {
+    // Guardia de contexto: si no estamos en la página de ventas, no hacer nada.
+    if (!document.getElementById("ventas-chart")) {
+        return;
+    }
+
+    // Cerrar modales
+    if (e.target.closest("#close-modal, #close-modal-btn")) {
+      closeModal("venta-detail-modal");
+    }
+    if (e.target.closest("#cancel-confirm")) {
+      closeModal("confirm-status-modal");
+    }
+
+    // Acción de confirmar cambio de estado
+    if (e.target.closest("#confirm-action")) {
+      const btn = e.target.closest("#confirm-action");
+      const ventaId = btn.dataset.ventaId;
+      const newStatus = btn.dataset.newStatus;
+      if (ventaId && newStatus) {
+        toggleVentaStatus(ventaId, newStatus);
+      }
+      closeModal("confirm-status-modal");
+    }
+
+    // Imprimir
+    if (e.target.closest("#print-detail")) {
+      const ventaIdElement = document.querySelector(
+        "#venta-detail-modal [data-venta-id]"
+      );
+      if (ventaIdElement) {
+        const ventaId = ventaIdElement.getAttribute("data-venta-id");
+        window.open(`/admin/api/ventas/${ventaId}/imprimir`, "_blank");
+      }
+    }
+
+    // Panel de filtros
+    if (e.target.closest("#filter-toggle-btn")) {
+      document.getElementById("filter-panel")?.classList.remove("translate-x-full");
+      document.getElementById("overlay")?.classList.remove("hidden");
+    }
+    if (e.target.closest("#close-filter-panel") || e.target.id === "overlay") {
+      document.getElementById("filter-panel")?.classList.add("translate-x-full");
+      document.getElementById("overlay")?.classList.add("hidden");
+    }
+
+    // Limpiar filtros
+    if (e.target.closest("#reset-filters") || e.target.closest("#clear-filters")) {
+      document.getElementById("filter-form")?.reset();
+      const sortBySelect = document.querySelector('.custom-select[data-name="sort_by"]');
+      if (sortBySelect) {
+        const firstOption = sortBySelect.querySelector('.custom-select-option');
+        if (firstOption) firstOption.click(); // Simula clic para actualizar UI y valor
+      }
+      applyFilters();
+    }
+
+    // Botón de refrescar
+    if (e.target.closest("#refresh-btn")) {
+      loadVentas(currentPage, currentPerPage, true);
+      loadEstadisticas();
+    }
+
+    // Select personalizado
+    const customSelectTrigger = e.target.closest(".custom-select-trigger");
+    if (customSelectTrigger) {
+      const select = customSelectTrigger.closest(".custom-select");
+      document.querySelectorAll(".custom-select").forEach(s => {
+        if (s !== select) s.classList.remove("open");
+      });
+      select.classList.toggle("open");
+    }
+
+    const customSelectOption = e.target.closest(".custom-select-option");
+    if (customSelectOption) {
+      const select = customSelectOption.closest(".custom-select");
+      const valueDisplay = select.querySelector(".custom-select-value");
+      const name = select.getAttribute("data-name");
+      const hiddenInput = document.getElementById(name);
+
+      select.querySelectorAll(".custom-select-option").forEach(opt => opt.classList.remove("selected"));
+      customSelectOption.classList.add("selected");
+      valueDisplay.textContent = customSelectOption.textContent;
+      if (hiddenInput) hiddenInput.value = customSelectOption.getAttribute("data-value");
+
+      select.classList.remove("open");
+      if (name === "sort_by") applyFilters();
+    }
+
+    // Cerrar select si se hace clic fuera
+    if (!e.target.closest(".custom-select")) {
+      document.querySelectorAll(".custom-select.open").forEach(s => s.classList.remove("open"));
+    }
+  }
+
   function setupEventListeners() {
-    // Usar delegación de eventos en un contenedor estático para evitar duplicados
-    const mainContent = document.getElementById("main-content-container");
-    if (!mainContent) return;
+    if (eventListenersAttached) return;
+    console.log("Attaching Ventas event listeners.");
 
-    // Limpiar listeners anteriores si es una reinicialización (aunque la delegación lo hace menos necesario)
-    // Esta parte es más compleja de implementar con delegación, pero el patrón actual es seguro.
+    document.body.addEventListener("click", handlePageClick);
 
-    // --- MODALES ---
-    mainContent.addEventListener("click", (e) => {
-      if (e.target.closest("#close-modal") || e.target.closest("#close-modal-btn")) {
-        const modal = document.getElementById("venta-detail-modal");
-        if (modal) {
-          modal.classList.remove("active");
-          setTimeout(() => modal.classList.add("hidden"), 300);
-        }
-      }
-      if (e.target.closest("#cancel-confirm")) {
-        const confirmModal = document.getElementById("confirm-status-modal");
-        if (confirmModal) {
-          confirmModal.classList.remove("active");
-          setTimeout(() => confirmModal.classList.add("hidden"), 300);
-        }
-      }
-      if (e.target.closest("#confirm-action")) {
-        const confirmModal = document.getElementById("confirm-status-modal");
-        if (confirmModal) {
-          confirmModal.classList.remove("active");
-          setTimeout(() => confirmModal.classList.add("hidden"), 300);
-          if (ventaIdToToggle && newStatusToSet) {
-            toggleVentaStatus(ventaIdToToggle, newStatusToSet);
-          }
-        }
-      }
-      if (e.target.closest("#print-detail")) {
-        const ventaIdElement = document.querySelector("#venta-detail-modal [data-venta-id]");
-        if (ventaIdElement) {
-          const ventaId = ventaIdElement.getAttribute("data-venta-id");
-          window.open(`/admin/api/ventas/${ventaId}/imprimir`, "_blank");
-        }
-      }
+    // Listeners de 'change' y 'input' que no necesitan delegación porque los elementos son estáticos
+    document.getElementById("per-page-select")?.addEventListener("change", function () {
+      currentPerPage = parseInt(this.value);
+      loadVentas(1, currentPerPage, true);
     });
 
-    // --- FILTROS ---
-    const filterPanel = document.getElementById("filter-panel");
-    if (filterPanel) {
-      filterPanel.addEventListener("input", (e) => {
+    const filterForm = document.getElementById("filter-form");
+    if (filterForm) {
+      filterForm.addEventListener("input", (e) => {
         if (e.target.matches("#cliente, #monto_min, #monto_max")) {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(applyFilters, 500);
         }
       });
-      filterPanel.addEventListener("change", (e) => {
+      filterForm.addEventListener("change", (e) => {
         if (e.target.matches("#fecha_inicio, #fecha_fin, #estado")) {
           applyFilters();
         }
       });
-      document.getElementById("reset-filters")?.addEventListener("click", () => {
-        document.getElementById("filter-form")?.reset();
-        const sortBySelect = document.querySelector('.custom-select[data-name="sort_by"]');
-        if (sortBySelect) {
-            const firstOption = sortBySelect.querySelector('.custom-select-option');
-            if (firstOption) firstOption.click();
-        }
-        const sortByInput = document.getElementById("sort_by");
-        if (sortByInput) sortByInput.value = "created_at";
-        
-        currentFilterParams = new URLSearchParams();
-        updateFilterIndicators();
-        loadVentas(1, currentPerPage, true);
-        loadEstadisticas();
-      });
     }
-
-    // --- OTROS CONTROLES ---
-    document.getElementById("refresh-btn")?.addEventListener("click", () => {
-        loadVentas(currentPage, currentPerPage, true);
-        loadEstadisticas();
-    });
-    document.getElementById("per-page-select")?.addEventListener("change", function() {
-        currentPerPage = parseInt(this.value);
-        loadVentas(1, currentPerPage, true);
-    });
-    document.getElementById("clear-filters")?.addEventListener("click", () => {
-        document.getElementById("reset-filters")?.click();
-    });
-    document.getElementById("filter-toggle-btn")?.addEventListener("click", () => {
-        document.getElementById("filter-panel")?.classList.remove("translate-x-full");
-        document.getElementById("overlay")?.classList.remove("hidden");
-    });
-    document.getElementById("overlay")?.addEventListener("click", () => {
-        document.getElementById("filter-panel")?.classList.add("translate-x-full");
-        document.getElementById("overlay")?.classList.add("hidden");
-    });
-    document.getElementById("close-filter-panel")?.addEventListener("click", () => {
-        document.getElementById("filter-panel")?.classList.add("translate-x-full");
-        document.getElementById("overlay")?.classList.add("hidden");
-    });
-
-    // --- SELECT PERSONALIZADO ---
-    document.querySelectorAll(".custom-select").forEach(setupCustomSelect);
+    eventListenersAttached = true;
   }
 
-  function setupCustomSelect(select) {
-      const trigger = select.querySelector(".custom-select-trigger");
-      const optionsContainer = select.querySelector(".custom-select-options");
-      const valueDisplay = select.querySelector(".custom-select-value");
-
-      trigger.addEventListener("click", () => {
-          document.querySelectorAll(".custom-select").forEach(s => {
-              if (s !== select) s.classList.remove("open");
-          });
-          select.classList.toggle("open");
-      });
-
-      optionsContainer.addEventListener("click", (e) => {
-          const option = e.target.closest(".custom-select-option");
-          if (!option) return;
-
-          optionsContainer.querySelectorAll(".custom-select-option").forEach(opt => opt.classList.remove("selected"));
-          option.classList.add("selected");
-          valueDisplay.textContent = option.textContent;
-          
-          const name = select.getAttribute("data-name");
-          const hiddenInput = document.getElementById(name);
-          if (hiddenInput) hiddenInput.value = option.getAttribute("data-value");
-
-          select.classList.remove("open");
-          if (name === "sort_by") applyFilters();
-      });
-  }
-
-  function resetState() {
-    if (ventasChart) {
-      ventasChart.destroy();
-      ventasChart = null;
-    }
-    currentFilterParams = new URLSearchParams(window.location.search);
-    currentPage = 1;
-    currentPerPage = 20;
-    ventaIdToToggle = null;
-    newStatusToSet = null;
+  function removeEventListeners() {
+    if (!eventListenersAttached) return;
+    console.log("Removing Ventas event listeners.");
+    document.body.removeEventListener("click", handlePageClick);
+    // No es necesario remover los listeners de 'per-page-select' y 'filter-form'
+    // porque los elementos son destruidos y recreados por la SPA.
+    eventListenersAttached = false;
   }
 
   function loadInitialData() {
+    currentFilterParams = new URLSearchParams(window.location.search);
+    currentPage = 1;
+    currentPerPage = parseInt(document.getElementById('per-page-select')?.value) || 20;
+
+    // Cargar datos
     loadVentas(1, currentPerPage, false);
     loadEstadisticas();
     updateFilterIndicators();
   }
 
   return {
-    init: init
+    init: init,
+    destroy: destroy,
   };
 })();
 
 // Patrón de inicialización robusto para SPA
-function runVentasInitialization() {
+const runVentasInitialization = () => {
   VentasPageModule.init();
-}
+};
 
+const destroyVentasModule = () => {
+    VentasPageModule.destroy();
+};
+
+// 1. Para carga de página directa (hard refresh)
+document.addEventListener("DOMContentLoaded", () => {
+    // Antes de inicializar, nos aseguramos de que cualquier módulo anterior sea destruido.
+    // Esto es una salvaguarda para recargas en caliente (hot-reloads) en desarrollo.
+    destroyVentasModule();
+    runVentasInitialization();
+});
+
+// 2. Para navegación SPA: Escuchar eventos de admin_spa.js
+document.addEventListener("content-will-load", destroyVentasModule);
 document.addEventListener("content-loaded", runVentasInitialization);
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", runVentasInitialization);
-} else {
-  // Si el DOM ya está cargado (como en una carga de SPA),
-  // la guardia de contexto dentro de init() se encargará de si debe ejecutarse o no.
-  runVentasInitialization();
-}

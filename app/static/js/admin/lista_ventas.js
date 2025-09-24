@@ -11,6 +11,7 @@ const VentasPageModule = (() => {
   let debounceTimer;
   let currentPage = 1;
   let currentPerPage = 20;
+  let currentChartPeriod = '30d'; // Nuevo estado para el período del gráfico
 
   /**
    * Función principal de inicialización/re-inicialización.
@@ -87,10 +88,15 @@ const VentasPageModule = (() => {
 
   // Función para cargar estadísticas
   async function loadEstadisticas() {
+    const chartLoader = document.getElementById('chart-loading-overlay');
+    if (chartLoader) chartLoader.classList.remove('hidden');
+
+    // Añadir el período del gráfico a los parámetros
+    const statsParams = new URLSearchParams(currentFilterParams);
+    statsParams.set('periodo', currentChartPeriod);
+
     try {
-      const response = await fetch(
-        `/admin/api/ventas/estadisticas?${currentFilterParams.toString()}`
-      );
+      const response = await fetch(`/admin/api/ventas/estadisticas?${statsParams.toString()}`);
       const data = await response.json();
 
       if (data.success) {
@@ -129,13 +135,15 @@ const VentasPageModule = (() => {
         );
 
         // Actualizar gráfico
-        updateVentasChart(data.estadisticas.grafico);
+        updateVentasChart(data.estadisticas.grafico, currentChartPeriod);
       } else {
         window.toast.error("Error al cargar estadísticas");
       }
     } catch (error) {
       console.error("Error al cargar estadísticas:", error);
       window.toast.error("Error al cargar estadísticas");
+    } finally {
+      if (chartLoader) chartLoader.classList.add('hidden');
     }
   }
 
@@ -165,8 +173,19 @@ const VentasPageModule = (() => {
   }
 
   // Función para inicializar o actualizar el gráfico de ventas
-  function updateVentasChart(graficoData) {
+  function updateVentasChart(graficoData, period) {
     const canvas = document.getElementById("ventas-chart");
+    const chartTitle = document.getElementById("chart-title");
+
+    if (chartTitle) {
+        let titleText = 'Evolución de Ventas';
+        if (period === '7d') titleText += ' (Últimos 7 días)';
+        else if (period === '30d') titleText += ' (Últimos 30 días)';
+        else if (period === '1y') titleText += ' (Último Año)';
+        chartTitle.textContent = titleText;
+    }
+
+
     if (!canvas) return;
 
     // Destruir la instancia ANTERIOR del gráfico si existe.
@@ -1065,16 +1084,15 @@ const VentasPageModule = (() => {
 
   const fechaInicioInput = document.getElementById("fecha_inicio");
   if (fechaInicioInput) {
-    fechaInicioInput.addEventListener("change", function () {
-      applyFilters();
-    });
+    // MEJORA PROFESIONAL: Al cambiar la fecha, solo se actualizan las estadísticas y el gráfico.
+    // No se recarga la tabla de ventas para una experiencia más fluida.
+    fechaInicioInput.addEventListener("change", loadEstadisticas);
   }
 
   const fechaFinInput = document.getElementById("fecha_fin");
   if (fechaFinInput) {
-    fechaFinInput.addEventListener("change", function () {
-      applyFilters();
-    });
+    // MEJORA PROFESIONAL: Al cambiar la fecha, solo se actualizan las estadísticas y el gráfico.
+    fechaFinInput.addEventListener("change", loadEstadisticas);
   }
 
   const estadoInput = document.getElementById("estado");
@@ -1233,11 +1251,29 @@ const VentasPageModule = (() => {
     }
   }
 
+  function handleChartPeriodSelector(e) {
+    const button = e.target.closest('.chart-period-btn');
+    if (!button) return;
+
+    currentChartPeriod = button.dataset.period;
+
+    document.querySelectorAll('.chart-period-btn').forEach(btn => btn.classList.remove('active'));
+    button.classList.add('active');
+
+    // Recargar solo las estadísticas y el gráfico
+    loadEstadisticas();
+  }
+
   function setupEventListeners() {
     if (eventListenersAttached) return;
     console.log("Attaching Ventas event listeners.");
 
     document.body.addEventListener("click", handlePageClick);
+
+    const chartPeriodSelector = document.getElementById('chart-period-selector');
+    if (chartPeriodSelector) {
+        chartPeriodSelector.addEventListener('click', handleChartPeriodSelector);
+    }
 
     // Listeners de 'change' y 'input' que no necesitan delegación porque los elementos son estáticos
     document.getElementById("per-page-select")?.addEventListener("change", function () {
@@ -1267,6 +1303,12 @@ const VentasPageModule = (() => {
     console.log("Removing Ventas event listeners.");
     document.body.removeEventListener("click", handlePageClick);
     // No es necesario remover los listeners de 'per-page-select' y 'filter-form'
+
+    const chartPeriodSelector = document.getElementById('chart-period-selector');
+    if (chartPeriodSelector) {
+        chartPeriodSelector.removeEventListener('click', handleChartPeriodSelector);
+    }
+
     // porque los elementos son destruidos y recreados por la SPA.
     eventListenersAttached = false;
   }

@@ -8,7 +8,7 @@ from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
 from sqlalchemy import or_, and_, func, desc
 from sqlalchemy.orm import joinedload
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from flask_wtf.csrf import generate_csrf
 
 admin_ventas_bp = Blueprint('admin_ventas', __name__)
@@ -346,6 +346,7 @@ def get_ventas_estadisticas(admin_user):
         fecha_fin = request.args.get('fecha_fin', '')
         monto_min = request.args.get('monto_min', '')
         monto_max = request.args.get('monto_max', '')
+        periodo = request.args.get('periodo', '30d') # Nuevo: 7d, 30d, 1y
         
         # Construir consulta base - Solo pedidos completados
         query = Pedido.query.filter(
@@ -423,16 +424,6 @@ def get_ventas_estadisticas(admin_user):
         # Calcular ticket promedio
         ticket_promedio = total_ingresos / total_ventas if total_ventas > 0 else 0
         
-        # Obtener ventas por día (últimos 30 días)
-        hoy = datetime.now().date()
-        hace_30_dias = hoy - timedelta(days=30)
-        
-        # Aplicar filtros de fecha a la consulta de gráfico
-        grafico_query = Pedido.query.filter(
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO,
-            func.date(Pedido.created_at) >= hace_30_dias
-        )
-        
         if fecha_inicio:
             try:
                 fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
@@ -446,55 +437,75 @@ def get_ventas_estadisticas(admin_user):
                 grafico_query = grafico_query.filter(Pedido.created_at < fecha_fin_dt)
             except ValueError:
                 pass
-        
-        # Aplicar filtro por rango de montos a la consulta de gráfico
-        try:
-            if monto_min and monto_min.strip():
-                monto_min_float = float(monto_min)
-                grafico_query = grafico_query.filter(Pedido.total >= monto_min_float)
-        except (ValueError, TypeError):
-            pass
-            
-        try:
-            if monto_max and monto_max.strip():
-                monto_max_float = float(monto_max)
-                grafico_query = grafico_query.filter(Pedido.total <= monto_max_float)
-        except (ValueError, TypeError):
-            pass
-        
-        ventas_por_dia = db.session.query(
-            func.date(Pedido.created_at).label('fecha'),
+
+        # Lógica mejorada para el gráfico
+        hoy = datetime.utcnow().date()
+        if periodo == '7d':
+            start_date = hoy - timedelta(days=6)
+            group_by_format = '%Y-%m-%d'
+            label_format = '%d/%m'
+            date_trunc = func.date(Pedido.created_at)
+        elif periodo == '1y':
+            start_date = hoy - timedelta(days=365)
+            group_by_format = 'YYYY-MM' # Formato para PostgreSQL
+            label_format = '%b %Y'
+            date_trunc = func.to_char(Pedido.created_at, group_by_format)
+        else: # 30d por defecto
+            start_date = hoy - timedelta(days=29)
+            group_by_format = '%Y-%m-%d'
+            label_format = '%d/%m'
+            date_trunc = func.date(Pedido.created_at)
+
+        # Consulta para el gráfico
+        grafico_query = db.session.query(
+            date_trunc.label('fecha'),
             func.count(Pedido.id).label('cantidad'),
             func.sum(Pedido.total).label('total')
         ).filter(
             Pedido.estado_pedido == EstadoPedido.COMPLETADO,
-            func.date(Pedido.created_at) >= hace_30_dias
-        ).group_by(func.date(Pedido.created_at)).all()
+            Pedido.created_at >= start_date
+        ).group_by('fecha').order_by('fecha')
+
+        # Aplicar filtros adicionales al gráfico si se proporcionan
+        if fecha_inicio:
+            grafico_query = grafico_query.filter(Pedido.created_at >= datetime.strptime(fecha_inicio, '%Y-%m-%d'))
+        if fecha_fin:
+            grafico_query = grafico_query.filter(Pedido.created_at < (datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)))
+
+        ventas_agrupadas = grafico_query.all()
         
-        # Formatear datos para el gráfico
+        # Crear un diccionario para un acceso rápido
+        # MEJORA: La clave 'fecha' ahora puede ser una cadena directamente desde la BD (para '1y')
+        # o un objeto de fecha (para '7d'/'30d'). Lo manejamos de forma robusta.
+        ventas_dict = {}
+        for r in ventas_agrupadas:
+            clave = r.fecha.strftime('%Y-%m-%d') if isinstance(r.fecha, (datetime, date)) else str(r.fecha)
+            ventas_dict[clave] = {'cantidad': r.cantidad, 'total': float(r.total)}
+
+        # Generar etiquetas y datos para el rango de fechas completo
         fechas = []
         cantidades = []
         totales = []
-        
-        for i in range(30):
-            fecha = hoy - timedelta(days=i)
-            fecha_str = fecha.strftime('%Y-%m-%d')
-            fechas.append(fecha.strftime('%d/%m'))
-            
-            # Buscar si hay ventas para esta fecha
-            venta_dia = next((v for v in ventas_por_dia if v.fecha.strftime('%Y-%m-%d') == fecha_str), None)
-            
-            if venta_dia:
-                cantidades.append(venta_dia.cantidad)
-                totales.append(float(venta_dia.total))
-            else:
-                cantidades.append(0)
-                totales.append(0)
-        
-        # Invertir para mostrar en orden cronológico
-        fechas.reverse()
-        cantidades.reverse()
-        totales.reverse()
+        num_dias = 365 if periodo == '1y' else (7 if periodo == '7d' else 30)
+
+        if periodo == '1y':
+            for i in range(12):
+                mes_actual = (hoy.month - i - 1) % 12 + 1
+                ano_actual = hoy.year if mes_actual <= hoy.month else hoy.year - 1
+                fecha = datetime(ano_actual, mes_actual, 1)
+                clave = fecha.strftime('%Y-%m') # Usamos el formato Python para generar la clave
+                fechas.insert(0, fecha.strftime(label_format))
+                venta_mes = ventas_dict.get(clave, {'cantidad': 0, 'total': 0})
+                cantidades.insert(0, venta_mes['cantidad'])
+                totales.insert(0, venta_mes['total'])
+        else:
+            for i in range(num_dias):
+                fecha = hoy - timedelta(days=i)
+                clave = fecha.strftime('%Y-%m-%d') # Usamos el formato Python para generar la clave
+                fechas.insert(0, fecha.strftime(label_format))
+                venta_dia = ventas_dict.get(clave, {'cantidad': 0, 'total': 0})
+                cantidades.insert(0, venta_dia['cantidad'])
+                totales.insert(0, venta_dia['total'])
         
         return jsonify({
             'success': True,

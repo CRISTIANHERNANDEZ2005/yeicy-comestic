@@ -68,7 +68,21 @@
         
         <!-- Gráfico de ventas -->
         <div class="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Evolución de Ventas (Últimos 30 días)</h2>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <h2 id="chart-title" class="text-lg font-semibold text-gray-800 mb-2 sm:mb-0">Evolución de Ventas</h2>
+                <div id="chart-period-selector" class="flex items-center bg-gray-100 rounded-lg p-1 space-x-1">
+                    <button data-period="7d" class="chart-period-btn">7D</button>
+                    <button data-period="30d" class="chart-period-btn active">30D</button>
+                    <button data-period="1y" class="chart-period-btn">1A</button>
+                </div>
+            </div>
+            <!-- Contenedor para el spinner del gráfico -->
+            <div id="chart-loading-overlay" class="absolute inset-0 bg-white bg-opacity-70 items-center justify-center z-10 hidden rounded-xl">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-3"></div>
+                    <p class="text-gray-600 font-medium">Actualizando gráfico...</p>
+                </div>
+            </div>
             <div class="h-64">
                 <canvas id="ventas-chart"></canvas>
             </div>

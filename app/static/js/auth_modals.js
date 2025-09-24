@@ -170,11 +170,23 @@
     switch(fieldName) {
       case 'numero':
         isValid = patterns.phone.test(value);
+        // MEJORA: No mostrar validación de formato de número en el login.
+        // Solo se valida que no esté vacío (ya cubierto por 'required').
+        if (field.id === 'login-numero') {
+          isValid = true; // Se asume válido si no está vacío, la validación real la hace el backend.
+          break;
+        }
         if (!isValid) setFieldError(field, errorMessages.phone, errorElement);
         break;
       case 'password':
       case 'contraseña':
         isValid = patterns.password.test(value);
+        // Para el campo de contraseña de inicio de sesión, no aplicamos la validación de formato detallada.
+        // Solo se verifica si está vacío (lo cual ya está cubierto por la comprobación 'required' al inicio de la función).
+        if (field.id === 'login-password') {
+          isValid = true; // Consideramos el campo válido en el frontend si no está vacío, la validación real la hace el backend.
+          break;
+        }
         if (!isValid) setFieldError(field, errorMessages.password, errorElement);
         break;
       case 'nombre':
@@ -488,4 +500,18 @@
       closeModal();
     }
   });
+
+  // MEJORA: Función para prevenir los mensajes de validación nativos del navegador
+  // para el campo de contraseña de inicio de sesión.
+  // Esto evita que el navegador muestre mensajes como "La contraseña debe tener X caracteres..."
+  // y permite que el backend maneje el mensaje genérico de "credenciales inválidas".
+  function preventLoginPasswordNativeValidationMessages() {
+    const loginPasswordField = document.getElementById('login-password');
+    if (loginPasswordField) {
+      loginPasswordField.addEventListener('invalid', function(event) {
+        event.preventDefault(); // Evita que el navegador muestre su mensaje de error predeterminado.
+      });
+    }
+  }
+  document.addEventListener('DOMContentLoaded', preventLoginPasswordNativeValidationMessages);
 })();

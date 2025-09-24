@@ -31,9 +31,27 @@ const VentasPageModule = (() => {
 
     setupEventListeners();
     loadInitialData();
+
+    // Inicializar el módulo para crear pedidos/ventas si existe
+    if (typeof crearPedidoApp !== 'undefined') {
+      crearPedidoApp.init();
+      // Sobrescribir la URL de envío para que apunte a la creación de ventas
+      crearPedidoApp.submitUrl = '/admin/api/ventas';
+      crearPedidoApp.isVentaMode = true; // Flag para indicar que estamos creando una venta
+    }
+
     isInitialized = true;
   }
 
+  /**
+   * Función pública para recargar los datos de la página.
+   * Esto es más limpio que llamar a init() de nuevo.
+   */
+  function reloadData() {
+    console.log("Reloading Ventas data...");
+    loadVentas(1, currentPerPage, true); // Volver a la página 1 y mostrar loader
+    loadEstadisticas();
+  }
   /**
    * Función de limpieza para cuando el usuario navega fuera de la página.
    * Esencial para el correcto funcionamiento de la SPA.
@@ -1214,9 +1232,15 @@ const VentasPageModule = (() => {
     }
 
     // Botón de refrescar
-    if (e.target.closest("#refresh-btn")) {
-      loadVentas(currentPage, currentPerPage, true);
-      loadEstadisticas();
+    if (e.target.closest("#addVentaBtn")) {
+      if (typeof crearPedidoApp !== 'undefined') {
+        // MEJORA PROFESIONAL: Configurar el modal para el modo "Venta"
+        crearPedidoApp.submitUrl = '/admin/api/ventas';
+        crearPedidoApp.isVentaMode = true;
+        crearPedidoApp.openModal();
+        // Cambiar el título del modal para que sea específico para ventas.
+        document.getElementById('pedidoModalTitle').textContent = 'Crear Nueva Venta';
+      }
     }
 
     // Select personalizado
@@ -1327,16 +1351,20 @@ const VentasPageModule = (() => {
   return {
     init: init,
     destroy: destroy,
+    reloadData: reloadData // Exponer la función de recarga
   };
 })();
 
 // Patrón de inicialización robusto para SPA
-const runVentasInitialization = () => {
-  VentasPageModule.init();
-};
+// MEJORA PROFESIONAL: Exponer el módulo en el objeto window para que otros scripts puedan interactuar con él.
+// Esto es crucial para que el modal de creación de ventas pueda llamar a `reloadData`.
+window.VentasPageModule = VentasPageModule;
 
+const runVentasInitialization = () => {
+  window.VentasPageModule.init();
+};
 const destroyVentasModule = () => {
-    VentasPageModule.destroy();
+    window.VentasPageModule.destroy();
 };
 
 // 1. Para carga de página directa (hard refresh)

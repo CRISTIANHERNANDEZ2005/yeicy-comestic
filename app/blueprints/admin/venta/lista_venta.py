@@ -3,7 +3,7 @@ from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.order_models import Pedido, PedidoProducto
 from app.models.domains.user_models import Usuarios
 from app.models.domains.product_models import Productos
-from app.models.enums import EstadoPedido
+from app.models.enums import EstadoPedido, EstadoEnum, EstadoSeguimiento
 from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
 from sqlalchemy import or_, and_, func, desc
@@ -249,6 +249,87 @@ def get_ventas_api(admin_user):
             'success': False,
             'message': 'Error al filtrar ventas'
         }), 500
+
+@admin_ventas_bp.route('/api/ventas', methods=['POST'])
+@admin_jwt_required
+def create_venta(admin_user):
+    """
+    Crea una nueva venta (Pedido con estado COMPLETADO).
+    Reutiliza la lógica del modal de creación de pedidos.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No se recibieron datos'}), 400
+
+        usuario_id = data.get('usuario_id')
+        productos_payload = data.get('productos')
+
+        if not usuario_id or not productos_payload:
+            return jsonify({'success': False, 'message': 'Faltan datos: se requiere usuario_id y productos'}), 400
+
+        usuario = Usuarios.query.get(usuario_id)
+        if not usuario:
+            return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
+
+        total_venta = 0
+        productos_a_procesar = []
+
+        for item in productos_payload:
+            producto_id = item.get('id')
+            cantidad = item.get('cantidad')
+
+            if not producto_id or not isinstance(cantidad, int) or cantidad <= 0:
+                return jsonify({'success': False, 'message': f'Datos de producto inválidos: {item}'}), 400
+
+            producto = Productos.query.get(producto_id)
+            if not producto:
+                return jsonify({'success': False, 'message': f'Producto con ID {producto_id} no encontrado'}), 404
+            
+            if producto.existencia < cantidad:
+                return jsonify({
+                    'success': False, 
+                    'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado: {cantidad}'
+                }), 400
+
+            subtotal = producto.precio * cantidad
+            total_venta += subtotal
+            
+            productos_a_procesar.append({
+                'producto_obj': producto,
+                'cantidad': cantidad,
+                'precio_unitario': producto.precio
+            })
+
+        nueva_venta = Pedido(
+            usuario_id=usuario_id,
+            total=total_venta,
+            estado_pedido=EstadoPedido.COMPLETADO, # La diferencia clave: se crea como COMPLETADO
+            estado=EstadoEnum.ACTIVO.value,
+            seguimiento_estado=EstadoSeguimiento.ENTREGADO,
+            notas_seguimiento="Venta creada directamente desde el panel de administración."
+        )
+        db.session.add(nueva_venta)
+        db.session.flush()
+
+        for item in productos_a_procesar:
+            pedido_producto = PedidoProducto(
+                pedido_id=nueva_venta.id,
+                producto_id=item['producto_obj'].id,
+                cantidad=item['cantidad'],
+                precio_unitario=item['precio_unitario']
+            )
+            db.session.add(pedido_producto)
+            item['producto_obj'].existencia -= item['cantidad']
+
+        db.session.commit()
+        current_app.logger.info(f"Nueva venta (pedido completado) {nueva_venta.id} creada por administrador {admin_user.id}")
+        return jsonify({'success': True, 'message': 'Venta creada exitosamente', 'pedido_id': nueva_venta.id}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al crear venta: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno al crear la venta'}), 500
 
 @admin_ventas_bp.route('/api/ventas/<string:venta_id>', methods=['GET'])
 @admin_jwt_required

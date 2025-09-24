@@ -1989,6 +1989,8 @@ window.crearPedidoApp = {
   elements: {},
   isEditMode: false,
   editingPedidoId: null,
+  submitUrl: '/admin/api/pedidos', // URL por defecto para la creación
+  isVentaMode: false, // Flag para saber si estamos creando una venta
 
   init: function () {
     this.cacheElements();
@@ -2437,9 +2439,9 @@ window.crearPedidoApp = {
       })),
     };
 
-    let url = "/admin/api/pedidos";
+    let url = this.submitUrl; // Usar la URL configurable
     let method = "POST";
-    let successMessage = "Pedido creado exitosamente";
+    let successMessage = this.isVentaMode ? "Venta creada exitosamente" : "Pedido creado exitosamente";
 
     if (this.isEditMode) {
       url = `/admin/api/pedidos/${this.editingPedidoId}`;
@@ -2463,7 +2465,12 @@ window.crearPedidoApp = {
         if (data.success) {
           window.toast.success(successMessage);
           this.closeModal();
-          if (window.pedidosApp) {
+          // MEJORA PROFESIONAL: Determinar qué vista recargar.
+          if (this.isVentaMode && window.VentasPageModule) {
+            // Si se creó una venta, recargar el módulo de ventas.
+            window.VentasPageModule.reloadData();
+          } else if (!this.isVentaMode && window.pedidosApp) {
+            // Si se creó/editó un pedido, recargar el módulo de pedidos.
             window.pedidosApp.loadPedidos();
           } else {
             window.location.reload();

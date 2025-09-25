@@ -2468,7 +2468,8 @@ window.crearPedidoApp = {
           // MEJORA PROFESIONAL: Determinar qué vista recargar.
           if (this.isVentaMode && window.VentasPageModule) {
             // Si se creó una venta, recargar el módulo de ventas.
-            window.VentasPageModule.reloadData();
+            window.VentasPageModule.loadEstadisticas(); // Actualiza solo las estadísticas y el gráfico.
+            window.VentasPageModule.loadVentas(1, window.VentasPageModule.currentPerPage, true); // Actualiza la tabla de ventas.
           } else if (!this.isVentaMode && window.pedidosApp) {
             // Si se creó/editó un pedido, recargar el módulo de pedidos.
             window.pedidosApp.loadPedidos();

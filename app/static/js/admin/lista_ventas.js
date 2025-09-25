@@ -1351,7 +1351,11 @@ const VentasPageModule = (() => {
   return {
     init: init,
     destroy: destroy,
-    reloadData: reloadData // Exponer la función de recarga
+    reloadData: reloadData, // Exponer la función de recarga
+    // Exponer funciones específicas para actualizaciones granulares.
+    loadEstadisticas: loadEstadisticas,
+    loadVentas: loadVentas,
+    currentPerPage: currentPerPage
   };
 })();
 

@@ -1,20 +1,45 @@
-# Serializadores
+"""
+Módulo de Modelos de Dominio para Usuarios y Administradores.
+
+Este archivo define las estructuras de datos para los diferentes tipos de usuarios
+del sistema. Incluye el modelo `Usuarios` para los clientes de la tienda y el
+modelo `Admins` para los administradores del panel. Gestiona la autenticación,
+perfiles, seguridad de contraseñas y la generación de tokens JWT. También contiene
+`Value Objects` para la validación de datos como números de teléfono y contraseñas.
+"""
+# --- Importaciones de Serializadores ---
 from app.models.serializers import usuario_to_dict, admin_to_dict
+# --- Importaciones de la Librería Estándar ---
 from datetime import datetime, timedelta
+# --- Importaciones de Extensiones y Terceros ---
 from app.extensions import db, bcrypt
 from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+from flask_login import UserMixin
+# --- Importaciones Locales de la Aplicación ---
 from typing import List, TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.domains.review_models import Likes, Reseñas
     from app.models.domains.order_models import Pedido
-from flask_login import UserMixin
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
 from app.models.enums import EstadoEnum
 
 class NumeroTelefono:
-    """Value object para validar y encapsular números de teléfono de 10 dígitos."""
+    """
+    Value Object para encapsular y validar números de teléfono.
+
+    Asegura que el número de teléfono tenga exactamente 10 dígitos numéricos.
+    """
     def __init__(self, numero: str):
+        """
+        Inicializa el Value Object.
+
+        Args:
+            numero (str): El número de teléfono a validar.
+
+        Raises:
+            ValueError: Si el número no tiene 10 dígitos o no es numérico.
+        """
         if not numero or len(numero) != 10 or not numero.isdigit():
             raise ValueError("El número debe tener 10 dígitos numéricos")
         self.value = numero
@@ -22,8 +47,22 @@ class NumeroTelefono:
         return self.value
 
 class NumeroUsuario:
-    """Value object para validar y encapsular el número de usuario."""
+    """
+    Value Object para encapsular y validar el número de usuario (teléfono).
+
+    Asegura que el número de usuario (que funciona como identificador) tenga
+    exactamente 10 dígitos numéricos.
+    """
     def __init__(self, numero: str):
+        """
+        Inicializa el Value Object.
+
+        Args:
+            numero (str): El número de usuario a validar.
+
+        Raises:
+            ValueError: Si el número no tiene 10 dígitos o no es numérico.
+        """
         if not numero or len(numero) != 10 or not numero.isdigit():
             raise ValueError("El número debe tener 10 dígitos numéricos")
         self.value = numero
@@ -31,35 +70,89 @@ class NumeroUsuario:
         return self.value
 
 class Password:
-    """Value object para validar y encapsular contraseñas."""
+    """
+    Value Object para encapsular y validar la fortaleza de una contraseña.
+    
+    Asegura que la contraseña tenga una longitud mínima de 8 caracteres.
+    """
     def __init__(self, contraseña: str):
-        if not contraseña or len(contraseña) < 6:
-            raise ValueError("La contraseña debe tener al menos 6 caracteres")
+        """
+        Inicializa el Value Object.
+        
+        Args:
+            contraseña (str): La contraseña a validar.
+        
+        Raises:
+            ValueError: Si la contraseña tiene menos de 8 caracteres.
+        """
+        if not contraseña or len(contraseña) < 8:
+            raise ValueError("La contraseña debe tener al menos 8 caracteres")
         self.value = contraseña
     def __str__(self):
         return self.value
 
 
 class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    """
+    Representa a un usuario cliente registrado en el sistema.
+
+    Este modelo almacena la información de autenticación y personal de los clientes.
+    Implementa las propiedades requeridas por Flask-Login para la gestión de sesiones.
+    También incluye métodos para la generación y verificación de JWT, y para la
+    recuperación de contraseñas.
+
+    Attributes:
+        numero (str): Número de teléfono del usuario, usado como identificador único para el login.
+        nombre (str): Nombre del usuario.
+        apellido (str): Apellido del usuario.
+        contraseña (str): Hash de la contraseña del usuario.
+        reset_token (str): Token utilizado para el proceso de recuperación de contraseña.
+        reset_token_expiration (datetime): Fecha de expiración del `reset_token`.
+        likes (List['Likes']): Relación con los 'me gusta' que ha dado el usuario.
+        reseñas (List['Reseñas']): Relación con las reseñas que ha escrito el usuario.
+        pedidos (List['Pedido']): Relación con los pedidos que ha realizado el usuario.
+    """
     __tablename__ = 'usuarios'
     
     # Propiedades requeridas por Flask-Login
     @property
     def is_active(self):
+        """
+        Indica si el usuario está activo. Requerido por Flask-Login.
+        """
         return self.estado == EstadoEnum.ACTIVO
     
     @property
     def is_authenticated(self):
+        """
+        Indica si el usuario está autenticado. Siempre `True` para instancias de esta clase.
+        Requerido por Flask-Login.
+        """
         return True
     
     @property
     def is_anonymous(self):
+        """
+        Indica si el usuario es anónimo. Siempre `False` para instancias de esta clase.
+        Requerido por Flask-Login.
+        """
         return False
     
     def get_id(self):
+        """
+        Devuelve el ID del usuario como una cadena. Requerido por Flask-Login.
+        """
         return str(self.id)
 
     def generar_jwt(self):
+        """
+        Genera un JSON Web Token (JWT) para el usuario.
+
+        El token contiene información básica del usuario y una fecha de expiración.
+
+        Returns:
+            str: El token JWT codificado.
+        """
         import jwt
         from datetime import datetime, timedelta
         from flask import current_app
@@ -75,6 +168,16 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
 
     @staticmethod
     def verificar_jwt(token):
+        """
+        Verifica un JWT y devuelve la instancia del usuario si es válido.
+
+        Args:
+            token (str): El token JWT a verificar.
+
+        Returns:
+            Optional[Usuarios]: La instancia del usuario si el token es válido y el usuario
+                                existe, de lo contrario `None`.
+        """
         import jwt
         from flask import current_app
         try:
@@ -112,10 +215,21 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     __table_args__ = (
         CheckConstraint(
             "LENGTH(numero) = 10 AND numero ~ '^[0-9]+$'", name='check_numero'),
-        CheckConstraint("LENGTH(contraseña) >= 6", name='check_contraseña'),
+        CheckConstraint("LENGTH(contraseña) >= 8", name='check_contraseña'),
     )
 
     def __init__(self, numero, nombre, apellido, contraseña, estado='activo', id=None):
+        """
+        Inicializa una nueva instancia de Usuario.
+
+        Args:
+            numero (str): El número de teléfono del usuario (10 dígitos).
+            nombre (str): El nombre del usuario.
+            apellido (str): El apellido del usuario.
+            contraseña (str): La contraseña en texto plano (será hasheada).
+            estado (str): El estado inicial ('activo' o 'inactivo').
+            id (Optional[str]): Un ID predefinido, si es necesario.
+        """
         self.numero = str(NumeroUsuario(numero))
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
@@ -132,10 +246,23 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
 
 
     def verificar_contraseña(self, contraseña):
+        """
+        Verifica si una contraseña proporcionada coincide con la contraseña hasheada del usuario.
+
+        Args:
+            contraseña (str): La contraseña en texto plano a verificar.
+
+        Returns:
+            bool: `True` si la contraseña es correcta, `False` en caso contrario.
+        """
         return bcrypt.check_password_hash(self.contraseña, contraseña)
 
     def generar_codigo_recuperacion(self):
-        """Genera un código numérico de 6 dígitos para verificación y lo guarda en la base de datos."""
+        """
+        Genera un código numérico de 6 dígitos para recuperación de contraseña.
+
+        El código se almacena en `reset_token` y tiene una expiración de 10 minutos.
+        """
         import random
         from datetime import datetime, timedelta
         # Generamos un código numérico de 6 dígitos
@@ -146,7 +273,11 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         return self.reset_token
 
     def generar_token_seguro_reseteo(self):
-        """Genera un token de reseteo seguro (largo) y lo guarda en la base de datos."""
+        """
+        Genera un token de reseteo seguro y largo para el paso final del cambio de contraseña.
+
+        Este token se genera después de verificar el código numérico para mayor seguridad.
+        """
         import secrets
         from datetime import datetime, timedelta
         self.reset_token = secrets.token_urlsafe(32)
@@ -157,7 +288,15 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
 
     @staticmethod
     def verificar_reset_token(token):
-        """Verifica si un token de reseteo es válido y no ha expirado."""
+        """
+        Verifica si un token de reseteo (código o token seguro) es válido y no ha expirado.
+
+        Args:
+            token (str): El token a verificar.
+
+        Returns:
+            Optional[Usuarios]: La instancia del usuario si el token es válido, de lo contrario `None`.
+        """
         from datetime import datetime
         usuario = Usuarios.query.filter_by(reset_token=token).first()
         if usuario and usuario.reset_token_expiration and usuario.reset_token_expiration > datetime.utcnow():
@@ -169,24 +308,40 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
 
 
 class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    """
+    Representa a un usuario administrador del sistema.
+
+    Este modelo almacena la información de los administradores, separada de los
+    usuarios clientes para mayor seguridad y claridad.
+
+    Attributes:
+        cedula (str): Cédula de identidad del administrador.
+        nombre (str): Nombre del administrador.
+        apellido (str): Apellido del administrador.
+        numero_telefono (str): Número de teléfono del administrador.
+        contraseña (str): Hash de la contraseña del administrador.
+    """
     __tablename__ = 'admins'
 
     # Propiedades requeridas por Flask-Login
     @property
     def is_active(self):
+        """Indica si el administrador está activo."""
         return self.estado == EstadoEnum.ACTIVO
 
     @property
     def is_authenticated(self):
+        """Indica si el administrador está autenticado."""
         return True
 
     @property
     def is_anonymous(self):
+        """Indica si el administrador es anónimo."""
         return False
 
     def get_id(self):
+        """Devuelve el ID del administrador como una cadena."""
         return str(self.id)
-    __tablename__ = 'admins'
 
     # id y timestamps heredados de los mixins
     cedula: Mapped[str] = mapped_column(db.String(20), nullable=False, unique=True)
@@ -200,13 +355,25 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
     __table_args__ = (
         CheckConstraint(
             "LENGTH(numero_telefono) = 10 AND numero_telefono ~ '^[0-9]+$'", name='check_numero_telefono'),
-        CheckConstraint("LENGTH(contraseña) >= 6",
+        CheckConstraint("LENGTH(contraseña) >= 8",
                         name='check_contraseña_admin'),
         db.Index('idx_admin_cedula', 'cedula'),
         db.Index('idx_admin_numero_telefono', 'numero_telefono'),
     )
 
     def __init__(self, cedula, nombre, apellido, numero_telefono, contraseña, estado='activo', id=None):
+        """
+        Inicializa una nueva instancia de Admin.
+
+        Args:
+            cedula (str): La cédula del administrador.
+            nombre (str): El nombre del administrador.
+            apellido (str): El apellido del administrador.
+            numero_telefono (str): El número de teléfono (10 dígitos).
+            contraseña (str): La contraseña en texto plano (será hasheada).
+            estado (str): El estado inicial ('activo' o 'inactivo').
+            id (Optional[str]): Un ID predefinido, si es necesario.
+        """
         if not cedula or not cedula.strip():
             raise ValueError("La cédula no puede estar vacía")
         if not nombre or not nombre.strip():
@@ -226,9 +393,24 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
 
 
     def verificar_contraseña(self, contraseña):
+        """
+        Verifica si una contraseña proporcionada coincide con la contraseña hasheada del admin.
+
+        Args:
+            contraseña (str): La contraseña en texto plano a verificar.
+
+        Returns:
+            bool: `True` si la contraseña es correcta, `False` en caso contrario.
+        """
         return bcrypt.check_password_hash(self.contraseña, contraseña)
 
     def generar_jwt(self):
+        """
+        Genera un JSON Web Token (JWT) para el administrador.
+
+        Returns:
+            str: El token JWT codificado, con un flag `is_admin`.
+        """
         import jwt
         from datetime import datetime, timedelta
         from flask import current_app

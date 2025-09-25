@@ -1,21 +1,43 @@
-# Serializadores
+"""
+Módulo de Modelos de Dominio para Productos y Categorías.
+
+Este archivo define las estructuras de datos para los productos y su organización jerárquica.
+Contiene el modelo `Productos` para los artículos de la tienda, así como los modelos
+`CategoriasPrincipales`, `Subcategorias` y `Seudocategorias` que conforman
+el sistema de clasificación de productos. También incluye `Value Objects` para
+la validación de datos como nombres y descripciones.
+"""
+# --- Importaciones de Serializadores ---
 from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, producto_to_dict
+# --- Importaciones de Extensiones y Terceros ---
 from app.extensions import db
 from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import List, Optional, TYPE_CHECKING
 from slugify import slugify
-
+# --- Importaciones Locales de la Aplicación ---
+from typing import List, Optional, TYPE_CHECKING
 if TYPE_CHECKING:
     from app.models.domains.review_models import Likes, Reseñas
     from app.models.domains.order_models import PedidoProducto
-
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
 from app.models.enums import EstadoEnum
 
 class NombreProducto:
-    """Value object para validar el nombre del producto."""
+    """
+    Value Object para encapsular y validar el nombre de un producto.
+
+    Asegura que el nombre no esté vacío y elimina espacios en blanco al inicio y al final.
+    """
     def __init__(self, nombre: str):
+        """
+        Inicializa el Value Object.
+
+        Args:
+            nombre (str): El nombre del producto.
+
+        Raises:
+            ValueError: Si el nombre está vacío o solo contiene espacios.
+        """
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
         self.value = nombre.strip()
@@ -23,8 +45,21 @@ class NombreProducto:
         return self.value
 
 class DescripcionProducto:
-    """Value object para validar la descripción del producto."""
+    """
+    Value Object para encapsular y validar la descripción de un producto.
+
+    Asegura que la descripción no esté vacía y elimina espacios en blanco.
+    """
     def __init__(self, descripcion: str):
+        """
+        Inicializa el Value Object.
+
+        Args:
+            descripcion (str): La descripción del producto.
+
+        Raises:
+            ValueError: Si la descripción está vacía o solo contiene espacios.
+        """
         if not descripcion or not descripcion.strip():
             raise ValueError("La descripción no puede estar vacía")
         self.value = descripcion.strip()
@@ -33,6 +68,20 @@ class DescripcionProducto:
 
 
 class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    """
+    Representa el nivel más alto en la jerarquía de categorías de productos.
+
+    Una categoría principal agrupa varias subcategorías. Su estado (activo/inactivo)
+    puede depender del estado de sus subcategorías hijas.
+
+    Attributes:
+        nombre (str): Nombre único de la categoría principal.
+        slug (str): Versión del nombre optimizada para URLs.
+        descripcion (str): Descripción detallada de la categoría.
+        estado (EstadoEnum): Estado de la categoría (activo o inactivo).
+        subcategorias (List['Subcategorias']): Relación con las subcategorías que pertenecen
+                                               a esta categoría principal.
+    """
     __tablename__ = 'categorias_principales'
 
     # id y timestamps heredados de los mixins
@@ -75,6 +124,17 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
                 pass
 
     def __init__(self, nombre, descripcion, estado='activo', id=None):
+        """
+        Inicializa una nueva instancia de CategoriasPrincipales.
+
+        Args:
+            nombre (str): El nombre de la categoría.
+            descripcion (str): La descripción de la categoría.
+            estado (str): El estado inicial ('activo' o 'inactivo').
+            id (Optional[str]): Un ID predefinido, si es necesario.
+        Raises:
+            ValueError: Si el nombre, descripción o estado son inválidos.
+        """
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
         if not descripcion or not descripcion.strip():
@@ -89,6 +149,21 @@ class CategoriasPrincipales(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoIna
             self.id = id
 
 class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    """
+    Representa el segundo nivel en la jerarquía de categorías.
+
+    Una subcategoría pertenece a una única categoría principal y agrupa varias
+    seudocategorías. Su estado puede depender del estado de sus seudocategorías hijas.
+
+    Attributes:
+        nombre (str): Nombre único de la subcategoría.
+        slug (str): Versión del nombre optimizada para URLs.
+        descripcion (str): Descripción detallada de la subcategoría.
+        categoria_principal_id (str): Clave foránea a la categoría principal a la que pertenece.
+        estado (EstadoEnum): Estado de la subcategoría (activo o inactivo).
+        seudocategorias (List['Seudocategorias']): Relación con las seudocategorías hijas.
+        categoria_principal (CategoriasPrincipales): Relación con la categoría principal padre.
+    """
     __tablename__ = 'subcategorias'
 
     # id y timestamps heredados de los mixins
@@ -142,6 +217,19 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
                 self.categoria_principal.check_and_update_status()
 
     def __init__(self, nombre, descripcion, categoria_principal_id, estado='activo', id=None):
+        """
+        Inicializa una nueva instancia de Subcategorias.
+
+        Args:
+            nombre (str): El nombre de la subcategoría.
+            descripcion (str): La descripción de la subcategoría.
+            categoria_principal_id (str): El ID de la categoría principal a la que pertenece.
+            estado (str): El estado inicial ('activo' o 'inactivo').
+            id (Optional[str]): Un ID predefinido, si es necesario.
+
+        Raises:
+            ValueError: Si algún argumento requerido es inválido.
+        """
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
         if not descripcion or not descripcion.strip():
@@ -159,6 +247,22 @@ class Subcategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMix
             self.id = id
 
 class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    """
+    Representa el nivel más específico en la jerarquía de categorías, directamente
+    asociado a los productos.
+
+    Una seudocategoría pertenece a una única subcategoría. Su estado puede depender
+    del estado de los productos que contiene.
+
+    Attributes:
+        nombre (str): Nombre único de la seudocategoría.
+        slug (str): Versión del nombre optimizada para URLs.
+        descripcion (str): Descripción detallada de la seudocategoría.
+        subcategoria_id (str): Clave foránea a la subcategoría a la que pertenece.
+        estado (EstadoEnum): Estado de la seudocategoría (activo o inactivo).
+        productos (List['Productos']): Relación con los productos que pertenecen a esta seudocategoría.
+        subcategoria (Subcategorias): Relación con la subcategoría padre.
+    """
     __tablename__ = 'seudocategorias'
 
     # id y timestamps heredados de los mixins
@@ -210,6 +314,19 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
                 self.subcategoria.check_and_update_status()
 
     def __init__(self, nombre, descripcion, subcategoria_id, estado='activo', id=None):
+        """
+        Inicializa una nueva instancia de Seudocategorias.
+
+        Args:
+            nombre (str): El nombre de la seudocategoría.
+            descripcion (str): La descripción de la seudocategoría.
+            subcategoria_id (str): El ID de la subcategoría a la que pertenece.
+            estado (str): El estado inicial ('activo' o 'inactivo').
+            id (Optional[str]): Un ID predefinido, si es necesario.
+
+        Raises:
+            ValueError: Si algún argumento requerido es inválido.
+        """
         if not nombre or not nombre.strip():
             raise ValueError("El nombre no puede estar vacío")
         if not descripcion or not descripcion.strip():
@@ -227,6 +344,32 @@ class Seudocategorias(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoM
             self.id = id
 
 class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+    """
+    Representa un producto vendible en la tienda.
+
+    Este modelo contiene toda la información relevante de un producto, incluyendo
+    detalles descriptivos, precios, control de inventario, y relaciones con
+    categorías, reseñas y pedidos.
+
+    Attributes:
+        nombre (str): Nombre del producto.
+        slug (str): Versión del nombre optimizada para URLs.
+        descripcion (str): Descripción detallada del producto.
+        precio (float): Precio de venta al público.
+        costo (float): Costo de adquisición del producto.
+        imagen_url (str): URL de la imagen principal del producto.
+        _existencia (int): Columna real en la BD para el stock. Se accede a través de la propiedad `existencia`.
+        stock_minimo (int): Nivel mínimo de stock antes de considerarse bajo.
+        stock_maximo (int): Nivel máximo de stock deseado.
+        seudocategoria_id (str): Clave foránea a la seudocategoría a la que pertenece.
+        marca (Optional[str]): Marca del producto.
+        especificaciones (Optional[dict]): Campo JSON para almacenar datos técnicos adicionales.
+        calificacion_promedio_almacenada (float): Calificación promedio precalculada para optimizar consultas.
+        likes (List['Likes']): Relación con los 'me gusta' recibidos.
+        reseñas (List['Reseñas']): Relación con las reseñas recibidas.
+        seudocategoria (Seudocategorias): Relación con la seudocategoría a la que pertenece.
+        pedidos (List['PedidoProducto']): Relación con los pedidos en los que ha sido incluido.
+    """
     __tablename__ = 'productos'
 
     # id y timestamps heredados de los mixins
@@ -240,10 +383,21 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
 
     @property
     def existencia(self):
+        """
+        Propiedad para obtener la existencia del producto.
+
+        Returns:
+            int: La cantidad de stock actual.
+        """
         return self._existencia
 
     @existencia.setter
     def existencia(self, value):
+        """
+        Setter para la existencia que incluye lógica de negocio.
+        Si la existencia llega a 0, el producto se desactiva automáticamente.
+        Si la existencia es mayor a 0, se asegura que el producto esté activo.
+        """
         if value < 0:
             raise ValueError("La existencia no puede ser negativa")
         self._existencia = value
@@ -299,11 +453,17 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     # Propiedad para verificar si es nuevo
     @property
     def es_nuevo(self):
+        """
+        Propiedad booleana que indica si el producto es nuevo (creado en los últimos 5 días).
+        """
         from datetime import datetime, timedelta
         return datetime.utcnow() - self.created_at <= timedelta(days=5)
 
     @property
     def agotado(self):
+        """
+        Propiedad booleana que indica si el stock del producto está por debajo del mínimo.
+        """
         return self.existencia < self.stock_minimo
 
     # Restricciones e índices
@@ -322,6 +482,27 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
     )
 
     def __init__(self, nombre, descripcion, precio, costo, imagen_url, existencia, seudocategoria_id, especificaciones=None, stock_minimo=10, stock_maximo=100, marca=None, estado='activo', id=None):
+        """
+        Inicializa una nueva instancia de Producto.
+
+        Args:
+            nombre (str): Nombre del producto.
+            descripcion (str): Descripción del producto.
+            precio (float): Precio de venta.
+            costo (float): Costo de adquisición.
+            imagen_url (str): URL de la imagen.
+            existencia (int): Cantidad inicial en stock.
+            seudocategoria_id (str): ID de la seudocategoría a la que pertenece.
+            especificaciones (Optional[dict]): Especificaciones técnicas en formato JSON.
+            stock_minimo (int): Nivel de stock mínimo.
+            stock_maximo (int): Nivel de stock máximo.
+            marca (Optional[str]): Marca del producto.
+            estado (str): Estado inicial ('activo' o 'inactivo').
+            id (Optional[str]): Un ID predefinido, si es necesario.
+
+        Raises:
+            ValueError: Si alguno de los argumentos requeridos es inválido.
+        """
         self.nombre = str(NombreProducto(nombre))
         self.slug = slugify(self.nombre)
         self.descripcion = str(DescripcionProducto(descripcion))

@@ -1,22 +1,41 @@
-# app/models/serializers.py
+"""
+Módulo de Serializadores de Modelos.
+
+Este archivo contiene funciones dedicadas a convertir objetos de modelos de SQLAlchemy
+en diccionarios de Python. Esta serialización es un paso esencial para transformar
+los datos de la base de datos en un formato JSON que pueda ser enviado a través de APIs
+al frontend o a otros servicios.
+"""
+# --- Importaciones de la Librería Estándar ---
+from datetime import datetime
 
 def format_currency_cop(value):
+    """
+    Formatea un valor numérico como una cadena de moneda en pesos colombianos (COP).
+
+    Args:
+        value (Union[int, float, None]): El valor numérico a formatear.
+
+    Returns:
+        str: Una cadena formateada como '$ 1.234.567'. Devuelve '$ 0' si el valor es None
+             y '$ NaN' si el valor no es un número válido.
+    """
     if value is None:
         return "$ 0"
     try:
-        # Ensure value is a float before converting to int, to handle potential non-integer numbers
-        # and to catch non-numeric strings that float() would fail on.
+        # Asegura que el valor sea un float antes de convertirlo a int, para manejar números no enteros
+        # y capturar cadenas no numéricas en las que float() fallaría.
         float_value = float(value)
-        # Convert to integer to remove decimals
+        # Convierte a entero para eliminar decimales.
         int_value = int(float_value)
-        # Format with thousands separator and replace comma with dot
+        # Formatea con separador de miles y reemplaza la coma por un punto.
         return f"$ {int_value:,}".replace(",", ".")
     except (ValueError, TypeError):
-        # Handle cases where value is not a valid number (e.g., "NaN", non-numeric string)
-        return "$ NaN" # Or "$ 0" or some other indicator, but "$ NaN" is what the user reported.
+        # Maneja casos donde el valor no es un número válido (ej. "NaN", cadena no numérica).
+        return "$ NaN"
 
 def usuario_to_dict(usuario):
-    """Convierte un objeto Usuario a un diccionario."""
+    """Serializa un objeto Usuario a un diccionario para uso interno o de administrador."""
     if not usuario:
         return None
     return {
@@ -30,7 +49,7 @@ def usuario_to_dict(usuario):
     }
 
 def usuario_publico_to_dict(usuario):
-    """Convierte un objeto Usuario a un diccionario con su información pública."""
+    """Serializa un objeto Usuario a un diccionario con su información pública, ideal para vistas de cliente."""
     if not usuario:
         return None
     return {
@@ -40,7 +59,7 @@ def usuario_publico_to_dict(usuario):
     }
 
 def admin_to_dict(admin):
-    """Convierte un objeto Admin a un diccionario."""
+    """Serializa un objeto Admin a un diccionario."""
     if not admin:
         return None
     return {
@@ -55,7 +74,18 @@ def admin_to_dict(admin):
     }
 
 def categoria_principal_to_dict(cat):
-    """Convierte un objeto CategoriaPrincipal a un diccionario."""
+    """
+    Serializa un objeto CategoriaPrincipal a un diccionario.
+
+    Este serializador es recursivo: invoca a `subcategoria_to_dict` para cada una de
+    sus subcategorías, construyendo un árbol de datos completo. Además, calcula
+    métricas agregadas como el conteo de subcategorías activas y el total de productos
+    en toda la categoría principal.
+
+    Returns:
+        dict: Un diccionario que representa la categoría principal, sus subcategorías
+              y los datos agregados.
+    """
     if not cat:
         return None
 
@@ -85,7 +115,18 @@ def categoria_principal_to_dict(cat):
     }
 
 def subcategoria_to_dict(sub):
-    """Convierte un objeto Subcategoria a un diccionario."""
+    """
+    Serializa un objeto Subcategoria a un diccionario.
+
+    De forma similar a `categoria_principal_to_dict`, este serializador es recursivo
+    y construye parte del árbol de categorías. Obtiene información del padre
+    (nombre de la categoría principal) y calcula métricas agregadas de sus hijos,
+    como el conteo de seudocategorías activas y el total de productos.
+
+    Returns:
+        dict: Un diccionario que representa la subcategoría, sus seudocategorías,
+              información del padre y datos agregados.
+    """
     if not sub:
         return None
 
@@ -121,7 +162,17 @@ def subcategoria_to_dict(sub):
     }
 
 def seudocategoria_to_dict(seudo):
-    """Convierte un objeto Seudocategoria a un diccionario."""
+    """
+    Serializa un objeto Seudocategoria a un diccionario.
+
+    Este es el nivel más bajo de la jerarquía de categorías. El serializador enriquece
+    el objeto con los nombres de sus ancestros (subcategoría y categoría principal)
+    para facilitar la navegación y la presentación en la UI. También calcula el
+    número total de productos que pertenecen directamente a ella.
+
+    Returns:
+        dict: Un diccionario que representa la seudocategoría y su contexto jerárquico.
+    """
     if not seudo:
         return None
 
@@ -151,10 +202,25 @@ def seudocategoria_to_dict(seudo):
         'total_productos': total_products_in_pseudocategory
     }
 
-from datetime import datetime
-
 def producto_to_dict(prod):
-    """Convierte un objeto Producto a un diccionario con datos enriquecidos."""
+    """
+    Serializa un objeto Producto para la vista pública del cliente.
+
+    Este es un serializador clave que no solo expone los datos del producto, sino que
+    también los enriquece con información calculada y de contexto para la UI.
+
+    Características importantes:
+    - **Filtrado de Estado**: Devuelve `None` si el producto no está 'activo', asegurando
+      que solo productos visibles se muestren al cliente.
+    - **Navegación de Categorías**: Extrae los nombres y slugs de toda la jerarquía
+      de categorías (principal, sub, seudo) para construir breadcrumbs y URLs.
+    - **Datos Enriquecidos**: Calcula métricas de negocio como `margen_ganancia`,
+      `antiguedad_dias`, `ventas_unidades` (simulado) y `existencia_porcentaje`.
+
+    Returns:
+        Optional[dict]: Un diccionario con los datos completos y enriquecidos del producto,
+                        o `None` si el producto no es apto para la vista pública.
+    """
     if not prod or prod.estado != 'activo':
         return None
 
@@ -239,7 +305,17 @@ def producto_to_dict(prod):
     }
 
 def admin_producto_to_dict(prod):
-    """Convierte un objeto Producto a un diccionario para la vista de admin, sin filtrar por estado."""
+    """
+    Serializa un objeto Producto para la vista de administrador.
+
+    Es funcionalmente idéntico a `producto_to_dict` pero con una diferencia crucial:
+    **no filtra por estado**. Esto permite que el panel de administración muestre
+    y gestione tanto productos activos como inactivos.
+
+    Returns:
+        Optional[dict]: Un diccionario con los datos completos y enriquecidos del producto,
+                        independientemente de su estado. `None` si el producto no existe.
+    """
     if not prod:
         return None
 
@@ -325,7 +401,16 @@ def admin_producto_to_dict(prod):
 
 
 def producto_list_to_dict(prod):
-    """Convierte un objeto Producto a un diccionario para la lista de productos (excluye id)."""
+    """
+    Serializa un objeto Producto a un diccionario optimizado para listas.
+
+    Esta versión del serializador está diseñada para ser ligera y rápida, ideal para
+    renderizar grandes volúmenes de productos en páginas de listado o resultados de
+    búsqueda. Excluye campos pesados o innecesarios para una vista de lista.
+
+    Returns:
+        Optional[dict]: Un diccionario con un subconjunto de datos del producto.
+    """
     if not prod:
         return None
         
@@ -376,7 +461,7 @@ def producto_list_to_dict(prod):
     }
 
 def like_to_dict(like):
-    """Convierte un objeto Like a un diccionario."""
+    """Serializa un objeto Like a un diccionario."""
     if not like:
         return None
     return {
@@ -389,7 +474,7 @@ def like_to_dict(like):
     }
 
 def resena_to_dict(resena):
-    """Convierte un objeto Reseña a diccionario con información completa."""
+    """Serializa un objeto Reseña, incluyendo la información pública del usuario que la escribió."""
     if not resena:
         return None
     return {
@@ -404,7 +489,7 @@ def resena_to_dict(resena):
 
 
 def cart_item_to_dict(item):
-    """Convierte un objeto CartItem a un diccionario."""
+    """Serializa un objeto CartItem, incluyendo información básica del producto y el subtotal calculado."""
     if not item:
         return None
         
@@ -432,7 +517,7 @@ def cart_item_to_dict(item):
     }
 
 def busqueda_termino_to_dict(busq):
-    """Convierte un objeto BusquedaTermino a un diccionario."""
+    """Serializa un objeto BusquedaTermino a un diccionario."""
     if not busq:
         return None
     return {
@@ -445,7 +530,13 @@ def busqueda_termino_to_dict(busq):
     }
 
 def pedido_to_dict(pedido):
-    """Convierte un objeto Pedido a un diccionario."""
+    """
+    Serializa un objeto Pedido a un diccionario para vistas de lista (resumen).
+
+    Proporciona una vista condensada de un pedido, ideal para tablas en el panel de
+    administración donde se muestran múltiples pedidos. Incluye información clave
+    y un conteo de productos en lugar de la lista completa.
+    """
     if not pedido:
         return None
         
@@ -469,7 +560,15 @@ def pedido_to_dict(pedido):
     }
 
 def pedido_detalle_to_dict(pedido):
-    """Convierte un objeto Pedido a un diccionario con detalles completos."""
+    """
+    Serializa un objeto Pedido con detalles completos para la vista de administrador.
+
+    Esta función construye una representación exhaustiva del pedido, incluyendo:
+    - Información detallada del cliente.
+    - Una lista completa de los productos del pedido, con sus nombres, imágenes,
+      cantidades y subtotales calculados.
+    - El historial completo de seguimiento.
+    """
     if not pedido:
         return None
         
@@ -512,7 +611,15 @@ def pedido_detalle_to_dict(pedido):
     }
 
 def pedido_detalle_cliente_to_dict(pedido):
-    """Convierte un objeto Pedido a un diccionario con detalles completos."""
+    """
+    Serializa un objeto Pedido con detalles completos, optimizado para la vista del cliente.
+
+    Similar a `pedido_detalle_to_dict`, pero adaptado para lo que el cliente necesita ver.
+    - Calcula el subtotal de los productos (`calculated_total`) para mostrarlo por separado.
+    - Se asegura de que el `total` final sea un número válido, usando el total calculado
+      como fallback.
+    - Omite notas internas de seguimiento que podrían no ser relevantes para el cliente.
+    """
     if not pedido:
         return None
         
@@ -553,7 +660,7 @@ def pedido_detalle_cliente_to_dict(pedido):
     return {
         'id': pedido.id,
         'usuario': usuario_info,
-        'subtotal_productos': calculated_total, # Nuevo campo para el subtotal de los productos
+        'subtotal_productos': calculated_total,
         'total': final_total,
         'estado_pedido': pedido.estado_pedido.value if pedido.estado_pedido else None,
         'estado': pedido.estado,

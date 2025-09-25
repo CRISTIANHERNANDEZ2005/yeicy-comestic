@@ -1,9 +1,26 @@
-# categoria_detalle.py - Versión Mejorada con Filtros Avanzados
+"""
+Módulo de Detalles de Categoría (Admin).
+
+Este blueprint se encarga de proporcionar una vista detallada y analítica para una
+categoría principal específica en el panel de administración. Reúne y presenta
+métricas clave, tendencias de mercado, rendimiento de subcategorías y listas de
+productos relevantes.
+
+Funcionalidades:
+- Renderizado de la página de detalles de la categoría.
+- Endpoints de API para obtener datos analíticos:
+  - Métricas generales (ventas, unidades, margen).
+  - Tendencias de ventas a lo largo del tiempo.
+  - Rendimiento comparativo de subcategorías.
+  - Listado de productos más vendidos.
+- Endpoints de API para listar y filtrar productos relacionados con la categoría,
+  soportando paginación, búsqueda y ordenamiento avanzado.
+"""
 from flask import Blueprint, jsonify, request, current_app, render_template
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias, Productos
 from app.models.domains.order_models import Pedido, PedidoProducto
-from app.models.enums import EstadoPedido
+from app.models.enums import EstadoPedido, EstadoEnum
 from app.models.serializers import categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, admin_producto_to_dict
 from app.extensions import db
 from sqlalchemy import func, and_, or_, case, desc
@@ -17,7 +34,20 @@ admin_categoria_detalle_bp = Blueprint('admin_categoria_detalle', __name__, url_
 @admin_jwt_required
 def view_category_details_page(admin_user, category_slug):
     """
-    Renderiza la página de detalles para una categoría principal específica con todos los datos precargados.
+    Renderiza la página de detalles para una categoría principal específica.
+
+    Esta vista actúa como el punto de entrada principal, precargando todos los datos
+    analíticos y de productos necesarios para la visualización inicial de la página.
+    Utiliza varias funciones auxiliares para recopilar métricas, tendencias y listas
+    de productos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+        category_slug (str): El slug de la categoría principal a visualizar.
+
+    Returns:
+        Response: La plantilla `detalles_categoria.html` renderizada con todos los
+                  datos necesarios, o una página de error 404/500 si corresponde.
     """
     categoria_obj = CategoriasPrincipales.query.filter_by(slug=category_slug).first()
     if not categoria_obj:
@@ -55,7 +85,16 @@ def view_category_details_page(admin_user, category_slug):
 @admin_jwt_required
 def get_category_details(admin_user, categoria_id):
     """
-    Endpoint principal que obtiene todos los datos necesarios para la vista de detalles de categoría
+    API: Obtiene un conjunto completo de datos para la vista de detalles de una categoría.
+
+    Este endpoint centraliza la obtención de toda la información analítica para una
+    categoría, incluyendo métricas, tendencias, rendimiento de subcategorías y
+    productos destacados. Es ideal para la carga inicial de datos en el frontend
+    a través de una única llamada AJAX.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal a analizar.
     """
     try:
         # Obtener información básica de la categoría con carga optimizada
@@ -110,7 +149,17 @@ def get_category_details(admin_user, categoria_id):
 @admin_jwt_required
 def get_related_products_advanced(admin_user, categoria_id):
     """
-    Endpoint para obtener productos relacionados con filtros avanzados y paginación
+    API: Obtiene productos de una categoría con filtros avanzados y paginación.
+
+    Permite al frontend solicitar una lista paginada de productos pertenecientes a una
+    categoría principal, aplicando múltiples criterios de filtrado y ordenamiento.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal.
+
+    Query Params:
+        page, per_page, search, sort_by, order, estado, subcategoria_id, seudocategoria_id.
     """
     try:
         # Parámetros de paginación
@@ -153,7 +202,24 @@ def get_related_products_advanced(admin_user, categoria_id):
 
 def get_related_products_filtered(categoria_id, page=1, per_page=10, search='', sort_by='nombre', order='asc', estado='', subcategoria_id='', seudocategoria_id=''):
     """
-    Obtiene productos relacionados con paginación, búsqueda y filtros avanzados
+    Lógica de negocio para filtrar y paginar productos de una categoría.
+
+    Esta función construye y ejecuta una consulta SQLAlchemy compleja para obtener
+    los productos que coinciden con los criterios especificados.
+
+    Args:
+        categoria_id (str): ID de la categoría principal.
+        page (int): Número de página.
+        per_page (int): Elementos por página.
+        search (str): Término de búsqueda.
+        sort_by (str): Campo de ordenamiento.
+        order (str): Dirección de ordenamiento ('asc' o 'desc').
+        estado (str): Filtro por estado del producto ('activo' o 'inactivo').
+        subcategoria_id (str): Filtro por subcategoría.
+        seudocategoria_id (str): Filtro por seudocategoría.
+
+    Returns:
+        dict: Un diccionario con la lista de productos y metadatos de paginación.
     """
     # Construir la consulta base con joins optimizados
     query = db.session.query(Productos).join(
@@ -175,8 +241,8 @@ def get_related_products_filtered(categoria_id, page=1, per_page=10, search='', 
         query = query.filter(Seudocategorias.subcategoria_id == subcategoria_id)
     
     # Aplicar filtro de estado si se proporciona
-    if estado and estado in ['activo', 'inactivo']:
-        query = query.filter(Productos.estado == estado)
+    if estado and estado in [EstadoEnum.ACTIVO.value, EstadoEnum.INACTIVO.value]:
+        query = query.filter(Productos.estado == EstadoEnum(estado))
     
     # Aplicar búsqueda si se proporciona
     if search:
@@ -240,7 +306,14 @@ def get_related_products_filtered(categoria_id, page=1, per_page=10, search='', 
 @admin_jwt_required
 def get_subcategories_for_filter(admin_user, categoria_id):
     """
-    Obtiene todas las subcategorías (activas e inactivas) para un filtro.
+    API: Obtiene las subcategorías de una categoría principal para poblar un filtro.
+
+    Devuelve una lista de todas las subcategorías (activas e inactivas) que pertenecen
+    a una categoría principal, optimizada para ser usada en un `<select>` en el frontend.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal.
     """
     try:
         # No se filtra por estado para permitir la búsqueda en todas
@@ -257,7 +330,14 @@ def get_subcategories_for_filter(admin_user, categoria_id):
 @admin_jwt_required
 def get_pseudocategories_for_filter(admin_user, subcategoria_id):
     """
-    Obtiene todas las seudocategorías (activas e inactivas) para un filtro.
+    API: Obtiene las seudocategorías de una subcategoría para poblar un filtro.
+
+    Devuelve una lista de todas las seudocategorías (activas e inactivas) que pertenecen
+    a una subcategoría, para ser usada en un filtro dependiente.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        subcategoria_id (str): El ID de la subcategoría.
     """
     try:
         # No se filtra por estado
@@ -275,7 +355,17 @@ def get_pseudocategories_for_filter(admin_user, subcategoria_id):
 @admin_jwt_required
 def get_top_products_filtered(admin_user, categoria_id):
     """
-    Endpoint para obtener productos más vendidos con filtros avanzados
+    API: Obtiene los productos más vendidos de una categoría con filtros avanzados.
+
+    Calcula las ventas y la tendencia de los productos de una categoría y los devuelve
+    de forma paginada y ordenada según los criterios solicitados.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal.
+
+    Query Params:
+        period, sort_by, min_price, max_price, category_filter, status_filter, search, page, per_page.
     """
     try:
         # Obtener parámetros de filtrado
@@ -341,7 +431,7 @@ def get_top_products_filtered(admin_user, categoria_id):
             PedidoProducto.producto_id.in_(product_ids_subquery)
         ).group_by(PedidoProducto.producto_id).subquery()
         
-        # MEJORA: Calcular la tendencia directamente en la consulta
+        # Calcular la tendencia directamente en la consulta
         tendencia_expr = case(
             (sales_subquery.c.ingresos_anteriores > 0, 
              (sales_subquery.c.ingresos_recientes - sales_subquery.c.ingresos_anteriores) * 100.0 / sales_subquery.c.ingresos_anteriores),
@@ -368,8 +458,8 @@ def get_top_products_filtered(admin_user, categoria_id):
         if max_price is not None:
             query = query.filter(Productos.precio <= max_price)
         
-        if status_filter:
-            query = query.filter(Productos.estado == status_filter)
+        if status_filter and status_filter in [EstadoEnum.ACTIVO.value, EstadoEnum.INACTIVO.value]:
+            query = query.filter(Productos.estado == EstadoEnum(status_filter))
         
         if search:
             search_term = f"%{search}%"
@@ -447,7 +537,10 @@ def get_top_products_filtered(admin_user, categoria_id):
 
 def get_category_path(producto):
     """
-    Función auxiliar para obtener la ruta de categoría de un producto
+    Función auxiliar para obtener la ruta de categoría de un producto.
+
+    Construye una cadena de texto que representa la jerarquía de categorías de un
+    producto (ej. "Maquillaje > Ojos > Sombras") para su visualización.
     """
     path_parts = []
     
@@ -464,7 +557,13 @@ def get_category_path(producto):
 
 def get_category_metrics(categoria_id):
     """
-    Calcula las métricas principales de la categoría con datos reales y optimización.
+    Calcula las métricas de rendimiento clave para una categoría.
+
+    Realiza consultas optimizadas para obtener:
+    - Ventas y unidades vendidas totales (histórico).
+    - Margen de ganancia promedio.
+    - Tendencias de ventas, unidades y margen comparando los últimos 30 días
+      con los 30 días anteriores.
     """
     # Obtener los IDs de todos los productos de la categoría (activos e inactivos)
     product_ids_subquery = db.session.query(Productos.id).join(
@@ -573,7 +672,14 @@ def get_category_metrics(categoria_id):
 
 def get_market_trends(categoria_id):
     """
-    Obtiene las tendencias del mercado para la categoría con datos reales y mejor manejo de casos vacíos.
+    Obtiene datos de tendencias de mercado para una categoría.
+
+    Calcula y prepara los datos para tres componentes visuales:
+    1.  **Evolución de Ventas**: Ventas mensuales de los últimos 6 meses.
+    2.  **Comparación de Categorías**: Compara las ventas de la categoría actual con
+        las 5 categorías más vendidas en el último mes.
+    3.  **Indicadores Clave**: Participación de mercado, tasa de crecimiento interanual (YoY)
+        y satisfacción del cliente (calificación promedio).
     """
     now = datetime.utcnow()
     
@@ -739,7 +845,15 @@ def get_market_trends(categoria_id):
 
 def get_subcategories_performance(categoria_id):
     """
-    Obtiene el rendimiento de las subcategorías con datos reales de forma optimizada.
+    Obtiene y calcula el rendimiento de cada subcategoría dentro de una categoría principal.
+
+    Para cada subcategoría, calcula:
+    - Ventas totales.
+    - Tasa de crecimiento (últimos 30 días vs. 30 días anteriores).
+    - Estado (activo/inactivo).
+    - Una lista de sus seudocategorías con sus ventas individuales.
+
+    Utiliza una única consulta optimizada para obtener todos los datos de ventas necesarios.
     """
     # Obtener todas las subcategorías y seudocategorías de la categoría principal (activas e inactivas)
     subcategorias = Subcategorias.query.filter(
@@ -827,7 +941,13 @@ def get_subcategories_performance(categoria_id):
 
 def get_top_products(categoria_id, limit=10):
     """
-    Obtiene los productos más vendidos de la categoría con datos reales.
+    Obtiene los productos más vendidos de una categoría.
+
+    Realiza una consulta optimizada para encontrar los `limit` productos con mayores
+    ingresos dentro de la categoría especificada. Para cada producto, calcula:
+    - Unidades vendidas totales.
+    - Ingresos totales.
+    - Tendencia de ventas (últimos 30 días vs. 30 días anteriores).
     """
     # Obtener IDs de productos de la categoría (activos e inactivos)
     product_ids_subquery = db.session.query(Productos.id).join(
@@ -915,7 +1035,10 @@ def get_top_products(categoria_id, limit=10):
 @admin_jwt_required
 def get_related_products_endpoint(admin_user, categoria_id):
     """
-    Endpoint para obtener productos relacionados con paginación
+    API: Obtiene una lista paginada de productos relacionados con una categoría.
+
+    Este es un endpoint más simple que `get_related_products_advanced`, utilizado
+    para cargas iniciales o vistas que no requieren filtros complejos.
     """
     page = request.args.get('page', 1, type=int)
     per_page = request.args.get('per_page', 10, type=int)
@@ -934,7 +1057,11 @@ def get_related_products_endpoint(admin_user, categoria_id):
 
 def get_related_products(categoria_id, page=1, per_page=10, search=''):
     """
-    Obtiene productos relacionados con paginación y búsqueda optimizada
+    Lógica de negocio para obtener productos de una categoría con paginación y búsqueda.
+
+    Args:
+        categoria_id (str): El ID de la categoría principal.
+        page (int), per_page (int), search (str): Parámetros de paginación y búsqueda.
     """
     # Construir la consulta base con joins optimizados
     query = db.session.query(Productos).join(

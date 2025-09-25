@@ -238,7 +238,7 @@ def create_pedido(admin_user):
             total=total_pedido,
             estado_pedido=EstadoPedido.EN_PROCESO,
             estado=EstadoEnum.ACTIVO.value,
-            # MEJORA PROFESIONAL: Inicializar el historial de seguimiento al crear el pedido.
+            #  Inicializar el historial de seguimiento al crear el pedido.
             # Esto asegura que el estado 'recibido' siempre tenga un timestamp.
             seguimiento_estado=EstadoSeguimiento.RECIBIDO,
             notas_seguimiento="Tu Pedido fue recibido y esta siendo procesado",
@@ -246,7 +246,7 @@ def create_pedido(admin_user):
                 'estado': EstadoSeguimiento.RECIBIDO.value,
                 'notas': "Tu Pedido fue recibido y esta siendo procesado",
                 'timestamp': datetime.utcnow().isoformat() + "Z",
-                'notified_to_client': False # MEJORA: Marcar para notificación inicial.
+                'notified_to_client': False # Marcar para notificación inicial.
             }]
         )
         db.session.add(nuevo_pedido)
@@ -398,13 +398,12 @@ def update_pedido(admin_user, pedido_id):
         return jsonify({'success': False, 'message': 'Error interno al actualizar el pedido'}), 500
 
 
-# lista_pedidos.py - MEJORADO PARA ACTUALIZACIONES EN TIEMPO REAL
 
 @admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>/seguimiento', methods=['POST'])
 @admin_jwt_required
 def update_pedido_seguimiento(admin_user, pedido_id):
     """
-    MEJORADO: Actualización en tiempo real del estado de seguimiento con sincronización bidireccional
+     Actualización en tiempo real del estado de seguimiento con sincronización bidireccional
     """
     try:
         # Obtener el pedido con sus productos y usuario para sincronización completa
@@ -430,7 +429,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
         nuevo_seguimiento_str = data.get('seguimiento_estado')
         notas = data.get('notas', '').strip()
 
-        # MEJORA: Validar que el estado y las notas no estén vacíos
+        #  Validar que el estado y las notas no estén vacíos
         if not nuevo_seguimiento_str:
             return jsonify({'success': False, 'message': 'El estado de seguimiento es obligatorio.'}), 400
         if not notas:
@@ -495,7 +494,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                     nuevo_estado_pedido = EstadoPedido.EN_PROCESO.value
                     current_app.logger.info(f"Pedido {pedido.id} movido a 'en proceso' a través del seguimiento.")
 
-            # MEJORA PROFESIONAL: Simplificar y corregir la lógica de actualización del historial.
+            # Simplificar y corregir la lógica de actualización del historial.
             # Siempre se debe añadir una nueva entrada al historial para mantener un registro claro.
             if pedido.seguimiento_historial is None:
                 pedido.seguimiento_historial = []
@@ -504,7 +503,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                 'estado': nuevo_seguimiento_enum.value,
                 'notas': notas,
                 'timestamp': datetime.utcnow().isoformat() + "Z",
-                'notified_to_client': False # MEJORA: Flag para notificaciones en carga de página
+                'notified_to_client': False # Flag para notificaciones en carga de página
             }
             
             pedido.seguimiento_historial.append(new_history_entry)
@@ -537,7 +536,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                 response_data['nuevo_estado_pedido'] = nuevo_estado_pedido
                 response_data['old_estado_pedido'] = old_estado_pedido.value
 
-            # MEJORA PROFESIONAL: El evento ahora se gestiona en el frontend al cargar la página.
+            # El evento ahora se gestiona en el frontend al cargar la página.
             # Se elimina la publicación de eventos en tiempo real (SSE), ya que el flag
             # 'notified_to_client' se encargará de la notificación.
 
@@ -558,7 +557,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
 @admin_jwt_required
 def update_pedido_estado(admin_user, pedido_id):
     """
-    MEJORADO: Actualización en tiempo real del estado del pedido con sincronización completa
+    Actualización en tiempo real del estado del pedido con sincronización completa
     """
     try:
         # Obtener el pedido con sus productos y usuario para sincronización completa
@@ -602,7 +601,7 @@ def update_pedido_estado(admin_user, pedido_id):
         try:
             seguimiento_cambiado = False
             nuevo_seguimiento = None
-            # MEJORA PROFESIONAL: Añadir una nota por defecto al historial de seguimiento.
+            #  Añadir una nota por defecto al historial de seguimiento.
 
             # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
             if old_status == EstadoPedido.CANCELADO and nuevo_estado in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
@@ -632,7 +631,7 @@ def update_pedido_estado(admin_user, pedido_id):
                 current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
 
             # Sincronizar estado de seguimiento automáticamente
-            # MEJORA PROFESIONAL: Asignar la nota correcta según el estado final.
+            # Asignar la nota correcta según el estado final.
             nota_por_defecto = ""
             if nuevo_estado == EstadoPedido.COMPLETADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.ENTREGADO
@@ -650,7 +649,7 @@ def update_pedido_estado(admin_user, pedido_id):
                 nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
                 nota_por_defecto = "Tu pedido fue recibido y está siendo procesado."
 
-            # MEJORA PROFESIONAL: Si el estado de seguimiento cambió, añadir una entrada al historial.
+            #  Si el estado de seguimiento cambió, añadir una entrada al historial.
             if seguimiento_cambiado and nota_por_defecto:
                 if pedido.seguimiento_historial is None:
                     pedido.seguimiento_historial = []
@@ -659,9 +658,9 @@ def update_pedido_estado(admin_user, pedido_id):
                     'estado': nuevo_seguimiento,
                     'notas': nota_por_defecto,
                     'timestamp': datetime.utcnow().isoformat() + "Z",
-                    'notified_to_client': False # MEJORA: Flag para notificaciones en carga de página
+                    'notified_to_client': False #  Flag para notificaciones en carga de página
                 }
-                # MEJORA PROFESIONAL: Modificar la lista in-place y marcarla como modificada.
+                # Modificar la lista in-place y marcarla como modificada.
                 pedido.seguimiento_historial.append(new_history_entry)
                 flag_modified(pedido, "seguimiento_historial")
                 pedido.notas_seguimiento = nota_por_defecto
@@ -692,7 +691,7 @@ def update_pedido_estado(admin_user, pedido_id):
                 response_data['nuevo_seguimiento'] = nuevo_seguimiento
                 response_data['old_seguimiento'] = pedido.seguimiento_estado.value if not seguimiento_cambiado else old_status.value
 
-            # MEJORA PROFESIONAL: El evento ahora se gestiona en el frontend al cargar la página.
+            # El evento ahora se gestiona en el frontend al cargar la página.
             # Se elimina la publicación de eventos en tiempo real (SSE).
 
             return jsonify(response_data)
@@ -712,7 +711,7 @@ def update_pedido_estado(admin_user, pedido_id):
 @admin_jwt_required
 def filter_pedidos_api(admin_user):
     """
-    MEJORADO: Filtrado de pedidos con mejor rendimiento y sincronización en tiempo real
+    Filtrado de pedidos con mejor rendimiento y sincronización en tiempo real
     """
     try:
         page = request.args.get('page', 1, type=int)
@@ -830,7 +829,7 @@ def filter_pedidos_api(admin_user):
 @admin_jwt_required
 def update_pedido_estado_activo(admin_user, pedido_id):
     """
-    MEJORADO: Actualización del estado activo/inactivo con sincronización completa
+     Actualización del estado activo/inactivo con sincronización completa
     """
     try:
         pedido = Pedido.query.options(
@@ -869,14 +868,15 @@ def update_pedido_estado_activo(admin_user, pedido_id):
         pedido.estado = nuevo_estado
         pedido.updated_at = datetime.utcnow()
 
-        # MEJORA PROFESIONAL: Si el pedido se está activando, generar una nueva notificación.
-        if old_status == 'inactivo' and nuevo_estado == 'activo':
+        # Si el pedido se está activando y está "en proceso", generar una nueva notificación.
+        # No se notifica para pedidos completados o cancelados que se reactivan, ya que sería confuso para el cliente.
+        if old_status == 'inactivo' and nuevo_estado == 'activo' and pedido.estado_pedido == EstadoPedido.EN_PROCESO:
             # En lugar de re-marcar una entrada antigua, creamos una nueva para notificar la reactivación.
             # Esto es más claro para el cliente y evita problemas de notificaciones "perdidas".
             if pedido.seguimiento_historial is None:
                 pedido.seguimiento_historial = []
             
-            # MEJORA PROFESIONAL: Mensaje de notificación contextual al reactivar.
+            # Mensaje de notificación contextual al reactivar.
             # Se genera una nota específica basada en el estado de seguimiento actual del pedido.
             current_tracking_status = pedido.seguimiento_estado
             
@@ -919,7 +919,7 @@ def update_pedido_estado_activo(admin_user, pedido_id):
             }
         }
         
-        # MEJORA: Mover el commit al final para asegurar que todos los cambios se guarden atómicamente.
+        # Mover el commit al final para asegurar que todos los cambios se guarden atómicamente.
         db.session.commit()
         return jsonify(response_data)
 

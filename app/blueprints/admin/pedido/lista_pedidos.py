@@ -603,19 +603,9 @@ def update_pedido_estado(admin_user, pedido_id):
             seguimiento_cambiado = False
             nuevo_seguimiento = None
             # MEJORA PROFESIONAL: Añadir una nota por defecto al historial de seguimiento.
-            nota_por_defecto = ""
-
-            # 1. Mover a 'cancelado' (desde 'en proceso' o 'completado')
-            if nuevo_estado == EstadoPedido.CANCELADO and old_status in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
-                for item in pedido.productos:
-                    producto = Productos.query.get(item.producto_id)
-                    if producto:
-                        producto.existencia += item.cantidad
-                current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
-                nota_por_defecto = "Tu Pedido fue cancelado"
 
             # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
-            elif old_status == EstadoPedido.CANCELADO and nuevo_estado in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
+            if old_status == EstadoPedido.CANCELADO and nuevo_estado in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
                 # Verificar stock antes de hacer cambios
                 for item in pedido.productos:
                     producto = Productos.query.get(item.producto_id)
@@ -632,26 +622,33 @@ def update_pedido_estado(admin_user, pedido_id):
                     if producto:
                         producto.existencia -= item.cantidad
                 current_app.logger.info(f"Stock restado para pedido {pedido.id} reactivado (cancelado -> {nuevo_estado}).")
-                nota_por_defecto = "Tu Pedido fue recibido y esta siendo procesado"
+            
+            # 1. Mover a 'cancelado' (desde 'en proceso' o 'completado')
+            elif nuevo_estado == EstadoPedido.CANCELADO and old_status in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
+                for item in pedido.productos:
+                    producto = Productos.query.get(item.producto_id)
+                    if producto:
+                        producto.existencia += item.cantidad
+                current_app.logger.info(f"Stock devuelto para pedido {pedido.id} ({old_status} -> cancelado).")
 
             # Sincronizar estado de seguimiento automáticamente
+            # MEJORA PROFESIONAL: Asignar la nota correcta según el estado final.
+            nota_por_defecto = ""
             if nuevo_estado == EstadoPedido.COMPLETADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.ENTREGADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.ENTREGADO.value
-                if not nota_por_defecto: # Si no se ha establecido una nota (ej. de en proceso a completado)
-                    nota_por_defecto = "Tu Pedido esta completado"
+                nota_por_defecto = "Tu pedido ha sido completado y entregado."
             elif nuevo_estado == EstadoPedido.CANCELADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.CANCELADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.CANCELADO.value
+                nota_por_defecto = "Tu pedido ha sido cancelado."
             elif nuevo_estado == EstadoPedido.EN_PROCESO:
                 pedido.seguimiento_estado = EstadoSeguimiento.RECIBIDO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
-                # MEJORA: Asegurar que siempre haya una nota para este cambio.
-                if not nota_por_defecto:
-                    nota_por_defecto = "Tu Pedido fue recibido y esta siendo procesado"
+                nota_por_defecto = "Tu pedido fue recibido y está siendo procesado."
 
             # MEJORA PROFESIONAL: Si el estado de seguimiento cambió, añadir una entrada al historial.
             if seguimiento_cambiado and nota_por_defecto:

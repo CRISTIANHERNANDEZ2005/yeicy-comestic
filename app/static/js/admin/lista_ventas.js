@@ -118,10 +118,19 @@ const VentasPageModule = (() => {
       const data = await response.json();
 
       if (data.success) {
-        // MEJORA PROFESIONAL: Actualizar los valores estáticamente para una respuesta instantánea.
+        // MEJORA PROFESIONAL: Actualización estática para una respuesta instantánea.
         document.getElementById("total-ventas").textContent = data.estadisticas.total_ventas.toLocaleString('es-CO');
         document.getElementById("total-ingresos").textContent = formatCurrency(data.estadisticas.total_ingresos);
         document.getElementById("ticket-promedio").textContent = formatCurrency(data.estadisticas.ticket_promedio);
+        document.getElementById("total-inversion").textContent = formatCurrency(data.estadisticas.total_inversion);
+        document.getElementById("total-utilidad").textContent = formatCurrency(data.estadisticas.total_utilidad);
+        
+        // Para el margen, que es un porcentaje
+        const margenElement = document.getElementById("margen-utilidad");
+        if (margenElement) {
+            const endValue = data.estadisticas.margen_utilidad;
+            margenElement.textContent = `${endValue.toFixed(1)}%`;
+        }
 
         // Actualizar gráfico
         updateVentasChart(data.estadisticas.grafico, currentChartPeriod);
@@ -134,31 +143,6 @@ const VentasPageModule = (() => {
     } finally {
       if (chartLoader) chartLoader.classList.replace('flex', 'hidden');
     }
-  }
-
-  // Función para animar valores numéricos
-  function animateValue(id, start, end, duration, isCurrency = false) {
-    const element = document.getElementById(id);
-    if (!element) return;
-
-    const range = end - start;
-    const increment = range / (duration / 16);
-    let current = start;
-
-    const timer = setInterval(() => {
-      current += increment;
-      if (
-        (increment > 0 && current >= end) ||
-        (increment < 0 && current <= end)
-      ) {
-        element.textContent = isCurrency ? formatCurrency(end) : end;
-        clearInterval(timer);
-      } else {
-        element.textContent = isCurrency
-          ? formatCurrency(Math.round(current))
-          : Math.round(current);
-      }
-    }, 16);
   }
 
   // Función para inicializar o actualizar el gráfico de ventas

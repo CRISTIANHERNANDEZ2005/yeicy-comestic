@@ -460,13 +460,31 @@ def get_ventas_estadisticas(admin_user):
         # MEJORA PROFESIONAL: Construir una subconsulta para que los filtros se apliquen a todos los agregados.
         # Esto asegura que total_ventas y total_ingresos reflejen exactamente los mismos filtros.
         filtered_query = query.subquery()
+
+        # Subconsulta para obtener los IDs de los pedidos filtrados
+        pedidos_filtrados_ids = db.session.query(filtered_query.c.id).subquery()
+
+        # Consulta para calcular agregados financieros (ingresos, inversión, utilidad)
+        # Se une PedidoProducto y Productos para acceder al costo.
+        financials = db.session.query(
+            func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ingresos'),
+            func.sum(PedidoProducto.cantidad * Productos.costo).label('total_inversion')
+        ).join(
+            Productos, PedidoProducto.producto_id == Productos.id
+        ).filter(
+            PedidoProducto.pedido_id.in_(pedidos_filtrados_ids)
+        ).one()
+
+        total_ingresos = financials.total_ingresos or 0
+        total_inversion = financials.total_inversion or 0
+        total_utilidad = total_ingresos - total_inversion
+
         total_ventas = db.session.query(func.count()).select_from(filtered_query).scalar() or 0
-        total_ingresos_query = db.session.query(func.sum(filtered_query.c.total))
-        total_ingresos = total_ingresos_query.scalar() or 0
-        
-        # Calcular ticket promedio
+
+        # Calcular ticket promedio y margen de utilidad
         ticket_promedio = total_ingresos / total_ventas if total_ventas > 0 else 0
-        
+        margen_utilidad = (total_utilidad / total_ingresos) * 100 if total_ingresos > 0 else 0
+
         # Lógica mejorada para el gráfico
         hoy = datetime.utcnow().date()
         if periodo == '7d':
@@ -535,6 +553,9 @@ def get_ventas_estadisticas(admin_user):
                 'total_ventas': total_ventas,
                 'total_ingresos': float(total_ingresos),
                 'ticket_promedio': float(ticket_promedio),
+                'total_inversion': float(total_inversion),
+                'total_utilidad': float(total_utilidad),
+                'margen_utilidad': float(margen_utilidad),
                 'grafico': {
                     'fechas': fechas,
                     'cantidades': cantidades,

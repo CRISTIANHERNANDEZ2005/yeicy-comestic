@@ -500,3 +500,7 @@ body.no-scroll {
     font-weight: 500;
     margin-top: 1rem;
 }
+
+#margen-utilidad {
+    text-align: left;
+}

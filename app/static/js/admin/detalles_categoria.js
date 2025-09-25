@@ -590,7 +590,7 @@ function updateSubcategoryPerformance(subcategories) {
     return;
   }
 
-  // MEJORA PROFESIONAL: Separar subcategorías con y sin ventas.
+  // Separar subcategorías con y sin ventas.
   const subcategoriesWithSales = subcategories.filter((s) => s.ventas > 0);
   const subcategoriesWithoutSales = subcategories.filter(
     (s) => s.ventas === 0
@@ -602,7 +602,7 @@ function updateSubcategoryPerformance(subcategories) {
   const subcategoryChartContainer =
     document.getElementById("subcategoryChart").parentElement;
   
-  // MEJORA: Mostrar estado vacío para el gráfico si no hay ventas.
+  // Mostrar estado vacío para el gráfico si no hay ventas.
   const totalSales = subcategories.reduce((sum, s) => sum + s.ventas, 0);
   if (totalSales === 0) {
     showEmptyChart(

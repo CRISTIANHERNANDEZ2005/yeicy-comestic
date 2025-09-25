@@ -543,23 +543,38 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
         from flask import abort
         abort(404)
     
-    categoria_principal_id = None
-    if producto.seudocategoria and producto.seudocategoria.subcategoria:
-        categoria_principal_id = producto.seudocategoria.subcategoria.categoria_principal.id
-
+    # --- MEJORA PROFESIONAL: Lógica de Productos Relacionados más Relevante ---
+    # 1. Prioridad: Productos de la misma Seudocategoría.
     productos_relacionados = []
-    if categoria_principal_id:
-        print(f"DEBUG: Buscando productos relacionados para categoria_principal_id: {categoria_principal_id}")
-        productos_relacionados = Productos.query.join(
-            Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
-        ).join(
-            Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
-        ).filter(
+    if producto.seudocategoria_id:
+        print(f"DEBUG: Buscando productos relacionados para seudocategoria_id: {producto.seudocategoria_id}")
+        productos_relacionados = Productos.query.filter(
+            Productos.seudocategoria_id == producto.seudocategoria_id,
             Productos.id != producto.id,
             Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia  > 0,
-            Subcategorias.categoria_principal_id == categoria_principal_id
-        ).limit(8).all()
+            Productos._existencia > 0
+        ).order_by(func.random()).limit(8).all()
+
+    # 2. Fallback: Si no hay suficientes, buscar en la misma Subcategoría.
+    if len(productos_relacionados) < 4 and producto.seudocategoria and producto.seudocategoria.subcategoria:
+        print(f"DEBUG: No hay suficientes productos en la seudocategoría. Buscando en la subcategoría: {producto.seudocategoria.subcategoria.id}")
+        
+        # Obtener IDs de todas las seudocategorías de la misma subcategoría.
+        seudocategoria_ids_sub = [s.id for s in producto.seudocategoria.subcategoria.seudocategorias if s.estado == EstadoEnum.ACTIVO]
+        
+        # Obtener IDs de productos ya encontrados para no repetirlos.
+        productos_relacionados_ids = [p.id for p in productos_relacionados]
+        
+        # Buscar productos adicionales.
+        productos_adicionales = Productos.query.filter(
+            Productos.seudocategoria_id.in_(seudocategoria_ids_sub),
+            Productos.id != producto.id,
+            Productos.id.notin_(productos_relacionados_ids),
+            Productos.estado == EstadoEnum.ACTIVO,
+            Productos._existencia > 0
+        ).order_by(func.random()).limit(8 - len(productos_relacionados)).all()
+        
+        productos_relacionados.extend(productos_adicionales)
 
     print(f"DEBUG: Productos relacionados para {producto.nombre}: {len(productos_relacionados)} productos encontrados.")
     for p in productos_relacionados:

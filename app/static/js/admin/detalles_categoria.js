@@ -590,18 +590,36 @@ function updateSubcategoryPerformance(subcategories) {
     return;
   }
 
+  // MEJORA PROFESIONAL: Separar subcategorías con y sin ventas.
+  const subcategoriesWithSales = subcategories.filter((s) => s.ventas > 0);
+  const subcategoriesWithoutSales = subcategories.filter(
+    (s) => s.ventas === 0
+  );
+  const lowPerformingSubcategories =
+    subcategoriesWithSales.slice(3).concat(subcategoriesWithoutSales);
+
   // Actualizar gráfico
   const subcategoryChartContainer =
     document.getElementById("subcategoryChart").parentElement;
-  if (!document.getElementById("subcategoryChart")) {
-    subcategoryChartContainer.innerHTML =
-      '<canvas id="subcategoryChart"></canvas><div id="subcategoryChartLoading" class="loading-overlay" style="display: none;"><div class="loading-spinner"></div></div>';
-    // Reinicializar el gráfico
-    initializeSubcategoryChart(subcategories);
-  } else if (subcategoryChart) {
-    subcategoryChart.data.labels = subcategories.map((s) => s.nombre);
-    subcategoryChart.data.datasets[0].data = subcategories.map((s) => s.ventas);
-    subcategoryChart.update();
+  
+  // MEJORA: Mostrar estado vacío para el gráfico si no hay ventas.
+  const totalSales = subcategories.reduce((sum, s) => sum + s.ventas, 0);
+  if (totalSales === 0) {
+    showEmptyChart(
+      subcategoryChartContainer,
+      "Sin Datos de Ventas",
+      "Aún no se han registrado ventas en ninguna de las subcategorías."
+    );
+  } else {
+    if (!document.getElementById("subcategoryChart")) {
+      subcategoryChartContainer.innerHTML =
+        '<canvas id="subcategoryChart"></canvas><div id="subcategoryChartLoading" class="loading-overlay" style="display: none;"><div class="loading-spinner"></div></div>';
+      initializeSubcategoryChart(subcategories);
+    } else if (subcategoryChart) {
+      subcategoryChart.data.labels = subcategories.map((s) => s.nombre);
+      subcategoryChart.data.datasets[0].data = subcategories.map((s) => s.ventas);
+      subcategoryChart.update();
+    }
   }
 
   // Actualizar top subcategorías
@@ -609,15 +627,14 @@ function updateSubcategoryPerformance(subcategories) {
     document.getElementById("top-subcategories");
   topSubcategoriesContainer.innerHTML = "";
 
-  const topSubcategories = subcategories.slice(0, 3);
-  if (topSubcategories.length === 0) {
+  if (subcategoriesWithSales.length === 0) {
     showEmptyCard(
       topSubcategoriesContainer,
-      "Sin subcategorías destacadas",
-      "No hay subcategorías con ventas para mostrar."
+      "Sin Ventas",
+      "Ninguna subcategoría ha generado ventas todavía."
     );
   } else {
-    topSubcategories.forEach((subcategory, index) => {
+    subcategoriesWithSales.slice(0, 3).forEach((subcategory, index) => {
       const colors = ["blue", "green", "purple"];
       const item = document.createElement("div");
       item.className = `flex items-center justify-between p-3 bg-${colors[index]}-50 rounded-lg`;
@@ -652,15 +669,14 @@ function updateSubcategoryPerformance(subcategories) {
     document.getElementById("subcategory-cards");
   subcategoryCardsContainer.innerHTML = "";
 
-  const topSubcategoryCards = subcategories.slice(0, 3);
-  if (topSubcategoryCards.length === 0) {
+  if (subcategoriesWithSales.length === 0) {
     showEmptyCard(
       subcategoryCardsContainer,
-      "Sin subcategorías destacadas",
-      "No hay subcategorías con ventas para mostrar."
+      "Sin Rendimiento",
+      "No hay datos de ventas para mostrar en las tarjetas de rendimiento."
     );
   } else {
-    topSubcategoryCards.forEach((subcategory, index) => {
+    subcategoriesWithSales.slice(0, 3).forEach((subcategory, index) => {
       const colors = ["blue", "green", "purple"];
       const card = document.createElement("div");
       card.className =
@@ -753,16 +769,15 @@ function updateSubcategoryPerformance(subcategories) {
   );
   lowPerformingContainer.innerHTML = "";
 
-  const lowPerformingSubcategories = subcategories.slice(3);
   if (lowPerformingSubcategories.length === 0) {
     showEmptyCard(
       lowPerformingContainer,
-      "Sin subcategorías con bajo rendimiento",
-      "Todas las subcategorías tienen un rendimiento similar."
+      "Rendimiento Óptimo",
+      "No hay subcategorías adicionales o con cero ventas para mostrar aquí."
     );
   } else {
     lowPerformingSubcategories.forEach((subcategory, index) => {
-      const colors = ["amber", "rose", "gray"];
+      const colors = ["amber", "rose", "gray", "cyan", "lime"];
       const card = document.createElement("div");
       card.className =
         "category-card bg-white border border-gray-200 rounded-xl overflow-hidden";
@@ -774,7 +789,7 @@ function updateSubcategoryPerformance(subcategories) {
                        <h4 class="font-bold text-lg">${subcategory.nombre}</h4>
                        <span class="bg-${
                          colors[index]
-                       }-900 text-xs font-medium px-2 py-1 rounded-full">Top ${
+                       }-900 text-xs font-medium px-2 py-1 rounded-full">Pos. ${
         index + 4
       }</span>
                    </div>

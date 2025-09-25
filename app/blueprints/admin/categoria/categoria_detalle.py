@@ -897,6 +897,11 @@ def get_subcategories_performance(categoria_id):
     # Procesar los datos de ventas en Python
     sales_by_product = {pid: {'total': 0, 'actual': 0, 'anterior': 0} for pid in all_product_ids}
     for pid, created_at, ingresos in sales_data:
+        # Asegurarse de que el producto exista en el diccionario antes de sumar
+        # Esto es una salvaguarda por si `all_product_ids` no se poblara correctamente.
+        if pid not in sales_by_product:
+            sales_by_product[pid] = {'total': 0, 'actual': 0, 'anterior': 0}
+
         sales_by_product[pid]['total'] += ingresos
         if created_at >= periodo_actual_inicio:
             sales_by_product[pid]['actual'] += ingresos

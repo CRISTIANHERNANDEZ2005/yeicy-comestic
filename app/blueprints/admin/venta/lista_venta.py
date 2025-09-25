@@ -13,6 +13,46 @@ from flask_wtf.csrf import generate_csrf
 
 admin_ventas_bp = Blueprint('admin_ventas', __name__)
 
+def _build_ventas_query(args):
+    """
+     Función auxiliar unificada para construir la consulta de ventas.
+    Esto evita la duplicación de código y asegura que los filtros se apliquen consistentemente.
+    """
+    query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
+        Pedido.estado_pedido == EstadoPedido.COMPLETADO
+    )
+
+    # Aplicar filtros desde los argumentos
+    if args.get('estado') in ['activo', 'inactivo']:
+        query = query.filter(Pedido.estado == args.get('estado'))
+
+    if venta_id := args.get('venta_id'):
+        query = query.filter(Pedido.id.ilike(f'%{venta_id}%'))
+
+    if cliente := args.get('cliente'):
+        query = query.join(Usuarios).filter(
+            or_(
+                Usuarios.nombre.ilike(f'%{cliente}%'),
+                Usuarios.apellido.ilike(f'%{cliente}%'),
+                Usuarios.numero.ilike(f'%{cliente}%')
+            )
+        )
+
+    if fecha_inicio := args.get('fecha_inicio'):
+        try:
+            fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
+            query = query.filter(Pedido.created_at >= fecha_inicio_dt)
+        except ValueError: pass
+
+    if fecha_fin := args.get('fecha_fin'):
+        try:
+            fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
+            query = query.filter(Pedido.created_at < fecha_fin_dt)
+        except ValueError: pass
+
+    # No se aplican filtros de monto aquí, ya que se manejan de forma diferente para el total y el gráfico.
+    return query
+
 @admin_ventas_bp.route('/lista-ventas', methods=['GET'])
 @admin_jwt_required
 def get_ventas(admin_user):
@@ -139,54 +179,12 @@ def get_ventas(admin_user):
 @admin_jwt_required
 def get_ventas_api(admin_user):
     try:
-        # Obtener parámetros de filtro
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        venta_id = request.args.get('venta_id', '')
-        cliente = request.args.get('cliente', '')
-        fecha_inicio = request.args.get('fecha_inicio', '')
-        fecha_fin = request.args.get('fecha_fin', '')
+        # Usar la función de consulta unificada.
+        query = _build_ventas_query(request.args)
+
+        # Obtener los valores de monto aquí, después de construir la query base.
         monto_min = request.args.get('monto_min', '')
         monto_max = request.args.get('monto_max', '')
-        sort_by = request.args.get('sort_by', 'created_at')
-        estado = request.args.get('estado', 'todos')
-
-        # Construir consulta base - Solo pedidos completados
-        query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO
-        )
-        
-        # Aplicar filtro de estado (activo/inactivo)
-        if estado in ['activo', 'inactivo']:
-            query = query.filter(Pedido.estado == estado)
-
-        # Aplicar filtros
-        if venta_id:
-            # Usamos ilike para permitir búsquedas parciales del ID
-            query = query.filter(Pedido.id.ilike(f'%{venta_id}%'))
-
-        if cliente:
-            query = query.join(Usuarios).filter(
-                or_(
-                    Usuarios.nombre.ilike(f'%{cliente}%'),
-                    Usuarios.apellido.ilike(f'%{cliente}%'),
-                    Usuarios.numero.ilike(f'%{cliente}%')
-                )
-            )
-            
-        if fecha_inicio:
-            try:
-                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                query = query.filter(Pedido.created_at >= fecha_inicio_dt)
-            except ValueError:
-                pass
-                
-        if fecha_fin:
-            try:
-                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
-                query = query.filter(Pedido.created_at < fecha_fin_dt)
-            except ValueError:
-                pass
         
         # Aplicar filtro por rango de montos - Manejo seguro de conversión
         try:
@@ -202,6 +200,10 @@ def get_ventas_api(admin_user):
                 query = query.filter(Pedido.total <= monto_max_float)
         except (ValueError, TypeError):
             pass
+
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        sort_by = request.args.get('sort_by', 'created_at')
         
         # Aplicar ordenamiento
         if sort_by == 'created_at':
@@ -301,7 +303,7 @@ def create_venta(admin_user):
                 'precio_unitario': producto.precio
             })
 
-        # MEJORA PROFESIONAL: Añadir historial de seguimiento para notificar al cliente.
+        #  Añadir historial de seguimiento para notificar al cliente.
         # Al crear una venta directa, se genera una notificación de "Entregado".
         nota_seguimiento = "Tu pedido esta completado con exito."
         historial_inicial = [{
@@ -433,33 +435,14 @@ def update_venta_estado(admin_user, venta_id):
 @admin_jwt_required
 def get_ventas_estadisticas(admin_user):
     try:
-        # Obtener parámetros de fechas
-        fecha_inicio = request.args.get('fecha_inicio', '')
-        fecha_fin = request.args.get('fecha_fin', '')
+        #  Usar la función de consulta unificada para aplicar todos los filtros.
+        query = _build_ventas_query(request.args)
+
+        # Obtener parámetros de monto y período que son específicos de las estadísticas
         monto_min = request.args.get('monto_min', '')
         monto_max = request.args.get('monto_max', '')
         periodo = request.args.get('periodo', '30d') # Nuevo: 7d, 30d, 1y
-        
-        # Construir consulta base - Solo pedidos completados
-        query = Pedido.query.filter(
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO
-        )
-        
-        # Aplicar filtros de fecha
-        if fecha_inicio:
-            try:
-                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                query = query.filter(Pedido.created_at >= fecha_inicio_dt)
-            except ValueError:
-                pass
-                
-        if fecha_fin:
-            try:
-                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
-                query = query.filter(Pedido.created_at < fecha_fin_dt)
-            except ValueError:
-                pass
-        
+
         # Aplicar filtro por rango de montos - Manejo seguro de conversión
         try:
             if monto_min and monto_min.strip():
@@ -467,7 +450,6 @@ def get_ventas_estadisticas(admin_user):
                 query = query.filter(Pedido.total >= monto_min_float)
         except (ValueError, TypeError):
             pass
-            
         try:
             if monto_max and monto_max.strip():
                 monto_max_float = float(monto_max)
@@ -475,61 +457,16 @@ def get_ventas_estadisticas(admin_user):
         except (ValueError, TypeError):
             pass
         
-        # Calcular estadísticas
-        total_ventas = query.count()
-        total_ingresos = db.session.query(func.sum(Pedido.total)).filter(
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO
-        )
-        
-        # Aplicar los mismos filtros a la consulta de ingresos
-        if fecha_inicio:
-            try:
-                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                total_ingresos = total_ingresos.filter(Pedido.created_at >= fecha_inicio_dt)
-            except ValueError:
-                pass
-                
-        if fecha_fin:
-            try:
-                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
-                total_ingresos = total_ingresos.filter(Pedido.created_at < fecha_fin_dt)
-            except ValueError:
-                pass
-        
-        # Aplicar filtro por rango de montos a la consulta de ingresos
-        try:
-            if monto_min and monto_min.strip():
-                monto_min_float = float(monto_min)
-                total_ingresos = total_ingresos.filter(Pedido.total >= monto_min_float)
-        except (ValueError, TypeError):
-            pass
-            
-        try:
-            if monto_max and monto_max.strip():
-                monto_max_float = float(monto_max)
-                total_ingresos = total_ingresos.filter(Pedido.total <= monto_max_float)
-        except (ValueError, TypeError):
-            pass
-        
-        total_ingresos = total_ingresos.scalar() or 0
+        # MEJORA PROFESIONAL: Construir una subconsulta para que los filtros se apliquen a todos los agregados.
+        # Esto asegura que total_ventas y total_ingresos reflejen exactamente los mismos filtros.
+        filtered_query = query.subquery()
+        total_ventas = db.session.query(func.count()).select_from(filtered_query).scalar() or 0
+        total_ingresos_query = db.session.query(func.sum(filtered_query.c.total))
+        total_ingresos = total_ingresos_query.scalar() or 0
         
         # Calcular ticket promedio
         ticket_promedio = total_ingresos / total_ventas if total_ventas > 0 else 0
         
-        if fecha_inicio:
-            try:
-                fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
-                grafico_query = grafico_query.filter(Pedido.created_at >= fecha_inicio_dt)
-            except ValueError:
-                pass
-                
-        if fecha_fin:
-            try:
-                fecha_fin_dt = datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)
-                grafico_query = grafico_query.filter(Pedido.created_at < fecha_fin_dt)
-            except ValueError:
-                pass
-
         # Lógica mejorada para el gráfico
         hoy = datetime.utcnow().date()
         if periodo == '7d':
@@ -548,26 +485,19 @@ def get_ventas_estadisticas(admin_user):
             label_format = '%d/%m'
             date_trunc = func.date(Pedido.created_at)
 
-        # Consulta para el gráfico
-        grafico_query = db.session.query(
+        # Aplicar filtros adicionales al gráfico si se proporcionan
+        # Reutilizar la consulta ya filtrada (`query`) para generar los datos del gráfico.
+        # Esto asegura que los filtros de cliente, ID, etc., también se apliquen al gráfico.
+        grafico_query = query.with_entities(
             date_trunc.label('fecha'),
             func.count(Pedido.id).label('cantidad'),
             func.sum(Pedido.total).label('total')
-        ).filter(
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO,
-            Pedido.created_at >= start_date
-        ).group_by('fecha').order_by('fecha')
-
-        # Aplicar filtros adicionales al gráfico si se proporcionan
-        if fecha_inicio:
-            grafico_query = grafico_query.filter(Pedido.created_at >= datetime.strptime(fecha_inicio, '%Y-%m-%d'))
-        if fecha_fin:
-            grafico_query = grafico_query.filter(Pedido.created_at < (datetime.strptime(fecha_fin, '%Y-%m-%d') + timedelta(days=1)))
+        ).filter(Pedido.created_at >= start_date).group_by('fecha').order_by('fecha')
 
         ventas_agrupadas = grafico_query.all()
         
         # Crear un diccionario para un acceso rápido
-        # MEJORA: La clave 'fecha' ahora puede ser una cadena directamente desde la BD (para '1y')
+        # La clave 'fecha' ahora puede ser una cadena directamente desde la BD (para '1y')
         # o un objeto de fecha (para '7d'/'30d'). Lo manejamos de forma robusta.
         ventas_dict = {}
         for r in ventas_agrupadas:

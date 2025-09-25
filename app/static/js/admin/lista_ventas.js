@@ -118,39 +118,10 @@ const VentasPageModule = (() => {
       const data = await response.json();
 
       if (data.success) {
-        // Animar los cambios en las estadísticas
-        animateValue(
-          "total-ventas",
-          parseInt(
-            document
-              .getElementById("total-ventas")
-              .textContent.replace(/\D/g, "")
-          ),
-          data.estadisticas.total_ventas,
-          1000
-        );
-        animateValue(
-          "total-ingresos",
-          parseInt(
-            document
-              .getElementById("total-ingresos")
-              .textContent.replace(/\D/g, "")
-          ),
-          data.estadisticas.total_ingresos,
-          1000,
-          true
-        );
-        animateValue(
-          "ticket-promedio",
-          parseInt(
-            document
-              .getElementById("ticket-promedio")
-              .textContent.replace(/\D/g, "")
-          ),
-          data.estadisticas.ticket_promedio,
-          1000,
-          true
-        );
+        // MEJORA PROFESIONAL: Actualizar los valores estáticamente para una respuesta instantánea.
+        document.getElementById("total-ventas").textContent = data.estadisticas.total_ventas.toLocaleString('es-CO');
+        document.getElementById("total-ingresos").textContent = formatCurrency(data.estadisticas.total_ingresos);
+        document.getElementById("ticket-promedio").textContent = formatCurrency(data.estadisticas.ticket_promedio);
 
         // Actualizar gráfico
         updateVentasChart(data.estadisticas.grafico, currentChartPeriod);

@@ -285,7 +285,7 @@
     // Este script se ejecutará cada vez que se cargue la vista
     // y es compatible con el sistema SPA
     
-    // MEJORA PROFESIONAL: Usar un patrón de módulo que se autogestione en el ciclo de vida del SPA.
+    //  Usar un patrón de módulo que se autogestione en el ciclo de vida del SPA.
     // Esto evita duplicación de listeners y fugas de memoria.
     if (!window.usuariosApp) {
         // La clase solo se define una vez.
@@ -303,8 +303,9 @@
                 // Control de estado para SPA
                 this.isInitialized = false;
                 this.eventListeners = []; // Para limpiar listeners
-                this.activeTimers = []; // MEJORA: Para limpiar timers (setInterval/setTimeout)
-                this.csrfToken = null; // MEJORA: Cachear el token CSRF
+                this.activeTimers = []; // Para limpiar timers (setInterval/setTimeout)
+                this.isInitialOpen = false; // SOLUCIÓN: Bandera para controlar la validación inicial.
+                this.csrfToken = null; //  Cachear el token CSRF
                 // DOM Elements
                 this.clientesSection = null;
                 this.administradoresSection = null;
@@ -317,7 +318,7 @@
                 this.addUserBtn = null;
                 this.notification = null;
                 this.viewContainer = null;
-                // MEJORA PROFESIONAL: Cachear todos los elementos del formulario para evitar búsquedas repetitivas.
+                // Cachear todos los elementos del formulario para evitar búsquedas repetitivas.
                 this.userIdInput = null;
                 this.userTypeInput = null;
                 this.userNameInput = null;
@@ -328,7 +329,7 @@
                 this.passwordInput = null;
                 this.saveButton = null;
 
-                // MEJORA PROFESIONAL: Constantes para validación
+                //  Constantes para validación
                 this.validationPatterns = {
                     phone: /^[0-9]{10}$/,
                     cedula: /^[0-9]{7,10}$/
@@ -380,7 +381,7 @@
                 try {
                     this.setupDOMElements();
                     this.setupEventListeners();
-                    this.csrfToken = this.getCsrfToken(); // MEJORA: Obtener el token una sola vez.
+                    this.csrfToken = this.getCsrfToken(); // Obtener el token una sola vez.
                     this.loadInitialData();
                     this.isInitialized = true;
                 } catch (error) {
@@ -406,7 +407,7 @@
                 this.addUserBtn = document.getElementById('add-user-btn');
                 this.notification = document.getElementById('notification'); // SOLUCIÓN: La notificación también es global.
                 
-                // MEJORA PROFESIONAL: Cachear todos los elementos del formulario aquí.
+                // Cachear todos los elementos del formulario aquí.
                 this.userIdInput = document.getElementById('user-id');
                 this.userTypeInput = document.getElementById('user-type');
                 this.userNameInput = document.getElementById('user-name');
@@ -458,7 +459,7 @@
                 
                 const statusFilter = this.viewContainer.querySelector('#status-filter');
                 this._addEventListener(statusFilter, 'change', (e) => {
-                    // MEJORA: Asegurarse de que el filtro de estado solo se aplique a la pestaña de clientes
+                    //  Asegurarse de que el filtro de estado solo se aplique a la pestaña de clientes
                     if (this.currentTab !== 'clientes') {
                         return;
                     }
@@ -474,33 +475,33 @@
                 const togglePasswordBtn = document.getElementById('toggle-password-visibility');
                 this._addEventListener(togglePasswordBtn, 'click', this.togglePasswordVisibility);
 
-                // MEJORA PROFESIONAL: Listeners de validación en tiempo real para el formulario
+                // Listeners de validación en tiempo real para el formulario
                 const formInputs = this.userForm.querySelectorAll('input');
                 formInputs.forEach(input => {
                     this._addEventListener(input, 'blur', () => this.validateField(input));
                     this._addEventListener(input, 'input', this.debounce(() => this.validateField(input), 500));
-                    // MEJORA PROFESIONAL: Listener para actualizar el helper de la contraseña.
+                    // Listener para actualizar el helper de la contraseña.
                     if (input.name === 'nombre' || input.name === 'numero') {
                         this._addEventListener(input, 'input', this.debounce(this.updatePasswordHelperText, 300));
                     }
-                    // MEJORA PROFESIONAL: Ocultar/mostrar el helper de la contraseña al escribir en el campo.
+                    // Ocultar/mostrar el helper de la contraseña al escribir en el campo.
                     if (input.name === 'contraseña') {
                         this._addEventListener(input, 'input', this.debounce(this.updatePasswordHelperText, 300));
                     }
                 });
             }
 
-            // MEJORA PROFESIONAL: Limpiar todos los event listeners para evitar fugas de memoria en el SPA.
+            // Limpiar todos los event listeners para evitar fugas de memoria en el SPA.
             cleanup() {
                 console.log("Cleaning up UsuariosApp listeners.");
                 this.eventListeners.forEach(({ element, type, listener }) => {
-                    // MEJORA: Asegurarse de que el elemento todavía existe antes de remover el listener.
+                    // Asegurarse de que el elemento todavía existe antes de remover el listener.
                     if (element) {
                         element.removeEventListener(type, listener);
                     }
                 });
                 this.eventListeners = [];
-                // MEJORA: Limpiar también todos los temporizadores activos.
+                //  Limpiar también todos los temporizadores activos.
                 this.activeTimers.forEach(timerId => clearInterval(timerId));
                 this.activeTimers = []; // Limpiar el array
 
@@ -568,7 +569,7 @@
             }
 
             handleActionClick(e) {
-                // MEJORA: Hacer el manejador de eventos más específico y eficiente.
+                // Hacer el manejador de eventos más específico y eficiente.
                 const actionButton = e.target.closest('button[data-action]');
                 if (!actionButton) return;
 
@@ -746,7 +747,7 @@
                         this.loadStats();
                         this.closeModal();
                     } else {
-                        // MEJORA PROFESIONAL: Manejo de errores específicos del backend.
+                        //  Manejo de errores específicos del backend.
                         const errorMessage = data.body.message || 'No se pudo guardar el cliente';
                         if (data.status === 409) { // 409 Conflict (duplicado)
                             if (errorMessage.includes('número de teléfono')) {
@@ -759,13 +760,13 @@
                         } else {
                             this.showNotification('error', 'Error', errorMessage);
                         }
-                        if (this.saveButton) this.saveButton.disabled = false; // MEJORA: Reactivar botón en error
+                        if (this.saveButton) this.saveButton.disabled = false; //  Reactivar botón en error
                     }
                 })
                 .catch(error => {
                     console.error('Error saving cliente:', error);
                     this.showNotification('error', 'Error', 'No se pudo guardar el cliente');
-                    if (this.saveButton) this.saveButton.disabled = false; // MEJORA: Reactivar botón en error
+                    if (this.saveButton) this.saveButton.disabled = false; //  Reactivar botón en error
                 });
             }
 
@@ -794,7 +795,7 @@
                         this.loadStats();
                         this.closeModal();
                     } else {
-                        // MEJORA PROFESIONAL: Manejo de errores específicos del backend.
+                        // Manejo de errores específicos del backend.
                         const errorMessage = data.body.message || 'No se pudo guardar el administrador';
                         if (data.status === 409) { // 409 Conflict (duplicado)
                             if (errorMessage.includes('cédula')) {
@@ -807,13 +808,13 @@
                         } else {
                             this.showNotification('error', 'Error', errorMessage);
                         }
-                        if (this.saveButton) this.saveButton.disabled = false; // MEJORA: Reactivar botón en error
+                        if (this.saveButton) this.saveButton.disabled = false; //  Reactivar botón en error
                     }
                 })
                 .catch(error => {
                     console.error('Error saving administrador:', error);
                     this.showNotification('error', 'Error', 'No se pudo guardar el administrador');
-                    if (this.saveButton) this.saveButton.disabled = false; // MEJORA: Reactivar botón en error
+                    if (this.saveButton) this.saveButton.disabled = false; //  Reactivar botón en error
                 });
             }
 
@@ -1039,19 +1040,36 @@
 
                 // Reset form only for new users
                 if (!isEdit) {
-                    // MEJORA PROFESIONAL: En lugar de reset(), limpiamos manualmente para evitar
-                    // que se disparen los eventos de validación al abrir el modal.
+                    // SOLUCIÓN PROFESIONAL: Evitar `this.userForm.reset()` que puede disparar validaciones.
+                    // Limpiamos manualmente cada campo para un control total y evitar efectos secundarios.
                     if (this.userForm) {
-                        this.userForm.querySelectorAll('input').forEach(input => this.clearFieldError(input));
-                        this.userForm.reset(); // Ahora reset es seguro porque los errores se limpiaron.
+                        this.userForm.querySelectorAll('input').forEach(input => {
+                            // Limpiar el valor y cualquier error de validación previo.
+                            input.value = '';
+                            this.clearFieldError(input);
+                        });
                     }
                     if (this.userIdInput) this.userIdInput.value = '';
                 }
 
-                // MEJORA PROFESIONAL: Limpiar siempre el campo de contraseña al abrir el modal.
+                // impiar siempre el campo de contraseña al abrir el modal.
                 // Esto previene que una contraseña introducida en "Crear" aparezca al "Editar".
                 if (this.passwordInput) this.passwordInput.value = '';
 
+
+                // Password is required for new users, optional for edits
+                if (this.passwordInput) {
+                    // La contraseña ya no es requerida para la creación.
+                    this.passwordInput.required = false;
+                }
+
+                // Mensaje de ayuda contextual para la contraseña.
+                const passwordHelper = document.getElementById('password-helper-text');
+                if (passwordHelper) {
+                    passwordHelper.innerHTML = isEdit
+                        ? '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para no cambiar la contraseña actual.'
+                        : '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para generar una contraseña segura (Ej: Cristian30).';
+                }
 
                 // Configure fields based on user type
                 if (type === 'cliente') {
@@ -1060,20 +1078,6 @@
                 } else { // admin
                     if (this.cedulaContainer) this.cedulaContainer.classList.remove('hidden');
                     if (this.userIdentificationInput) this.userIdentificationInput.required = true;
-                }
-
-                // Password is required for new users, optional for edits
-                if (this.passwordInput) {
-                    // MEJORA PROFESIONAL: La contraseña ya no es requerida para la creación.
-                    this.passwordInput.required = false;
-                }
-
-                // MEJORA PROFESIONAL: Mensaje de ayuda contextual para la contraseña.
-                const passwordHelper = document.getElementById('password-helper-text');
-                if (passwordHelper) {
-                    passwordHelper.innerHTML = isEdit
-                        ? '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para no cambiar la contraseña actual.'
-                        : '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para generar una contraseña segura (Ej: Cristian30).';
                 }
 
                 // Populate form if in edit mode
@@ -1088,9 +1092,22 @@
                 if (this.modal) {
                     this.modal.classList.remove('hidden');
                     this.modal.classList.add('flex');
+                    // SOLUCIÓN: Activar la bandera para indicar que el modal se acaba de abrir.
+                    // Esto evitará que la validación se dispare prematuramente.
+                    this.isInitialOpen = true;
+
                 }
 
                 if (this.saveButton) this.saveButton.disabled = false;
+
+                // Tomar control del foco.
+                // Al abrir el modal, el navegador intenta enfocar el primer campo visible,
+                // lo que puede disparar validaciones. Al enfocar explícitamente el botón
+                // "Guardar", evitamos este comportamiento no deseado.
+                if (this.saveButton) this.saveButton.focus();
+
+                // SOLUCIÓN: Después de un breve instante, desactivamos la bandera.
+                setTimeout(() => { this.isInitialOpen = false; }, 100);
             }
             
             closeModal() {
@@ -1099,7 +1116,7 @@
                     this.modal.classList.add('hidden'); // Ocultar modal
                     this.modal.classList.remove('flex');
                 }
-                // MEJORA PROFESIONAL: Limpiar todos los errores de validación al cerrar el modal.
+                // Limpiar todos los errores de validación al cerrar el modal.
                 if (this.userForm) {
                     this.userForm.querySelectorAll('input').forEach(this.clearFieldError);
                     const generalError = this.userForm.querySelector('.general-error-message');
@@ -1119,7 +1136,7 @@
                 const type = this.userTypeInput.value;
                 const id = this.userIdInput.value;
 
-                // MEJORA PROFESIONAL: Generar y mostrar contraseña automática si está vacía en modo creación.
+                // Generar y mostrar contraseña automática si está vacía en modo creación.
                 const isEdit = !!id;
                 if (!isEdit && this.passwordInput.value.trim() === '') {
                     const nombre = this.userNameInput.value.trim();
@@ -1137,7 +1154,7 @@
                     }
                 }
 
-                // MEJORA PROFESIONAL: Validar todos los campos antes de enviar.
+                // Validar todos los campos antes de enviar.
                 let isFormValid = true;
                 this.userForm.querySelectorAll('input[required]').forEach(input => {
                     if (!this.validateField(input)) {
@@ -1192,6 +1209,11 @@
             // --- INICIO: Funciones de Validación Profesional ---
             validateField(input) {
                 if (!input) return true;
+
+                // SOLUCIÓN: Si la bandera de apertura inicial está activa, ignoramos la validación.
+                // Esto previene la validación prematura causada por el foco automático del navegador.
+                if (this.isInitialOpen) return true;
+
                 this.clearFieldError(input);
                 const value = input.value.trim();
                 const isRequired = input.hasAttribute('required');
@@ -1261,7 +1283,7 @@
                 const nombre = this.userNameInput.value.trim();
                 const numero = this.userPhoneInput.value.trim();
 
-                // MEJORA PROFESIONAL: Si el usuario está escribiendo una contraseña, ocultar el helper.
+                // Si el usuario está escribiendo una contraseña, ocultar el helper.
                 if (this.passwordInput.value.trim() !== '') {
                     passwordHelper.classList.add('hidden');
                     return;
@@ -1404,7 +1426,7 @@
         window.usuariosApp = new UsuariosApp();
     }
 
-    // MEJORA PROFESIONAL: Lógica de gestión del ciclo de vida del SPA.
+    //  Lógica de gestión del ciclo de vida del SPA.
     const usuariosView = document.getElementById('usuarios-view');
     
     function handleContentLoaded(event) {

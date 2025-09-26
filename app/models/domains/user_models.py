@@ -303,10 +303,6 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             return usuario
         return None
 
-
-
-
-
 class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
     """
     Representa a un usuario administrador del sistema.

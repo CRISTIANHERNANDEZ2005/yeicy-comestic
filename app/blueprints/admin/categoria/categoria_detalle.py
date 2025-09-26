@@ -49,7 +49,14 @@ def view_category_details_page(admin_user, category_slug):
         Response: La plantilla `detalles_categoria.html` renderizada con todos los
                   datos necesarios, o una página de error 404/500 si corresponde.
     """
-    categoria_obj = CategoriasPrincipales.query.filter_by(slug=category_slug).first()
+    # MEJORA PROFESIONAL: Carga anticipada (Eager Loading) para evitar el problema N+1.
+    # Al renderizar la página, el serializador `categoria_principal_to_dict` necesita acceder
+    # a toda la jerarquía. Sin `subqueryload`, cada acceso a `subcategorias`, `seudocategorias`
+    # y `productos` dispararía una nueva consulta a la base de datos.
+    categoria_obj = CategoriasPrincipales.query.options(
+        subqueryload(CategoriasPrincipales.subcategorias)
+        .subqueryload(Subcategorias.seudocategorias)
+        .subqueryload(Seudocategorias.productos)).filter_by(slug=category_slug).first()
     if not categoria_obj:
         return render_template('admin/404.html'), 404
     
@@ -98,10 +105,14 @@ def get_category_details(admin_user, categoria_id):
     """
     try:
         # Obtener información básica de la categoría con carga optimizada
+        # MEJORA PROFESIONAL: Se utiliza subqueryload para resolver el problema N+1.
+        # Esto carga todas las subcategorías, seudocategorías y sus productos
+        # en consultas separadas y eficientes, en lugar de una por cada elemento.
         categoria = CategoriasPrincipales.query.options(
             subqueryload(CategoriasPrincipales.subcategorias)
                 .subqueryload(Subcategorias.seudocategorias)
-                .subqueryload(Seudocategorias.productos)
+                # Aquí está la clave: cargamos los productos de todas las seudocategorías a la vez.
+                .subqueryload(Seudocategorias.productos) 
         ).get(categoria_id)
 
         if not categoria:

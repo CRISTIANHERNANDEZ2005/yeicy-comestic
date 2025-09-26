@@ -8,6 +8,10 @@ al frontend o a otros servicios.
 """
 # --- Importaciones de la Librería Estándar ---
 from datetime import datetime
+from sqlalchemy import func
+from app.models.domains.order_models import Pedido, PedidoProducto
+from app.models.enums import EstadoPedido
+from app.extensions import db
 
 def format_currency_cop(value):
     """
@@ -186,6 +190,10 @@ def seudocategoria_to_dict(seudo):
             categoria_principal_nombre = seudo.subcategoria.categoria_principal.nombre
     
     if hasattr(seudo, 'productos') and seudo.productos is not None:
+        # NOTA PROFESIONAL: Esta línea es la que causa el problema N+1 si los productos
+        # no se cargan de forma ansiosa (eager loading) con subqueryload o joinedload
+        # en la consulta principal. La solución se aplica en la vista que llama a este
+        # serializador, no aquí directamente.
         total_products_in_pseudocategory = len(seudo.productos)
 
     return {
@@ -254,8 +262,19 @@ def producto_to_dict(prod):
         antiguedad_dias = (datetime.utcnow() - prod.created_at).days
 
     # --- Datos adicionales ---
-    # Simulado, se necesitaría un modelo de ventas
-    ventas_unidades = len(prod.reseñas) * 3 if hasattr(prod, 'reseñas') else 42
+    # --- Ventas Reales ---
+    # Se realiza una subconsulta para obtener las ventas y los ingresos de forma eficiente.
+    # Se filtran solo los pedidos que han sido completados.
+    sales_data = db.session.query(
+        func.sum(PedidoProducto.cantidad).label('unidades_vendidas'),
+        func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('ingresos_totales')
+    ).join(Pedido, Pedido.id == PedidoProducto.pedido_id).filter(
+        PedidoProducto.producto_id == prod.id,
+        Pedido.estado_pedido == EstadoPedido.COMPLETADO
+    ).first()
+
+    ventas_unidades = int(sales_data.unidades_vendidas) if sales_data.unidades_vendidas else 0
+    ingresos_totales = float(sales_data.ingresos_totales) if sales_data.ingresos_totales else 0.0
 
     existencia_porcentaje = 0
     if prod.existencia is not None and prod.stock_maximo is not None and prod.stock_maximo > 0:
@@ -301,6 +320,7 @@ def producto_to_dict(prod):
         'margen_ganancia': margen_ganancia,
         'antiguedad_dias': antiguedad_dias,
         'ventas_unidades': ventas_unidades,
+        'ingresos_totales': ingresos_totales,
         'existencia_porcentaje': existencia_porcentaje
     }
 
@@ -348,9 +368,19 @@ def admin_producto_to_dict(prod):
     if prod.created_at:
         antiguedad_dias = (datetime.utcnow() - prod.created_at).days
 
-    # --- Datos adicionales ---
-    # Simulado, se necesitaría un modelo de ventas
-    ventas_unidades = len(prod.reseñas) * 3 if hasattr(prod, 'reseñas') else 42
+    # --- Ventas Reales ---
+    # Se realiza una subconsulta para obtener las ventas y los ingresos de forma eficiente.
+    # Se filtran solo los pedidos que han sido completados.
+    sales_data = db.session.query(
+        func.sum(PedidoProducto.cantidad).label('unidades_vendidas'),
+        func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('ingresos_totales')
+    ).join(Pedido, Pedido.id == PedidoProducto.pedido_id).filter(
+        PedidoProducto.producto_id == prod.id,
+        Pedido.estado_pedido == EstadoPedido.COMPLETADO
+    ).first()
+
+    ventas_unidades = int(sales_data.unidades_vendidas) if sales_data.unidades_vendidas else 0
+    ingresos_totales = float(sales_data.ingresos_totales) if sales_data.ingresos_totales else 0.0
 
     existencia_porcentaje = 0
     if prod.existencia is not None and prod.stock_maximo is not None and prod.stock_maximo > 0:
@@ -396,6 +426,7 @@ def admin_producto_to_dict(prod):
         'margen_ganancia': margen_ganancia,
         'antiguedad_dias': antiguedad_dias,
         'ventas_unidades': ventas_unidades,
+        'ingresos_totales': ingresos_totales,
         'existencia_porcentaje': existencia_porcentaje
     }
 

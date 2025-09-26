@@ -47,7 +47,11 @@ def get_all_categories(admin_user, view_type=None):
         # Cargar datos según la vista actual
         if current_view == 'main':
             # Vista de categorías principales
-            query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias))
+            # MEJORA PROFESIONAL: Carga anticipada de toda la jerarquía para evitar N+1 en el serializador.
+            query = CategoriasPrincipales.query.options(
+                subqueryload(CategoriasPrincipales.subcategorias)
+                .subqueryload(Subcategorias.seudocategorias)
+                .subqueryload(Seudocategorias.productos))
             
             if nombre:
                 query = query.filter(CategoriasPrincipales.nombre.ilike(f'%{nombre}%'))
@@ -81,7 +85,11 @@ def get_all_categories(admin_user, view_type=None):
                 
         elif current_view == 'sub':
             # Vista de subcategorías
-            query = Subcategorias.query.options(joinedload(Subcategorias.categoria_principal), subqueryload(Subcategorias.seudocategorias))
+            # MEJORA PROFESIONAL: Carga anticipada completa para el serializador.
+            query = Subcategorias.query.options(
+                joinedload(Subcategorias.categoria_principal), 
+                subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos)
+            )
             
             if nombre:
                 query = query.filter(Subcategorias.nombre.ilike(f'%{nombre}%'))
@@ -122,7 +130,11 @@ def get_all_categories(admin_user, view_type=None):
             
         elif current_view == 'pseudo':
             # Vista de seudocategorías
-            query = Seudocategorias.query.options(joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal), subqueryload(Seudocategorias.productos))
+            # MEJORA PROFESIONAL: Carga anticipada completa para el serializador.
+            query = Seudocategorias.query.options(
+                joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal), 
+                subqueryload(Seudocategorias.productos)
+            )
             
             if nombre:
                 query = query.filter(Seudocategorias.nombre.ilike(f'%{nombre}%'))
@@ -166,7 +178,14 @@ def get_all_categories(admin_user, view_type=None):
                 
         else:  # Vista 'all' - jerárquica
             # Obtener todas las categorías principales con sus relaciones
-            query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos))
+            # MEJORA PROFESIONAL: Se utiliza subqueryload para resolver el problema N+1.
+            # Esto carga todas las subcategorías, seudocategorías y sus productos
+            # en consultas separadas y eficientes, en lugar de una por cada elemento.
+            query = CategoriasPrincipales.query.options(
+                subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos)
+            ).options(
+                subqueryload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.categoria_principal)
+            ) # Carga adicional para el serializador de subcategorías
 
             # Apply sorting (if needed for 'all' view, using 'nombre' as default)
             query = query.order_by(CategoriasPrincipales.created_at.desc())

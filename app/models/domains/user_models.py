@@ -349,7 +349,7 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
     numero_telefono: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
-    contraseña: Mapped[str] = mapped_column(db.String(256), nullable=False)
+    _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
     # estado ya está en el mixin
 
     # Restricciones e índices
@@ -359,6 +359,20 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         db.Index('idx_admin_cedula', 'cedula'),
         db.Index('idx_admin_numero_telefono', 'numero_telefono'),
     )
+
+    @property
+    def contraseña(self):
+        """Getter para la contraseña. No debería ser usado para leer el hash."""
+        return self._contraseña
+
+    @contraseña.setter
+    def contraseña(self, password_plano: str):
+        """
+        Setter profesional que hashea la contraseña automáticamente al asignarla.
+        """
+        # Validar y hashear la contraseña en texto plano.
+        validated_password = str(Password(password_plano))
+        self._contraseña = bcrypt.generate_password_hash(validated_password).decode('utf-8')
 
     def __init__(self, cedula, nombre, apellido, numero_telefono, contraseña, estado='activo', id=None):
         """
@@ -383,7 +397,8 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         self.nombre = nombre
         self.apellido = apellido
         self.numero_telefono = str(NumeroTelefono(numero_telefono))
-        self.contraseña = bcrypt.generate_password_hash(str(Password(contraseña))).decode('utf-8')
+        # El setter se encargará del hasheo
+        self.contraseña = contraseña
         if estado not in EstadoEnum._value2member_map_:
             raise ValueError("El estado debe ser 'activo' o 'inactivo'")
         self.estado = estado
@@ -401,7 +416,7 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         Returns:
             bool: `True` si la contraseña es correcta, `False` en caso contrario.
         """
-        return bcrypt.check_password_hash(self.contraseña, contraseña)
+        return bcrypt.check_password_hash(self._contraseña, contraseña)
 
     def generar_jwt(self):
         """

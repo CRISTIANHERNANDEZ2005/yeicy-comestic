@@ -151,25 +151,14 @@ def register():
         )
         db.session.add(usuario)
         db.session.commit()
-        # Genera un token JWT para el nuevo usuario.
-        token = usuario.generar_jwt()
-        
-        # Almacena los datos del usuario en la sesión de Flask para mantenerlo logueado.
-        session['user'] = {
-            'id': usuario.id,
-            'numero': usuario.numero,
-            'nombre': usuario.nombre,
-            'apellido': usuario.apellido
-        }
-        session.modified = True
         
         app.logger.info(f"Registro exitoso: usuario {usuario.numero} (ID: {usuario.id})")
-        return jsonify({'token': token, 'usuario': {
-            'id': usuario.id,
-            'numero': usuario.numero,
-            'nombre': usuario.nombre,
-            'apellido': usuario.apellido
-        }}), 201
+        # MEJORA PROFESIONAL: No iniciar sesión automáticamente.
+        # Devolver solo un mensaje de éxito para que el frontend redirija al login.
+        return jsonify({
+            'success': True,
+            'message': 'Usuario registrado exitosamente. Por favor, inicia sesión.'
+        }), 201
     except ValueError as e:
         # Captura errores de validación desde los Value Objects del modelo.
         db.session.rollback()

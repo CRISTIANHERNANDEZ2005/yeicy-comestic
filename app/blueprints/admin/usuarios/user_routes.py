@@ -5,7 +5,9 @@ from app.models.serializers import usuario_to_dict, admin_to_dict
 from app.models.enums import EstadoEnum
 from app.extensions import db
 from sqlalchemy import or_
-from werkzeug.security import generate_password_hash
+from app.extensions import bcrypt
+from flask_wtf.csrf import generate_csrf
+from app.utils.admin_jwt_utils import admin_jwt_required
 import uuid
 
 # Crear el blueprint
@@ -13,17 +15,24 @@ user_bp = Blueprint('users', __name__)
 
 # Vista principal para renderizar el template
 @user_bp.route('/admin//lista-usuarios', methods=['GET'])
-def usuarios_view():
+@admin_jwt_required
+def usuarios_view(admin_user):
     """
     Renderiza la vista principal de gestión de usuarios.
     Esta vista carga el template con la interfaz para administrar clientes y administradores.
     """
-    return render_template('admin/componentes/usuario/lista_usuarios.html')
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+    return render_template('admin/componentes/usuario/lista_usuarios.html', 
+                            admin_user=admin_user,
+                            csrf_token=generate_csrf(),
+                            is_ajax=is_ajax)
 
 # Endpoints para la API de Usuarios (Clientes)
 
 @user_bp.route('/api/usuarios', methods=['GET'])
-def get_usuarios():
+@admin_jwt_required
+def get_usuarios(admin_user):
     """
     Obtiene la lista de usuarios (clientes) con paginación y filtros.
     
@@ -82,7 +91,8 @@ def get_usuarios():
         return jsonify({'success': False, 'message': 'Error al obtener usuarios'}), 500
 
 @user_bp.route('/api/usuarios', methods=['POST'])
-def create_usuario():
+@admin_jwt_required
+def create_usuario(admin_user):
     """
     Crea un nuevo usuario (cliente).
     
@@ -109,25 +119,24 @@ def create_usuario():
 
         # MEJORA PROFESIONAL: Generar contraseña automática si no se proporciona.
         if 'contraseña' in data and data['contraseña']:
-            hashed_password = generate_password_hash(data['contraseña'])
+            password_to_use = data['contraseña']
         else:
             # MEJORA PROFESIONAL: Lógica de contraseña automática de 8 caracteres.
             nombre_base = data.get('nombre', '').strip().capitalize().split(' ')[0]
             numero = data.get('numero', '')
             if not nombre_base or len(numero) < 2:
                 return jsonify({'success': False, 'message': 'Nombre y número son requeridos para generar contraseña automática'}), 400
-            
+
             longitud_nombre = len(nombre_base)
             digitos_necesarios = max(2, 8 - longitud_nombre) # Tomar al menos 2 dígitos.
-            auto_password = f"{nombre_base}{numero[:digitos_necesarios]}"
-            hashed_password = generate_password_hash(auto_password)
+            password_to_use = f"{nombre_base}{numero[:digitos_necesarios]}"
 
         # Crear nuevo usuario
         usuario = Usuarios(
             numero=data['numero'],
             nombre=data['nombre'],
             apellido=data['apellido'],
-            contraseña=hashed_password,
+            contraseña=password_to_use, # Pasar la contraseña en texto plano al constructor
             estado=EstadoEnum.ACTIVO.value
         )
         
@@ -150,7 +159,8 @@ def create_usuario():
         return jsonify({'success': False, 'message': 'Error al crear usuario'}), 500
 
 @user_bp.route('/api/usuarios/<string:user_id>', methods=['GET', 'PUT'])
-def handle_usuario(user_id):
+@admin_jwt_required
+def handle_usuario(admin_user, user_id):
     """
     Obtiene (GET) o actualiza (PUT) un usuario (cliente) existente.
     
@@ -182,7 +192,7 @@ def handle_usuario(user_id):
 
             # MEJORA DE SEGURIDAD: Actualizar contraseña solo si se proporciona una nueva
             if 'contraseña' in data and data['contraseña']:
-                usuario.contraseña = generate_password_hash(data['contraseña'])
+                usuario.contraseña = data['contraseña'] # El setter del modelo se encargará del hasheo
             
             db.session.commit()
             
@@ -201,7 +211,8 @@ def handle_usuario(user_id):
             return jsonify({'success': False, 'message': 'Error al actualizar usuario'}), 500
 
 @user_bp.route('/api/usuarios/<string:user_id>/status', methods=['PUT'])
-def toggle_usuario_status(user_id):
+@admin_jwt_required
+def toggle_usuario_status(admin_user, user_id):
     """
     Cambia el estado de un usuario (cliente) entre activo e inactivo.
     
@@ -235,7 +246,8 @@ def toggle_usuario_status(user_id):
 # Endpoints para la API de Administradores
 
 @user_bp.route('/api/admins', methods=['GET'])
-def get_admins():
+@admin_jwt_required
+def get_admins(admin_user):
     """
     Obtiene la lista de administradores con paginación y filtros.
     
@@ -289,7 +301,8 @@ def get_admins():
         return jsonify({'success': False, 'message': 'Error al obtener administradores'}), 500
 
 @user_bp.route('/api/admins', methods=['POST'])
-def create_admin():
+@admin_jwt_required
+def create_admin(admin_user):
     """
     Crea un nuevo administrador.
     
@@ -317,18 +330,17 @@ def create_admin():
 
         # MEJORA PROFESIONAL: Generar contraseña automática si no se proporciona.
         if 'contraseña' in data and data['contraseña']:
-            hashed_password = generate_password_hash(data['contraseña'])
+            password_to_use = data['contraseña']
         else:
             # MEJORA PROFESIONAL: Lógica de contraseña automática de 8 caracteres.
             nombre_base = data.get('nombre', '').strip().capitalize().split(' ')[0]
             numero = data.get('numero_telefono', '')
             if not nombre_base or len(numero) < 2:
                 return jsonify({'success': False, 'message': 'Nombre y teléfono son requeridos para generar contraseña automática'}), 400
-            
+
             longitud_nombre = len(nombre_base)
             digitos_necesarios = max(2, 8 - longitud_nombre) # Tomar al menos 2 dígitos.
-            auto_password = f"{nombre_base}{numero[:digitos_necesarios]}"
-            hashed_password = generate_password_hash(auto_password)
+            password_to_use = f"{nombre_base}{numero[:digitos_necesarios]}"
 
 
         # Crear nuevo administrador
@@ -337,7 +349,7 @@ def create_admin():
             nombre=data['nombre'],
             apellido=data['apellido'],
             numero_telefono=data['numero_telefono'],
-            contraseña=hashed_password,
+            contraseña=password_to_use, # Pasar la contraseña en texto plano al constructor
             estado=EstadoEnum.ACTIVO.value
         )
         
@@ -360,7 +372,8 @@ def create_admin():
         return jsonify({'success': False, 'message': 'Error al crear administrador'}), 500
 
 @user_bp.route('/api/admins/<string:admin_id>', methods=['GET', 'PUT'])
-def handle_admin(admin_id):
+@admin_jwt_required
+def handle_admin(admin_user, admin_id):
     """
     Obtiene (GET) o actualiza (PUT) un administrador existente.
     
@@ -397,7 +410,7 @@ def handle_admin(admin_id):
             # Actualizar contraseña solo si se proporciona una nueva y no está vacía.
             nueva_contraseña = data.get('contraseña')
             if nueva_contraseña:
-                admin.contraseña = generate_password_hash(data['contraseña'])
+                admin.contraseña = nueva_contraseña # El setter del modelo se encargará del hasheo
             
             db.session.commit()
             
@@ -418,7 +431,8 @@ def handle_admin(admin_id):
 # Endpoint para estadísticas
 
 @user_bp.route('/api/stats/usuarios', methods=['GET'])
-def get_usuario_stats():
+@admin_jwt_required
+def get_usuario_stats(admin_user):
     """
     Obtiene estadísticas de usuarios y administradores.
     

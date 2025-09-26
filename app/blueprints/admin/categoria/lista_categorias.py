@@ -178,14 +178,14 @@ def get_all_categories(admin_user, view_type=None):
                 
         else:  # Vista 'all' - jerárquica
             # Obtener todas las categorías principales con sus relaciones
-            # MEJORA PROFESIONAL: Se utiliza subqueryload para resolver el problema N+1.
+            # Se utiliza subqueryload para resolver el problema N+1.
             # Esto carga todas las subcategorías, seudocategorías y sus productos
-            # en consultas separadas y eficientes, en lugar de una por cada elemento.
+            # en consultas separadas y eficientes. La clave es cargar la jerarquía completa.
             query = CategoriasPrincipales.query.options(
-                subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos)
-            ).options(
-                subqueryload(CategoriasPrincipales.subcategorias).joinedload(Subcategorias.categoria_principal)
-            ) # Carga adicional para el serializador de subcategorías
+                subqueryload(CategoriasPrincipales.subcategorias)
+                .subqueryload(Subcategorias.seudocategorias)
+                .subqueryload(Seudocategorias.productos)
+            )
 
             # Apply sorting (if needed for 'all' view, using 'nombre' as default)
             query = query.order_by(CategoriasPrincipales.created_at.desc())

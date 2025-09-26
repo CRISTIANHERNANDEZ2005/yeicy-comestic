@@ -79,6 +79,10 @@ document.addEventListener('DOMContentLoaded', function() {
             // volver a ejecutar scripts globales de base.html.
             // Esto soluciona el error "Identifier '...' has already been declared".
             const scripts = Array.from(mainContent.querySelectorAll('script'));
+
+            // MEJORA PROFESIONAL: Limpiar scripts inline gestionados por el SPA anterior.
+            // Esto evita que se acumulen en el body en cada navegación.
+            document.querySelectorAll('script[data-spa-managed-inline]').forEach(s => s.remove());
             
             const executeScripts = async () => {
                 for (const script of scripts) {
@@ -119,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Para scripts inline, simplemente los añadimos para que se ejecuten
                         const newScript = document.createElement('script');
                         script.getAttributeNames().forEach(attr => newScript.setAttribute(attr, script.getAttribute(attr)));
-                        newScript.setAttribute('data-spa-managed', 'true');
+                        newScript.setAttribute('data-spa-managed-inline', 'true'); // Etiqueta específica para inline
                         newScript.textContent = script.innerText;
                         document.body.appendChild(newScript);
                     }

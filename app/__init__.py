@@ -95,7 +95,9 @@ def create_app(config_class=Config):
     from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
     from app.blueprints.admin.pedido.api import admin_api_bp
     from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
+    from app.blueprints.admin.usuarios.user_routes import user_bp
 
+    # Registrar blueprints
     #cliente
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -117,6 +119,8 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_lista_pedidos_bp, url_prefix='/admin')
     app.register_blueprint(admin_ventas_bp, url_prefix='/admin')
     app.register_blueprint(admin_api_bp)
+    app.register_blueprint(user_bp)
+
 
 
     # Register the /perfil route directly with the app

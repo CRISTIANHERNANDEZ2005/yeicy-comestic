@@ -134,10 +134,6 @@ def register():
     if not all(field in data for field in required_fields):
         app.logger.warning('Registro fallido: faltan campos requeridos')
         return jsonify({'error': 'Faltan campos requeridos'}), 400
-    # Se alinea la validación de la contraseña con la del modelo (8 caracteres).
-    if len(data['contraseña']) < 8:
-        app.logger.warning('Registro fallido: contraseña muy corta')
-        return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres'}), 400
     if len(data['numero']) != 10 or not data['numero'].isdigit():
         app.logger.warning('Registro fallido: número inválido')
         return jsonify({'error': 'El número debe tener 10 dígitos numéricos'}), 400
@@ -145,7 +141,8 @@ def register():
         app.logger.warning(f"Registro fallido: número ya registrado {data['numero']}")
         return jsonify({'error': 'El número ya está registrado'}), 409
     try:
-        # Crea la instancia del usuario (la contraseña se hashea en el constructor del modelo).
+        # Crea la instancia del usuario. La validación de la contraseña
+        # y el hasheo ocurren dentro del constructor del modelo `Usuarios`.
         usuario = Usuarios(
             numero=data['numero'],
             nombre=data['nombre'],
@@ -173,6 +170,10 @@ def register():
             'nombre': usuario.nombre,
             'apellido': usuario.apellido
         }}), 201
+    except ValueError as e:
+        # Captura errores de validación desde los Value Objects del modelo.
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error en registro: {str(e)}", exc_info=True)

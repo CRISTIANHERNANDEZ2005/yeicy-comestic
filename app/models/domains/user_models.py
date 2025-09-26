@@ -72,21 +72,27 @@ class NumeroUsuario:
 class Password:
     """
     Value Object para encapsular y validar la fortaleza de una contraseña.
-    
-    Asegura que la contraseña tenga una longitud mínima de 8 caracteres.
+
+    Asegura que la contraseña cumpla con los requisitos de seguridad modernos:
+    - Mínimo 8 caracteres.
+    - Al menos una letra mayúscula.
+    - Al menos una letra minúscula.
+    - Al menos un número.
     """
     def __init__(self, contraseña: str):
         """
         Inicializa el Value Object.
-        
+
         Args:
             contraseña (str): La contraseña a validar.
-        
+
         Raises:
-            ValueError: Si la contraseña tiene menos de 8 caracteres.
+            ValueError: Si la contraseña no cumple con los criterios de fortaleza.
         """
-        if not contraseña or len(contraseña) < 8:
-            raise ValueError("La contraseña debe tener al menos 8 caracteres")
+        import re
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$"
+        if not contraseña or not re.match(pattern, contraseña):
+            raise ValueError("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.")
         self.value = contraseña
     def __str__(self):
         return self.value
@@ -203,7 +209,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     numero: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
-    contraseña: Mapped[str] = mapped_column(db.String(128), nullable=False)
+    contraseña: Mapped[str] = mapped_column(db.String(256), nullable=False)
     reset_token: Mapped[str] = mapped_column(db.String(256), nullable=True, unique=True)
     reset_token_expiration: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
     # estado ya está en el mixin
@@ -214,8 +220,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     # Restricciones
     __table_args__ = (
         CheckConstraint(
-            "LENGTH(numero) = 10 AND numero ~ '^[0-9]+$'", name='check_numero'),
-        CheckConstraint("LENGTH(contraseña) >= 8", name='check_contraseña'),
+            "LENGTH(numero) = 10 AND numero ~ '^[0-9]+$'", name='check_usuario_numero'),
     )
 
     def __init__(self, numero, nombre, apellido, contraseña, estado='activo', id=None):
@@ -344,15 +349,13 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
     numero_telefono: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
-    contraseña: Mapped[str] = mapped_column(db.String(128), nullable=False)
+    contraseña: Mapped[str] = mapped_column(db.String(256), nullable=False)
     # estado ya está en el mixin
 
     # Restricciones e índices
     __table_args__ = (
         CheckConstraint(
             "LENGTH(numero_telefono) = 10 AND numero_telefono ~ '^[0-9]+$'", name='check_numero_telefono'),
-        CheckConstraint("LENGTH(contraseña) >= 8",
-                        name='check_contraseña_admin'),
         db.Index('idx_admin_cedula', 'cedula'),
         db.Index('idx_admin_numero_telefono', 'numero_telefono'),
     )

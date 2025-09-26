@@ -394,8 +394,9 @@ def handle_admin(admin_id):
             admin.numero_telefono = data.get('numero_telefono', admin.numero_telefono)
             admin.estado = data.get('estado', admin.estado)
 
-            # MEJORA DE SEGURIDAD: Hashear contraseña si se proporciona una nueva
-            if 'contraseña' in data and data['contraseña']:
+            # Actualizar contraseña solo si se proporciona una nueva y no está vacía.
+            nueva_contraseña = data.get('contraseña')
+            if nueva_contraseña:
                 admin.contraseña = generate_password_hash(data['contraseña'])
             
             db.session.commit()

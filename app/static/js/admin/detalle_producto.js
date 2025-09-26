@@ -151,5 +151,18 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // Carga inicial de las reseñas
-    fetchAndRenderReviews();
+    if (reviewsSection) {
+        fetchAndRenderReviews();
+    }
+
+    // --- Lógica para el botón de editar en productos inactivos ---
+    const editInactiveButton = document.getElementById('edit-product-inactive-button');
+    if (editInactiveButton) {
+        editInactiveButton.addEventListener('click', function() {
+            // Usamos el sistema de notificaciones global para mostrar una advertencia.
+            if (window.toast && typeof window.toast.warning === 'function') {
+                window.toast.warning('Para editar, el producto debe estar activo.', 4000);
+            }
+        });
+    }
 });

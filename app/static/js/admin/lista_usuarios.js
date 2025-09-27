@@ -1045,12 +1045,17 @@ if (!window.usuariosApp) {
       this.clientePasswordInput.value = "";
       this.clientePasswordInput.required = false;
 
-      const passwordHelper = document.getElementById("cliente-password-helper");
-      if (passwordHelper) {
-        passwordHelper.innerHTML = isEdit
-          ? '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para no cambiar la contraseña actual.'
-          : '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para generar una contraseña segura (Ej: Cristian30).';
-      }
+
+      this.clienteModal.classList.remove("hidden");
+      this.clienteModal.classList.add("flex");
+      this.isInitialOpen = true;
+      this.clienteSaveButton.disabled = false;
+      // MEJORA PROFESIONAL: En lugar de un temporizador, desactivar la bandera de validación inicial
+      // después de que el modal reciba el foco. Esto es más robusto y evita validaciones prematuras.
+      this.clienteModal.focus();
+      this.clienteModal.addEventListener('focus', () => {
+        this.isInitialOpen = false;
+      }, { once: true });
 
       if (isEdit && data) {
         this.clienteIdInput.value = data.id;
@@ -1059,13 +1064,11 @@ if (!window.usuariosApp) {
         this.clientePhoneInput.value = data.numero;
       }
 
-      this.clienteModal.classList.remove("hidden");
-      this.clienteModal.classList.add("flex");
-      this.isInitialOpen = true;
-      this.clienteSaveButton.disabled = false;
-      this.clienteSaveButton.focus();
-      setTimeout(() => { this.isInitialOpen = false; }, 100);
+      // MEJORA PROFESIONAL: Llamar a la función unificada para actualizar el texto de ayuda
+      // inmediatamente al abrir el modal, tanto en modo creación como en edición.
+      this.updatePasswordHelperText('cliente');
     }
+  
 
     openAdminModal(mode = "create", data = null) {
       const isEdit = mode === "edit";
@@ -1082,12 +1085,16 @@ if (!window.usuariosApp) {
       this.adminPasswordInput.value = "";
       this.adminPasswordInput.required = false;
 
-      const passwordHelper = document.getElementById("admin-password-helper");
-      if (passwordHelper) {
-        passwordHelper.innerHTML = isEdit
-          ? '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para no cambiar la contraseña actual.'
-          : '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para generar una contraseña segura (Ej: Cristian310).';
-      }
+      this.adminModal.classList.remove("hidden");
+      this.adminModal.classList.add("flex");
+      this.isInitialOpen = true;
+      this.adminSaveButton.disabled = false;
+      // MEJORA PROFESIONAL: En lugar de un temporizador, desactivar la bandera de validación inicial
+      // después de que el modal reciba el foco. Esto es más robusto y evita validaciones prematuras.
+      this.adminModal.focus();
+      this.adminModal.addEventListener('focus', () => {
+        this.isInitialOpen = false;
+      }, { once: true });
 
       if (isEdit && data) {
         this.adminIdInput.value = data.id;
@@ -1097,12 +1104,9 @@ if (!window.usuariosApp) {
         this.adminPhoneInput.value = data.numero_telefono;
       }
 
-      this.adminModal.classList.remove("hidden");
-      this.adminModal.classList.add("flex");
-      this.isInitialOpen = true;
-      this.adminSaveButton.disabled = false;
-      this.adminSaveButton.focus();
-      setTimeout(() => { this.isInitialOpen = false; }, 100);
+      // MEJORA PROFESIONAL: Llamar a la función unificada para actualizar el texto de ayuda
+      // inmediatamente al abrir el modal, tanto en modo creación como en edición.
+      this.updatePasswordHelperText('admin');
     }
 
     closeModal() {
@@ -1259,32 +1263,35 @@ if (!window.usuariosApp) {
     // --- INICIO: Función de UI Profesional para Contraseña ---
     updatePasswordHelperText(type) {
       const idInput = type === 'cliente' ? this.clienteIdInput : this.adminIdInput;
-      const passwordHelper = document.getElementById(`${type}-password-helper`);
       const nameInput = type === 'cliente' ? this.clienteNameInput : this.adminNameInput;
       const phoneInput = type === 'cliente' ? this.clientePhoneInput : this.adminPhoneInput;
       const passwordInput = type === 'cliente' ? this.clientePasswordInput : this.adminPasswordInput;
+      const passwordHelper = document.getElementById(`${type}-password-helper`);
+
+      if (!passwordHelper) return;
 
       const isEdit = !!idInput.value;
-      if (isEdit || !passwordHelper) return;
+      passwordHelper.classList.remove("hidden");
 
-      const nombre = nameInput.value.trim();
-      const numero = phoneInput.value.trim();
-
-      if (passwordInput.value.trim() !== "") {
-        passwordHelper.classList.add("hidden");
-        return;
+      if (isEdit) {
+        passwordHelper.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para no cambiar la contraseña actual.';
       } else {
-        passwordHelper.classList.remove("hidden");
-      }
-
-      if (nombre && numero.length >= 2) {
-        const nombreBase = nombre.split(" ")[0].charAt(0).toUpperCase() + nombre.split(" ")[0].slice(1).toLowerCase();
-        const longitudNombre = nombreBase.length;
-        const digitosNecesarios = Math.max(2, 8 - longitudNombre);
-        const autoPassword = `${nombreBase}${numero.substring(0, digitosNecesarios)}`;
-        passwordHelper.innerHTML = `<i class="fas fa-magic mr-1"></i> Se generará: <strong class="font-mono">${autoPassword}</strong>`;
-      } else {
-        passwordHelper.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para generar una contraseña segura.';
+        // Lógica para modo creación
+        if (passwordInput.value.trim() !== "") {
+          passwordHelper.classList.add("hidden");
+        } else {
+          const nombre = nameInput.value.trim();
+          const numero = phoneInput.value.trim();
+          if (nombre && numero.length >= 2) {
+            const nombreBase = nombre.split(" ")[0].charAt(0).toUpperCase() + nombre.split(" ")[0].slice(1).toLowerCase();
+            const longitudNombre = nombreBase.length;
+            const digitosNecesarios = Math.max(2, 8 - longitudNombre);
+            const autoPassword = `${nombreBase}${numero.substring(0, digitosNecesarios)}`;
+            passwordHelper.innerHTML = `<i class="fas fa-magic mr-1"></i> Se generará: <strong class="font-mono">${autoPassword}</strong>`;
+          } else {
+            passwordHelper.innerHTML = '<i class="fas fa-info-circle mr-1"></i> Dejar en blanco para generar una contraseña segura.';
+          }
+        }
       }
     }
     // --- FIN: Función de UI Profesional para Contraseña ---

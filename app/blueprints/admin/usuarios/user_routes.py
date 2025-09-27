@@ -71,7 +71,7 @@ def get_usuarios(admin_user):
         if status:
             query = query.filter(Usuarios.estado == status)
 
-        # MEJORA PROFESIONAL: Aplicar ordenamiento
+        # Aplicar ordenamiento
         if sort == 'nombre_asc':
             query = query.order_by(Usuarios.nombre.asc())
         elif sort == 'nombre_desc':
@@ -125,15 +125,15 @@ def create_usuario(admin_user):
             if field not in data or not data[field]:
                 return jsonify({'success': False, 'message': f'El campo {field} es requerido'}), 400
         
-        # MEJORA PROFESIONAL: Verificar si el número de teléfono ya existe
+        #  Verificar si el número de teléfono ya existe
         if Usuarios.query.filter_by(numero=data['numero']).first():
             return jsonify({'success': False, 'message': 'El número de teléfono ya está registrado'}), 409 # 409 Conflict
 
-        # MEJORA PROFESIONAL: Generar contraseña automática si no se proporciona.
+        # Generar contraseña automática si no se proporciona.
         if 'contraseña' in data and data['contraseña']:
             password_to_use = data['contraseña']
         else:
-            # MEJORA PROFESIONAL: Lógica de contraseña automática de 8 caracteres.
+            #  Lógica de contraseña automática de 8 caracteres.
             nombre_base = data.get('nombre', '').strip().capitalize().split(' ')[0]
             numero = data.get('numero', '')
             if not nombre_base or len(numero) < 2:
@@ -191,7 +191,7 @@ def handle_usuario(admin_user, user_id):
         try:
             data = request.get_json()
             
-            # MEJORA PROFESIONAL: Validar duplicados si se cambia el número
+            # Validar duplicados si se cambia el número
             if 'numero' in data and data['numero'] != usuario.numero:
                 if Usuarios.query.filter(Usuarios.id != user_id, Usuarios.numero == data['numero']).first():
                     return jsonify({'success': False, 'message': 'El número de teléfono ya está en uso'}), 409
@@ -202,7 +202,7 @@ def handle_usuario(admin_user, user_id):
             usuario.numero = data.get('numero', usuario.numero)
             usuario.estado = data.get('estado', usuario.estado)
 
-            # MEJORA DE SEGURIDAD PROFESIONAL: Actualizar contraseña solo si se proporciona una nueva y no está vacía.
+            # Actualizar contraseña solo si se proporciona una nueva y no está vacía.
             # Esto evita que una cadena vacía sobrescriba el hash existente.
             if data.get('contraseña'):
                 usuario.contraseña = data['contraseña'] # El setter del modelo se encargará del hasheo
@@ -331,7 +331,7 @@ def get_admins(admin_user):
         if status:
             query = query.filter(Admins.estado == status)
 
-        # MEJORA PROFESIONAL: Aplicar ordenamiento
+        # Aplicar ordenamiento
         if sort == 'nombre_asc':
             query = query.order_by(Admins.nombre.asc())
         elif sort == 'nombre_desc':
@@ -384,17 +384,17 @@ def create_admin(admin_user):
             if field not in data or not data[field]:
                 return jsonify({'success': False, 'message': f'El campo {field} es requerido'}), 400
         
-        # MEJORA PROFESIONAL: Verificar si la cédula o el teléfono ya existen
+        #  Verificar si la cédula o el teléfono ya existen
         if Admins.query.filter_by(cedula=data['cedula']).first():
             return jsonify({'success': False, 'message': 'La cédula ya está registrada'}), 409
         if Admins.query.filter_by(numero_telefono=data['numero_telefono']).first():
             return jsonify({'success': False, 'message': 'El número de teléfono ya está registrado'}), 409
 
-        # MEJORA PROFESIONAL: Generar contraseña automática si no se proporciona.
+        #  Generar contraseña automática si no se proporciona.
         if 'contraseña' in data and data['contraseña']:
             password_to_use = data['contraseña']
         else:
-            # MEJORA PROFESIONAL: Lógica de contraseña automática de 8 caracteres.
+            # Lógica de contraseña automática de 8 caracteres.
             nombre_base = data.get('nombre', '').strip().capitalize().split(' ')[0]
             numero = data.get('numero_telefono', '')
             if not nombre_base or len(numero) < 2:
@@ -454,7 +454,7 @@ def handle_admin(admin_user, admin_id):
         try:
             data = request.get_json()
 
-            # MEJORA PROFESIONAL: Validar duplicados si se cambian datos únicos
+            # Validar duplicados si se cambian datos únicos
             if 'cedula' in data and data['cedula'] != admin.cedula:
                 if Admins.query.filter(Admins.id != admin_id, Admins.cedula == data['cedula']).first():
                     return jsonify({'success': False, 'message': 'La cédula ya está en uso'}), 409

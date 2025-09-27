@@ -9,11 +9,22 @@ if (!window.usuariosApp) {
     constructor() {
       // Global variables
       this.currentTab = "clientes";
-      this.currentPage = 1;
-      this.itemsPerPage = 10;
+      this.currentPageClientes = 1;
+      this.currentPageAdmins = 1;
+      this.itemsPerPageClientes = 10;
+      this.itemsPerPageAdmins = 10;
+      // Aislar los filtros por pestaña para evitar conflictos.
       this.filters = {
-        search: "",
-        status: "",
+        clientes: {
+          search: "",
+          status: "",
+          sort: "recientes",
+        },
+        admins: {
+          search: "",
+          status: "",
+          sort: "recientes",
+        },
       };
 
       // Control de estado para SPA
@@ -71,6 +82,7 @@ if (!window.usuariosApp) {
       this.loadAdministradores = this.loadAdministradores.bind(this);
       this.loadStats = this.loadStats.bind(this);
       this.saveCliente = this.saveCliente.bind(this);
+      this.toggleAdminStatus = this.toggleAdminStatus.bind(this);
       this.saveAdministrador = this.saveAdministrador.bind(this);
       this.toggleClienteStatus = this.toggleClienteStatus.bind(this);
       this.showTableLoading = this.showTableLoading.bind(this);
@@ -87,7 +99,6 @@ if (!window.usuariosApp) {
       this.debounce = this.debounce.bind(this);
       this.editCliente = this.editCliente.bind(this);
       this.editAdministrador = this.editAdministrador.bind(this);
-      this.animateValue = this.animateValue.bind(this);
       this.togglePasswordVisibility = this.togglePasswordVisibility.bind(this);
       this.cleanup = this.cleanup.bind(this);
       this.updatePasswordHelperText = this.updatePasswordHelperText.bind(this);
@@ -110,8 +121,12 @@ if (!window.usuariosApp) {
         this.loadInitialData();
         this.isInitialized = true;
       } catch (error) {
-        console.error("Error initializing UsuariosApp:", error);
-        window.toast.error("No se pudo inicializar la aplicación de usuarios.");
+        // MEJORA PROFESIONAL: Manejo de errores más robusto.
+        // Si la inicialización falla, lo mostramos en la consola para no causar
+        // errores secundarios si 'toast' aún no está listo.
+        console.error("Error fatal al inicializar UsuariosApp:", error);
+        // Opcional: Mostrar un mensaje de error visible para el usuario en la propia vista.
+        this.viewContainer.innerHTML = `<div class="p-8 text-center text-red-500"><h2>Error Crítico</h2><p>No se pudo cargar el módulo de gestión de usuarios. Por favor, recarga la página.</p></div>`;
       }
     }
 
@@ -185,6 +200,7 @@ if (!window.usuariosApp) {
         this.switchTab("clientes")
       );
       this._addEventListener(this.administradoresTab, "click", () =>
+
         this.switchTab("administradores")
       );
 
@@ -211,31 +227,58 @@ if (!window.usuariosApp) {
       this._addEventListener(document.getElementById("close-admin-modal"), "click", this.closeModal);
       this._addEventListener(document.getElementById("cancel-admin-btn"), "click", this.closeModal);
 
-      // Form submission
       //  Separamos los listeners de submit para cada formulario
       this._addEventListener(this.clienteForm, "submit", (e) => this.handleFormSubmit(e, 'cliente'));
       this._addEventListener(this.adminForm, "submit", (e) => this.handleFormSubmit(e, 'admin'));
 
-      // Search and status filter with debounce
+
       const searchInput = this.viewContainer.querySelector("#search-input");
       this._addEventListener(
         searchInput,
         "input",
-        this.debounce((e) => {
-          this.filters.search = e.target.value;
-          this.currentPage = 1;
-          this.applyFilters();
+        this.debounce(e => {
+            const activeFilters = this.currentTab === 'clientes' ? this.filters.clientes : this.filters.admins;
+            activeFilters.search = e.target.value;
+            this.currentPageClientes = 1;
+            this.currentPageAdmins = 1;
+            this.applyFilters();
         }, 300)
       );
 
+      // MEJORA PROFESIONAL: Declarar las variables de filtro al principio de la función.
       const statusFilter = this.viewContainer.querySelector("#status-filter");
-      this._addEventListener(statusFilter, "change", (e) => {
-        //  Asegurarse de que el filtro de estado solo se aplique a la pestaña de clientes
-        if (this.currentTab !== "clientes") {
-          return;
-        }
-        this.filters.status = e.target.value;
-        this.currentPage = 1;
+      const sortFilter = this.viewContainer.querySelector("#sort-filter");
+
+      this._addEventListener(statusFilter, "change", e => {
+        const activeFilters = this.currentTab === 'clientes' ? this.filters.clientes : this.filters.admins;
+        activeFilters.status = e.target.value;
+        this.currentPageClientes = 1;
+        this.currentPageAdmins = 1;
+        this.applyFilters();
+      });
+
+      //  Listener para el selector de items por página.
+      const itemsPerPageSelect = this.viewContainer.querySelector("#items-per-page-select");
+      this._addEventListener(itemsPerPageSelect, "change", e => {
+          this.itemsPerPageClientes = parseInt(e.target.value, 10);
+          this.currentPageClientes = 1;
+          this.applyFilters();
+      });
+
+      //  MEJORA PROFESIONAL: Listener para el nuevo selector de items por página de administradores.
+      const itemsPerPageSelectAdmins = this.viewContainer.querySelector("#items-per-page-select-admins");
+      this._addEventListener(itemsPerPageSelectAdmins, "change", e => {
+          this.itemsPerPageAdmins = parseInt(e.target.value, 10);
+          this.currentPageAdmins = 1;
+          this.applyFilters();
+      });
+
+      // MEJORA PROFESIONAL: Listener para el selector de ordenamiento.
+      this._addEventListener(sortFilter, "change", e => {
+        const activeFilters = this.currentTab === 'clientes' ? this.filters.clientes : this.filters.admins;
+        activeFilters.sort = e.target.value;
+        this.currentPageClientes = 1;
+        this.currentPageAdmins = 1;
         this.applyFilters();
       });
 
@@ -327,7 +370,27 @@ if (!window.usuariosApp) {
     switchTab(tab) {
       console.log(`Switching to tab: ${tab}`);
       this.currentTab = tab;
-      this.currentPage = 1;
+
+      //  Reiniciar la paginación de la pestaña activa.
+      // MEJORA PROFESIONAL: Limpiar los campos de filtro en la UI y reiniciar el estado de los filtros al cambiar de pestaña.
+      const searchInput = this.viewContainer.querySelector("#search-input");
+      const statusFilter = this.viewContainer.querySelector("#status-filter");
+      const sortFilter = this.viewContainer.querySelector("#sort-filter");
+      
+      if (searchInput) searchInput.value = "";
+      if (statusFilter) statusFilter.value = "";
+      if (sortFilter) sortFilter.value = "recientes";
+      
+      // Reiniciar el estado de los filtros para ambas pestañas.
+      this.filters.clientes = { search: "", status: "", sort: "recientes" };
+      this.filters.admins = { search: "", status: "", sort: "recientes" };
+
+
+      if (tab === 'clientes') {
+          this.currentPageClientes = 1;
+      } else {
+          this.currentPageAdmins = 1;
+      }
 
       if (tab === "clientes") {
         if (this.clientesSection && this.administradoresSection) {
@@ -348,11 +411,6 @@ if (!window.usuariosApp) {
             "text-white",
             "shadow-md"
           );
-        }
-
-        const statusFilter = this.viewContainer.querySelector("#status-filter");
-        if (statusFilter) {
-          statusFilter.classList.remove("hidden");
         }
       } else {
         if (this.administradoresSection && this.clientesSection) {
@@ -375,11 +433,11 @@ if (!window.usuariosApp) {
           );
         }
 
-        const statusFilter = this.viewContainer.querySelector("#status-filter");
-        if (statusFilter) {
-          statusFilter.classList.add("hidden");
-        }
+        // MEJORA PROFESIONAL: Cargar los datos de la nueva pestaña inmediatamente.
+        this.applyFilters();
       }
+      // MEJORA: El filtro de estado ahora es visible para ambas pestañas.
+      if (statusFilter) statusFilter.classList.remove("hidden");
     }
 
     applyFilters() {
@@ -407,6 +465,9 @@ if (!window.usuariosApp) {
         case "toggle-status":
           if (id) this.toggleClienteStatus(id);
           break;
+        case "toggle-admin-status":
+          if (id) this.toggleAdminStatus(id);
+          break;
         case "edit-cliente":
           this.editCliente(id);
           break;
@@ -420,12 +481,13 @@ if (!window.usuariosApp) {
 
     changePage(tab, page) {
       console.log(`Changing page to: ${tab}, ${page}`);
-      if (page < 1) return;
-      this.currentPage = page;
-
       if (tab === "clientes") {
+        if (page < 1 || page > (this.lastPaginationClientes?.pages || 1)) return;
+        this.currentPageClientes = page;
         this.loadClientes();
       } else {
+        if (page < 1 || page > (this.lastPaginationAdmins?.pages || 1)) return;
+        this.currentPageAdmins = page;
         this.loadAdministradores();
       }
     }
@@ -435,11 +497,13 @@ if (!window.usuariosApp) {
       console.log("Loading clientes");
       this.showTableLoading("clientes");
 
+      const activeFilters = this.filters.clientes;
       const queryParams = new URLSearchParams({
-        page: this.currentPage,
-        per_page: this.itemsPerPage,
-        search: this.filters.search,
-        status: this.filters.status,
+        page: this.currentPageClientes,
+        per_page: this.itemsPerPageClientes,
+        search: activeFilters.search,
+        status: activeFilters.status,
+        sort: activeFilters.sort,
       });
 
       fetch(`/api/usuarios?${queryParams}`)
@@ -453,6 +517,7 @@ if (!window.usuariosApp) {
           console.log("Clientes data received:", data);
           if (data.success) {
             this.renderClientesTable(data.usuarios);
+            this.lastPaginationClientes = data.pagination;
             this.renderPagination("clientes", data.pagination);
           } else {
             this.showTableError(
@@ -471,10 +536,13 @@ if (!window.usuariosApp) {
       console.log("Loading administradores");
       this.showTableLoading("administradores");
 
+      const activeFilters = this.filters.admins;
       const queryParams = new URLSearchParams({
-        page: this.currentPage,
-        per_page: this.itemsPerPage,
-        search: this.filters.search,
+        page: this.currentPageAdmins,
+        per_page: this.itemsPerPageAdmins,
+        search: activeFilters.search,
+        status: activeFilters.status,
+        sort: activeFilters.sort,
       });
 
       fetch(`/api/admins?${queryParams}`)
@@ -488,6 +556,7 @@ if (!window.usuariosApp) {
           console.log("Administradores data received:", data);
           if (data.success) {
             this.renderAdministradoresTable(data.admins);
+            this.lastPaginationAdmins = data.pagination;
             this.renderPagination("administradores", data.pagination);
           } else {
             this.showTableError(
@@ -517,59 +586,23 @@ if (!window.usuariosApp) {
         .then((data) => {
           console.log("Stats data received:", data);
           if (data.success) {
-            // Animación de contador para las estadísticas
-            this.animateValue(
-              "total-clientes-count",
-              0,
-              data.total_clientes || 0,
-              1000
-            );
-            this.animateValue(
-              "active-clientes-count",
-              0,
-              data.clientes_activos || 0,
-              1000
-            );
-            this.animateValue(
-              "total-admins-count",
-              0,
-              data.total_admins || 0,
-              1000
-            );
+            // Actualización estática para una respuesta instantánea.
+            const totalClientesEl = this.viewContainer.querySelector("#total-clientes-count");
+            if (totalClientesEl) totalClientesEl.textContent = data.total_clientes || 0;
+
+            const activeClientesEl = this.viewContainer.querySelector("#active-clientes-count");
+            if (activeClientesEl) activeClientesEl.textContent = data.clientes_activos || 0;
+
+            const totalAdminsEl = this.viewContainer.querySelector("#total-admins-count");
+            if (totalAdminsEl) totalAdminsEl.textContent = data.total_admins || 0;
+
+            const activeAdminsEl = this.viewContainer.querySelector("#active-admins-count");
+            if (activeAdminsEl) activeAdminsEl.textContent = data.admins_activos || 0;
           }
         })
         .catch((error) => {
           console.error("Error loading stats:", error);
         });
-    }
-
-    animateValue(id, start, end, duration) {
-      console.log(`Animating value for ${id} from ${start} to ${end}`);
-      const obj = this.viewContainer.querySelector(`#${id}`);
-      if (!obj) {
-        console.error(`Element with id ${id} not found`);
-        return;
-      }
-
-      const startTimestamp = performance.now();
-      const range = end - start;
-
-      const run = () => {
-        const elapsed = performance.now() - startTimestamp;
-        const progress = Math.min(elapsed / duration, 1);
-        const currentValue = Math.floor(progress * range + start);
-
-        obj.textContent = currentValue;
-
-        if (progress < 1) {
-          requestAnimationFrame(run);
-        } else {
-          obj.textContent = end; // Asegurar el valor final exacto
-        }
-      };
-
-      // Usar requestAnimationFrame para animaciones suaves y eficientes
-      requestAnimationFrame(run);
     }
 
     saveCliente(clienteData) {
@@ -710,6 +743,36 @@ if (!window.usuariosApp) {
         });
     }
 
+    toggleAdminStatus(adminId) {
+      console.log("Toggling admin status for:", adminId);
+      fetch(`/api/admins/${adminId}/status`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log("Toggle admin status response:", data);
+          if (data.success) {
+            window.toast.success("Estado del administrador actualizado correctamente.");
+            this.loadAdministradores(); // Recargar la tabla de administradores
+            this.loadStats(); // Actualizar estadísticas
+          } else {
+            window.toast.error(data.message || "No se pudo actualizar el estado del administrador.");
+          }
+        })
+        .catch((error) => {
+          console.error("Error toggling admin status:", error);
+          window.toast.error("No se pudo actualizar el estado del administrador. Error de red.");
+        });
+    }
+
     // Table Rendering Functions
     showTableLoading(type) {
       console.log(`Showing table loading for ${type}`);
@@ -718,7 +781,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 5 : 5;
+      const colspan = type === "clientes" ? 5 : 6; // Colspan para admin es 6
 
       tbody.innerHTML = `
                     <tr class="loading-row">
@@ -743,7 +806,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 5 : 5;
+      const colspan = type === "clientes" ? 5 : 6; // Colspan para admin es 6
 
       tbody.innerHTML = `
                     <tr>
@@ -835,7 +898,7 @@ if (!window.usuariosApp) {
       if (!administradores || administradores.length === 0) {
         tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="px-8 py-16 text-center">
+                            <td colspan="6" class="px-8 py-16 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-user-shield text-3xl mb-3"></i>
                                     <p class="text-lg font-medium">No se encontraron administradores</p>
@@ -856,6 +919,17 @@ if (!window.usuariosApp) {
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 font-mono">${admin.cedula}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.numero_telefono}</td>
                         <td class="px-8 py-5 whitespace-nowrap">
+                            <button data-action="toggle-admin-status" data-id="${admin.id}" class="${
+            admin.estado === "activo" ? "status-active" : "status-inactive"
+          }">
+                                ${
+                                  admin.estado === "activo"
+                                    ? "Activo"
+                                    : "Inactivo"
+                                }
+                            </button>
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="edit-admin" data-id="${admin.id}" class="action-btn text-blue-600 hover:text-blue-800">
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
@@ -868,20 +942,23 @@ if (!window.usuariosApp) {
 
     renderPagination(type, pagination) {
       console.log(`Rendering pagination for ${type}`);
+      const paginationContainer = this.viewContainer.querySelector(`#${type}-pagination`);
       const currentRange = this.viewContainer.querySelector(
         `#${type}-current-range`
       );
       const totalSpan = this.viewContainer.querySelector(`#${type}-total`);
 
-      if (!currentRange || !totalSpan) {
+      // MEJORA PROFESIONAL: Asegurar que el contenedor de paginación siempre sea visible
+      // para una UI consistente, incluso si solo hay una página.
+      if (!paginationContainer || !currentRange || !totalSpan) {
         console.error(`Pagination elements for ${type} not found`);
         return;
       }
 
       const startIndex =
-        pagination.total === 0
-          ? 0
-          : (pagination.page - 1) * pagination.per_page + 1;
+        pagination.total === 0 ?
+        0 :
+        (pagination.page - 1) * pagination.per_page + 1;
       const endIndex = Math.min(
         pagination.page * pagination.per_page,
         pagination.total
@@ -889,19 +966,40 @@ if (!window.usuariosApp) {
       currentRange.textContent = `${startIndex}-${endIndex}`;
       totalSpan.textContent = pagination.total;
 
+      // MEJORA PROFESIONAL: Ocultar el selector de ítems por página si el total es menor o igual a 10.
+      const itemsPerPageSelectId = type === 'clientes' ? 'items-per-page-select' : 'items-per-page-select-admins';
+      const itemsPerPageSelect = this.viewContainer.querySelector(`#${itemsPerPageSelectId}`);
+      if (itemsPerPageSelect) {
+        if (pagination.total > 10) {
+          itemsPerPageSelect.classList.remove('hidden');
+        } else {
+          itemsPerPageSelect.classList.add('hidden');
+        }
+      }
+
+      // MEJORA PROFESIONAL: Mostrar los botones de paginación solo si hay más de una página.
+      if (pagination.pages > 1) {
+        paginationContainer.classList.remove('hidden');
+      } else {
+        paginationContainer.classList.add('hidden');
+      }
+
       const prevBtn = this.viewContainer.querySelector(`#${type}-prev`);
       const nextBtn = this.viewContainer.querySelector(`#${type}-next`);
+
+      // Si no hay botones (porque están ocultos), no hay nada más que hacer.
+      if (!prevBtn || !nextBtn) return;
 
       if (prevBtn) {
         prevBtn.disabled = pagination.page === 1;
         prevBtn.dataset.action = "change-page";
-        prevBtn.dataset.type = type;
+        prevBtn.dataset.type = type; //  Asegurarse que el tipo esté presente
         prevBtn.dataset.page = pagination.page - 1;
       }
       if (nextBtn) {
         nextBtn.disabled = pagination.page === pagination.pages;
         nextBtn.dataset.action = "change-page";
-        nextBtn.dataset.type = type;
+        nextBtn.dataset.type = type; //  Asegurarse que el tipo esté presente
         nextBtn.dataset.page = pagination.page + 1;
       }
 

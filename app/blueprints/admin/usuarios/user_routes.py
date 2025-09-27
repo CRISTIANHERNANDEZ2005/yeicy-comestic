@@ -41,6 +41,7 @@ def get_usuarios(admin_user):
     - per_page: Elementos por página (default: 10)
     - search: Término de búsqueda para nombre, apellido o teléfono
     - status: Filtro por estado (activo/inactivo)
+    - sort: Criterio de ordenamiento (recientes, antiguos, nombre_asc, nombre_desc)
     
     Retorna:
     - JSON con lista de usuarios y datos de paginación
@@ -51,6 +52,7 @@ def get_usuarios(admin_user):
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '')
         status = request.args.get('status', '')
+        sort = request.args.get('sort', 'recientes')
         
         # Construir consulta base
         query = Usuarios.query
@@ -68,6 +70,16 @@ def get_usuarios(admin_user):
         # Aplicar filtro de estado si existe
         if status:
             query = query.filter(Usuarios.estado == status)
+
+        # MEJORA PROFESIONAL: Aplicar ordenamiento
+        if sort == 'nombre_asc':
+            query = query.order_by(Usuarios.nombre.asc())
+        elif sort == 'nombre_desc':
+            query = query.order_by(Usuarios.nombre.desc())
+        elif sort == 'antiguos':
+            query = query.order_by(Usuarios.created_at.asc())
+        else: # 'recientes' por defecto
+            query = query.order_by(Usuarios.created_at.desc())
         
         # Ejecutar consulta con paginación
         usuarios = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -243,6 +255,37 @@ def toggle_usuario_status(admin_user, user_id):
         current_app.logger.error(f"Error al cambiar estado del usuario {user_id}: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al cambiar estado del usuario'}), 500
 
+@user_bp.route('/api/admins/<string:admin_id>/status', methods=['PUT'])
+@admin_jwt_required
+def toggle_admin_status(admin_user, admin_id):
+    """
+    Cambia el estado de un administrador entre activo e inactivo.
+    
+    Parámetros:
+    - admin_id: ID del administrador a cambiar estado
+    
+    Retorna:
+    - JSON con el resultado de la operación
+    """
+    try:
+        admin = Admins.query.get_or_404(admin_id)
+        # Cambiar estado
+        nuevo_estado = EstadoEnum.INACTIVO.value if admin.estado == EstadoEnum.ACTIVO.value else EstadoEnum.ACTIVO.value
+        admin.estado = nuevo_estado
+        
+        # Guardar cambios en la base de datos
+        db.session.commit()
+        
+        # Preparar respuesta
+        return jsonify({
+            'success': True,
+            'message': 'Estado de administrador actualizado correctamente',
+            'admin': admin_to_dict(admin)
+        })
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al cambiar estado del administrador {admin_id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error al cambiar estado del administrador'}), 500
 # Endpoints para la API de Administradores
 
 @user_bp.route('/api/admins', methods=['GET'])
@@ -255,6 +298,8 @@ def get_admins(admin_user):
     - page: Número de página (default: 1)
     - per_page: Elementos por página (default: 10)
     - search: Término de búsqueda para nombre, apellido, cédula o teléfono
+    - status: Filtro por estado (activo/inactivo)
+    - sort: Criterio de ordenamiento (recientes, antiguos, nombre_asc, nombre_desc)
     
     Retorna:
     - JSON con lista de administradores y datos de paginación
@@ -264,6 +309,8 @@ def get_admins(admin_user):
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '')
+        status = request.args.get('status', '')
+        sort = request.args.get('sort', 'recientes')
         
         # Construir consulta base
         query = Admins.query
@@ -278,6 +325,20 @@ def get_admins(admin_user):
                     Admins.numero_telefono.ilike(f'%{search}%')
                 )
             )
+
+        # Aplicar filtro de estado si existe
+        if status:
+            query = query.filter(Admins.estado == status)
+
+        # MEJORA PROFESIONAL: Aplicar ordenamiento
+        if sort == 'nombre_asc':
+            query = query.order_by(Admins.nombre.asc())
+        elif sort == 'nombre_desc':
+            query = query.order_by(Admins.nombre.desc())
+        elif sort == 'antiguos':
+            query = query.order_by(Admins.created_at.asc())
+        else: # 'recientes' por defecto
+            query = query.order_by(Admins.created_at.desc())
         
         # Ejecutar consulta con paginación
         admins = query.paginate(page=page, per_page=per_page, error_out=False)
@@ -429,7 +490,6 @@ def handle_admin(admin_user, admin_id):
             return jsonify({'success': False, 'message': 'Error al actualizar administrador'}), 500
 
 # Endpoint para estadísticas
-
 @user_bp.route('/api/stats/usuarios', methods=['GET'])
 @admin_jwt_required
 def get_usuario_stats(admin_user):
@@ -447,13 +507,15 @@ def get_usuario_stats(admin_user):
         total_clientes = Usuarios.query.count()
         clientes_activos = Usuarios.query.filter(Usuarios.estado == EstadoEnum.ACTIVO).count()
         total_admins = Admins.query.count()
+        admins_activos = Admins.query.filter(Admins.estado == EstadoEnum.ACTIVO).count()
         
         # Preparar respuesta
         return jsonify({
             'success': True,
             'total_clientes': total_clientes,
             'clientes_activos': clientes_activos,
-            'total_admins': total_admins
+            'total_admins': total_admins,
+            'admins_activos': admins_activos
         })
     
     except Exception as e:

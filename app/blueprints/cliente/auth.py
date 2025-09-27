@@ -153,7 +153,7 @@ def register():
         db.session.commit()
         
         app.logger.info(f"Registro exitoso: usuario {usuario.numero} (ID: {usuario.id})")
-        # MEJORA PROFESIONAL: No iniciar sesión automáticamente.
+        #  No iniciar sesión automáticamente.
         # Devolver solo un mensaje de éxito para que el frontend redirija al login.
         return jsonify({
             'success': True,
@@ -210,6 +210,12 @@ def login():
     if not usuario:
         app.logger.warning(f"Inicio de sesión fallido: número no registrado {data['numero']}")
         return jsonify({'error': 'Credenciales inválidas'}), 401
+
+    # Verificar si la cuenta del usuario está activa ANTES de verificar la contraseña.
+    if not usuario.is_active:
+        app.logger.warning(f"Inicio de sesión fallido: cuenta inactiva para el número: {data['numero']}")
+        return jsonify({'error': 'Tu cuenta se encuentra inactiva. Por favor, contacta a soporte.'}), 403
+
     # Verifica la contraseña hasheada.
     if not bcrypt.check_password_hash(usuario.contraseña, data['contraseña']):
         app.logger.warning(f"Inicio de sesión fallido: contraseña incorrecta para el número: {data['numero']}")
@@ -271,17 +277,21 @@ def request_reset():
             current_app.logger.warning("Solicitud de reseteo fallida: faltan campos (número o nombre).")
             return jsonify({'error': 'El número de teléfono y el nombre son requeridos.'}), 400
 
-        # Busca un usuario activo que coincida con el número y el nombre (insensible a mayúsculas).
+        # Busca al usuario por número y nombre (insensible a mayúsculas).
         usuario = Usuarios.query.filter(
             Usuarios.numero == numero,
-            Usuarios.nombre.ilike(nombre),
-            Usuarios.estado == 'activo'
+            Usuarios.nombre.ilike(nombre)
         ).first()
 
-        # Por seguridad, se devuelve un mensaje genérico si el usuario no se encuentra.
+        # Si el usuario no existe, se devuelve un mensaje genérico por seguridad.
         if not usuario:
-            current_app.logger.warning(f"Solicitud de reseteo fallida: combinación de número/nombre no encontrada o usuario inactivo para el número {numero}.")
+            current_app.logger.warning(f"Solicitud de reseteo fallida: combinación de número/nombre no encontrada para el número {numero}.")
             return jsonify({'error': 'Credenciales incorrectas. Verifica tu número y nombre.'}), 401
+
+        # Si el usuario existe, verificar si su cuenta está activa.
+        if not usuario.is_active:
+            current_app.logger.warning(f"Solicitud de reseteo fallida: cuenta inactiva para el número: {numero}")
+            return jsonify({'error': 'Tu cuenta se encuentra inactiva. Por favor, contacta a soporte.'}), 403
 
         # Genera y guarda un código de 6 dígitos con una expiración de 10 minutos.
         codigo = usuario.generar_codigo_recuperacion()

@@ -357,35 +357,47 @@ def get_admins(admin_user):
         if status:
             query = query.filter(Admins.estado == status)
             
-        # Priorizar al administrador autenticado si no hay filtros de búsqueda o estado
-        if not search and not status:
-            current_admin_id = admin_user.id
-            priority_order = case(
-                (Admins.id == current_admin_id, 0),
-                else_=1
-            )
+        # MEJORA PROFESIONAL: Ordenamiento jerárquico para administradores.
+        # 1. El admin actual. 2. Otros admins en línea. 3. El resto.
+        online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+        current_admin_id = admin_user.id
+
+        priority_order = case(
+            (Admins.id == current_admin_id, 0),
+            (Admins.last_seen > online_threshold, 1),
+            else_=2
+        ).label('admin_priority')
 
         # Aplicar ordenamiento
         if sort == 'nombre_asc':
-            query = query.order_by(Admins.nombre.asc())
+            base_order = [Admins.nombre.asc()]
         elif sort == 'nombre_desc':
-            query = query.order_by(Admins.nombre.desc())
+            base_order = [Admins.nombre.desc()]
         elif sort == 'antiguos':
-            query = query.order_by(Admins.created_at.asc())
+            base_order = [Admins.created_at.asc()]
         else: # 'recientes' por defecto
-            # Si no hay filtros, aplicar el orden prioritario primero
-            if not search and not status:
-                query = query.order_by(priority_order.asc(), Admins.created_at.desc())
-            else:
-                query = query.order_by(Admins.created_at.desc())
+            base_order = [Admins.created_at.desc()]
+
+        # La prioridad de admin siempre se aplica, a menos que haya una búsqueda.
+        if not search:
+            query = query.order_by(priority_order, *base_order)
+        else:
+            query = query.order_by(*base_order)
         
         # Ejecutar consulta con paginación
         admins = query.paginate(page=page, per_page=per_page, error_out=False)
         
+        # MEJORA PROFESIONAL: Añadir 'is_online' al diccionario del admin.
+        admins_list = []
+        for admin in admins.items:
+            admin_dict = admin_to_dict(admin)
+            admin_dict['is_online'] = admin.is_online
+            admins_list.append(admin_dict)
+
         # Preparar respuesta
         return jsonify({
             'success': True,
-            'admins': [admin_to_dict(admin) for admin in admins.items],
+            'admins': admins_list,
             'pagination': {
                 'page': admins.page,
                 'pages': admins.pages,

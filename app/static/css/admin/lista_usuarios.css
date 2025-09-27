@@ -204,3 +204,85 @@ tbody tr {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
 }
+
+/* Estilo para la fila del cliente desconectado (pero activo) */
+.offline-client-row {
+  background-color: #f9fafb; /* Tailwind 'gray-50' */
+  transition: all 0.3s ease;
+}
+
+.offline-client-row:hover {
+  background-color: #f3f4f6; /* Tailwind 'gray-100' */
+}
+
+/* Indicador de estado desconectado */
+.offline-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #4b5563; /* Tailwind 'gray-600' */
+}
+
+.offline-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background-color: #9ca3af; /* Tailwind 'gray-400' */
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* Estilo para la fila del cliente inactivo */
+.inactive-client-row {
+  background-color: #fef2f2; /* Tailwind 'red-50' */
+  border-left: 4px solid #ef4444; /* Tailwind 'red-500' */
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.inactive-client-row:hover {
+  background-color: #fee2e2; /* Tailwind 'red-100' */
+  opacity: 1;
+}
+
+/* El botón de estado 'Inactivo' ya tiene su propio estilo, por lo que no se necesita un indicador de texto adicional en el nombre. */
+/* La fila completa con color y opacidad ya comunica el estado de forma profesional. */
+
+/* Estilo para la fila del admin en línea */
+.online-admin-row {
+  background-color: #f5f3ff; /* Tailwind 'purple-50' */
+  border-left: 4px solid #7c3aed; /* Tailwind 'purple-600' */
+}
+
+.online-admin-row:hover {
+  background-color: #ede9fe; /* Tailwind 'purple-100' */
+}
+
+/* Estilo para la fila del admin desconectado */
+.offline-admin-row {
+  background-color: #f9fafb; /* Tailwind 'gray-50' */
+}
+
+.offline-admin-row:hover {
+  background-color: #f3f4f6; /* Tailwind 'gray-100' */
+}
+
+/* Estilo para la fila del admin inactivo */
+.inactive-admin-row {
+  background-color: #fef2f2; /* Tailwind 'red-50' */
+  border-left: 4px solid #ef4444; /* Tailwind 'red-500' */
+  opacity: 0.8;
+}
+
+.inactive-admin-row:hover {
+  background-color: #fee2e2; /* Tailwind 'red-100' */
+  opacity: 1;
+}
+
+/* El indicador 'online-indicator' y 'offline-indicator' se reutiliza del cliente,
+   ya que su diseño es genérico y profesional. Si se deseara un color distinto
+   para el punto del admin, se podrían crear nuevas clases como 'online-admin-indicator'.
+   Por ahora, la reutilización es eficiente. */
+
+/* El estilo 'authenticated-admin-row' ya existe y tiene mayor precedencia,
+   lo cual es correcto para resaltar siempre al admin actual. */

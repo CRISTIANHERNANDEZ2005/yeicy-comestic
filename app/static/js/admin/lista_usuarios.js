@@ -898,20 +898,36 @@ if (!window.usuariosApp) {
 
       tbody.innerHTML = clientes
         .map(
-          (cliente) => {
-            const isOnline = cliente.is_online;
-            const rowClass = isOnline ? "online-client-row" : "hover:bg-gray-50 transition-all duration-200 card-hover";
-            const onlineIndicator = isOnline ? `
-              <span class="online-indicator">
-                <span class="dot"></span>En línea
-              </span>
-            ` : '';
+          (cliente) => { 
+            let rowClass = "hover:bg-gray-50 transition-all duration-200 card-hover";
+            let statusIndicator = '';
+
+            if (cliente.estado === 'inactivo') {
+                rowClass = "inactive-client-row";
+                // El estado 'Inactivo' ya es muy visible por el color de la fila y el botón.
+                // No se necesita un indicador de texto adicional en el nombre para mantener un look limpio.
+            } else if (cliente.is_online) {
+                rowClass = "online-client-row";
+                statusIndicator = `
+                  <span class="online-indicator">
+                    <span class="dot"></span>En línea
+                  </span>
+                `;
+            } else {
+                // Activo pero no en línea (desconectado)
+                rowClass = "offline-client-row";
+                statusIndicator = `
+                  <span class="offline-indicator">
+                    <span class="dot"></span>Desconectado
+                  </span>
+                `;
+            }
 
             return `
                     <tr class="${rowClass}">
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${
                           cliente.nombre
-                        } ${onlineIndicator}</td>
+                        } ${statusIndicator}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${
                           cliente.apellido
                         }</td>
@@ -971,14 +987,41 @@ if (!window.usuariosApp) {
 
       tbody.innerHTML = administradores
         .map(
-          (admin) => {
+          (admin) => { 
             const isCurrentUser = admin.id === this.authenticatedAdminId;
-            const rowClass = isCurrentUser ? "authenticated-admin-row" : "hover:bg-gray-50 transition-all duration-200 card-hover";
-            const adminName = isCurrentUser ? `${admin.nombre} <span class="text-sm font-normal text-blue-600">(Tú)</span>` : admin.nombre;
+            let rowClass = "hover:bg-gray-50 transition-all duration-200 card-hover";
+            let statusIndicator = '';
+            let adminName = admin.nombre;
+
+            if (isCurrentUser) {
+                rowClass = "authenticated-admin-row";
+                adminName = `${admin.nombre} <span class="text-sm font-normal text-indigo-600">(Tú)</span>`;
+                statusIndicator = `
+                  <span class="online-indicator">
+                    <span class="dot"></span>En línea
+                  </span>
+                `;
+            } else if (admin.estado === 'inactivo') {
+                rowClass = "inactive-admin-row";
+            } else if (admin.is_online) {
+                rowClass = "online-admin-row";
+                statusIndicator = `
+                  <span class="online-indicator">
+                    <span class="dot"></span>En línea
+                  </span>
+                `;
+            } else {
+                rowClass = "offline-admin-row";
+                statusIndicator = `
+                  <span class="offline-indicator">
+                    <span class="dot"></span>Desconectado
+                  </span>
+                `;
+            }
 
             return `
                     <tr class="${rowClass}">
-                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${adminName}</td>
+                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${adminName} ${statusIndicator}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${admin.apellido}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 font-mono">${admin.cedula}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.numero_telefono}</td>

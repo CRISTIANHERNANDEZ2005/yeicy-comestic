@@ -369,6 +369,17 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         """Devuelve el ID del administrador como una cadena."""
         return str(self.id)
 
+    @property
+    def is_online(self):
+        """
+        Determina si un administrador está en línea basándose en su última actividad.
+        Se considera en línea si 'last_seen' es de hace menos de 5 minutos.
+        """
+        if not self.last_seen:
+            return False
+        # Asegurarse de que last_seen tenga timezone para una comparación correcta
+        return (datetime.now(timezone.utc) - self.last_seen.replace(tzinfo=timezone.utc)) < timedelta(minutes=5)
+
     # id y timestamps heredados de los mixins
     cedula: Mapped[str] = mapped_column(db.String(20), nullable=False, unique=True)
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
@@ -376,6 +387,7 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
     numero_telefono: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
     _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
     # estado ya está en el mixin
+    last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True, default=datetime.utcnow)
 
     # Restricciones e índices
     __table_args__ = (

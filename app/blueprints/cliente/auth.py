@@ -14,7 +14,8 @@ en el servidor como tokens JWT para la comunicación con APIs y la persistencia 
 
 # --- Importaciones de Flask y Librerías Estándar ---
 from flask import Blueprint, request, jsonify, session, g, render_template, redirect, url_for, flash, current_app
-from urllib.parse import quote
+from urllib.parse import quote 
+from datetime import datetime
 import re
 
 # --- Importaciones de Extensiones y Terceros ---
@@ -39,8 +40,12 @@ def restore_session_from_jwt():
     usuario persistente entre visitas.
     """
     # Si ya existe un usuario en la sesión de Flask, no es necesario hacer nada.
-    if session.get('user'):
+    if 'user' in g:
         return
+
+    user_id_from_session = session.get('user', {}).get('id')
+    if user_id_from_session:
+        g.user = Usuarios.query.get(user_id_from_session)
     # Evita restaurar la sesión si el usuario acaba de cerrarla explícitamente.
     if request.endpoint == 'auth.logout' and request.method == 'POST':
         return
@@ -60,6 +65,7 @@ def restore_session_from_jwt():
     usuario = Usuarios.verificar_jwt(token)
     if usuario:
         # Si el token es válido, se puebla la sesión de Flask con los datos del usuario.
+        g.user = usuario
         session['user'] = {
             'id': usuario.id,
             'numero': usuario.numero,
@@ -67,6 +73,13 @@ def restore_session_from_jwt():
             'apellido': usuario.apellido
         }
         session.modified = True
+        
+        # MEJORA PROFESIONAL: Actualizar la última vez que se vio al usuario.
+        # Esto mantiene al usuario "en línea" mientras navega por el sitio.
+        if g.user:
+            g.user.last_seen = datetime.utcnow()
+            db.session.commit()
+
 
 @auth_bp.route('/me', methods=['GET'])
 def me():
@@ -230,6 +243,10 @@ def login():
 
     # Inicia la sesión del usuario con Flask-Login, gestionando la cookie de sesión.
     login_user(usuario, remember=True)
+
+    # MEJORA PROFESIONAL: Actualizar la última vez que se vio al usuario al iniciar sesión.
+    usuario.last_seen = datetime.utcnow()
+    db.session.commit()
 
     # Almacena datos adicionales en la sesión para un acceso rápido.
     session['user'] = {
@@ -408,6 +425,15 @@ def logout():
     """
     from flask import current_app as app, make_response
     try:
+        # MEJORA PROFESIONAL: Marcar al usuario como desconectado antes de cerrar la sesión.
+        user_id = session.get('user', {}).get('id')
+        if user_id:
+            usuario = Usuarios.query.get(user_id)
+            if usuario:
+                usuario.last_seen = None # O una fecha muy antigua
+                db.session.commit()
+                app.logger.info(f"Usuario {user_id} marcado como desconectado.")
+
         # Cierra la sesión gestionada por Flask-Login.
         logout_user()
         

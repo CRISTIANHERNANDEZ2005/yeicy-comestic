@@ -170,3 +170,37 @@ tbody tr {
 #clear-filters-btn i {
   transition: transform 0.3s ease-in-out;
 }
+
+/* Estilo para la fila del cliente en línea */
+.online-client-row {
+  background-color: #f0fdf4; /* Tailwind 'green-50' */
+  border-left: 4px solid #22c55e; /* Tailwind 'green-500' */
+  transition: all 0.3s ease;
+}
+
+.online-client-row:hover {
+  background-color: #dcfce7; /* Tailwind 'green-100' */
+}
+
+/* Indicador de estado en línea */
+.online-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #15803d; /* Tailwind 'green-700' */
+}
+
+.online-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e; /* Tailwind 'green-500' */
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

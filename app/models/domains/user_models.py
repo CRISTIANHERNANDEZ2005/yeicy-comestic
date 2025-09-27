@@ -10,7 +10,7 @@ perfiles, seguridad de contraseñas y la generación de tokens JWT. También con
 # --- Importaciones de Serializadores ---
 from app.models.serializers import usuario_to_dict, admin_to_dict
 # --- Importaciones de la Librería Estándar ---
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 # --- Importaciones de Extensiones y Terceros ---
 from app.extensions import db, bcrypt
 from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
@@ -150,6 +150,16 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         """
         return str(self.id)
 
+    @property
+    def is_online(self):
+        """
+        Determina si un usuario está en línea basándose en su última actividad.
+        Se considera en línea si 'last_seen' es de hace menos de 5 minutos.
+        """
+        if not self.last_seen:
+            return False
+        return (datetime.now(timezone.utc) - self.last_seen.replace(tzinfo=timezone.utc)) < timedelta(minutes=5)
+
     def generar_jwt(self):
         """
         Genera un JSON Web Token (JWT) para el usuario.
@@ -203,8 +213,6 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             current_app.logger.error(f"Error al verificar JWT: {e}")
             return None
 
-    
-
     # id y timestamps heredados de los mixins
     numero: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
@@ -212,6 +220,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
     reset_token: Mapped[str] = mapped_column(db.String(256), nullable=True, unique=True)
     reset_token_expiration: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
+    last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True, default=datetime.utcnow)
     # estado ya está en el mixin
     likes: Mapped[List['Likes']] = relationship('Likes', back_populates='usuario', lazy=True)
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='usuario', lazy=True)

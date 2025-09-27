@@ -898,11 +898,20 @@ if (!window.usuariosApp) {
 
       tbody.innerHTML = clientes
         .map(
-          (cliente) => `
-                    <tr class="hover:bg-gray-50 transition-all duration-200 card-hover">
+          (cliente) => {
+            const isOnline = cliente.is_online;
+            const rowClass = isOnline ? "online-client-row" : "hover:bg-gray-50 transition-all duration-200 card-hover";
+            const onlineIndicator = isOnline ? `
+              <span class="online-indicator">
+                <span class="dot"></span>En línea
+              </span>
+            ` : '';
+
+            return `
+                    <tr class="${rowClass}">
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${
                           cliente.nombre
-                        }</td>
+                        } ${onlineIndicator}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${
                           cliente.apellido
                         }</td>
@@ -930,8 +939,8 @@ if (!window.usuariosApp) {
                             </button>
                         </td>
                     </tr>
-                `
-        )
+                `;
+          })
         .join("");
     }
 

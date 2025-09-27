@@ -4,11 +4,11 @@ from app.models.domains.user_models import Usuarios, Admins
 from app.models.serializers import usuario_to_dict, admin_to_dict
 from app.models.enums import EstadoEnum
 from app.extensions import db
-from sqlalchemy import or_, case
+from sqlalchemy import or_, case, desc
 from app.extensions import bcrypt
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
-import uuid
+import uuid, datetime
 
 # Crear el blueprint
 user_bp = Blueprint('users', __name__)
@@ -72,23 +72,48 @@ def get_usuarios(admin_user):
         if status:
             query = query.filter(Usuarios.estado == status)
 
-        # Aplicar ordenamiento
+        # MEJORA PROFESIONAL: Priorizar usuarios en línea solo cuando no hay NINGÚN filtro activo (incluyendo el ordenamiento).
+        # Un filtro de ordenamiento se considera activo si no es el valor por defecto ('recientes').
+        is_sort_active = sort != 'recientes'
+        is_any_filter_active = bool(search or status or is_sort_active)
+        
+        # Definir el ordenamiento base según la selección del usuario.
         if sort == 'nombre_asc':
-            query = query.order_by(Usuarios.nombre.asc())
+            base_order = [Usuarios.nombre.asc()]
         elif sort == 'nombre_desc':
-            query = query.order_by(Usuarios.nombre.desc())
+            base_order = [Usuarios.nombre.desc()]
         elif sort == 'antiguos':
-            query = query.order_by(Usuarios.created_at.asc())
+            base_order = [Usuarios.created_at.asc()]
         else: # 'recientes' por defecto
-            query = query.order_by(Usuarios.created_at.desc())
+            base_order = [desc(Usuarios.created_at)]
+
+        # Si no hay NINGÚN filtro, se añade la prioridad de "en línea" al principio del ordenamiento.
+        if not is_any_filter_active:
+            online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+            online_priority = case(
+                (Usuarios.last_seen > online_threshold, 0),
+                else_=1
+            ).label('online_priority')
+            query = query.order_by(online_priority, *base_order)
+        else:
+            # Si hay cualquier filtro activo, se ignora la prioridad de "en línea" y se usa solo el orden base.
+            query = query.order_by(*base_order)
         
         # Ejecutar consulta con paginación
         usuarios = query.paginate(page=page, per_page=per_page, error_out=False)
         
+        # MEJORA PROFESIONAL: Añadir 'is_online' al diccionario del usuario.
+        # El serializador base no incluye propiedades, así que lo agregamos aquí.
+        usuarios_list = []
+        for usuario in usuarios.items:
+            user_dict = usuario_to_dict(usuario)
+            user_dict['is_online'] = usuario.is_online
+            usuarios_list.append(user_dict)
+
         # Preparar respuesta
         return jsonify({
             'success': True,
-            'usuarios': [usuario_to_dict(usuario) for usuario in usuarios.items],
+            'usuarios': usuarios_list,
             'pagination': {
                 'page': usuarios.page,
                 'pages': usuarios.pages,

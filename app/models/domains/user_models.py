@@ -220,7 +220,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
     reset_token: Mapped[str] = mapped_column(db.String(256), nullable=True, unique=True)
     reset_token_expiration: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
-    last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True, default=datetime.utcnow)
+    last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True)
     # estado ya está en el mixin
     likes: Mapped[List['Likes']] = relationship('Likes', back_populates='usuario', lazy=True)
     reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='usuario', lazy=True)
@@ -387,7 +387,7 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
     numero_telefono: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
     _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
     # estado ya está en el mixin
-    last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True, default=datetime.utcnow)
+    last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True)
 
     # Restricciones e índices
     __table_args__ = (

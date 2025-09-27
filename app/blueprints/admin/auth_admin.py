@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, make_response, current_app
-from datetime import timedelta
+from datetime import timedelta, datetime
 from app.models.domains.user_models import Admins
 from app.extensions import db, bcrypt
 from flask_login import login_user, logout_user, login_required
+from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies, jwt_required, get_jwt_identity
 
 admin_auth_bp = Blueprint('admin_auth', __name__)
 
@@ -24,9 +25,6 @@ def validate_credentials():
         return jsonify({'valid': False, 'message': 'Contraseña incorrecta.'}), 200
     
     return jsonify({'valid': True, 'message': 'Credenciales válidas.'}), 200
-
-from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies, jwt_required, get_jwt_identity, jwt_required
-from app.utils.admin_jwt_utils import admin_jwt_required
 
 @admin_auth_bp.route('/administracion', methods=['GET', 'POST'])
 def login():
@@ -50,6 +48,10 @@ def login():
         if not admin.verificar_contraseña(contraseña):
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
+        # MEJORA PROFESIONAL: Actualizar la última vez que se vio al admin al iniciar sesión.
+        admin.last_seen = datetime.utcnow()
+        db.session.commit()
+
         # Generar JWT
         admin_jwt_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440) # Default to 24 hours if not set
         expires_delta = timedelta(minutes=admin_jwt_expiration_minutes)
@@ -63,12 +65,26 @@ def login():
 
 @admin_auth_bp.route('/admin/logout', methods=['POST'])
 def logout():
+    # MEJORA PROFESIONAL: Marcar al admin como desconectado antes de cerrar la sesión.
+    # Esto requiere flask-jwt-extended para obtener la identidad del token actual.
+    try:
+        admin_id = get_jwt_identity()
+        if admin_id:
+            admin = Admins.query.get(admin_id)
+            if admin:
+                admin.last_seen = None # O una fecha muy antigua
+                db.session.commit()
+                current_app.logger.info(f"Administrador {admin.id} marcado como desconectado.")
+    except Exception:
+        # Si no hay token o hay un error, simplemente continuamos con el logout.
+        pass
+
     response = make_response(jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'}))
     unset_jwt_cookies(response)
     return response
 
 @admin_auth_bp.route("/admin/me", methods=["GET"])
-@jwt_required(locations=["cookies"])
+@jwt_required(locations=["cookies"]) # Asegura que esta ruta esté protegida
 def admin_me():
     current_admin_id = get_jwt_identity()
     admin = Admins.query.get(current_admin_id)

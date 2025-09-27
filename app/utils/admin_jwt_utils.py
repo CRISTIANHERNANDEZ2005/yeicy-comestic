@@ -4,7 +4,7 @@ from app.models.domains.user_models import Admins # Import Admins model
 from typing import Callable, TypeVar, cast, Any
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -70,6 +70,12 @@ def admin_jwt_required(f: F) -> F:
                 current_app.logger.error(f'Usuario administrador no encontrado para el ID: {user_id}')
                 flash('Acceso denegado. Usuario no autorizado.', 'danger')
                 return redirect(url_for('admin_auth.login'))
+
+            # MEJORA PROFESIONAL: Actualizar la última vez que se vio al administrador en cada petición.
+            # Esto es crucial para que el estado "En línea" funcione para todos los admins.
+            from app.extensions import db
+            admin_user.last_seen = datetime.now(timezone.utc)
+            db.session.commit()
 
             current_app.logger.info(f'Acceso autorizado a ruta de administrador para el usuario: {admin_user.id}')
             return f(admin_user, *args, **kwargs)

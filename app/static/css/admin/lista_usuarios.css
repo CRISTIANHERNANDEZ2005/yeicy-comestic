@@ -146,6 +146,13 @@ tbody tr {
   transform: scale(1.05);
 }
 
+
+.action-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important; /* Evita el efecto hover de escala */
+}
+
 /* Contenedor interno para asegurar que la barra de herramientas y la tabla se desplacen juntas */
 .table-wrapper-inner {
   /* MEJORA PROFESIONAL: Hacer que el contenedor interno se ajuste al ancho de su contenido (la tabla). */

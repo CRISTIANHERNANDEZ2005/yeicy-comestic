@@ -965,9 +965,13 @@ if (!window.usuariosApp) {
                             </button>
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap">
-                            <button data-action="edit-cliente" data-id="${
-                              cliente.id
-                            }" class="action-btn text-blue-600 hover:text-blue-800">
+                            <button 
+                                data-action="edit-cliente" 
+                                data-id="${cliente.id}"
+                                data-status="${cliente.estado}"
+                                class="action-btn text-blue-600 hover:text-blue-800 ${cliente.estado === 'inactivo' ? 'action-btn-disabled' : ''}"
+                                title="${cliente.estado === 'inactivo' ? 'Para editar, el cliente debe estar activo.' : 'Editar cliente'}"
+                            >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
                         </td>
@@ -975,6 +979,47 @@ if (!window.usuariosApp) {
                 `;
           })
         .join("");
+    }
+
+    handleActionClick(e) {
+      const actionButton = e.target.closest("button[data-action]");
+      if (!actionButton) return;
+
+      e.preventDefault();
+
+      const action = actionButton.dataset.action;
+      const id = actionButton.dataset.id;
+      const status = actionButton.dataset.status;
+
+      // MEJORA PROFESIONAL: Mostrar notificación si el usuario está inactivo.
+      if ((action === 'edit-cliente' || action === 'edit-admin') && status === 'inactivo') {
+        const userType = action === 'edit-cliente' ? 'cliente' : 'administrador';
+        window.toast.warning(`Para editar este ${userType}, primero debes cambiar su estado a "Activo".`);
+        return;
+      }
+
+      // Si no está inactivo, proceder con la acción normal.
+      this.performAction(action, id, actionButton.dataset.type, actionButton.dataset.page);
+    }
+
+    performAction(action, id, type, page) {
+      // El código que estaba antes en handleActionClick se mueve aquí.
+      switch (action) {
+        case "toggle-status":
+          if (id) this.toggleClienteStatus(id);
+          break;
+        case "toggle-admin-status":
+          if (id) this.toggleAdminStatus(id);
+          break;
+        case "edit-cliente":
+          this.editCliente(id);
+          break;
+        case "edit-admin":
+          this.editAdministrador(id);
+          break;
+        case "change-page":
+          if (type && page) this.changePage(type, parseInt(page));
+      }
     }
 
     renderAdministradoresTable(administradores) {
@@ -1060,7 +1105,13 @@ if (!window.usuariosApp) {
                             </button>
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap">
-                            <button data-action="edit-admin" data-id="${admin.id}" class="action-btn text-blue-600 hover:text-blue-800">
+                            <button 
+                                data-action="edit-admin" 
+                                data-id="${admin.id}"
+                                data-status="${admin.estado}"
+                                class="action-btn text-blue-600 hover:text-blue-800 ${admin.estado === 'inactivo' ? 'action-btn-disabled' : ''}"
+                                title="${admin.estado === 'inactivo' ? 'Para editar, el administrador debe estar activo.' : 'Editar administrador'}"
+                            >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
                         </td>
@@ -1456,8 +1507,7 @@ if (!window.usuariosApp) {
         .then((data) => {
           console.log("Cliente data received:", data);
           if (data.success) {
-            const cliente = data.usuario;
-            this.openClienteModal("edit", cliente);
+            this.openClienteModal("edit", data.usuario); 
           } else {
             window.toast.error(data.message || "No se pudo cargar el cliente.");
           }
@@ -1480,8 +1530,7 @@ if (!window.usuariosApp) {
         .then((data) => {
           console.log("Administrador data received:", data);
           if (data.success) {
-            const admin = data.admin;
-            this.openAdminModal("edit", admin);
+            this.openAdminModal("edit", data.admin);
           } else {
             window.toast.error(data.message || "No se pudo cargar el administrador.");
           }

@@ -286,3 +286,28 @@ tbody tr {
 
 /* El estilo 'authenticated-admin-row' ya existe y tiene mayor precedencia,
    lo cual es correcto para resaltar siempre al admin actual. */
+
+/* Insignia para el contador de usuarios en línea en las tarjetas de estadísticas */
+.online-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background-color: #dcfce7; /* Tailwind 'green-100' */
+    color: #166534; /* Tailwind 'green-800' */
+    border-radius: 9999px; /* 'rounded-full' */
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: all 0.3s ease;
+}
+
+.online-count-badge .dot {
+    width: 7px;
+    height: 7px;
+    background-color: #22c55e; /* Tailwind 'green-500' */
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+.online-count-badge.hidden { display: none; }

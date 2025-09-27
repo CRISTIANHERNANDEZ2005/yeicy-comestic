@@ -640,14 +640,25 @@ if (!window.usuariosApp) {
             const totalClientesEl = this.viewContainer.querySelector("#total-clientes-count");
             if (totalClientesEl) totalClientesEl.textContent = data.total_clientes || 0;
 
+            // MEJORA PROFESIONAL: Mostrar contadores de activos y en línea.
             const activeClientesEl = this.viewContainer.querySelector("#active-clientes-count");
+            const onlineClientesBadge = this.viewContainer.querySelector("#online-clientes-badge");
             if (activeClientesEl) activeClientesEl.textContent = data.clientes_activos || 0;
+            if (onlineClientesBadge) {
+                onlineClientesBadge.innerHTML = `<span class="dot"></span> ${data.clientes_online || 0} en línea`;
+                onlineClientesBadge.classList.toggle('hidden', (data.clientes_online || 0) === 0);
+            }
 
             const totalAdminsEl = this.viewContainer.querySelector("#total-admins-count");
             if (totalAdminsEl) totalAdminsEl.textContent = data.total_admins || 0;
 
             const activeAdminsEl = this.viewContainer.querySelector("#active-admins-count");
+            const onlineAdminsBadge = this.viewContainer.querySelector("#online-admins-badge");
             if (activeAdminsEl) activeAdminsEl.textContent = data.admins_activos || 0;
+            if (onlineAdminsBadge) {
+                onlineAdminsBadge.innerHTML = `<span class="dot"></span> ${data.admins_online || 0} en línea`;
+                onlineAdminsBadge.classList.toggle('hidden', (data.admins_online || 0) === 0);
+            }
           }
         })
         .catch((error) => {

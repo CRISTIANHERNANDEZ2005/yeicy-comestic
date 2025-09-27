@@ -554,19 +554,33 @@ def get_usuario_stats(admin_user):
         - total_admins: Total de administradores
     """
     try:
+        # MEJORA PROFESIONAL: Calcular usuarios en línea.
+        online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+
         # Obtener estadísticas
         total_clientes = Usuarios.query.count()
         clientes_activos = Usuarios.query.filter(Usuarios.estado == EstadoEnum.ACTIVO).count()
+        clientes_online = Usuarios.query.filter(
+            Usuarios.estado == EstadoEnum.ACTIVO,
+            Usuarios.last_seen > online_threshold
+        ).count()
+
         total_admins = Admins.query.count()
         admins_activos = Admins.query.filter(Admins.estado == EstadoEnum.ACTIVO).count()
+        admins_online = Admins.query.filter(
+            Admins.estado == EstadoEnum.ACTIVO,
+            Admins.last_seen > online_threshold
+        ).count()
         
         # Preparar respuesta
         return jsonify({
             'success': True,
             'total_clientes': total_clientes,
             'clientes_activos': clientes_activos,
+            'clientes_online': clientes_online,
             'total_admins': total_admins,
-            'admins_activos': admins_activos
+            'admins_activos': admins_activos,
+            'admins_online': admins_online
         })
     
     except Exception as e:

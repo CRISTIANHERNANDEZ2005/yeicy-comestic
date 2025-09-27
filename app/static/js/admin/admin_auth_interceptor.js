@@ -62,6 +62,27 @@ if (!window.adminAuthInterceptorLoaded) {
         return Promise.reject(new Error("No autorizado como administrador"));
       }
 
+      // MEJORA PROFESIONAL: Manejar el caso de cuenta de administrador desactivada (403 Forbidden)
+      if (response.status === 403) {
+        try {
+          const errorData = await clonedResponse.json();
+          if (errorData && errorData.code === 'ADMIN_ACCOUNT_INACTIVE') {
+            console.error("Cuenta de administrador desactivada. Mostrando modal de bloqueo...");
+            if (typeof showInactiveAdminModal === 'function') {
+              showInactiveAdminModal();
+              const okBtn = document.getElementById('inactive-admin-ok-btn');
+              if (okBtn) {
+                okBtn.onclick = () => { window.location.href = "/administracion"; };
+              }
+            } else {
+              alert("Tu cuenta de administrador ha sido desactivada.");
+              window.location.href = "/administracion";
+            }
+            return Promise.reject(new Error("Cuenta de administrador desactivada"));
+          }
+        } catch (e) { /* No es un JSON esperado, se maneja como un 403 genérico */ }
+      }
+
       return response;
     } catch (error) {
       console.error("Error en la petición de administrador:", error);
@@ -90,11 +111,24 @@ if (!window.adminAuthInterceptorLoaded) {
         console.log("Sesión de administrador activa para:", admin.nombre);
         // Aquí se podría actualizar la UI para mostrar que el admin está logueado
       } else {
+        // MEJORA PROFESIONAL: Verificar si el error es por cuenta inactiva.
         if (response.status === 401) {
           console.error(
             "No hay sesión de administrador activa. Redirigiendo al login..."
           );
           window.location.href = "/administracion";
+        } else if (response.status === 403) {
+            const errorData = await response.json();
+            if (errorData && errorData.code === 'ADMIN_ACCOUNT_INACTIVE') {
+                console.error("Cuenta de administrador desactivada detectada en checkAdminSession. Mostrando modal...");
+                if (typeof showInactiveAdminModal === 'function') {
+                    showInactiveAdminModal();
+                    const okBtn = document.getElementById('inactive-admin-ok-btn');
+                    if (okBtn) {
+                        okBtn.onclick = () => { window.location.href = "/administracion"; };
+                    }
+                }
+            }
         }
       }
     } catch (error) {

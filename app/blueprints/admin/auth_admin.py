@@ -40,7 +40,14 @@ def login():
 
         admin = Admins.query.filter_by(cedula=identificacion).first()
 
-        if not admin or not admin.verificar_contraseña(contraseña):
+        # MEJORA PROFESIONAL: Validaciones secuenciales para mensajes de error claros.
+        if not admin:
+            return jsonify({'error': 'Credenciales inválidas'}), 401
+
+        if not admin.is_active:
+            return jsonify({'error': 'Tu cuenta de administrador ha sido desactivada. Contacta a soporte.'}), 403
+
+        if not admin.verificar_contraseña(contraseña):
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
         # Generar JWT
@@ -65,9 +72,13 @@ def logout():
 def admin_me():
     current_admin_id = get_jwt_identity()
     admin = Admins.query.get(current_admin_id)
+
     if not admin:
-        return jsonify({"error": "Admin not found"}), 404
+        return jsonify({"error": "Admin no encontrado"}), 404
     
+    if not admin.is_active:
+        return jsonify({"error": "Cuenta de administrador desactivada", "code": "ADMIN_ACCOUNT_INACTIVE"}), 403
+
     return jsonify({
         "id": admin.id,
         "nombre": admin.nombre,

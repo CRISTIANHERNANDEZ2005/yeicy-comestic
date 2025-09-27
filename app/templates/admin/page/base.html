@@ -214,6 +214,8 @@
       });
     </script>
     {% include 'admin/ui/notifications.html' %}
+    <!-- MEJORA PROFESIONAL: Incluir la modal de cuenta de admin inactiva -->
+    {% include 'admin/ui/_inactive_admin_modal.html' %}
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin/filtro_producto.js') }}"></script>
     

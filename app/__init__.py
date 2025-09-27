@@ -84,7 +84,7 @@ def create_app(config_class=Config):
     from app.blueprints.cliente.events import events_bp
 
     # Registrar blueprints admin
-    from app.blueprints.admin.auth import admin_auth_bp
+    from app.blueprints.admin.auth_admin import admin_auth_bp
     from app.blueprints.admin.dashboard import admin_dashboard_bp
     from app.blueprints.admin.product.lista_product import admin_lista_product_bp
     from app.blueprints.admin.product.detalle_product import admin_detalle_product_bp

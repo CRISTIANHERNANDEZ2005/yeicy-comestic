@@ -179,7 +179,8 @@
 
     {% include 'cliente/ui/_notification_modal.html' %}
 
-
+    <!-- Esta modal se mostrará si el usuario intenta usar la página con una cuenta desactivada. -->
+    {% include 'cliente/ui/_inactive_account_modal.html' %}
     
     {% if 'user' in session %}
     {% include 'cliente/ui/modal_edicion_usuario.html' %}

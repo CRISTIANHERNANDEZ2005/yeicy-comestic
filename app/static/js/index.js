@@ -52,6 +52,7 @@ document.addEventListener("DOMContentLoaded", function () {
       hideLikeAuthModal();
     });
   }
+
 });
 
 // Asignar lógica al botón de like

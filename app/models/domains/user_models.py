@@ -209,7 +209,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     numero: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
-    contraseña: Mapped[str] = mapped_column(db.String(256), nullable=False)
+    _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
     reset_token: Mapped[str] = mapped_column(db.String(256), nullable=True, unique=True)
     reset_token_expiration: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
     # estado ya está en el mixin
@@ -222,6 +222,21 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         CheckConstraint(
             "LENGTH(numero) = 10 AND numero ~ '^[0-9]+$'", name='check_usuario_numero'),
     )
+
+    @property
+    def contraseña(self):
+        """
+        Getter para la contraseña. Lanza un error si se intenta leer el hash.
+        """
+        raise AttributeError('contraseña no es un atributo legible.')
+
+    @contraseña.setter
+    def contraseña(self, password_plano: str):
+        """
+        Setter profesional que hashea la contraseña automáticamente al asignarla.
+        """
+        validated_password = str(Password(password_plano))
+        self._contraseña = bcrypt.generate_password_hash(validated_password).decode('utf-8')
 
     def __init__(self, numero, nombre, apellido, contraseña, estado='activo', id=None):
         """
@@ -242,7 +257,8 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             raise ValueError("El apellido no puede estar vacío")
         self.nombre = nombre
         self.apellido = apellido
-        self.contraseña = bcrypt.generate_password_hash(str(Password(contraseña))).decode('utf-8')
+        # El setter se encargará del hasheo
+        self.contraseña = contraseña
         if estado not in EstadoEnum._value2member_map_:
             raise ValueError("El estado debe ser 'activo' o 'inactivo'")
         self.estado = estado
@@ -260,7 +276,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Returns:
             bool: `True` si la contraseña es correcta, `False` en caso contrario.
         """
-        return bcrypt.check_password_hash(self.contraseña, contraseña)
+        return bcrypt.check_password_hash(self._contraseña, contraseña)
 
     def generar_codigo_recuperacion(self):
         """

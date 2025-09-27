@@ -95,6 +95,12 @@ def me():
         usuario = Usuarios.verificar_jwt(token)
         if not usuario:
             return jsonify({'error': 'Token inválido o expirado'}), 401
+
+        # MEJORA PROFESIONAL: Verificar si la cuenta está activa.
+        if not usuario.is_active:
+            app.logger.warning(f"Acceso denegado para usuario inactivo ID: {usuario.id} a través del endpoint /me.")
+            return jsonify({'error': 'Tu cuenta ha sido desactivada.', 'code': 'ACCOUNT_INACTIVE'}), 403
+
         # Devuelve los datos públicos del usuario.
         return jsonify({
             'usuario': {
@@ -217,7 +223,8 @@ def login():
         return jsonify({'error': 'Tu cuenta se encuentra inactiva. Por favor, contacta a soporte.'}), 403
 
     # Verifica la contraseña hasheada.
-    if not bcrypt.check_password_hash(usuario.contraseña, data['contraseña']):
+    # MEJORA PROFESIONAL: Usar el método encapsulado del modelo para verificar la contraseña.
+    if not usuario.verificar_contraseña(data['contraseña']):
         app.logger.warning(f"Inicio de sesión fallido: contraseña incorrecta para el número: {data['numero']}")
         return jsonify({'error': 'Credenciales inválidas'}), 401
 
@@ -376,8 +383,9 @@ def reset_password_api(token):
     if nueva_contraseña != confirm_contraseña:
         return jsonify({'error': 'Las contraseñas no coinciden. Por favor, verifica.', 'field': 'confirm_contraseña'}), 400
 
-    # Actualiza la contraseña del usuario con su nuevo hash.
-    usuario.contraseña = bcrypt.generate_password_hash(nueva_contraseña).decode('utf-8')
+    # MEJORA PROFESIONAL: Asignar la contraseña en texto plano.
+    # El setter del modelo se encargará del hasheo de forma segura.
+    usuario.contraseña = nueva_contraseña
     # Invalida el token de reseteo para que no pueda ser reutilizado.
     usuario.reset_token = None
     usuario.reset_token_expiration = None
@@ -486,7 +494,9 @@ def update_profile(usuario):
            not any(c.isupper() for c in data['contraseña']) or \
            not any(c.isdigit() for c in data['contraseña']):
             return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número', 'field': 'modalPassword'}), 400
-        usuario.contraseña = bcrypt.generate_password_hash(data['contraseña']).decode('utf-8')
+        # MEJORA PROFESIONAL: Asignar la contraseña en texto plano.
+        # El setter del modelo se encargará del hasheo.
+        usuario.contraseña = data['contraseña']
 
     try:
         db.session.commit()

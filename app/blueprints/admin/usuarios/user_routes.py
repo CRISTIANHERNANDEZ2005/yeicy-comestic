@@ -202,8 +202,9 @@ def handle_usuario(admin_user, user_id):
             usuario.numero = data.get('numero', usuario.numero)
             usuario.estado = data.get('estado', usuario.estado)
 
-            # MEJORA DE SEGURIDAD: Actualizar contraseña solo si se proporciona una nueva
-            if 'contraseña' in data and data['contraseña']:
+            # MEJORA DE SEGURIDAD PROFESIONAL: Actualizar contraseña solo si se proporciona una nueva y no está vacía.
+            # Esto evita que una cadena vacía sobrescriba el hash existente.
+            if data.get('contraseña'):
                 usuario.contraseña = data['contraseña'] # El setter del modelo se encargará del hasheo
             
             db.session.commit()

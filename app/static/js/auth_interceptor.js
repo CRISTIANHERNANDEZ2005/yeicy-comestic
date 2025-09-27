@@ -51,7 +51,7 @@ window.fetch = async function (resource, options = {}) {
     const clonedResponse = response.clone();
 
     // Si la respuesta es 401 (No autorizado), manejar según el contexto
-    // MEJORA PROFESIONAL: Si la petición es a cualquier endpoint de autenticación,
+    // Si la petición es a cualquier endpoint de autenticación,
     // no redirigir. Dejar que el script que hizo la llamada (ej: auth_modals.js) maneje el error.
     if (response.status === 401) {
       if (
@@ -96,6 +96,32 @@ window.fetch = async function (resource, options = {}) {
       return Promise.reject(new Error("No autorizado"));
     }
 
+    //  Manejar el caso de cuenta desactivada (403 Forbidden)
+    if (response.status === 403) {
+      try {
+        const errorData = await clonedResponse.json();
+        if (errorData && errorData.code === 'ACCOUNT_INACTIVE') {
+          console.error("Cuenta de cliente desactivada. Forzando logout...");
+          // MEJORA PROFESIONAL: En lugar de hacer logout directamente, mostramos la modal de cuenta inactiva.
+          // El botón de la modal se encargará de llamar a logout(true).
+          if (typeof showInactiveAccountModal === 'function') {
+            showInactiveAccountModal();
+            const okBtn = document.getElementById('inactive-account-ok-btn');
+            if (okBtn) {
+              okBtn.onclick = () => logout(true);
+            }
+          } else {
+            // Fallback si la función de la modal no existe
+            await logout(true);
+          }
+          return Promise.reject(new Error("Cuenta desactivada"));
+        }
+      } catch (e) {
+        // El cuerpo no es JSON o no tiene el código esperado, se maneja como un 403 genérico.
+        console.error("Error 403 genérico.", e);
+      }
+    }
+
     return response;
   } catch (error) {
     console.error("Error en la petición:", error);
@@ -138,8 +164,11 @@ function setAuthToken(token) {
 
 // Función para cerrar sesión
 
-async function logout() {
+async function logout(isDeactivated = false) {
   console.log("Iniciando proceso de logout...");
+  // MEJORA PROFESIONAL: El mensaje ahora se maneja con la modal de cuenta inactiva,
+  // por lo que la lógica del `logoutMessage` ya no es necesaria.
+
 
   // 1. Limpiar estado del cliente PRIMERO
   try {
@@ -154,7 +183,7 @@ async function logout() {
     // Limpiar tokens y datos de usuario
     setAuthToken(null);
     localStorage.removeItem("user");
-    
+
     // Notificar a otras pestañas para que cierren sesión también
     localStorage.setItem('logout-event', Date.now().toString());
 
@@ -228,6 +257,19 @@ async function restoreSession() {
         );
       }
     } else {
+      //  Si /me falla, podría ser por cuenta inactiva.
+      if (response.status === 403) {
+        const errorData = await response.json();
+        if (errorData.code === 'ACCOUNT_INACTIVE') {
+          // MEJORA PROFESIONAL: Mostrar la modal de cuenta inactiva en lugar de hacer logout directo.
+          if (typeof showInactiveAccountModal === 'function') {
+            showInactiveAccountModal();
+            const okBtn = document.getElementById('inactive-account-ok-btn');
+            if (okBtn) okBtn.onclick = () => logout(true);
+          }
+          return;
+        }
+      }
       setAuthToken(null);
       localStorage.removeItem("user");
     }
@@ -238,6 +280,8 @@ async function restoreSession() {
 }
 
 // Ejecutar restauración de sesión al cargar la página
-document.addEventListener("DOMContentLoaded", restoreSession);
+document.addEventListener("DOMContentLoaded", async () => {
+  await restoreSession();
+});
 
 console.log("Interceptor de autenticación cargado correctamente");

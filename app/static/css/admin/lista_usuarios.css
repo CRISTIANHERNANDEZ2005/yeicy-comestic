@@ -161,3 +161,12 @@ tbody tr {
 .authenticated-admin-row:hover {
   background-color: #e0e7ff; /* Un poco más oscuro al pasar el mouse */
 }
+
+/* Estilo para el botón de limpiar filtros */
+#clear-filters-btn:hover i {
+  transform: rotate(90deg);
+}
+
+#clear-filters-btn i {
+  transition: transform 0.3s ease-in-out;
+}

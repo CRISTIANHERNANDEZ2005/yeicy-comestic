@@ -41,6 +41,7 @@ if (!window.usuariosApp) {
       this.clientesTab = null;
       this.administradoresTab = null;
       this.addUserBtn = null;
+      this.clearFiltersBtn = null;
 
       // Elementos Modal Cliente
       this.clienteModal = null;
@@ -107,6 +108,8 @@ if (!window.usuariosApp) {
       this.setFieldError = this.setFieldError.bind(this);
       this.clearFieldError = this.clearFieldError.bind(this);
       this.handleActionClick = this.handleActionClick.bind(this);
+      this.clearFilters = this.clearFilters.bind(this);
+      this._updateClearFiltersButtonVisibility = this._updateClearFiltersButtonVisibility.bind(this);
     }
 
     init() {
@@ -149,6 +152,7 @@ if (!window.usuariosApp) {
       );
       // SOLUCIÓN: El botón de agregar es global, no está dentro de la vista.
       this.addUserBtn = document.getElementById("add-user-btn");
+      this.clearFiltersBtn = document.getElementById("clear-filters-btn");
 
       // Cachear elementos del modal de CLIENTE
       this.clienteModal = document.getElementById("cliente-modal");
@@ -234,6 +238,7 @@ if (!window.usuariosApp) {
       this._addEventListener(this.adminForm, "submit", (e) => this.handleFormSubmit(e, 'admin'));
 
 
+      // Filtros
       const searchInput = this.viewContainer.querySelector("#search-input");
       this._addEventListener(
         searchInput,
@@ -244,6 +249,7 @@ if (!window.usuariosApp) {
             this.currentPageClientes = 1;
             this.currentPageAdmins = 1;
             this.applyFilters();
+            this._updateClearFiltersButtonVisibility();
         }, 300)
       );
 
@@ -257,6 +263,7 @@ if (!window.usuariosApp) {
         this.currentPageClientes = 1;
         this.currentPageAdmins = 1;
         this.applyFilters();
+        this._updateClearFiltersButtonVisibility();
       });
 
       //  Listener para el selector de items por página.
@@ -265,6 +272,7 @@ if (!window.usuariosApp) {
           this.itemsPerPageClientes = parseInt(e.target.value, 10);
           this.currentPageClientes = 1;
           this.applyFilters();
+          this._updateClearFiltersButtonVisibility();
       });
 
       //  Listener para el nuevo selector de items por página de administradores.
@@ -273,6 +281,7 @@ if (!window.usuariosApp) {
           this.itemsPerPageAdmins = parseInt(e.target.value, 10);
           this.currentPageAdmins = 1;
           this.applyFilters();
+          this._updateClearFiltersButtonVisibility();
       });
 
       // Listener para el selector de ordenamiento.
@@ -282,7 +291,11 @@ if (!window.usuariosApp) {
         this.currentPageClientes = 1;
         this.currentPageAdmins = 1;
         this.applyFilters();
+        this._updateClearFiltersButtonVisibility();
       });
+
+      // Listener para el botón de limpiar filtros
+      this._addEventListener(this.clearFiltersBtn, "click", this.clearFilters);
 
       // Pagination
       this._addEventListener(
@@ -441,6 +454,9 @@ if (!window.usuariosApp) {
       // Cargar los datos de la nueva pestaña inmediatamente.
       // Se mueve aquí para que se ejecute para AMBAS pestañas.
       this.applyFilters();
+
+      // Actualizar la visibilidad del botón de limpiar filtros
+      this._updateClearFiltersButtonVisibility();
     }
 
     applyFilters() {
@@ -449,6 +465,37 @@ if (!window.usuariosApp) {
         this.loadClientes();
       } else {
         this.loadAdministradores();
+      }
+    }
+
+    clearFilters() {
+      const searchInput = this.viewContainer.querySelector("#search-input");
+      const statusFilter = this.viewContainer.querySelector("#status-filter");
+      const sortFilter = this.viewContainer.querySelector("#sort-filter");
+
+      if (searchInput) searchInput.value = "";
+      if (statusFilter) statusFilter.value = "";
+      if (sortFilter) sortFilter.value = "recientes";
+
+      this.filters.clientes = { search: "", status: "", sort: "recientes" };
+      this.filters.admins = { search: "", status: "", sort: "recientes" };
+
+      this.currentPageClientes = 1;
+      this.currentPageAdmins = 1;
+
+      this.applyFilters();
+      this._updateClearFiltersButtonVisibility();
+    }
+
+    _updateClearFiltersButtonVisibility() {
+      const activeFilters = this.currentTab === 'clientes' ? this.filters.clientes : this.filters.admins;
+      const isAnyFilterActive = 
+        activeFilters.search !== "" ||
+        activeFilters.status !== "" ||
+        activeFilters.sort !== "recientes";
+
+      if (this.clearFiltersBtn) {
+        this.clearFiltersBtn.classList.toggle("hidden", !isAnyFilterActive);
       }
     }
 

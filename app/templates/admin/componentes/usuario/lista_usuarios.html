@@ -80,7 +80,7 @@
 
     <!-- Search and Status Filter -->
     <div class="mb-8 fade-in max-w-4xl mx-auto" id="filter-bar">
-        <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex flex-col md:flex-row gap-4 items-center">
             <div class="flex-1 relative">
                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <i class="fas fa-search text-gray-400 text-lg"></i>
@@ -101,6 +101,12 @@
                     <option value="nombre_asc">Nombre (A-Z)</option>
                     <option value="nombre_desc">Nombre (Z-A)</option>
                 </select>
+            </div>
+            <!-- Botón para limpiar filtros -->
+            <div class="w-full md:w-auto">
+                <button id="clear-filters-btn" class="hidden px-4 py-4 text-lg bg-white text-gray-500 rounded-2xl shadow-lg hover:bg-red-50 hover:text-red-600 transition-all duration-300" title="Limpiar filtros">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
         </div>
     </div>

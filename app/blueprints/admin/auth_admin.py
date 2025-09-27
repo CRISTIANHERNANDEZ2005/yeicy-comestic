@@ -64,20 +64,23 @@ def login():
     return render_template('admin/page/login_admin.html')
 
 @admin_auth_bp.route('/admin/logout', methods=['POST'])
+@jwt_required(locations=["cookies"]) # MEJORA PROFESIONAL: Proteger el endpoint de logout.
 def logout():
-    # MEJORA PROFESIONAL: Marcar al admin como desconectado antes de cerrar la sesión.
-    # Esto requiere flask-jwt-extended para obtener la identidad del token actual.
+    """
+    Cierra la sesión del administrador de forma segura.
+    1. Marca al administrador como desconectado en la base de datos.
+    2. Invalida la cookie JWT del lado del cliente.
+    """
     try:
+        # Obtener la identidad del admin desde el token JWT validado.
         admin_id = get_jwt_identity()
-        if admin_id:
-            admin = Admins.query.get(admin_id)
-            if admin:
-                admin.last_seen = None # O una fecha muy antigua
-                db.session.commit()
-                current_app.logger.info(f"Administrador {admin.id} marcado como desconectado.")
-    except Exception:
-        # Si no hay token o hay un error, simplemente continuamos con el logout.
-        pass
+        admin = Admins.query.get(admin_id)
+        if admin:
+            admin.last_seen = None # Marcar como desconectado.
+            db.session.commit()
+            current_app.logger.info(f"Administrador {admin.id} marcado como desconectado.")
+    except Exception as e:
+        current_app.logger.error(f"Error al marcar admin como desconectado durante logout: {e}")
 
     response = make_response(jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'}))
     unset_jwt_cookies(response)

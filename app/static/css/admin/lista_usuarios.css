@@ -150,3 +150,14 @@ tbody tr {
 .table-wrapper-inner {
   min-width: 1000px; /* Ancho mínimo para acomodar la tabla de administradores, que es más ancha */
 }
+
+/* Estilo para la fila del administrador autenticado */
+.authenticated-admin-row {
+  background-color: #eef2ff; /* Un azul muy claro, como el de Tailwind 'indigo-50' */
+  border-left: 4px solid #4f46e5; /* Borde izquierdo de color índigo para resaltar */
+  transition: all 0.3s ease;
+}
+
+.authenticated-admin-row:hover {
+  background-color: #e0e7ff; /* Un poco más oscuro al pasar el mouse */
+}

@@ -4,7 +4,7 @@ from app.models.domains.user_models import Usuarios, Admins
 from app.models.serializers import usuario_to_dict, admin_to_dict
 from app.models.enums import EstadoEnum
 from app.extensions import db
-from sqlalchemy import or_
+from sqlalchemy import or_, case
 from app.extensions import bcrypt
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
@@ -25,6 +25,7 @@ def usuarios_view(admin_user):
 
     return render_template('admin/componentes/usuario/lista_usuarios.html', 
                             admin_user=admin_user,
+                            authenticated_admin_id=admin_user.id,
                             csrf_token=generate_csrf(),
                             is_ajax=is_ajax)
 
@@ -330,6 +331,14 @@ def get_admins(admin_user):
         # Aplicar filtro de estado si existe
         if status:
             query = query.filter(Admins.estado == status)
+            
+        # Priorizar al administrador autenticado si no hay filtros de búsqueda o estado
+        if not search and not status:
+            current_admin_id = admin_user.id
+            priority_order = case(
+                (Admins.id == current_admin_id, 0),
+                else_=1
+            )
 
         # Aplicar ordenamiento
         if sort == 'nombre_asc':
@@ -339,7 +348,11 @@ def get_admins(admin_user):
         elif sort == 'antiguos':
             query = query.order_by(Admins.created_at.asc())
         else: # 'recientes' por defecto
-            query = query.order_by(Admins.created_at.desc())
+            # Si no hay filtros, aplicar el orden prioritario primero
+            if not search and not status:
+                query = query.order_by(priority_order.asc(), Admins.created_at.desc())
+            else:
+                query = query.order_by(Admins.created_at.desc())
         
         # Ejecutar consulta con paginación
         admins = query.paginate(page=page, per_page=per_page, error_out=False)

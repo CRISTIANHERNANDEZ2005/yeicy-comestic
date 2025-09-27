@@ -1,8 +1,8 @@
 {% extends 'admin/page/base.html' %}
 {% block title %} Lista Usuarios - Panel de Administración{% endblock %} 
 {% block content %}
-<!-- Este template se cargará dentro del contenedor principal del SPA -->
-<div id="usuarios-view" class="container mx-auto px-4 py-8 max-w-7xl">
+<!-- Este template se cargará dentro del contenedor principal del SPA, con el ID del admin autenticado -->
+<div id="usuarios-view" class="container mx-auto px-4 py-8 max-w-7xl" data-authenticated-admin-id="{{ authenticated_admin_id }}">
     <!-- Header -->
     <header class="mb-8 fade-in">
         <div class="text-center">

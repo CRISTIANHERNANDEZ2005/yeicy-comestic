@@ -33,6 +33,7 @@ if (!window.usuariosApp) {
       this.activeTimers = []; // Para limpiar timers (setInterval/setTimeout)
       this.isInitialOpen = false; // SOLUCIÓN: Bandera para controlar la validación inicial.
       this.csrfToken = null; //  Cachear el token CSRF
+      this.authenticatedAdminId = null; // ID del admin autenticado
       // DOM Elements
       this.viewContainer = null;
       this.clientesSection = null;
@@ -135,6 +136,7 @@ if (!window.usuariosApp) {
       this.viewContainer = document.getElementById("usuarios-view");
       if (!this.viewContainer)
         throw new Error("Main view container #usuarios-view not found.");
+      this.authenticatedAdminId = this.viewContainer.dataset.authenticatedAdminId;
 
       this.clientesSection =
         this.viewContainer.querySelector("#clientes-section");
@@ -913,9 +915,14 @@ if (!window.usuariosApp) {
 
       tbody.innerHTML = administradores
         .map(
-          (admin) => `
-                    <tr class="hover:bg-gray-50 transition-all duration-200 card-hover">
-                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${admin.nombre}</td>
+          (admin) => {
+            const isCurrentUser = admin.id === this.authenticatedAdminId;
+            const rowClass = isCurrentUser ? "authenticated-admin-row" : "hover:bg-gray-50 transition-all duration-200 card-hover";
+            const adminName = isCurrentUser ? `${admin.nombre} <span class="text-sm font-normal text-blue-600">(Tú)</span>` : admin.nombre;
+
+            return `
+                    <tr class="${rowClass}">
+                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${adminName}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${admin.apellido}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 font-mono">${admin.cedula}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.numero_telefono}</td>
@@ -936,7 +943,8 @@ if (!window.usuariosApp) {
                             </button>
                         </td>
                     </tr>
-                `
+                `;
+          }
         )
         .join("");
     }

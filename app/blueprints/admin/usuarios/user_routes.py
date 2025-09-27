@@ -357,17 +357,6 @@ def get_admins(admin_user):
         if status:
             query = query.filter(Admins.estado == status)
             
-        # MEJORA PROFESIONAL: Ordenamiento jerárquico para administradores.
-        # 1. El admin actual. 2. Otros admins en línea. 3. El resto.
-        online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
-        current_admin_id = admin_user.id
-
-        priority_order = case(
-            (Admins.id == current_admin_id, 0),
-            (Admins.last_seen > online_threshold, 1),
-            else_=2
-        ).label('admin_priority')
-
         # Aplicar ordenamiento
         if sort == 'nombre_asc':
             base_order = [Admins.nombre.asc()]
@@ -376,10 +365,21 @@ def get_admins(admin_user):
         elif sort == 'antiguos':
             base_order = [Admins.created_at.asc()]
         else: # 'recientes' por defecto
-            base_order = [Admins.created_at.desc()]
+            base_order = [desc(Admins.created_at)]
 
-        # La prioridad de admin siempre se aplica, a menos que haya una búsqueda.
-        if not search:
+        # MEJORA PROFESIONAL: Aplicar ordenamiento prioritario solo si no hay filtros activos.
+        is_sort_active = sort != 'recientes'
+        is_any_filter_active = bool(search or status or is_sort_active)
+
+        if not is_any_filter_active:
+            # Ordenamiento jerárquico: 1. El admin actual. 2. Otros admins en línea. 3. El resto.
+            online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+            current_admin_id = admin_user.id
+            priority_order = case(
+                (Admins.id == current_admin_id, 0),
+                (Admins.last_seen > online_threshold, 1),
+                else_=2
+            ).label('admin_priority')
             query = query.order_by(priority_order, *base_order)
         else:
             query = query.order_by(*base_order)

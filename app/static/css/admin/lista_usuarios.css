@@ -148,7 +148,10 @@ tbody tr {
 
 /* Contenedor interno para asegurar que la barra de herramientas y la tabla se desplacen juntas */
 .table-wrapper-inner {
-  min-width: 1000px; /* Ancho mínimo para acomodar la tabla de administradores, que es más ancha */
+  /* MEJORA PROFESIONAL: Hacer que el contenedor interno se ajuste al ancho de su contenido (la tabla). */
+  /* Esto asegura que la barra de herramientas siempre coincida con el ancho de la tabla, sin importar cuántas columnas tenga. */
+  display: inline-block;
+  min-width: 100%;
 }
 
 /* Estilo para la fila del administrador autenticado */
@@ -311,3 +314,10 @@ tbody tr {
 }
 
 .online-count-badge.hidden { display: none; }
+
+/* Estilo para las columnas de fecha */
+.date-column {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.85rem;
+    color: #4b5563; /* Tailwind 'gray-600' */
+}

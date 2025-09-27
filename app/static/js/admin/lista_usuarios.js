@@ -945,6 +945,12 @@ if (!window.usuariosApp) {
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${
                           cliente.numero
                         }</td>
+                        <td class="px-8 py-5 whitespace-nowrap date-column">
+                            ${new Date(cliente.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap date-column">
+                            ${new Date(cliente.updated_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-status" data-id="${
                               cliente.id
@@ -1036,6 +1042,12 @@ if (!window.usuariosApp) {
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${admin.apellido}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 font-mono">${admin.cedula}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.numero_telefono}</td>
+                        <td class="px-8 py-5 whitespace-nowrap date-column">
+                            ${new Date(admin.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap date-column">
+                            ${new Date(admin.updated_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-admin-status" data-id="${admin.id}" class="${
             admin.estado === "activo" ? "status-active" : "status-inactive"

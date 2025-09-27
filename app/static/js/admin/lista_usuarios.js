@@ -121,7 +121,7 @@ if (!window.usuariosApp) {
         this.loadInitialData();
         this.isInitialized = true;
       } catch (error) {
-        // MEJORA PROFESIONAL: Manejo de errores más robusto.
+        // Manejo de errores más robusto.
         // Si la inicialización falla, lo mostramos en la consola para no causar
         // errores secundarios si 'toast' aún no está listo.
         console.error("Error fatal al inicializar UsuariosApp:", error);
@@ -245,7 +245,7 @@ if (!window.usuariosApp) {
         }, 300)
       );
 
-      // MEJORA PROFESIONAL: Declarar las variables de filtro al principio de la función.
+      // Declarar las variables de filtro al principio de la función.
       const statusFilter = this.viewContainer.querySelector("#status-filter");
       const sortFilter = this.viewContainer.querySelector("#sort-filter");
 
@@ -265,7 +265,7 @@ if (!window.usuariosApp) {
           this.applyFilters();
       });
 
-      //  MEJORA PROFESIONAL: Listener para el nuevo selector de items por página de administradores.
+      //  Listener para el nuevo selector de items por página de administradores.
       const itemsPerPageSelectAdmins = this.viewContainer.querySelector("#items-per-page-select-admins");
       this._addEventListener(itemsPerPageSelectAdmins, "change", e => {
           this.itemsPerPageAdmins = parseInt(e.target.value, 10);
@@ -273,7 +273,7 @@ if (!window.usuariosApp) {
           this.applyFilters();
       });
 
-      // MEJORA PROFESIONAL: Listener para el selector de ordenamiento.
+      // Listener para el selector de ordenamiento.
       this._addEventListener(sortFilter, "change", e => {
         const activeFilters = this.currentTab === 'clientes' ? this.filters.clientes : this.filters.admins;
         activeFilters.sort = e.target.value;
@@ -372,7 +372,7 @@ if (!window.usuariosApp) {
       this.currentTab = tab;
 
       //  Reiniciar la paginación de la pestaña activa.
-      // MEJORA PROFESIONAL: Limpiar los campos de filtro en la UI y reiniciar el estado de los filtros al cambiar de pestaña.
+      //  Limpiar los campos de filtro en la UI y reiniciar el estado de los filtros al cambiar de pestaña.
       const searchInput = this.viewContainer.querySelector("#search-input");
       const statusFilter = this.viewContainer.querySelector("#status-filter");
       const sortFilter = this.viewContainer.querySelector("#sort-filter");
@@ -432,12 +432,13 @@ if (!window.usuariosApp) {
             "shadow-md"
           );
         }
-
-        // MEJORA PROFESIONAL: Cargar los datos de la nueva pestaña inmediatamente.
-        this.applyFilters();
       }
-      // MEJORA: El filtro de estado ahora es visible para ambas pestañas.
+      // El filtro de estado ahora es visible para ambas pestañas.
       if (statusFilter) statusFilter.classList.remove("hidden");
+
+      // Cargar los datos de la nueva pestaña inmediatamente.
+      // Se mueve aquí para que se ejecute para AMBAS pestañas.
+      this.applyFilters();
     }
 
     applyFilters() {
@@ -948,7 +949,7 @@ if (!window.usuariosApp) {
       );
       const totalSpan = this.viewContainer.querySelector(`#${type}-total`);
 
-      // MEJORA PROFESIONAL: Asegurar que el contenedor de paginación siempre sea visible
+      // Asegurar que el contenedor de paginación siempre sea visible
       // para una UI consistente, incluso si solo hay una página.
       if (!paginationContainer || !currentRange || !totalSpan) {
         console.error(`Pagination elements for ${type} not found`);
@@ -966,7 +967,7 @@ if (!window.usuariosApp) {
       currentRange.textContent = `${startIndex}-${endIndex}`;
       totalSpan.textContent = pagination.total;
 
-      // MEJORA PROFESIONAL: Ocultar el selector de ítems por página si el total es menor o igual a 10.
+      // Ocultar el selector de ítems por página si el total es menor o igual a 10.
       const itemsPerPageSelectId = type === 'clientes' ? 'items-per-page-select' : 'items-per-page-select-admins';
       const itemsPerPageSelect = this.viewContainer.querySelector(`#${itemsPerPageSelectId}`);
       if (itemsPerPageSelect) {
@@ -977,7 +978,7 @@ if (!window.usuariosApp) {
         }
       }
 
-      // MEJORA PROFESIONAL: Mostrar los botones de paginación solo si hay más de una página.
+      //  Mostrar los botones de paginación solo si hay más de una página.
       if (pagination.pages > 1) {
         paginationContainer.classList.remove('hidden');
       } else {

@@ -1377,28 +1377,32 @@ if (!window.usuariosApp) {
 }
 
 //  Lógica de gestión del ciclo de vida del SPA.
-const usuariosView = document.getElementById("usuarios-view");
+const setupUsuariosAppLifecycle = () => {
+  const viewId = "usuarios-view";
 
-function handleContentLoaded(event) {
-  // Solo inicializar si el contenedor de esta vista está en el DOM.
-  if (document.body.contains(usuariosView) && window.usuariosApp) {
-    console.log("content-loaded event fired, initializing UsuariosApp");
-    window.usuariosApp.init();
-  }
-}
+  const handleContentLoaded = () => {
+    // Solo inicializar si el contenedor de esta vista está en el DOM.
+    if (document.getElementById(viewId) && window.usuariosApp) {
+      console.log("content-loaded event fired, initializing UsuariosApp");
+      window.usuariosApp.init();
+    }
+  };
 
-function handleContentWillLoad() {
-  if (window.usuariosApp && window.usuariosApp.isInitialized) {
-    console.log("content-will-load event fired, cleaning up UsuariosApp");
-    window.usuariosApp.cleanup();
-  }
-  // Remover los listeners de este script para evitar que se acumulen.
+  const handleContentWillLoad = () => {
+    if (window.usuariosApp && window.usuariosApp.isInitialized) {
+      console.log("content-will-load event fired, cleaning up UsuariosApp");
+      window.usuariosApp.cleanup();
+    }
+  };
+
+  // Adjuntar los listeners una sola vez.
   document.removeEventListener("content-loaded", handleContentLoaded);
   document.removeEventListener("content-will-load", handleContentWillLoad);
-}
+  document.addEventListener("content-loaded", handleContentLoaded);
+  document.addEventListener("content-will-load", handleContentWillLoad);
 
-document.addEventListener("content-loaded", handleContentLoaded);
-document.addEventListener("content-will-load", handleContentWillLoad);
+  // Inicialización para la carga inicial de la página (no SPA).
+  handleContentLoaded();
+};
 
-// Inicialización para la carga inicial de la página (no SPA).
-handleContentLoaded();
+setupUsuariosAppLifecycle();

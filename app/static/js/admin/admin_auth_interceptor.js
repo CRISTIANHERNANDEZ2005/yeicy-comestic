@@ -72,13 +72,13 @@ if (!window.adminAuthInterceptorLoaded) {
               showInactiveAdminModal();
               const okBtn = document.getElementById('inactive-admin-ok-btn');
               if (okBtn) {
-                okBtn.onclick = () => { window.location.href = "/administracion"; };
+                okBtn.onclick = () => adminLogout(); // MEJORA: Llamar a la función de logout profesional.
               }
-            } else {
-              alert("Tu cuenta de administrador ha sido desactivada.");
-              window.location.href = "/administracion";
+              // En lugar de rechazar la promesa (lo que haría que la SPA oculte el overlay),
+              // devolvemos una promesa que nunca se resuelve. Esto "congela" la navegación de la SPA,
+              // dejando el overlay de carga visible debajo de nuestra modal, lo cual es el comportamiento deseado.
+              return new Promise(() => {});
             }
-            return Promise.reject(new Error("Cuenta de administrador desactivada"));
           }
         } catch (e) { /* No es un JSON esperado, se maneja como un 403 genérico */ }
       }
@@ -124,15 +124,37 @@ if (!window.adminAuthInterceptorLoaded) {
                 if (typeof showInactiveAdminModal === 'function') {
                     showInactiveAdminModal();
                     const okBtn = document.getElementById('inactive-admin-ok-btn');
-                    if (okBtn) {
-                        okBtn.onclick = () => { window.location.href = "/administracion"; };
-                    }
+                    if (okBtn) okBtn.onclick = () => adminLogout(); // MEJORA: Llamar a la función de logout profesional.
                 }
             }
         }
       }
     } catch (error) {
       console.error("Error al verificar la sesión del administrador:", error);
+    }
+  }
+
+  // MEJORA PROFESIONAL: Función centralizada para el logout del administrador.
+  // Esta función notifica al backend para invalidar el token y luego redirige.
+  async function adminLogout() {
+    console.log("Iniciando proceso de logout de administrador...");
+    try {
+      // 1. Notificar al servidor para que invalide la cookie JWT.
+      const response = await originalFetchAdmin("/admin/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "same-origin",
+      });
+      if (response.ok) {
+        console.log("Cookie de sesión de administrador invalidada por el servidor.");
+      }
+    } catch (error) {
+      console.error("Error al notificar al servidor sobre el logout del admin:", error);
+    } finally {
+      // 2. Redirigir al login, independientemente del resultado del fetch.
+      window.location.href = "/administracion";
     }
   }
 

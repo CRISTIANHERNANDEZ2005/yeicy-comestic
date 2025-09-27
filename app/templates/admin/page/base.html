@@ -214,8 +214,6 @@
       });
     </script>
     {% include 'admin/ui/notifications.html' %}
-    <!-- MEJORA PROFESIONAL: Incluir la modal de cuenta de admin inactiva -->
-    {% include 'admin/ui/_inactive_admin_modal.html' %}
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin/filtro_producto.js') }}"></script>
     
@@ -227,6 +225,9 @@
         class="animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-blue-500"
       ></div>
     </div>
+
+    <!-- MEJORA PROFESIONAL: Incluir la modal de cuenta de admin inactiva aquí, fuera del área de contenido principal -->
+    {% include 'admin/ui/_inactive_admin_modal.html' %}
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 

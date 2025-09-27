@@ -109,41 +109,43 @@
     <div id="clientes-section" class="fade-in">
         <!--  Table Toolbar -->
         <div class="table-container bg-white overflow-hidden shadow-xl">
-            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Lista de Clientes</h3>
-                        <select id="items-per-page-select" class="px-3 py-2 text-sm border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white">
-                            <option value="10">10 por página</option>
-                            <option value="20">20 por página</option>
-                            <option value="50">50 por página</option>
-                        </select>
+            <div class="table-wrapper-inner">
+                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Lista de Clientes</h3>
+                            <select id="items-per-page-select" class="px-3 py-2 text-sm border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white">
+                                <option value="10">10 por página</option>
+                                <option value="20">20 por página</option>
+                                <option value="50">50 por página</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
+                <!-- Clientes Table -->
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Nombre</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Apellido</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Teléfono</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="clientes-table-body" class="divide-y divide-gray-100">
+                        <!-- Initial Loading Skeleton -->
+                        <tr class="loading-row">
+                            <td colspan="5" class="px-8 py-16 text-center" data-col-span="5">
+                                <div class="flex justify-center">
+                                    <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+                                </div>
+                                <p class="mt-4 text-gray-600">Cargando clientes...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <!-- Clientes Table -->
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
-                    <tr>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Nombre</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Apellido</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Teléfono</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="clientes-table-body" class="divide-y divide-gray-100">
-                    <!-- Initial Loading Skeleton -->
-                    <tr class="loading-row">
-                        <td colspan="5" class="px-8 py-16 text-center" data-col-span="5">
-                            <div class="flex justify-center">
-                                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
-                            </div>
-                            <p class="mt-4 text-gray-600">Cargando clientes...</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
  
         <!-- Pagination Footer -->
@@ -171,42 +173,44 @@
     <div id="administradores-section" class="hidden fade-in">
         <!--  Table Toolbar -->
         <div class="table-container bg-white overflow-hidden shadow-xl">
-            <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Lista de Administradores</h3>
-                        <select id="items-per-page-select-admins" class="px-3 py-2 text-sm border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white">
-                            <option value="10">10 por página</option>
-                            <option value="20">20 por página</option>
-                            <option value="50">50 por página</option>
-                        </select>
+            <div class="table-wrapper-inner">
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 px-6 py-3 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <h3 class="text-lg font-semibold text-gray-800">Lista de Administradores</h3>
+                            <select id="items-per-page-select-admins" class="px-3 py-2 text-sm border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-200 bg-white">
+                                <option value="10">10 por página</option>
+                                <option value="20">20 por página</option>
+                                <option value="50">50 por página</option>
+                            </select>
+                        </div>
                     </div>
                 </div>
+                <!-- Administradores Table -->
+                <table class="w-full">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
+                        <tr>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Nombre</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Apellido</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Cédula</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Teléfono</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="administradores-table-body" class="divide-y divide-gray-100">
+                        <!-- Initial Loading Skeleton -->
+                        <tr class="loading-row">
+                            <td colspan="6" class="px-8 py-16 text-center" data-col-span="6">
+                                <div class="flex justify-center">
+                                    <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
+                                </div>
+                                <p class="mt-4 text-gray-600">Cargando administradores...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-            <!-- Administradores Table -->
-            <table class="w-full">
-                <thead class="bg-gradient-to-r from-gray-50 to-gray-100">
-                    <tr>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Nombre</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Apellido</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Cédula</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Teléfono</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
-                        <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="administradores-table-body" class="divide-y divide-gray-100">
-                    <!-- Initial Loading Skeleton -->
-                    <tr class="loading-row">
-                        <td colspan="6" class="px-8 py-16 text-center" data-col-span="6">
-                            <div class="flex justify-center">
-                                <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
-                            </div>
-                            <p class="mt-4 text-gray-600">Cargando administradores...</p>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
  
         <!-- Pagination Footer -->

@@ -145,3 +145,8 @@ tbody tr {
 .stat-number:hover {
   transform: scale(1.05);
 }
+
+/* Contenedor interno para asegurar que la barra de herramientas y la tabla se desplacen juntas */
+.table-wrapper-inner {
+  min-width: 1000px; /* Ancho mínimo para acomodar la tabla de administradores, que es más ancha */
+}

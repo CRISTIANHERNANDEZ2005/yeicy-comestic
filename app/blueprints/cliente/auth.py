@@ -15,7 +15,7 @@ en el servidor como tokens JWT para la comunicación con APIs y la persistencia 
 # --- Importaciones de Flask y Librerías Estándar ---
 from flask import Blueprint, request, jsonify, session, g, render_template, redirect, url_for, flash, current_app
 from urllib.parse import quote 
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 # --- Importaciones de Extensiones y Terceros ---
@@ -39,12 +39,12 @@ def restore_session_from_jwt():
     puebla la sesión con los datos del usuario, permitiendo una experiencia de
     usuario persistente entre visitas.
     """
-    # Si ya existe un usuario en la sesión de Flask, no es necesario hacer nada.
-    if 'user' in g:
+    # Si ya hay un usuario en el contexto global 'g', no es necesario hacer nada más aquí.
+    if hasattr(g, 'user') and g.user:
         return
 
     user_id_from_session = session.get('user', {}).get('id')
-    if user_id_from_session:
+    if user_id_from_session and not (hasattr(g, 'user') and g.user):
         g.user = Usuarios.query.get(user_id_from_session)
     # Evita restaurar la sesión si el usuario acaba de cerrarla explícitamente.
     if request.endpoint == 'auth.logout' and request.method == 'POST':
@@ -72,14 +72,11 @@ def restore_session_from_jwt():
             'nombre': usuario.nombre,
             'apellido': usuario.apellido
         }
+        # Se elimina la actualización de 'last_seen' de aquí.
+        # Esta función solo debe restaurar la sesión en 'g.user'.
+        # La actualización de 'last_seen' ahora es responsabilidad exclusiva del login
+        # y del endpoint de 'heartbeat' del cliente para reflejar actividad real.
         session.modified = True
-        
-        # MEJORA PROFESIONAL: Actualizar la última vez que se vio al usuario.
-        # Esto mantiene al usuario "en línea" mientras navega por el sitio.
-        if g.user:
-            g.user.last_seen = datetime.utcnow()
-            db.session.commit()
-
 
 @auth_bp.route('/me', methods=['GET'])
 def me():
@@ -109,7 +106,7 @@ def me():
         if not usuario:
             return jsonify({'error': 'Token inválido o expirado'}), 401
 
-        # MEJORA PROFESIONAL: Verificar si la cuenta está activa.
+        #  Verificar si la cuenta está activa.
         if not usuario.is_active:
             app.logger.warning(f"Acceso denegado para usuario inactivo ID: {usuario.id} a través del endpoint /me.")
             return jsonify({'error': 'Tu cuenta ha sido desactivada.', 'code': 'ACCOUNT_INACTIVE'}), 403
@@ -236,7 +233,7 @@ def login():
         return jsonify({'error': 'Tu cuenta se encuentra inactiva. Por favor, contacta a soporte.'}), 403
 
     # Verifica la contraseña hasheada.
-    # MEJORA PROFESIONAL: Usar el método encapsulado del modelo para verificar la contraseña.
+    #  Usar el método encapsulado del modelo para verificar la contraseña.
     if not usuario.verificar_contraseña(data['contraseña']):
         app.logger.warning(f"Inicio de sesión fallido: contraseña incorrecta para el número: {data['numero']}")
         return jsonify({'error': 'Credenciales inválidas'}), 401
@@ -244,8 +241,8 @@ def login():
     # Inicia la sesión del usuario con Flask-Login, gestionando la cookie de sesión.
     login_user(usuario, remember=True)
 
-    # MEJORA PROFESIONAL: Actualizar la última vez que se vio al usuario al iniciar sesión.
-    usuario.last_seen = datetime.utcnow()
+    # Actualizar la última vez que se vio al usuario al iniciar sesión.
+    usuario.last_seen = datetime.now(timezone.utc)
     db.session.commit()
 
     # Almacena datos adicionales en la sesión para un acceso rápido.
@@ -400,7 +397,7 @@ def reset_password_api(token):
     if nueva_contraseña != confirm_contraseña:
         return jsonify({'error': 'Las contraseñas no coinciden. Por favor, verifica.', 'field': 'confirm_contraseña'}), 400
 
-    # MEJORA PROFESIONAL: Asignar la contraseña en texto plano.
+    #  Asignar la contraseña en texto plano.
     # El setter del modelo se encargará del hasheo de forma segura.
     usuario.contraseña = nueva_contraseña
     # Invalida el token de reseteo para que no pueda ser reutilizado.
@@ -425,14 +422,16 @@ def logout():
     """
     from flask import current_app as app, make_response
     try:
-        # MEJORA PROFESIONAL: Marcar al usuario como desconectado antes de cerrar la sesión.
+        # MEJORA PROFESIONAL: Marcar al usuario como desconectado ANTES de cerrar la sesión.
+        # Esto asegura que el timestamp 'last_seen' se actualice correctamente.
         user_id = session.get('user', {}).get('id')
         if user_id:
             usuario = Usuarios.query.get(user_id)
             if usuario:
-                usuario.last_seen = None # O una fecha muy antigua
+                # Guardar la hora exacta de la desconexión.
+                usuario.last_seen = datetime.now(timezone.utc)
                 db.session.commit()
-                app.logger.info(f"Usuario {user_id} marcado como desconectado.")
+                app.logger.info(f"Usuario {usuario.id} marcado como desconectado en logout.")
 
         # Cierra la sesión gestionada por Flask-Login.
         logout_user()
@@ -520,7 +519,7 @@ def update_profile(usuario):
            not any(c.isupper() for c in data['contraseña']) or \
            not any(c.isdigit() for c in data['contraseña']):
             return jsonify({'error': 'La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número', 'field': 'modalPassword'}), 400
-        # MEJORA PROFESIONAL: Asignar la contraseña en texto plano.
+        #  Asignar la contraseña en texto plano.
         # El setter del modelo se encargará del hasheo.
         usuario.contraseña = data['contraseña']
 
@@ -540,3 +539,20 @@ def update_profile(usuario):
         db.session.rollback()
         app.logger.error(f"Error al actualizar perfil para el usuario ID: {user_id}: {str(e)}", exc_info=True)
         return jsonify({'error': 'Error al actualizar el perfil'}), 500
+
+@auth_bp.route('/heartbeat', methods=['POST'])
+@jwt_required
+def client_heartbeat(usuario):
+    """
+    Endpoint para que el frontend del cliente reporte actividad.
+    Actualiza el 'last_seen' del usuario para mantenerlo 'En línea'.
+    """
+    try:
+        # El decorador @jwt_required ya nos da el objeto 'usuario'
+        usuario.last_seen = datetime.now(timezone.utc)
+        db.session.commit()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error en el heartbeat del cliente {usuario.id}: {str(e)}")
+        # No devolvemos un 500 para no generar alertas innecesarias en el frontend por un fallo menor.
+        return jsonify({'success': False}), 200

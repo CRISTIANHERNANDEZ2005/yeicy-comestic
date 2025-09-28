@@ -53,7 +53,7 @@ def get_usuarios(admin_user):
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '')
         status = request.args.get('status', '')
-        sort = request.args.get('sort', 'recientes')
+        sort = request.args.get('sort', 'online') #  El orden por defecto ahora es 'online'.
         
         # Construir consulta base
         query = Usuarios.query
@@ -72,42 +72,50 @@ def get_usuarios(admin_user):
         if status:
             query = query.filter(Usuarios.estado == status)
 
-        # MEJORA PROFESIONAL: Priorizar usuarios en línea solo cuando no hay NINGÚN filtro activo (incluyendo el ordenamiento).
-        # Un filtro de ordenamiento se considera activo si no es el valor por defecto ('recientes').
-        is_sort_active = sort != 'recientes'
-        is_any_filter_active = bool(search or status or is_sort_active)
-        
-        # Definir el ordenamiento base según la selección del usuario.
-        if sort == 'nombre_asc':
-            base_order = [Usuarios.nombre.asc()]
-        elif sort == 'nombre_desc':
-            base_order = [Usuarios.nombre.desc()]
-        elif sort == 'antiguos':
-            base_order = [Usuarios.created_at.asc()]
-        else: # 'recientes' por defecto
-            base_order = [desc(Usuarios.created_at)]
+        # Lógica de ordenamiento refactorizada y ampliada.
+        online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
 
-        # Si no hay NINGÚN filtro, se añade la prioridad de "en línea" al principio del ordenamiento.
-        if not is_any_filter_active:
-            online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+        if sort == 'nombre_asc':
+            query = query.order_by(Usuarios.nombre.asc())
+        elif sort == 'nombre_desc':
+            query = query.order_by(Usuarios.nombre.desc())
+        elif sort == 'antiguos':
+            query = query.order_by(Usuarios.created_at.asc())
+        elif sort == 'recientes':
+            query = query.order_by(desc(Usuarios.created_at))
+        elif sort == 'inactive':
+            #  Ordena mostrando primero los usuarios no-online, y al final los que tienen estado 'inactivo'.
+            # Prioridad 0: Usuarios activos pero no en línea (last_seen nulo o antiguo).
+            # Prioridad 1: Usuarios activos y en línea.
+            # Prioridad 2: Usuarios con estado 'inactivo'.
+            inactive_priority = case(
+                (Usuarios.estado == EstadoEnum.INACTIVO, 2),
+                (Usuarios.last_seen.is_(None), 0),
+                (Usuarios.last_seen < online_threshold, 0),
+                else_=1
+            ).label('inactive_priority')
+            query = query.order_by(inactive_priority, desc(Usuarios.last_seen), desc(Usuarios.updated_at))
+        else:  # 'online' por defecto
+            # Consulta de ordenamiento optimizada para 'online'.
+            # Se elimina la subconsulta 'exists()' y se unifica en un solo 'CASE'.
+            # Prioridad 0: En línea. Prioridad 1: Inactivos. Prioridad 2: Desconectados.
             online_priority = case(
                 (Usuarios.last_seen > online_threshold, 0),
+                (Usuarios.estado == EstadoEnum.INACTIVO, 2),
                 else_=1
             ).label('online_priority')
-            query = query.order_by(online_priority, *base_order)
-        else:
-            # Si hay cualquier filtro activo, se ignora la prioridad de "en línea" y se usa solo el orden base.
-            query = query.order_by(*base_order)
+            query = query.order_by(online_priority, desc(Usuarios.last_seen), desc(Usuarios.created_at))
         
         # Ejecutar consulta con paginación
         usuarios = query.paginate(page=page, per_page=per_page, error_out=False)
         
-        # MEJORA PROFESIONAL: Añadir 'is_online' al diccionario del usuario.
+        #  Añadir 'is_online' al diccionario del usuario.
         # El serializador base no incluye propiedades, así que lo agregamos aquí.
         usuarios_list = []
         for usuario in usuarios.items:
             user_dict = usuario_to_dict(usuario)
             user_dict['is_online'] = usuario.is_online
+            user_dict['last_seen_display'] = usuario.last_seen_display
             usuarios_list.append(user_dict)
 
         # Preparar respuesta
@@ -337,7 +345,7 @@ def get_admins(admin_user):
         per_page = request.args.get('per_page', 10, type=int)
         search = request.args.get('search', '')
         status = request.args.get('status', '')
-        sort = request.args.get('sort', 'recientes')
+        sort = request.args.get('sort', 'online') #  El orden por defecto ahora es 'online'.
         
         # Construir consulta base
         query = Admins.query
@@ -357,41 +365,54 @@ def get_admins(admin_user):
         if status:
             query = query.filter(Admins.estado == status)
             
-        # Aplicar ordenamiento
+        #  Lógica de ordenamiento refactorizada y ampliada.
+        online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
+        current_admin_id = admin_user.id
+
         if sort == 'nombre_asc':
-            base_order = [Admins.nombre.asc()]
+            query = query.order_by(Admins.nombre.asc())
         elif sort == 'nombre_desc':
-            base_order = [Admins.nombre.desc()]
+            query = query.order_by(Admins.nombre.desc())
         elif sort == 'antiguos':
-            base_order = [Admins.created_at.asc()]
-        else: # 'recientes' por defecto
-            base_order = [desc(Admins.created_at)]
-
-        # MEJORA PROFESIONAL: Aplicar ordenamiento prioritario solo si no hay filtros activos.
-        is_sort_active = sort != 'recientes'
-        is_any_filter_active = bool(search or status or is_sort_active)
-
-        if not is_any_filter_active:
-            # Ordenamiento jerárquico: 1. El admin actual. 2. Otros admins en línea. 3. El resto.
-            online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
-            current_admin_id = admin_user.id
+            query = query.order_by(Admins.created_at.asc())
+        elif sort == 'recientes':
+            query = query.order_by(desc(Admins.created_at))
+        elif sort == 'inactive':
+            #  Ordena mostrando primero los admins no-online, y al final los que tienen estado 'inactivo'.
+            # Prioridad 0: Admins activos pero no en línea.
+            # Prioridad 1: Admins activos y en línea.
+            # Prioridad 2: Admins con estado 'inactivo'.
+            inactive_priority = case(
+                (Admins.estado == EstadoEnum.INACTIVO, 2),
+                (Admins.last_seen.is_(None), 0),
+                (Admins.last_seen < online_threshold, 0),
+                else_=1
+            ).label('inactive_priority')
+            query = query.order_by(inactive_priority, desc(Admins.last_seen), desc(Admins.updated_at))
+        else:  # 'online' por defecto
+            #  Consulta de ordenamiento optimizada para 'online' en administradores.
+            # Se elimina la subconsulta 'exists()' y se unifica en un solo 'CASE' jerárquico.
+            # Prioridad 0: El admin actual.
+            # Prioridad 1: Otros admins en línea.
+            # Prioridad 2: Admins inactivos (con estado 'inactivo').
+            # Prioridad 3: El resto (desconectados).
             priority_order = case(
                 (Admins.id == current_admin_id, 0),
                 (Admins.last_seen > online_threshold, 1),
+                (Admins.estado == EstadoEnum.INACTIVO, 3),
                 else_=2
             ).label('admin_priority')
-            query = query.order_by(priority_order, *base_order)
-        else:
-            query = query.order_by(*base_order)
+            query = query.order_by(priority_order, desc(Admins.last_seen), desc(Admins.created_at))
         
         # Ejecutar consulta con paginación
         admins = query.paginate(page=page, per_page=per_page, error_out=False)
         
-        # MEJORA PROFESIONAL: Añadir 'is_online' al diccionario del admin.
+        #  Añadir 'is_online' al diccionario del admin.
         admins_list = []
         for admin in admins.items:
             admin_dict = admin_to_dict(admin)
             admin_dict['is_online'] = admin.is_online
+            admin_dict['last_seen_display'] = admin.last_seen_display
             admins_list.append(admin_dict)
 
         # Preparar respuesta
@@ -554,7 +575,7 @@ def get_usuario_stats(admin_user):
         - total_admins: Total de administradores
     """
     try:
-        # MEJORA PROFESIONAL: Calcular usuarios en línea.
+        #  Calcular usuarios en línea.
         online_threshold = datetime.datetime.utcnow() - datetime.timedelta(minutes=5)
 
         # Obtener estadísticas
@@ -586,3 +607,20 @@ def get_usuario_stats(admin_user):
     except Exception as e:
         current_app.logger.error(f"Error al obtener estadísticas: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al obtener estadísticas'}), 500
+
+@user_bp.route('/api/heartbeat', methods=['POST'])
+@admin_jwt_required
+def admin_heartbeat(admin_user):
+    """
+    Endpoint para que el frontend del admin reporte actividad.
+    Actualiza el 'last_seen' del administrador para mantenerlo 'En línea'.
+    """
+    try:
+        # El decorador @admin_jwt_required ya nos da el admin_user
+        admin_user.last_seen = datetime.datetime.now(datetime.timezone.utc)
+        db.session.commit()
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        current_app.logger.error(f"Error en el heartbeat del admin {admin_user.id}: {str(e)}")
+        # No devolvemos un 500 para no generar alertas innecesarias en el frontend por un fallo menor.
+        return jsonify({'success': False}), 200

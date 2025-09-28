@@ -18,12 +18,12 @@ if (!window.usuariosApp) {
         clientes: {
           search: "",
           status: "",
-          sort: "recientes",
+          sort: "online", //  El orden por defecto ahora es 'online'.
         },
         admins: {
           search: "",
           status: "",
-          sort: "recientes",
+          sort: "online", //  El orden por defecto ahora es 'online'.
         },
       };
 
@@ -31,7 +31,9 @@ if (!window.usuariosApp) {
       this.isInitialized = false;
       this.eventListeners = []; // Para limpiar listeners
       this.activeTimers = []; // Para limpiar timers (setInterval/setTimeout)
+      this.autoRefreshInterval = null; // Timer para la actualización automática
       this.isInitialOpen = false; // SOLUCIÓN: Bandera para controlar la validación inicial.
+      this.heartbeatInterval = null; // Timer para el "latido" de actividad.
       this.csrfToken = null; //  Cachear el token CSRF
       this.authenticatedAdminId = null; // ID del admin autenticado
       // DOM Elements
@@ -110,6 +112,8 @@ if (!window.usuariosApp) {
       this.handleActionClick = this.handleActionClick.bind(this);
       this.clearFilters = this.clearFilters.bind(this);
       this._updateClearFiltersButtonVisibility = this._updateClearFiltersButtonVisibility.bind(this);
+      this.startAutoRefresh = this.startAutoRefresh.bind(this);
+      this.startHeartbeat = this.startHeartbeat.bind(this);
     }
 
     init() {
@@ -122,6 +126,8 @@ if (!window.usuariosApp) {
         this.setupDOMElements();
         this.setupEventListeners();
         this.csrfToken = this.getCsrfToken(); // Obtener el token una sola vez.
+        this.startAutoRefresh(); // Iniciar la actualización automática
+        this.startHeartbeat(); // Iniciar el "latido" de actividad.
         this.loadInitialData();
         this.isInitialized = true;
       } catch (error) {
@@ -369,6 +375,16 @@ if (!window.usuariosApp) {
       //  Limpiar también todos los temporizadores activos.
       this.activeTimers.forEach((timerId) => clearInterval(timerId));
       this.activeTimers = []; // Limpiar el array
+      // Detener la actualización automática
+      if (this.autoRefreshInterval) {
+        clearInterval(this.autoRefreshInterval);
+        this.autoRefreshInterval = null;
+      }
+      // Detener el latido de actividad
+      if (this.heartbeatInterval) {
+        clearInterval(this.heartbeatInterval);
+        this.heartbeatInterval = null;
+      }
 
       this.isInitialized = false;
       console.log("Cleanup complete.");
@@ -382,6 +398,46 @@ if (!window.usuariosApp) {
       this.loadStats();
     }
 
+    startAutoRefresh() {
+      // Asegurarse de que no haya un intervalo previo
+      if (this.autoRefreshInterval) {
+        clearInterval(this.autoRefreshInterval);
+      }
+      // Actualizar datos cada 30 segundos
+      this.autoRefreshInterval = setInterval(() => {
+        console.log("Auto-refreshing user data...");
+        // Solo refrescar si la ventana está visible para ahorrar recursos
+        if (document.visibilityState === 'visible') {
+          this.applyFilters(); // Recarga la tabla activa
+          this.loadStats();    // Recarga las estadísticas
+        }
+      }, 30000); // 30 segundos
+    }
+
+    startHeartbeat() {
+      // Asegurarse de que no haya un intervalo previo.
+      if (this.heartbeatInterval) {
+        clearInterval(this.heartbeatInterval);
+      }
+
+      // Enviar un "latido" cada 60 segundos para mantener el estado "En línea".
+      this.heartbeatInterval = setInterval(() => {
+        // Solo enviar si la pestaña está visible para ser eficientes.
+        if (document.visibilityState === 'visible') {
+          console.log("Sending admin heartbeat...");
+          fetch('/api/heartbeat', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              // El interceptor de JWT se encargará de añadir el token de admin.
+            }
+          }).catch(error => {
+            console.warn("Admin heartbeat failed:", error);
+          });
+        }
+      }, 60000); // 60 segundos
+    }
+
     switchTab(tab) {
       console.log(`Switching to tab: ${tab}`);
       this.currentTab = tab;
@@ -392,13 +448,13 @@ if (!window.usuariosApp) {
       const statusFilter = this.viewContainer.querySelector("#status-filter");
       const sortFilter = this.viewContainer.querySelector("#sort-filter");
       
-      if (searchInput) searchInput.value = "";
-      if (statusFilter) statusFilter.value = "";
-      if (sortFilter) sortFilter.value = "recientes";
+      if (searchInput) searchInput.value = ""; // Limpiar campo de búsqueda
+      if (statusFilter) statusFilter.value = ""; // Resetear filtro de estado
+      if (sortFilter) sortFilter.value = "online"; // Resetear a 'online'
       
       // Reiniciar el estado de los filtros para ambas pestañas.
-      this.filters.clientes = { search: "", status: "", sort: "recientes" };
-      this.filters.admins = { search: "", status: "", sort: "recientes" };
+      this.filters.clientes = { search: "", status: "", sort: "online" };
+      this.filters.admins = { search: "", status: "", sort: "online" };
 
 
       if (tab === 'clientes') {
@@ -473,12 +529,12 @@ if (!window.usuariosApp) {
       const statusFilter = this.viewContainer.querySelector("#status-filter");
       const sortFilter = this.viewContainer.querySelector("#sort-filter");
 
-      if (searchInput) searchInput.value = "";
-      if (statusFilter) statusFilter.value = "";
-      if (sortFilter) sortFilter.value = "recientes";
+      if (searchInput) searchInput.value = ""; // Limpiar campo de búsqueda
+      if (statusFilter) statusFilter.value = ""; // Resetear filtro de estado
+      if (sortFilter) sortFilter.value = "online"; // Resetear a 'online'
 
-      this.filters.clientes = { search: "", status: "", sort: "recientes" };
-      this.filters.admins = { search: "", status: "", sort: "recientes" };
+      this.filters.clientes = { search: "", status: "", sort: "online" };
+      this.filters.admins = { search: "", status: "", sort: "online" };
 
       this.currentPageClientes = 1;
       this.currentPageAdmins = 1;
@@ -492,7 +548,7 @@ if (!window.usuariosApp) {
       const isAnyFilterActive = 
         activeFilters.search !== "" ||
         activeFilters.status !== "" ||
-        activeFilters.sort !== "recientes";
+        activeFilters.sort !== "online"; //  El valor por defecto ahora es 'online'.
 
       if (this.clearFiltersBtn) {
         this.clearFiltersBtn.classList.toggle("hidden", !isAnyFilterActive);
@@ -640,7 +696,7 @@ if (!window.usuariosApp) {
             const totalClientesEl = this.viewContainer.querySelector("#total-clientes-count");
             if (totalClientesEl) totalClientesEl.textContent = data.total_clientes || 0;
 
-            // MEJORA PROFESIONAL: Mostrar contadores de activos y en línea.
+            //  Mostrar contadores de activos y en línea.
             const activeClientesEl = this.viewContainer.querySelector("#active-clientes-count");
             const onlineClientesBadge = this.viewContainer.querySelector("#online-clientes-badge");
             if (activeClientesEl) activeClientesEl.textContent = data.clientes_activos || 0;
@@ -920,16 +976,16 @@ if (!window.usuariosApp) {
             } else if (cliente.is_online) {
                 rowClass = "online-client-row";
                 statusIndicator = `
-                  <span class="online-indicator">
+                  <span class="online-indicator ml-2">
                     <span class="dot"></span>En línea
                   </span>
                 `;
             } else {
                 // Activo pero no en línea (desconectado)
-                rowClass = "offline-client-row";
+                rowClass = "offline-user-row ";
                 statusIndicator = `
                   <span class="offline-indicator">
-                    <span class="dot"></span>Desconectado
+                    <span class="dot"></span><span class="last-seen-text">${cliente.last_seen_display}</span>
                   </span>
                 `;
             }
@@ -937,9 +993,9 @@ if (!window.usuariosApp) {
             return `
                     <tr class="${rowClass}">
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${
-                          cliente.nombre
-                        } ${statusIndicator}</td>
-                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${
+                          cliente.nombre 
+                        } ${ statusIndicator }</td>
+                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${
                           cliente.apellido
                         }</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${
@@ -991,7 +1047,7 @@ if (!window.usuariosApp) {
       const id = actionButton.dataset.id;
       const status = actionButton.dataset.status;
 
-      // MEJORA PROFESIONAL: Mostrar notificación si el usuario está inactivo.
+      //  Mostrar notificación si el usuario está inactivo.
       if ((action === 'edit-cliente' || action === 'edit-admin') && status === 'inactivo') {
         const userType = action === 'edit-cliente' ? 'cliente' : 'administrador';
         window.toast.warning(`Para editar este ${userType}, primero debes cambiar su estado a "Activo".`);
@@ -1055,36 +1111,36 @@ if (!window.usuariosApp) {
             let statusIndicator = '';
             let adminName = admin.nombre;
 
+            // Determinar el estado (online/offline) primero, independientemente de si es el usuario actual.
+            if (admin.is_online) {
+                statusIndicator = `
+                  <span class="online-indicator ml-2">
+                    <span class="dot"></span>En línea
+                  </span>
+                `;
+            } else if (admin.estado === 'activo') { // Solo mostrar 'última vez' si está activo
+                statusIndicator = ` 
+                  <span class="offline-indicator">
+                    <span class="dot"></span><span class="last-seen-text">${admin.last_seen_display}</span>
+                  </span>
+                `;
+            }
+
+            // Ahora, aplicar estilos específicos si es el usuario actual o si está inactivo.
             if (isCurrentUser) {
                 rowClass = "authenticated-admin-row";
                 adminName = `${admin.nombre} <span class="text-sm font-normal text-indigo-600">(Tú)</span>`;
-                statusIndicator = `
-                  <span class="online-indicator">
-                    <span class="dot"></span>En línea
-                  </span>
-                `;
             } else if (admin.estado === 'inactivo') {
                 rowClass = "inactive-admin-row";
-            } else if (admin.is_online) {
-                rowClass = "online-admin-row";
-                statusIndicator = `
-                  <span class="online-indicator">
-                    <span class="dot"></span>En línea
-                  </span>
-                `;
             } else {
-                rowClass = "offline-admin-row";
-                statusIndicator = `
-                  <span class="offline-indicator">
-                    <span class="dot"></span>Desconectado
-                  </span>
-                `;
+                // Si no es el usuario actual y no está inactivo, la clase depende de si está en línea.
+                rowClass = admin.is_online ? "online-admin-row" : "offline-user-row";
             }
 
             return `
                     <tr class="${rowClass}">
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${adminName} ${statusIndicator}</td>
-                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-800 font-medium">${admin.apellido}</td>
+                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.apellido}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 font-mono">${admin.cedula}</td>
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.numero_telefono}</td>
                         <td class="px-8 py-5 whitespace-nowrap date-column">
@@ -1231,7 +1287,7 @@ if (!window.usuariosApp) {
       this.clienteModal.classList.add("flex");
       this.isInitialOpen = true;
       this.clienteSaveButton.disabled = false;
-      // MEJORA PROFESIONAL: En lugar de un temporizador, desactivar la bandera de validación inicial
+      //  En lugar de un temporizador, desactivar la bandera de validación inicial
       // después de que el modal reciba el foco. Esto es más robusto y evita validaciones prematuras.
       this.clienteModal.focus();
       this.clienteModal.addEventListener('focus', () => {
@@ -1245,7 +1301,7 @@ if (!window.usuariosApp) {
         this.clientePhoneInput.value = data.numero;
       }
 
-      // MEJORA PROFESIONAL: Llamar a la función unificada para actualizar el texto de ayuda
+      // Llamar a la función unificada para actualizar el texto de ayuda
       // inmediatamente al abrir el modal, tanto en modo creación como en edición.
       this.updatePasswordHelperText('cliente');
     }
@@ -1270,7 +1326,7 @@ if (!window.usuariosApp) {
       this.adminModal.classList.add("flex");
       this.isInitialOpen = true;
       this.adminSaveButton.disabled = false;
-      // MEJORA PROFESIONAL: En lugar de un temporizador, desactivar la bandera de validación inicial
+      // En lugar de un temporizador, desactivar la bandera de validación inicial
       // después de que el modal reciba el foco. Esto es más robusto y evita validaciones prematuras.
       this.adminModal.focus();
       this.adminModal.addEventListener('focus', () => {
@@ -1285,7 +1341,7 @@ if (!window.usuariosApp) {
         this.adminPhoneInput.value = data.numero_telefono;
       }
 
-      // MEJORA PROFESIONAL: Llamar a la función unificada para actualizar el texto de ayuda
+      //  Llamar a la función unificada para actualizar el texto de ayuda
       // inmediatamente al abrir el modal, tanto en modo creación como en edición.
       this.updatePasswordHelperText('admin');
     }

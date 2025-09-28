@@ -7,7 +7,7 @@ from .models.domains.user_models import Usuarios, Admins
 from .models.domains.order_models import Pedido, PedidoProducto
 from .models.enums import EstadoPedido, EstadoEnum
 from app.blueprints.cliente.auth import perfil
-from app.utils.jwt_utils import jwt_required
+from app.utils.jwt_utils import jwt_required, decode_jwt_token
 from app.utils.admin_jwt_utils import decode_admin_jwt_token
 from datetime import datetime
 import pytz
@@ -73,6 +73,39 @@ def create_app(config_class=Config):
             if payload and 'user_id' in payload:
                 admin_user = Admins.query.get(payload['user_id'])
         return dict(admin_user=admin_user)
+
+    @app.before_request
+    def before_request_tasks(): # pragma: no cover
+        """
+        Se ejecuta antes de cada petición para realizar tareas globales.
+        1. Asigna el usuario/admin al contexto global `g` si están autenticados.
+        """
+        from flask import g
+        from datetime import datetime, timezone
+        from .blueprints.cliente.auth import restore_session_from_jwt
+        
+        # 1. Restaurar sesión de cliente y asignar a g.user si existe
+        # La actualización de last_seen se maneja ahora en el login y en la restauración de sesión.
+        restore_session_from_jwt()
+        
+        # 2. Asignar admin a g.admin_user si está autenticado
+        # La actualización de last_seen se maneja en el login del admin.
+        client_token = request.cookies.get('token')
+        if client_token:
+            payload = decode_jwt_token(client_token)
+            if payload and 'user_id' in payload:
+                user = Usuarios.query.get(payload['user_id'])
+                if user:
+                    g.user = user
+        
+        admin_token = request.cookies.get('admin_jwt')
+        if admin_token:
+            payload = decode_admin_jwt_token(admin_token)
+            if payload and 'user_id' in payload:
+                admin = Admins.query.get(payload['user_id'])
+                if admin:
+                    g.admin_user = admin
+
 
     # Registrar blueprints cliente
     from app.blueprints.cliente.auth import auth_bp

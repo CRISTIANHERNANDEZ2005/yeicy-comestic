@@ -49,7 +49,7 @@ def login():
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
         # MEJORA PROFESIONAL: Actualizar la última vez que se vio al admin al iniciar sesión.
-        admin.last_seen = datetime.utcnow()
+        admin.last_seen = datetime.now(timezone.utc)
         db.session.commit()
 
         # Generar JWT
@@ -76,7 +76,8 @@ def logout():
         admin_id = get_jwt_identity()
         admin = Admins.query.get(admin_id)
         if admin:
-            admin.last_seen = None # Marcar como desconectado.
+            # Guardar la hora exacta de la desconexión.
+            admin.last_seen = datetime.now(timezone.utc)
             db.session.commit()
             current_app.logger.info(f"Administrador {admin.id} marcado como desconectado.")
     except Exception as e:

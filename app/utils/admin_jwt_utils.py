@@ -71,12 +71,6 @@ def admin_jwt_required(f: F) -> F:
                 flash('Acceso denegado. Usuario no autorizado.', 'danger')
                 return redirect(url_for('admin_auth.login'))
 
-            # MEJORA PROFESIONAL: Actualizar la última vez que se vio al administrador en cada petición.
-            # Esto es crucial para que el estado "En línea" funcione para todos los admins.
-            from app.extensions import db
-            admin_user.last_seen = datetime.now(timezone.utc)
-            db.session.commit()
-
             current_app.logger.info(f'Acceso autorizado a ruta de administrador para el usuario: {admin_user.id}')
             return f(admin_user, *args, **kwargs)
         except Exception as e:

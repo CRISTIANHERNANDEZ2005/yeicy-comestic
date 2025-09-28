@@ -185,7 +185,7 @@
     {% if 'user' in session %}
     {% include 'cliente/ui/modal_edicion_usuario.html' %}
     {% endif %}
-    
+
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/realtime-notifications.js') }}"></script>
@@ -193,6 +193,9 @@
     <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
     <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
+    {% if g.user %}
+        <script src="{{ url_for('static', filename='js/cliente/client_heartbeat.js') }}"></script>
+    {% endif %}
     <script>
         window.userId = {{ session.get('user_id') | tojson }};
         window.isAuthenticated = {{ 'true' if 'user' in session else 'false' }};

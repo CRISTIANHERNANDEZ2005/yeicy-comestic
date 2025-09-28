@@ -196,7 +196,7 @@ tbody tr {
 .online-indicator {
   display: inline-flex;
   align-items: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: #15803d; /* Tailwind 'green-700' */
 }
@@ -216,12 +216,12 @@ tbody tr {
 }
 
 /* Estilo para la fila del cliente desconectado (pero activo) */
-.offline-client-row {
+.offline-user-row {
   background-color: #f9fafb; /* Tailwind 'gray-50' */
   transition: all 0.3s ease;
 }
 
-.offline-client-row:hover {
+.offline-user-row:hover {
   background-color: #f3f4f6; /* Tailwind 'gray-100' */
 }
 
@@ -229,7 +229,7 @@ tbody tr {
 .offline-indicator {
   display: inline-flex;
   align-items: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #4b5563; /* Tailwind 'gray-600' */
 }
@@ -240,6 +240,13 @@ tbody tr {
   background-color: #9ca3af; /* Tailwind 'gray-400' */
   border-radius: 50%;
   margin-right: 6px;
+}
+
+/* MEJORA PROFESIONAL: Estilo para el texto de "última vez" */
+.last-seen-text {
+    font-size: 0.78rem; /* Un poco más pequeño */
+    color: #6b7280; /* Tailwind 'gray-500' */
+    font-weight: 400; /* Normal, no negrita */
 }
 
 /* Estilo para la fila del cliente inactivo */
@@ -268,15 +275,6 @@ tbody tr {
   background-color: #ede9fe; /* Tailwind 'purple-100' */
 }
 
-/* Estilo para la fila del admin desconectado */
-.offline-admin-row {
-  background-color: #f9fafb; /* Tailwind 'gray-50' */
-}
-
-.offline-admin-row:hover {
-  background-color: #f3f4f6; /* Tailwind 'gray-100' */
-}
-
 /* Estilo para la fila del admin inactivo */
 .inactive-admin-row {
   background-color: #fef2f2; /* Tailwind 'red-50' */
@@ -289,7 +287,7 @@ tbody tr {
   opacity: 1;
 }
 
-/* El indicador 'online-indicator' y 'offline-indicator' se reutiliza del cliente,
+/* El indicador 'online-indicator', 'offline-indicator' y 'offline-user-row' se reutiliza para ambos,
    ya que su diseño es genérico y profesional. Si se deseara un color distinto
    para el punto del admin, se podrían crear nuevas clases como 'online-admin-indicator'.
    Por ahora, la reutilización es eficiente. */

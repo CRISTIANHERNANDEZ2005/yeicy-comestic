@@ -1,6 +1,7 @@
 """
 Módulo de Modelos de Dominio para Usuarios y Administradores.
 
+
 Este archivo define las estructuras de datos para los diferentes tipos de usuarios
 del sistema. Incluye el modelo `Usuarios` para los clientes de la tienda y el
 modelo `Admins` para los administradores del panel. Gestiona la autenticación,
@@ -9,7 +10,7 @@ perfiles, seguridad de contraseñas y la generación de tokens JWT. También con
 """
 # --- Importaciones de Serializadores ---
 from app.models.serializers import usuario_to_dict, admin_to_dict
-# --- Importaciones de la Librería Estándar ---
+# --- Importaciones de la Librería Estándar --- 
 from datetime import datetime, timedelta, timezone
 # --- Importaciones de Extensiones y Terceros ---
 from app.extensions import db, bcrypt
@@ -156,9 +157,55 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Determina si un usuario está en línea basándose en su última actividad.
         Se considera en línea si 'last_seen' es de hace menos de 5 minutos.
         """
+        #  Definir el umbral de "en línea" como una constante para fácil mantenimiento.
+        ONLINE_THRESHOLD_MINUTES = 5
+
         if not self.last_seen:
             return False
-        return (datetime.now(timezone.utc) - self.last_seen.replace(tzinfo=timezone.utc)) < timedelta(minutes=5)
+        # Asegurarse de que last_seen tenga timezone para una comparación correcta.
+        # Si la BD guarda naive datetimes (sin tz), asumimos que es UTC.
+        last_seen_utc = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
+        return (datetime.now(timezone.utc) - last_seen_utc) < timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+
+    @property
+    def last_seen_display(self):
+        """
+        Formatea el timestamp de 'last_seen' en un formato legible para humanos.
+        Ej: "Última vez hoy a las 10:30", "Última vez ayer a las 20:15", "Última vez el 15 de mayo".
+        """
+        if not self.last_seen:
+            return "Nunca"
+
+        # Asegurarse de que last_seen tenga timezone para una comparación correcta
+        last_seen_aware = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
+        now_aware = datetime.now(timezone.utc)
+        
+        # Convertir a la zona horaria local (ej. Colombia) para la visualización
+        try:
+            import pytz
+            local_tz = pytz.timezone('America/Bogota')
+            last_seen_local = last_seen_aware.astimezone(local_tz)
+            now_local = now_aware.astimezone(local_tz)
+        except ImportError:
+            # Fallback si pytz no está instalado (aunque debería estarlo)
+            last_seen_local = last_seen_aware
+            now_local = now_aware
+
+        delta = now_local.date() - last_seen_local.date()
+
+        if delta.days == 0:
+            return f"Última vez hoy a las {last_seen_local.strftime('%H:%M')}"
+        elif delta.days == 1:
+            return f"Última vez ayer a las {last_seen_local.strftime('%H:%M')}"
+        elif delta.days < 7:
+            # Nombres de los días en español
+            dias = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+            return f"Última vez el {dias[last_seen_local.weekday()]} a las {last_seen_local.strftime('%H:%M')}"
+        else:
+            # Nombres de los meses en español
+            meses = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+            return f"Última vez el {last_seen_local.day} de {meses[last_seen_local.month]}"
+
 
     def generar_jwt(self):
         """
@@ -375,10 +422,55 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         Determina si un administrador está en línea basándose en su última actividad.
         Se considera en línea si 'last_seen' es de hace menos de 5 minutos.
         """
+        #  Definir el umbral de "en línea" como una constante para fácil mantenimiento.
+        ONLINE_THRESHOLD_MINUTES = 5
+
         if not self.last_seen:
             return False
+        # Asegurarse de que last_seen tenga timezone para una comparación correcta.
+        # Si la BD guarda naive datetimes (sin tz), asumimos que es UTC.
+        last_seen_utc = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
+        return (datetime.now(timezone.utc) - last_seen_utc) < timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+
+    @property
+    def last_seen_display(self):
+        """
+        Formatea el timestamp de 'last_seen' en un formato legible para humanos.
+        Ej: "Última vez hoy a las 10:30", "Última vez ayer a las 20:15", "Última vez el 15 de mayo".
+        """
+        if not self.last_seen:
+            return "Nunca"
+
         # Asegurarse de que last_seen tenga timezone para una comparación correcta
-        return (datetime.now(timezone.utc) - self.last_seen.replace(tzinfo=timezone.utc)) < timedelta(minutes=5)
+        last_seen_aware = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
+        now_aware = datetime.now(timezone.utc)
+        
+        # Convertir a la zona horaria local (ej. Colombia) para la visualización
+        try:
+            import pytz
+            local_tz = pytz.timezone('America/Bogota')
+            last_seen_local = last_seen_aware.astimezone(local_tz)
+            now_local = now_aware.astimezone(local_tz)
+        except ImportError:
+            # Fallback si pytz no está instalado
+            last_seen_local = last_seen_aware
+            now_local = now_aware
+
+        delta = now_local.date() - last_seen_local.date()
+
+        if delta.days == 0:
+            return f"Última vez hoy a las {last_seen_local.strftime('%H:%M')}"
+        elif delta.days == 1:
+            return f"Última vez ayer a las {last_seen_local.strftime('%H:%M')}"
+        elif delta.days < 7:
+            # Nombres de los días en español
+            dias = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+            return f"Última vez el {dias[last_seen_local.weekday()]} a las {last_seen_local.strftime('%H:%M')}"
+        else:
+            # Nombres de los meses en español
+            meses = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
+            return f"Última vez el {last_seen_local.day} de {meses[last_seen_local.month]}"
+
 
     # id y timestamps heredados de los mixins
     cedula: Mapped[str] = mapped_column(db.String(20), nullable=False, unique=True)

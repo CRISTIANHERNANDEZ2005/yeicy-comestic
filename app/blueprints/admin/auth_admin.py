@@ -48,10 +48,6 @@ def login():
         if not admin.verificar_contraseña(contraseña):
             return jsonify({'error': 'Credenciales inválidas'}), 401
 
-        # MEJORA PROFESIONAL: Actualizar la última vez que se vio al admin al iniciar sesión.
-        admin.last_seen = datetime.now(timezone.utc)
-        db.session.commit()
-
         # Generar JWT
         admin_jwt_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440) # Default to 24 hours if not set
         expires_delta = timedelta(minutes=admin_jwt_expiration_minutes)

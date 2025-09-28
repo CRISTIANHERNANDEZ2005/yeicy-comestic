@@ -44,12 +44,12 @@ def admin_jwt_required(f: F) -> F:
         current_app.logger.debug(f'Request path: {request.path}')
         current_app.logger.debug(f'Admin JWT Cookie: {request.cookies.get("admin_jwt")}')
 
-        token = request.cookies.get('admin_jwt') # Get token from HttpOnly cookie
+        token = request.cookies.get('admin_jwt') 
 
         if not token:
             current_app.logger.warning('Intento de acceso no autorizado a ruta de administrador: No se proporcionó token.')
             flash('Acceso denegado. Se requiere autenticación de administrador.', 'danger')
-            return redirect(url_for('admin_auth.login')) # Redirect to admin login
+            return redirect(url_for('admin_auth.login')) 
 
         try:
 

@@ -105,6 +105,10 @@ def create_app(config_class=Config):
                 admin = Admins.query.get(payload['user_id'])
                 if admin:
                     g.admin_user = admin
+                    # MEJORA PROFESIONAL: Actualizar last_seen en cada petición del admin.
+                    # Esto asegura que el estado "En línea" sea preciso y en tiempo real.
+                    admin.last_seen = datetime.now(timezone.utc)
+                    db.session.commit()
 
 
     # Registrar blueprints cliente

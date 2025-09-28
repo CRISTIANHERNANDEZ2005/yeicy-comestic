@@ -437,6 +437,18 @@ if (!window.usuariosApp) {
         }
       }, 60000); // 60 segundos
     }
+    
+    sendHeartbeatNow() {
+      console.log("Sending initial admin heartbeat...");
+      fetch('/api/heartbeat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      }).catch(error => {
+        console.warn("Initial admin heartbeat failed:", error);
+      });
+    }
 
     switchTab(tab) {
       console.log(`Switching to tab: ${tab}`);
@@ -540,6 +552,9 @@ if (!window.usuariosApp) {
       this.currentPageAdmins = 1;
 
       this.applyFilters();
+      // MEJORA: Al limpiar filtros y recargar, enviar un latido para asegurar que el admin actual
+      // aparezca como "En línea" si la carga tarda.
+      this.sendHeartbeatNow();
       this._updateClearFiltersButtonVisibility();
     }
 

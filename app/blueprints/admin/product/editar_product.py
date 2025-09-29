@@ -1,3 +1,15 @@
+"""
+Módulo de Edición de Productos (Admin).
+
+Este blueprint gestiona la lógica para la edición de productos existentes en el
+panel de administración. Proporciona la interfaz de usuario (formulario prellenado)
+y el endpoint de API para procesar las actualizaciones.
+
+Funcionalidades Clave:
+- **Renderizado de Formulario de Edición**: Muestra la página con el formulario de edición, cargando y prellenando todos los datos del producto seleccionado.
+- **Procesamiento de Actualizaciones**: Valida los datos modificados, gestiona la actualización de la imagen (subiendo la nueva y eliminando la antigua de Cloudinary), verifica la unicidad del nombre/slug si ha cambiado, y persiste todos los cambios en la base de datos.
+- **Protección de Lógica de Negocio**: Impide la edición de productos que se encuentren en estado 'inactivo'.
+"""
 from flask import Blueprint, render_template, request, abort, current_app, jsonify, redirect, url_for, flash
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
@@ -16,20 +28,33 @@ admin_editar_product_bp = Blueprint(
 @admin_jwt_required
 def edit_product_page(admin_user, product_slug):
     """
-    Maneja la solicitud para mostrar el formulario de edición de un producto.
-    GET: Muestra el formulario de edición prellenado con los datos del producto.
+    Renderiza la página de edición para un producto específico.
+
+    - **GET**: Busca un producto por su `slug`. Si se encuentra y está activo,
+      serializa sus datos y los de su jerarquía de categorías para prellenar
+      el formulario de edición. Si el producto está inactivo, redirige al
+      listado con una advertencia.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+        product_slug (str): El slug del producto a editar.
+
+    Returns:
+        Response: La plantilla `editar_product.html` renderizada con los datos del producto,
+                  o una redirección si el producto no es editable.
     """
     product = Productos.query.filter_by(slug=product_slug).first()
     if not product:
         abort(404, description="Producto no encontrado")
 
+    # Regla de negocio: no se pueden editar productos inactivos.
     if product.estado == 'inactivo':
         flash('No se puede editar un producto que está inactivo.', 'warning')
         return redirect(url_for('admin_products.get_all_products'))
 
     product_data = producto_to_dict(product)
 
-    # Extract category IDs for pre-selection in JavaScript
+    # Extrae los IDs de la jerarquía de categorías para la preselección en los <select> del frontend.
     selected_seudocategoria_id = product.seudocategoria.id if product.seudocategoria else None
     selected_subcategoria_id = product.seudocategoria.subcategoria.id if product.seudocategoria and product.seudocategoria.subcategoria else None
     selected_categoria_principal_id = product.seudocategoria.subcategoria.categoria_principal.id if product.seudocategoria and product.seudocategoria.subcategoria and product.seudocategoria.subcategoria.categoria_principal else None
@@ -47,8 +72,21 @@ def edit_product_page(admin_user, product_slug):
 @admin_jwt_required
 def update_product_api(admin_user, product_slug):
     """
-    Maneja la solicitud API para actualizar un producto existente.
-    PUT: Procesa los datos del formulario y actualiza el producto.
+    API para procesar la actualización de un producto existente.
+
+    - **PUT**: Recibe los datos del formulario (multipart/form-data).
+      1.  Realiza validaciones exhaustivas de los datos.
+      2.  Si el nombre cambia, verifica la unicidad del nuevo nombre y slug.
+      3.  Si se sube una nueva imagen, la procesa con Cloudinary y elimina la imagen
+          antigua para evitar archivos huérfanos.
+      4.  Actualiza todos los campos del producto en la base de datos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        product_slug (str): El slug del producto a actualizar.
+
+    Returns:
+        JSON: Una respuesta JSON indicando el éxito o fracaso de la operación.
     """
     product = Productos.query.filter_by(slug=product_slug).first()
     if not product:
@@ -58,7 +96,7 @@ def update_product_api(admin_user, product_slug):
         return jsonify({'success': False, 'message': 'No se puede editar un producto que está inactivo.'}), 403
 
     try:
-        # --- 1. Obtención de datos ---
+        # --- 1. Obtención de datos del formulario (multipart/form-data) ---
         data = request.form
         nombre = data.get('nombre')
         marca = data.get('marca')
@@ -72,7 +110,7 @@ def update_product_api(admin_user, product_slug):
         seudocategoria_id = data.get('seudocategoria_id')
         especificaciones_json = data.get('especificaciones', '{}')
 
-        # --- 2. Validaciones Profesionales ---
+        # --- 2. Validaciones de negocio y de formato ---
         errors = []
         if not nombre:
             errors.append('El nombre del producto es obligatorio.')
@@ -80,6 +118,7 @@ def update_product_api(admin_user, product_slug):
             errors.append('La marca del producto es obligatoria.')
         if not descripcion:
             errors.append('La descripción del producto es obligatoria.')
+        # Si no se sube un nuevo archivo, se asume que se conserva la imagen existente.
         if not imagen_file and not product.imagen_url:
             errors.append('La imagen del producto es obligatoria.')
         if not seudocategoria_id:
@@ -117,7 +156,7 @@ def update_product_api(admin_user, product_slug):
         if errors:
             return jsonify({'success': False, 'message': ' '.join(errors)}), 400
 
-        # --- 3. Verificación de Unicidad (Nombre y Slug) ---
+        # --- 3. Verificación de Unicidad si el nombre ha cambiado ---
         if nombre != product.nombre:
             # Verificar unicidad del nombre
             if Productos.query.filter(Productos.nombre == nombre, Productos.id != product.id).first():
@@ -129,7 +168,7 @@ def update_product_api(admin_user, product_slug):
                 return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre ("{new_slug}").'}), 409
             product.slug = new_slug
 
-        # --- 4. Verificación de Entidades Relacionadas ---
+        # --- 4. Verificación de la existencia de la categoría seleccionada ---
         seudocategoria = Seudocategorias.query.get(seudocategoria_id)
         if not seudocategoria:
             return jsonify({
@@ -137,7 +176,7 @@ def update_product_api(admin_user, product_slug):
                 'message': 'La seudocategoría seleccionada ya no existe. Por favor, recarga la página.'
             }), 400
 
-        # --- 5. Actualización del Objeto ---
+        # --- 5. Procesamiento de especificaciones y manejo de imagen ---
         try:
             especificaciones = json.loads(especificaciones_json)
             if not isinstance(especificaciones, dict):
@@ -145,11 +184,11 @@ def update_product_api(admin_user, product_slug):
         except json.JSONDecodeError:
             especificaciones = {}
 
-        # --- Manejo de la imagen ---
+        # Por defecto, se mantiene la URL de la imagen existente.
         imagen_url_final = product.imagen_url  # Mantener la URL antigua por defecto
 
         if imagen_file:
-            # A. Subir nueva imagen
+            # A. Si se sube un archivo nuevo, se procesa.
             try:
                 upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
                 imagen_url_final = upload_result.get('secure_url')
@@ -159,7 +198,7 @@ def update_product_api(admin_user, product_slug):
                 current_app.logger.error(f"Error al subir nueva imagen a Cloudinary para producto {product.slug}: {e}", exc_info=True)
                 return jsonify({'success': False, 'message': 'Error al subir la nueva imagen.'}), 500
 
-            # B. Eliminar imagen antigua de Cloudinary (práctica profesional para no dejar basura)
+            # B. PRÁCTICA PROFESIONAL: Eliminar la imagen antigua de Cloudinary para no acumular archivos basura.
             if product.imagen_url:
                 try:
                     # Extraer el public_id de la URL antigua.
@@ -171,9 +210,10 @@ def update_product_api(admin_user, product_slug):
                         cloudinary.api.delete_resources([public_id])
                         current_app.logger.info(f"Imagen antigua '{public_id}' eliminada de Cloudinary para producto {product.slug}.")
                 except Exception as e:
-                    # No es un error crítico si no se puede borrar la imagen vieja, solo loguearlo
+                    # No es un error crítico si no se puede borrar la imagen vieja, solo se registra.
                     current_app.logger.error(f"No se pudo eliminar la imagen antigua '{product.imagen_url}' de Cloudinary: {e}", exc_info=True)
 
+        # --- 6. Actualización de los campos del producto ---
         product.nombre = nombre
         product.marca = marca
         product.descripcion = descripcion
@@ -186,7 +226,7 @@ def update_product_api(admin_user, product_slug):
         product.seudocategoria_id = seudocategoria_id
         product.especificaciones = especificaciones
 
-        # --- 6. Persistencia en Base de Datos ---
+        # --- 7. Persistencia en la Base de Datos ---
         db.session.commit()
         
         # Opcional: Actualizar el estado de la seudocategoría si es necesario

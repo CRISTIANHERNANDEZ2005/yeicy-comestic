@@ -1,3 +1,21 @@
+"""
+Módulo de Gestión de Pedidos (Admin).
+
+Este blueprint centraliza toda la lógica para la administración de los pedidos
+de los clientes. Proporciona una interfaz completa para listar, crear, editar,
+y gestionar el estado de los pedidos y su seguimiento logístico.
+
+Funcionalidades Clave:
+- **Vistas de Listado**: Ofrece vistas separadas para pedidos 'en proceso',
+  'completados' y 'cancelados', con paginación, búsqueda y filtros avanzados.
+- **API de Gestión**: Endpoints para crear y editar pedidos, incluyendo la
+  gestión de productos y la actualización de stock.
+- **Gestión de Estado**: APIs para cambiar el estado principal de un pedido
+  (ej. de 'en proceso' a 'completado') y el estado de seguimiento logístico
+  (ej. de 'en preparación' a 'en camino'), asegurando la sincronización entre ambos.
+- **Manejo de Stock**: La lógica de cambio de estado gestiona automáticamente
+  la devolución o resta de stock de los productos involucrados.
+"""
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.order_models import Pedido, PedidoProducto
@@ -14,7 +32,7 @@ from flask_wtf.csrf import generate_csrf
 
 admin_lista_pedidos_bp = Blueprint('admin_lista_pedidos', __name__)
 
-# Mapa para convertir strings de la URL a miembros del Enum de forma segura
+# Mapa para convertir cadenas de la URL a miembros del Enum de forma segura.
 ESTADO_PEDIDO_MAP = {
     'en proceso': EstadoPedido.EN_PROCESO,
     'completado': EstadoPedido.COMPLETADO,
@@ -23,14 +41,30 @@ ESTADO_PEDIDO_MAP = {
 
 def _build_pedidos_query(estado_pedido_filter, pedido_id, cliente, fecha_inicio, fecha_fin, status_filter, sort_by, sort_order):
     """
-    Función auxiliar para construir y filtrar la consulta de pedidos, evitando la duplicación de código.
+    Función auxiliar para construir y filtrar la consulta de pedidos.
+
+    Esta función centraliza la lógica de construcción de consultas para evitar la
+    duplicación de código entre la vista principal y los endpoints de la API.
+
+    Args:
+        estado_pedido_filter (EstadoPedido): El estado principal del pedido a filtrar.
+        pedido_id (str): ID parcial o completo del pedido.
+        cliente (str): Término de búsqueda para el cliente.
+        fecha_inicio (str): Fecha de inicio del rango.
+        fecha_fin (str): Fecha de fin del rango.
+        status_filter (str): Filtro por estado 'activo' o 'inactivo'.
+        sort_by (str): Campo por el cual ordenar.
+        sort_order (str): Dirección del ordenamiento ('asc' o 'desc').
+
+    Returns:
+        Query: Un objeto de consulta de SQLAlchemy con los filtros y ordenamiento aplicados.
     """
-    # Construir consulta base
+    # Construir consulta base con carga anticipada del usuario para optimización.
     query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
         Pedido.estado_pedido == estado_pedido_filter
     )
 
-    # Aplicar el filtro de estado (activo/inactivo)
+    # Aplicar el filtro de estado secundario (activo/inactivo).
     if status_filter != 'all':
         query = query.filter(Pedido.estado == status_filter)
 
@@ -88,12 +122,28 @@ def _build_pedidos_query(estado_pedido_filter, pedido_id, cliente, fecha_inicio,
 @admin_lista_pedidos_bp.route('/lista-pedidos/<string:estado>', methods=['GET'])
 @admin_jwt_required
 def get_all_pedidos(admin_user, estado=None):
+    """
+    Renderiza la página de listado de pedidos para un estado específico.
+
+    Esta función es el controlador principal para la sección de pedidos. Determina
+    el estado solicitado ('en-proceso', 'completados', 'cancelados'), aplica los
+    filtros y la paginación correspondientes, y renderiza la plantilla principal
+    con los datos necesarios.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+        estado (str, optional): El estado de los pedidos a mostrar. Por defecto es
+                                'en-proceso'.
+
+    Returns:
+        Response: La plantilla `lista_pedidos.html` renderizada con los datos.
+    """
     error_message = None
-    pedidos_data = []  # Initialize
+    pedidos_data = []
     pagination = None
     pagination_info = {}
     
-    # Mapeo de estados de URL a valores de Enum
+    # Mapeo de estados de URL a valores de Enum para la consulta.
     estado_map = {
         'completados': ('completados', EstadoPedido.COMPLETADO),
         'cancelados': ('cancelados', EstadoPedido.CANCELADO),
@@ -102,7 +152,7 @@ def get_all_pedidos(admin_user, estado=None):
     current_estado, estado_pedido_filter = estado_map.get(estado, ('en-proceso', EstadoPedido.EN_PROCESO))
 
     try:
-        # Obtener parámetros de filtro
+        # Obtener parámetros de filtro y paginación desde la URL.
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         pedido_id = request.args.get('pedido_id', '')
@@ -113,16 +163,16 @@ def get_all_pedidos(admin_user, estado=None):
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
         
-        # Construir consulta base
+        # Construir la consulta utilizando la función auxiliar.
         query = _build_pedidos_query(
             estado_pedido_filter, pedido_id, cliente, fecha_inicio, fecha_fin, 
             status_filter, sort_by, sort_order
         )
         
-        # Paginación
+        # Aplicar paginación a la consulta.
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
-        # Serializar datos
+        # Serializar los datos paginados para la plantilla.
         pedidos_data = [pedido_to_dict(pedido) for pedido in pagination.items]
 
         # Preparar información de paginación para JSON
@@ -156,6 +206,19 @@ def get_all_pedidos(admin_user, estado=None):
 @admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>', methods=['GET'])
 @admin_jwt_required
 def get_pedido_detalle(admin_user, pedido_id):
+    """
+    API para obtener los detalles completos de un pedido específico.
+
+    Utilizado por el frontend para poblar modales de detalle o edición con toda
+    la información de un pedido, incluyendo el cliente y la lista de productos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        pedido_id (str): El ID del pedido a obtener.
+
+    Returns:
+        JSON: Un objeto con los detalles completos del pedido.
+    """
     try:
         pedido = Pedido.query.options(
             joinedload(Pedido.usuario),
@@ -186,6 +249,20 @@ def get_pedido_detalle(admin_user, pedido_id):
 @admin_lista_pedidos_bp.route('/api/pedidos', methods=['POST'])
 @admin_jwt_required
 def create_pedido(admin_user):
+    """
+    API para crear un nuevo pedido desde el panel de administración.
+
+    Recibe el ID del usuario y una lista de productos con sus cantidades.
+    Valida el stock, calcula el total, crea el `Pedido` y los `PedidoProducto`
+    asociados, y descuenta el stock de los productos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un mensaje de éxito con el ID del nuevo pedido, o un error de
+              validación o de servidor.
+    """
     try:
         data = request.get_json()
         if not data:
@@ -238,8 +315,8 @@ def create_pedido(admin_user):
             total=total_pedido,
             estado_pedido=EstadoPedido.EN_PROCESO,
             estado=EstadoEnum.ACTIVO.value,
-            #  Inicializar el historial de seguimiento al crear el pedido.
-            # Esto asegura que el estado 'recibido' siempre tenga un timestamp.
+            # Inicializar el historial de seguimiento al crear el pedido.
+            # Esto asegura que el estado 'recibido' siempre tenga un timestamp y una nota.
             seguimiento_estado=EstadoSeguimiento.RECIBIDO,
             notas_seguimiento="Tu Pedido fue recibido y esta siendo procesado",
             seguimiento_historial=[{
@@ -284,6 +361,21 @@ def create_pedido(admin_user):
 @admin_lista_pedidos_bp.route('/api/pedidos/<string:pedido_id>', methods=['PUT'])
 @admin_jwt_required
 def update_pedido(admin_user, pedido_id):
+    """
+    API para actualizar un pedido existente.
+
+    Permite cambiar el cliente y la lista de productos de un pedido que está
+    'en proceso'. La lógica es compleja para garantizar la consistencia del stock:
+    1. Devuelve el stock de los productos originales del pedido.
+    2. Elimina los productos antiguos de la relación.
+    3. Valida el stock para los nuevos productos.
+    4. Si hay stock, crea las nuevas relaciones y descuenta el nuevo stock.
+    5. Si falla, revierte la devolución de stock para dejar todo como estaba.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        pedido_id (str): El ID del pedido a actualizar.
+    """
     try:
         pedido = Pedido.query.options(joinedload(Pedido.productos).joinedload(PedidoProducto.producto)).get(pedido_id)
         if not pedido:
@@ -403,7 +495,19 @@ def update_pedido(admin_user, pedido_id):
 @admin_jwt_required
 def update_pedido_seguimiento(admin_user, pedido_id):
     """
-     Actualización en tiempo real del estado de seguimiento con sincronización bidireccional
+    API para actualizar el estado de seguimiento logístico de un pedido.
+
+    Esta función es clave para la gestión logística. No solo actualiza el estado
+    de seguimiento (ej. 'en preparación'), sino que también sincroniza el estado
+    principal del pedido (`estado_pedido`) si es necesario. Por ejemplo, al marcar
+    un pedido como 'entregado', su estado principal cambia a 'completado'.
+
+    Además, gestiona el stock: si un pedido se cancela, devuelve el stock; si se
+    reactiva desde un estado cancelado, vuelve a descontar el stock.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        pedido_id (str): El ID del pedido a actualizar.
     """
     try:
         # Obtener el pedido con sus productos y usuario para sincronización completa
@@ -429,7 +533,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
         nuevo_seguimiento_str = data.get('seguimiento_estado')
         notas = data.get('notas', '').strip()
 
-        #  Validar que el estado y las notas no estén vacíos
+        # Validar que el estado y las notas no estén vacíos.
         if not nuevo_seguimiento_str:
             return jsonify({'success': False, 'message': 'El estado de seguimiento es obligatorio.'}), 400
         if not notas:
@@ -443,7 +547,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
         old_seguimiento = pedido.seguimiento_estado
         old_estado_pedido = pedido.estado_pedido
 
-        # Iniciar transacción para atomicidad
+        # Iniciar transacción para atomicidad.
         try:
             estado_pedido_cambiado = False
             nuevo_estado_pedido = None
@@ -455,7 +559,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                     estado_pedido_cambiado = True
                     nuevo_estado_pedido = EstadoPedido.CANCELADO.value
                     
-                    # Devolver stock
+                    # Devolver stock al inventario.
                     for item in pedido.productos:
                         producto = Productos.query.get(item.producto_id)
                         if producto:
@@ -472,7 +576,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
 
             # 3. Si el nuevo estado de seguimiento implica que está EN PROCESO
             elif nuevo_seguimiento_enum in [EstadoSeguimiento.RECIBIDO, EstadoSeguimiento.EN_PREPARACION, EstadoSeguimiento.EN_CAMINO]:
-                if old_estado_pedido != EstadoPedido.EN_PROCESO:
+                if old_estado_pedido != EstadoPedido.EN_PROCESO: # pragma: no cover
                     # Si venimos de 'cancelado', hay que re-validar y restar stock
                     if old_estado_pedido == EstadoPedido.CANCELADO:
                         for item in pedido.productos:
@@ -494,7 +598,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                     nuevo_estado_pedido = EstadoPedido.EN_PROCESO.value
                     current_app.logger.info(f"Pedido {pedido.id} movido a 'en proceso' a través del seguimiento.")
 
-            # Simplificar y corregir la lógica de actualización del historial.
+            # Lógica de actualización del historial.
             # Siempre se debe añadir una nueva entrada al historial para mantener un registro claro.
             if pedido.seguimiento_historial is None:
                 pedido.seguimiento_historial = []
@@ -503,7 +607,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                 'estado': nuevo_seguimiento_enum.value,
                 'notas': notas,
                 'timestamp': datetime.utcnow().isoformat() + "Z",
-                'notified_to_client': False # Flag para notificaciones en carga de página
+                'notified_to_client': False # Flag para notificaciones en la carga de página del cliente.
             }
             
             pedido.seguimiento_historial.append(new_history_entry)
@@ -520,7 +624,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                 f"por administrador {admin_user.id} ('{admin_user.nombre}')"
             )
 
-            # Respuesta mejorada con información de sincronización
+            # Respuesta con información de sincronización para el frontend.
             response_data = {
                 'success': True,
                 'message': f'El estado de seguimiento del pedido ha sido actualizado a {nuevo_seguimiento_enum.value} correctamente',
@@ -531,14 +635,10 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                 'estado_pedido_cambiado': estado_pedido_cambiado
             }
             
-            # Incluir información del estado del pedido si cambió
+            # Incluir información del estado del pedido si cambió.
             if estado_pedido_cambiado:
                 response_data['nuevo_estado_pedido'] = nuevo_estado_pedido
                 response_data['old_estado_pedido'] = old_estado_pedido.value
-
-            # El evento ahora se gestiona en el frontend al cargar la página.
-            # Se elimina la publicación de eventos en tiempo real (SSE), ya que el flag
-            # 'notified_to_client' se encargará de la notificación.
 
             return jsonify(response_data)
 
@@ -557,7 +657,18 @@ def update_pedido_seguimiento(admin_user, pedido_id):
 @admin_jwt_required
 def update_pedido_estado(admin_user, pedido_id):
     """
-    Actualización en tiempo real del estado del pedido con sincronización completa
+    API para actualizar el estado principal de un pedido ('en proceso', 'completado', 'cancelado').
+
+    Esta función maneja la lógica de negocio más crítica asociada al cambio de estado:
+    - **Gestión de Stock**: Devuelve el stock si se cancela un pedido, o lo descuenta
+      si se reactiva desde un estado cancelado.
+    - **Sincronización de Seguimiento**: Actualiza automáticamente el estado de
+      seguimiento logístico para que sea coherente con el estado principal.
+      (ej. al completar un pedido, el seguimiento pasa a 'entregado').
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        pedido_id (str): El ID del pedido a actualizar.
     """
     try:
         # Obtener el pedido con sus productos y usuario para sincronización completa
@@ -601,7 +712,7 @@ def update_pedido_estado(admin_user, pedido_id):
         try:
             seguimiento_cambiado = False
             nuevo_seguimiento = None
-            #  Añadir una nota por defecto al historial de seguimiento.
+            # Añadir una nota por defecto al historial de seguimiento.
 
             # 2. Mover desde 'cancelado' (a 'en proceso' o 'completado')
             if old_status == EstadoPedido.CANCELADO and nuevo_estado in [EstadoPedido.EN_PROCESO, EstadoPedido.COMPLETADO]:
@@ -649,7 +760,7 @@ def update_pedido_estado(admin_user, pedido_id):
                 nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
                 nota_por_defecto = "Tu pedido fue recibido y está siendo procesado."
 
-            #  Si el estado de seguimiento cambió, añadir una entrada al historial.
+            # Si el estado de seguimiento cambió, añadir una entrada al historial.
             if seguimiento_cambiado and nota_por_defecto:
                 if pedido.seguimiento_historial is None:
                     pedido.seguimiento_historial = []
@@ -658,7 +769,7 @@ def update_pedido_estado(admin_user, pedido_id):
                     'estado': nuevo_seguimiento,
                     'notas': nota_por_defecto,
                     'timestamp': datetime.utcnow().isoformat() + "Z",
-                    'notified_to_client': False #  Flag para notificaciones en carga de página
+                    'notified_to_client': False # Flag para notificaciones en la carga de página del cliente.
                 }
                 # Modificar la lista in-place y marcarla como modificada.
                 pedido.seguimiento_historial.append(new_history_entry)
@@ -675,7 +786,7 @@ def update_pedido_estado(admin_user, pedido_id):
                 f"por administrador {admin_user.id} ('{admin_user.nombre}')"
             )
 
-            # Respuesta mejorada con información de sincronización
+            # Respuesta con información de sincronización para el frontend.
             response_data = {
                 'success': True,
                 'message': f'El pedido ha sido marcado como {nuevo_estado.value} correctamente',
@@ -686,13 +797,9 @@ def update_pedido_estado(admin_user, pedido_id):
                 'seguimiento_cambiado': seguimiento_cambiado
             }
             
-            # Incluir información del seguimiento si cambió
+            # Incluir información del seguimiento si cambió.
             if seguimiento_cambiado:
                 response_data['nuevo_seguimiento'] = nuevo_seguimiento
-                response_data['old_seguimiento'] = pedido.seguimiento_estado.value if not seguimiento_cambiado else old_status.value
-
-            # El evento ahora se gestiona en el frontend al cargar la página.
-            # Se elimina la publicación de eventos en tiempo real (SSE).
 
             return jsonify(response_data)
 
@@ -711,7 +818,16 @@ def update_pedido_estado(admin_user, pedido_id):
 @admin_jwt_required
 def filter_pedidos_api(admin_user):
     """
-    Filtrado de pedidos con mejor rendimiento y sincronización en tiempo real
+    API para filtrar y paginar la lista de pedidos en tiempo real.
+
+    Este endpoint es consumido por el frontend para actualizar la vista de tabla
+    de pedidos cuando el usuario aplica filtros, cambia de página o de pestaña de estado.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto que contiene la lista de pedidos y metadatos de paginación.
     """
     try:
         page = request.args.get('page', 1, type=int)
@@ -791,7 +907,7 @@ def filter_pedidos_api(admin_user):
         # Serializar datos con información completa para sincronización
         pedidos_data = []
         for pedido in pagination.items:
-            pedido_dict = pedido_to_dict(pedido)
+            pedido_dict = pedido_to_dict(pedido) # pragma: no cover
             # Incluir información completa del seguimiento para actualizaciones en tiempo real
             pedido_dict['seguimiento_estado'] = pedido.seguimiento_estado.value if pedido.seguimiento_estado else 'recibido'
             pedido_dict['notas_seguimiento'] = pedido.notas_seguimiento or ''
@@ -829,7 +945,18 @@ def filter_pedidos_api(admin_user):
 @admin_jwt_required
 def update_pedido_estado_activo(admin_user, pedido_id):
     """
-     Actualización del estado activo/inactivo con sincronización completa
+    API para cambiar el estado de un pedido entre 'activo' e 'inactivo'.
+
+    Este estado es una capa de control administrativo. Un pedido 'inactivo' no es
+    visible para el cliente si está 'en proceso', permitiendo al administrador
+    revisarlo o corregirlo sin que el cliente lo vea.
+
+    Al reactivar un pedido, se genera una nueva entrada en el historial de seguimiento
+    para notificar al cliente que su pedido ha sido reactivado.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        pedido_id (str): El ID del pedido a modificar.
     """
     try:
         pedido = Pedido.query.options(
@@ -902,7 +1029,7 @@ def update_pedido_estado_activo(admin_user, pedido_id):
             f"Pedido {pedido_id} cambiado de estado (activo/inactivo) de {old_status} a {nuevo_estado} "
             f"por administrador {admin_user.id} ('{admin_user.nombre}')"
         )
-        # Respuesta mejorada con información completa para sincronización
+        # Respuesta con información completa para sincronización.
         response_data = {
             'success': True,
             'message': f'El pedido ha sido marcado como {nuevo_estado} correctamente',

@@ -1,3 +1,16 @@
+"""
+Módulo de Listado y Gestión de Productos (Admin).
+
+Este blueprint centraliza toda la lógica para la visualización y gestión de la
+lista de productos en el panel de administración. Proporciona una interfaz de
+tabla robusta con funcionalidades avanzadas.
+
+Funcionalidades Clave:
+- **Vista de Listado Principal**: Renderiza la tabla de productos con paginación, soportando una carga inicial de datos.
+- **API de Filtrado en Tiempo Real**: Un endpoint `/api/products/filter` que permite al frontend filtrar, ordenar y paginar la lista de productos dinámicamente sin recargar la página. Soporta múltiples criterios como nombre, estado, jerarquía de categorías, marca, precio y más.
+- **Gestión de Estado**: Un endpoint para activar o desactivar productos de forma individual.
+- **APIs Auxiliares**: Endpoints para poblar dinámicamente los selectores de filtros (subcategorías, seudocategorías, marcas) basándose en la selección de una categoría principal, mejorando la usabilidad de los filtros.
+"""
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
@@ -12,6 +25,21 @@ admin_lista_product_bp = Blueprint('admin_products', __name__, url_prefix='/admi
 @admin_lista_product_bp.route('/lista-productos', methods=['GET'])
 @admin_jwt_required
 def get_all_products(admin_user):
+    """
+    Renderiza la página principal del listado de productos.
+
+    Esta función actúa como el controlador para la carga inicial de la página.
+    Procesa los parámetros de la URL para aplicar filtros, ordenamiento y paginación
+    a la consulta de productos. Además, carga los datos necesarios para poblar
+    los menús desplegables de los filtros (categorías, marcas, etc.).
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+
+    Returns:
+        Response: La plantilla `lista_productos.html` renderizada con los datos
+                  iniciales de productos y filtros.
+    """
     error_message = None
     products_data = []
     productos_paginados = None
@@ -21,7 +49,7 @@ def get_all_products(admin_user):
     marcas_data = []
 
     try:
-        # Obtener parámetros de filtro
+        # --- 1. Obtención de parámetros de filtro y paginación desde la URL ---
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         nombre = request.args.get('nombre', '')
@@ -37,10 +65,10 @@ def get_all_products(admin_user):
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
 
-        # Construir consulta base
+        # --- 2. Construcción de la consulta base ---
         query = Productos.query
 
-        # Aplicar filtros
+        # --- 3. Aplicación de filtros a la consulta ---
         if nombre:
             query = query.filter(Productos.nombre.ilike(f'%{nombre}%'))
 
@@ -68,12 +96,12 @@ def get_all_products(admin_user):
             query = query.filter(Productos.precio <= max_price)
 
         if agotados:
-            # Corrección: comparar existencia con stock_minimo
+            # La lógica correcta para "agotados" es comparar la existencia con el stock mínimo definido para cada producto.
             query = query.filter(Productos._existencia <
                                  Productos.stock_minimo)
 
         if nuevos:
-            cinco_dias_atras = datetime.utcnow() - timedelta(days=5)
+            cinco_dias_atras = datetime.utcnow() - timedelta(days=5) # Considera "nuevos" los productos de los últimos 5 días.
             query = query.filter(Productos.created_at >= cinco_dias_atras)
 
         # Aplicar ordenamiento
@@ -91,11 +119,11 @@ def get_all_products(admin_user):
         else:
             query = query.order_by(order_field.desc())
 
-        # Paginación
+        # --- 4. Paginación de los resultados ---
         productos_paginados = query.paginate(
             page=page, per_page=per_page, error_out=False)
 
-        # Obtener datos para filtros
+        # --- 5. Obtención de datos para los menús de filtro ---
         categorias = CategoriasPrincipales.query.filter_by(
             estado='activo').all()
         subcategorias = Subcategorias.query.filter_by(estado='activo').all()
@@ -107,11 +135,11 @@ def get_all_products(admin_user):
         ).distinct().all()
 
         # Serializar datos
-        products_data = [producto_list_to_dict(
-            product) for product in productos_paginados.items]
+        products_data = [producto_list_to_dict(product) for product in productos_paginados.items]
 
-        # Apply currency formatting for initial render
+        # Formatear valores monetarios para la renderización inicial en la plantilla.
         for product_dict in products_data:
+            # NOTA: Esta mutación se hace aquí para la carga inicial. La API devuelve los números directamente.
             product_dict['precio'] = format_currency_cop(
                 product_dict['precio'])
             product_dict['costo'] = format_currency_cop(product_dict['costo'])
@@ -124,6 +152,7 @@ def get_all_products(admin_user):
         marcas_data = [marca[0] for marca in marcas if marca[0]]
 
     except Exception as e:
+        # Manejo de errores para evitar que la página se rompa.
         current_app.logger.error(
             f"Error al cargar productos en el panel de administración: {e}")
         error_message = "Ocurrió un error al cargar los productos. Por favor, inténtalo de nuevo."
@@ -134,6 +163,7 @@ def get_all_products(admin_user):
 
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
+    # --- 6. Renderizado de la plantilla ---
     return render_template('admin/componentes/producto/lista_productos.html',
                            products=products_data,
                            pagination=productos_paginados,
@@ -150,8 +180,20 @@ def get_all_products(admin_user):
 @admin_lista_product_bp.route('/api/products/<string:product_id>/status', methods=['POST'])
 @admin_jwt_required
 def update_product_status(admin_user, product_id):
+    """
+    API para cambiar el estado (activo/inactivo) de un producto.
+
+    Recibe una solicitud POST con el nuevo estado y lo aplica al producto
+    correspondiente. Registra la acción en los logs para auditoría.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        product_id (str): El ID del producto a modificar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
     try:
-        # Validar que el producto exista
         product = Productos.query.get(product_id)
         if not product:
             current_app.logger.warning(
@@ -162,7 +204,6 @@ def update_product_status(admin_user, product_id):
                 'error_code': 'PRODUCT_NOT_FOUND'
             }), 404
 
-        # Validar datos de entrada
         data = request.get_json()
         if not data or 'estado' not in data:
             current_app.logger.warning(
@@ -183,7 +224,6 @@ def update_product_status(admin_user, product_id):
                 'error_code': 'INVALID_STATUS'
             }), 400
 
-        # Verificar si el estado ya es el mismo
         if product.estado == new_status:
             return jsonify({
                 'success': True,
@@ -192,16 +232,13 @@ def update_product_status(admin_user, product_id):
                 'current_status': new_status
             }), 200
 
-        # Guardar estado anterior para logging
         old_status = product.estado
 
-        # Actualizar el estado del producto
         product.estado = new_status
 
-        # Guardar cambios en la base de datos
         db.session.commit()
 
-        # Registrar la acción en el log
+        # Registrar la acción para auditoría.
         current_app.logger.info(
             f"Producto {product_id} ('{product.nombre}') cambiado de estado de {old_status} a {new_status} "
             f"por administrador {admin_user.id} ('{admin_user.nombre}')"
@@ -219,16 +256,13 @@ def update_product_status(admin_user, product_id):
         })
 
     except Exception as e:
-        # Revertir cambios en caso de error
         db.session.rollback()
 
-        # Registrar el error
         current_app.logger.error(
             f"Error al cambiar estado del producto {product_id}: {str(e)}",
             exc_info=True
         )
 
-        # Respuesta de error
         return jsonify({
             'success': False,
             'message': 'Error al cambiar el estado del producto',
@@ -236,14 +270,21 @@ def update_product_status(admin_user, product_id):
             'error_details': str(e) if current_app.debug else None
         }), 500
 
-# Nuevo endpoint API para filtros en tiempo real
-
-
 @admin_lista_product_bp.route('/api/products/filter', methods=['GET'])
 @admin_jwt_required
 def filter_products_api(admin_user):
+    """
+    API para filtrar, ordenar y paginar la lista de productos en tiempo real.
+
+    Este endpoint es consumido por el frontend (JavaScript) para actualizar la
+    tabla de productos dinámicamente cuando el usuario interactúa con los filtros.
+    La lógica es idéntica a `get_all_products`, pero devuelve los datos en formato JSON.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+    """
     try:
-        # Obtener parámetros de filtro
+        # --- 1. Obtención de parámetros de filtro y paginación ---
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         nombre = request.args.get('nombre', '')
@@ -259,10 +300,10 @@ def filter_products_api(admin_user):
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
 
-        # Construir consulta base
+        # --- 2. Construcción y filtrado de la consulta ---
         query = Productos.query
 
-        # Aplicar filtros
+        # La lógica de filtrado es idéntica a la de la vista principal.
         if nombre:
             query = query.filter(Productos.nombre.ilike(f'%{nombre}%'))
 
@@ -290,12 +331,12 @@ def filter_products_api(admin_user):
             query = query.filter(Productos.precio <= max_price)
 
         if agotados:
-            # Corrección: comparar existencia con stock_minimo
+            #  La lógica correcta para "agotados" es comparar la existencia con el stock mínimo.
             query = query.filter(Productos._existencia <
                                  Productos.stock_minimo)
 
         if nuevos:
-            cinco_dias_atras = datetime.utcnow() - timedelta(days=5)
+            cinco_dias_atras = datetime.utcnow() - timedelta(days=5) # Productos de los últimos 5 días.
             query = query.filter(Productos.created_at >= cinco_dias_atras)
 
         # Aplicar ordenamiento
@@ -313,18 +354,18 @@ def filter_products_api(admin_user):
         else:
             query = query.order_by(order_field.desc())
 
-        # Contar el total general de productos en la base de datos
+        # --- 3. Paginación y Serialización ---
+        # Contar el total general de productos antes de aplicar filtros de paginación.
         total_general = db.session.query(Productos.id).count()
 
-        # Paginación sobre la consulta filtrada
         productos_paginados = query.paginate(
             page=page, per_page=per_page, error_out=False)
 
-        # Serializar productos
         products_data = [producto_list_to_dict(
             product) for product in productos_paginados.items]
 
-        # Preparar respuesta JSON
+        # --- 4. Preparación de la respuesta JSON ---
+        # Se incluyen los datos de los productos y la información de paginación.
         response_data = {
             'products': products_data,
             'pagination': {
@@ -355,6 +396,16 @@ def filter_products_api(admin_user):
 @admin_lista_product_bp.route('/api/categories/<string:categoria_id>/subcategories', methods=['GET'])
 @admin_jwt_required
 def get_subcategories(admin_user, categoria_id):
+    """
+    API auxiliar para obtener las subcategorías activas de una categoría principal.
+
+    Utilizado para poblar dinámicamente el selector de subcategorías en los filtros
+    cuando el usuario elige una categoría principal.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal padre.
+    """
     try:
         subcategorias = Subcategorias.query.filter_by(
             categoria_principal_id=categoria_id,
@@ -375,12 +426,19 @@ def get_subcategories(admin_user, categoria_id):
             'message': 'Error al obtener subcategorías'
         }), 500
 
-# Endpoint para obtener seudocategorías de una subcategoría
-
-
 @admin_lista_product_bp.route('/api/subcategories/<string:subcategoria_id>/pseudocategories', methods=['GET'])
 @admin_jwt_required
 def get_pseudocategories(admin_user, subcategoria_id):
+    """
+    API auxiliar para obtener las seudocategorías activas de una subcategoría.
+
+    Utilizado para poblar dinámicamente el selector de seudocategorías en los filtros
+    cuando el usuario elige una subcategoría.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        subcategoria_id (str): El ID de la subcategoría padre.
+    """
     try:
         seudocategorias = Seudocategorias.query.filter_by(
             subcategoria_id=subcategoria_id,
@@ -404,12 +462,21 @@ def get_pseudocategories(admin_user, subcategoria_id):
 @admin_lista_product_bp.route('/api/brands', methods=['GET'])
 @admin_jwt_required
 def get_brands_for_category(admin_user):
+    """
+    API auxiliar para obtener las marcas de productos disponibles dentro de una jerarquía de categorías.
+
+    Filtra las marcas basándose en la categoría, subcategoría o seudocategoría
+    seleccionada, asegurando que solo se muestren marcas relevantes en el filtro.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+    """
     try:
         categoria_id = request.args.get('categoria_id', '')
         subcategoria_id = request.args.get('subcategoria_id', '')
         seudocategoria_id = request.args.get('seudocategoria_id', '')
 
-        # Start with a query for distinct brands
+        # Inicia una consulta para obtener marcas distintas y no nulas.
         query = db.session.query(Productos.marca).filter(
             Productos.marca.isnot(None),
             Productos.marca != ''
@@ -429,7 +496,7 @@ def get_brands_for_category(admin_user):
         marcas = [marca[0]
                   for marca in query.order_by(Productos.marca).all() if marca[0]]
 
-        # Create a list of dicts for the response, which the JS function expects
+        # Crea una lista de diccionarios para la respuesta, como lo espera la función JS.
         marcas_data = [{'id': marca, 'nombre': marca} for marca in marcas]
 
         return jsonify({'success': True, 'marcas': marcas_data})

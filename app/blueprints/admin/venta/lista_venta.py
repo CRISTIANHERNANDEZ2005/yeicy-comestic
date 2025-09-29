@@ -1,3 +1,18 @@
+"""
+Módulo de Gestión de Ventas (Admin).
+
+Este blueprint se encarga de la administración y análisis de las ventas, que son
+pedidos con estado 'completado'. Proporciona una interfaz para listar, filtrar,
+crear y analizar las ventas, así como para generar facturas.
+
+Funcionalidades Clave:
+- **Vista de Listado de Ventas**: Renderiza la tabla de ventas con paginación y filtros avanzados (ID, cliente, fecha, monto).
+- **API de Filtrado en Tiempo Real**: Un endpoint para que el frontend filtre, ordene y pagine la lista de ventas dinámicamente.
+- **Creación de Ventas Directas**: Un endpoint para crear una venta (un pedido ya completado) directamente desde el panel, descontando el stock y registrando la transacción.
+- **API de Estadísticas**: Un endpoint robusto para calcular métricas clave de negocio (ingresos, utilidad, margen, ticket promedio) y generar datos para gráficos de tendencias.
+- **Gestión de Estado**: Permite marcar ventas como 'activas' o 'inactivas' para control administrativo.
+- **Generación de Facturas**: Un endpoint para renderizar una vista de factura imprimible para una venta específica.
+"""
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.order_models import Pedido, PedidoProducto
@@ -15,8 +30,21 @@ admin_ventas_bp = Blueprint('admin_ventas', __name__)
 
 def _build_ventas_query(args):
     """
-     Función auxiliar unificada para construir la consulta de ventas.
-    Esto evita la duplicación de código y asegura que los filtros se apliquen consistentemente.
+    Función auxiliar para construir la consulta base de ventas.
+
+    Esta función centraliza la lógica de construcción de consultas para ventas
+    (pedidos completados), aplicando filtros comunes para evitar la duplicación
+    de código entre la vista principal y los endpoints de la API.
+
+    Args:
+        args (ImmutableMultiDict): El diccionario de argumentos de la solicitud
+                                   (request.args) que contiene los parámetros
+                                   de filtro.
+
+    Returns:
+        Query: Un objeto de consulta de SQLAlchemy con los filtros base aplicados,
+               listo para ser ordenado, paginado o para agregarle más filtros
+               específicos.
     """
     query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
         Pedido.estado_pedido == EstadoPedido.COMPLETADO
@@ -56,13 +84,27 @@ def _build_ventas_query(args):
 @admin_ventas_bp.route('/lista-ventas', methods=['GET'])
 @admin_jwt_required
 def get_ventas(admin_user):
+    """
+    Renderiza la página principal del listado de ventas.
+
+    Esta función actúa como el controlador para la carga inicial de la página.
+    Procesa los parámetros de la URL para aplicar filtros, ordenamiento y paginación
+    a la consulta de ventas.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+
+    Returns:
+        Response: La plantilla `lista_ventas.html` renderizada con los datos
+                  iniciales de ventas y paginación.
+    """
     error_message = None
     ventas_data = []
     pagination = None
     pagination_info = {}
     
     try:
-        # Obtener parámetros de filtro
+        # --- 1. Obtención de parámetros de filtro y paginación desde la URL ---
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         venta_id = request.args.get('venta_id', '')
@@ -74,20 +116,20 @@ def get_ventas(admin_user):
         sort_by = request.args.get('sort_by', 'created_at')
         estado = request.args.get('estado', 'todos')
         
-        # Construir consulta base - Solo pedidos completados
+        # --- 2. Construcción de la consulta base (solo pedidos completados) ---
         query = Pedido.query.options(joinedload(Pedido.usuario)).filter(
             Pedido.estado_pedido == EstadoPedido.COMPLETADO
         )
         
-        # Aplicar filtro de estado (activo/inactivo)
+        # --- 3. Aplicación de filtros a la consulta ---
         if estado in ['activo', 'inactivo']:
             query = query.filter(Pedido.estado == estado)
 
-        # Aplicar filtros
+        # Filtro por ID de venta
         if venta_id:
-            # Usamos ilike para permitir búsquedas parciales del ID
             query = query.filter(Pedido.id.ilike(f'%{venta_id}%'))
 
+        # Filtro por cliente
         if cliente:
             query = query.join(Usuarios).filter(
                 or_(
@@ -97,6 +139,7 @@ def get_ventas(admin_user):
                 )
             )
             
+        # Filtro por rango de fechas
         if fecha_inicio:
             try:
                 fecha_inicio_dt = datetime.strptime(fecha_inicio, '%Y-%m-%d')
@@ -111,7 +154,7 @@ def get_ventas(admin_user):
             except ValueError:
                 pass
         
-        # Aplicar filtro por rango de montos - Manejo seguro de conversión
+        # Filtro por rango de montos (con manejo seguro de conversión)
         try:
             if monto_min and monto_min.strip():
                 monto_min_float = float(monto_min)
@@ -126,7 +169,7 @@ def get_ventas(admin_user):
         except (ValueError, TypeError):
             pass
         
-        # Aplicar ordenamiento
+        # --- 4. Aplicación de ordenamiento ---
         if sort_by == 'created_at':
             query = query.order_by(Pedido.created_at.desc())
         elif sort_by == 'created_at_asc':
@@ -142,13 +185,12 @@ def get_ventas(admin_user):
         else:  # Por defecto ordenar por fecha descendente
             query = query.order_by(Pedido.created_at.desc())
         
-        # Paginación
+        # --- 5. Paginación y Serialización ---
         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
         
-        # Serializar datos
         ventas_data = [pedido_to_dict(venta) for venta in pagination.items]
 
-        # Preparar información de paginación para JSON
+        # Preparar información de paginación para la plantilla y el frontend.
         pagination_info = {
             'page': pagination.page,
             'pages': pagination.pages,
@@ -178,8 +220,20 @@ def get_ventas(admin_user):
 @admin_ventas_bp.route('/api/ventas', methods=['GET'])
 @admin_jwt_required
 def get_ventas_api(admin_user):
+    """
+    API para filtrar, ordenar y paginar la lista de ventas en tiempo real.
+
+    Este endpoint es consumido por el frontend (JavaScript) para actualizar la
+    tabla de ventas dinámicamente cuando el usuario interactúa con los filtros.
+    La lógica es idéntica a `get_ventas`, pero devuelve los datos en formato JSON.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto con la lista de ventas y metadatos de paginación.
+    """
     try:
-        # Usar la función de consulta unificada.
         query = _build_ventas_query(request.args)
 
         # Obtener los valores de monto aquí, después de construir la query base.
@@ -256,8 +310,20 @@ def get_ventas_api(admin_user):
 @admin_jwt_required
 def create_venta(admin_user):
     """
-    Crea una nueva venta (Pedido con estado COMPLETADO).
-    Reutiliza la lógica del modal de creación de pedidos.
+    API para crear una nueva venta directa.
+
+    Una "venta directa" es funcionalmente un `Pedido` que se crea directamente
+    con el estado `COMPLETADO` y `ENTREGADO`, sin pasar por el flujo de 'en proceso'.
+    Es útil para registrar ventas realizadas en persona o por otros canales.
+
+    La lógica es similar a la creación de un pedido, pero con estados finales:
+    1. Valida el stock de los productos.
+    2. Crea el `Pedido` con estado `COMPLETADO`.
+    3. Crea el historial de seguimiento con estado `ENTREGADO`.
+    4. Descuenta el stock de los productos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
     """
     try:
         data = request.get_json()
@@ -303,7 +369,7 @@ def create_venta(admin_user):
                 'precio_unitario': producto.precio
             })
 
-        #  Añadir historial de seguimiento para notificar al cliente.
+        # Añadir historial de seguimiento para notificar al cliente.
         # Al crear una venta directa, se genera una notificación de "Entregado".
         nota_seguimiento = "Tu pedido esta completado con exito."
         historial_inicial = [{
@@ -347,6 +413,20 @@ def create_venta(admin_user):
 @admin_ventas_bp.route('/api/ventas/<string:venta_id>', methods=['GET'])
 @admin_jwt_required
 def get_venta_detalle(admin_user, venta_id):
+    """
+    API para obtener los detalles completos de una venta específica.
+
+    Utilizado por el frontend para poblar modales de detalle con toda la
+    información de una venta, incluyendo el cliente y la lista de productos.
+    Solo devuelve ventas que estén en estado 'completado'.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        venta_id (str): El ID de la venta (pedido) a obtener.
+
+    Returns:
+        JSON: Un objeto con los detalles completos de la venta.
+    """
     try:
         venta = Pedido.query.options(
             joinedload(Pedido.usuario),
@@ -376,6 +456,19 @@ def get_venta_detalle(admin_user, venta_id):
 @admin_ventas_bp.route('/api/ventas/<string:venta_id>/estado', methods=['POST'])
 @admin_jwt_required
 def update_venta_estado(admin_user, venta_id):
+    """
+    API para cambiar el estado de una venta entre 'activo' e 'inactivo'.
+
+    Este estado es una capa de control administrativo. Una venta 'inactiva' puede
+    ser ocultada de ciertos reportes o vistas sin eliminarla permanentemente.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        venta_id (str): El ID de la venta a modificar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
     try:
         venta = Pedido.query.get(venta_id)
         if not venta or venta.estado_pedido != EstadoPedido.COMPLETADO:
@@ -434,8 +527,20 @@ def update_venta_estado(admin_user, venta_id):
 @admin_ventas_bp.route('/api/ventas/estadisticas', methods=['GET'])
 @admin_jwt_required
 def get_ventas_estadisticas(admin_user):
+    """
+    API para calcular y devolver estadísticas de ventas.
+
+    Este endpoint es el motor del dashboard de ventas. Realiza consultas complejas
+    para calcular métricas clave de negocio basadas en los filtros proporcionados.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto que contiene las estadísticas (ingresos, utilidad, etc.)
+              y los datos para el gráfico de tendencias.
+    """
     try:
-        #  Usar la función de consulta unificada para aplicar todos los filtros.
         query = _build_ventas_query(request.args)
 
         # Obtener parámetros de monto y período que son específicos de las estadísticas
@@ -443,7 +548,7 @@ def get_ventas_estadisticas(admin_user):
         monto_max = request.args.get('monto_max', '')
         periodo = request.args.get('periodo', '30d') # Nuevo: 7d, 30d, 1y
 
-        # Aplicar filtro por rango de montos - Manejo seguro de conversión
+        # Aplicar filtros de monto a la consulta.
         try:
             if monto_min and monto_min.strip():
                 monto_min_float = float(monto_min)
@@ -457,14 +562,13 @@ def get_ventas_estadisticas(admin_user):
         except (ValueError, TypeError):
             pass
         
-        # MEJORA PROFESIONAL: Construir una subconsulta para que los filtros se apliquen a todos los agregados.
-        # Esto asegura que total_ventas y total_ingresos reflejen exactamente los mismos filtros.
+        # Construir una subconsulta para que los filtros se apliquen a todos los cálculos agregados.
+        # Esto asegura que total_ventas, total_ingresos, etc., reflejen los mismos filtros.
         filtered_query = query.subquery()
 
-        # Subconsulta para obtener los IDs de los pedidos filtrados
         pedidos_filtrados_ids = db.session.query(filtered_query.c.id).subquery()
 
-        # Consulta para calcular agregados financieros (ingresos, inversión, utilidad)
+        # Consulta para calcular agregados financieros (ingresos, inversión, utilidad).
         # Se une PedidoProducto y Productos para acceder al costo.
         financials = db.session.query(
             func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ingresos'),
@@ -481,11 +585,11 @@ def get_ventas_estadisticas(admin_user):
 
         total_ventas = db.session.query(func.count()).select_from(filtered_query).scalar() or 0
 
-        # Calcular ticket promedio y margen de utilidad
+        # Calcular métricas de negocio.
         ticket_promedio = total_ingresos / total_ventas if total_ventas > 0 else 0
         margen_utilidad = (total_utilidad / total_ingresos) * 100 if total_ingresos > 0 else 0
 
-        # Lógica mejorada para el gráfico
+        # --- Lógica para el Gráfico de Tendencias ---
         hoy = datetime.utcnow().date()
         if periodo == '7d':
             start_date = hoy - timedelta(days=6)
@@ -503,9 +607,6 @@ def get_ventas_estadisticas(admin_user):
             label_format = '%d/%m'
             date_trunc = func.date(Pedido.created_at)
 
-        # Aplicar filtros adicionales al gráfico si se proporcionan
-        # Reutilizar la consulta ya filtrada (`query`) para generar los datos del gráfico.
-        # Esto asegura que los filtros de cliente, ID, etc., también se apliquen al gráfico.
         grafico_query = query.with_entities(
             date_trunc.label('fecha'),
             func.count(Pedido.id).label('cantidad'),
@@ -514,15 +615,13 @@ def get_ventas_estadisticas(admin_user):
 
         ventas_agrupadas = grafico_query.all()
         
-        # Crear un diccionario para un acceso rápido
-        # La clave 'fecha' ahora puede ser una cadena directamente desde la BD (para '1y')
-        # o un objeto de fecha (para '7d'/'30d'). Lo manejamos de forma robusta.
+        # Crear un diccionario para un acceso rápido a los datos del gráfico.
         ventas_dict = {}
         for r in ventas_agrupadas:
             clave = r.fecha.strftime('%Y-%m-%d') if isinstance(r.fecha, (datetime, date)) else str(r.fecha)
             ventas_dict[clave] = {'cantidad': r.cantidad, 'total': float(r.total)}
 
-        # Generar etiquetas y datos para el rango de fechas completo
+        # Generar etiquetas y datos para el rango de fechas completo para el gráfico.
         fechas = []
         cantidades = []
         totales = []
@@ -575,6 +674,19 @@ def get_ventas_estadisticas(admin_user):
 @admin_ventas_bp.route('/api/ventas/<string:venta_id>/imprimir', methods=['GET'])
 @admin_jwt_required
 def imprimir_factura(admin_user, venta_id):
+    """
+    Genera una vista HTML con formato de factura para una venta específica.
+
+    Esta vista está diseñada para ser impresa o guardada como PDF desde el navegador.
+    Es accesible desde el panel de administración.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        venta_id (str): El ID de la venta a imprimir.
+
+    Returns:
+        Response: La plantilla `pedido_template.html` renderizada con los datos de la venta.
+    """
     try:
         # Obtener el pedido con todos los detalles necesarios
         venta = Pedido.query.options(

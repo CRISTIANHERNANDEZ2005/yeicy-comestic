@@ -1,6 +1,22 @@
+"""
+Módulo de Utilidades JWT para Administradores.
+
+Este módulo encapsula toda la lógica relacionada con la generación, decodificación
+y validación de JSON Web Tokens (JWT) específicamente para los usuarios
+administradores. Separar esta lógica de la de los usuarios clientes es una
+buena práctica de seguridad que previene que un token de cliente pueda ser
+utilizado para acceder a rutas de administrador.
+
+Funcionalidades principales:
+- `generate_admin_jwt_token`: Crea un token JWT para una sesión de administrador.
+- `decode_admin_jwt_token`: Valida y decodifica un token de administrador.
+- `admin_jwt_required`: Un decorador de ruta que protege los endpoints del panel
+  de administración, asegurando que solo un administrador con una sesión
+  (token) válida pueda acceder.
+"""
 import functools
 from flask import request, jsonify, current_app, redirect, url_for, flash
-from app.models.domains.user_models import Admins # Import Admins model
+from app.models.domains.user_models import Admins
 from typing import Callable, TypeVar, cast, Any
 import jwt
 from jwt import ExpiredSignatureError, InvalidTokenError
@@ -9,7 +25,18 @@ from datetime import datetime, timedelta, timezone
 F = TypeVar("F", bound=Callable[..., Any])
 
 def generate_admin_jwt_token(admin_user: Admins) -> str:
-    """Genera un token JWT para un usuario administrador."""
+    """
+    Genera un token JWT para un usuario administrador.
+
+    El payload del token incluye el ID del usuario, un flag `is_admin` para una
+    verificación explícita, y las marcas de tiempo de expiración (exp) y emisión (iat).
+
+    Args:
+        admin_user (Admins): La instancia del modelo del administrador.
+
+    Returns:
+        str: El token JWT codificado como una cadena.
+    """
     secret = current_app.config.get('SECRET_KEY', 'super-secret')
     token_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440)
     
@@ -22,7 +49,17 @@ def generate_admin_jwt_token(admin_user: Admins) -> str:
     return jwt.encode(payload, secret, algorithm='HS256')
 
 def decode_admin_jwt_token(token: str) -> dict | None:
-    """Decodifica un token JWT de administrador y retorna su payload. Retorna None si el token es inválido o expirado."""
+    """
+    Decodifica un token JWT de administrador y retorna su payload.
+
+    Valida la firma y la fecha de expiración del token.
+
+    Args:
+        token (str): El token JWT a decodificar.
+
+    Returns:
+        dict | None: El payload del token si es válido, o None si ha expirado o es inválido.
+    """
     secret = current_app.config.get('SECRET_KEY', 'super-secret')
     try:
         payload = jwt.decode(token, secret, algorithms=['HS256'])
@@ -38,18 +75,32 @@ def decode_admin_jwt_token(token: str) -> dict | None:
         return None
 
 def admin_jwt_required(f: F) -> F:
-    """Decorador para proteger rutas de administrador que requieren autenticación JWT."""
+    """
+    Decorador para proteger rutas de administrador que requieren autenticación JWT.
+
+    Este decorador verifica la presencia y validez de un token JWT de administrador
+    almacenado en la cookie `admin_jwt`.
+
+    Funcionamiento:
+    1. Extrae el token de la cookie `admin_jwt`.
+    2. Si no hay token, redirige al login de administrador con un mensaje de error.
+    3. Decodifica el token. Si es inválido o ha expirado, redirige al login.
+    4. Verifica que el payload contenga `user_id` y el flag `is_admin`.
+    5. Recupera el objeto `Admins` de la base de datos.
+    6. Si el administrador es válido, lo inyecta como primer argumento en la función
+       de la ruta decorada.
+    7. Si algún paso falla, redirige al login y muestra un mensaje flash apropiado.
+    """
     @functools.wraps(f)
     def wrapper(*args, **kwargs):
         current_app.logger.debug(f'Request path: {request.path}')
         current_app.logger.debug(f'Admin JWT Cookie: {request.cookies.get("admin_jwt")}')
 
-        token = request.cookies.get('admin_jwt') 
-
+        token = request.cookies.get('admin_jwt')
         if not token:
             current_app.logger.warning('Intento de acceso no autorizado a ruta de administrador: No se proporcionó token.')
             flash('Acceso denegado. Se requiere autenticación de administrador.', 'danger')
-            return redirect(url_for('admin_auth.login')) 
+            return redirect(url_for('admin_auth.login'))
 
         try:
 
@@ -65,7 +116,7 @@ def admin_jwt_required(f: F) -> F:
                 flash('Acceso denegado. Credenciales de administrador inválidas.', 'danger')
                 return redirect(url_for('admin_auth.login'))
 
-            admin_user = Admins.query.get(user_id) 
+            admin_user = Admins.query.get(user_id)
             if not admin_user:
                 current_app.logger.error(f'Usuario administrador no encontrado para el ID: {user_id}')
                 flash('Acceso denegado. Usuario no autorizado.', 'danger')

@@ -1,9 +1,36 @@
+/**
+ * @file Módulo de Navegación SPA (Single-Page Application) del Panel de Administración.
+ * @description Este script es el motor que transforma el panel de administración en una
+ *              Single-Page Application (SPA), proporcionando una experiencia de usuario
+ *              rápida y fluida, similar a la de una aplicación de escritorio, al eliminar
+ *              las recargas de página completas durante la navegación.
+ *
+ * @funcionalidadesClave
+ * 1.  **Navegación Asíncrona:** Intercepta los clics en los enlaces de navegación designados
+ *     (ej. en la barra lateral) y, en lugar de recargar la página, utiliza `fetch` para
+ *     obtener el contenido de la nueva vista de forma asíncrona.
+ *
+ * 2.  **Inyección de Contenido Dinámico:** Analiza el HTML recibido, extrae el contenedor
+ *     principal (`#main-content-container`) y lo inyecta en el DOM actual, actualizando
+ *     también el título de la página.
+ *
+ * 3.  **Gestión Inteligente de Scripts:**
+ *     - **Carga Única:** Mantiene un registro de los scripts ya cargados para evitar
+ *       volver a cargarlos y prevenir errores de redeclaración de variables.
+ *     - **Ejecución Contextual:** Carga y ejecuta dinámicamente los scripts específicos
+ *       de cada página solo cuando son necesarios.
+ *
+ * 4.  **Ciclo de Vida de Eventos (Event Lifecycle):** Dispara eventos personalizados para
+ *     orquestar la inicialización y destrucción de los módulos de JavaScript de cada página:
+ *     - `content-will-load`: Se emite ANTES de cargar nuevo contenido, permitiendo que los scripts actuales limpien listeners y timers.
+ *     - `content-loaded`: Se emite DESPUÉS de que el nuevo contenido y sus scripts se han cargado, sirviendo como señal para la inicialización.
+ */
 document.addEventListener('DOMContentLoaded', function() {
     const mainContentContainer = document.getElementById('main-content-container');
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
     const loadingOverlay = document.getElementById('loading-overlay');
 
-    // MEJORA PROFESIONAL: Registrar los scripts ya cargados en la página inicial.
+    //  Registrar los scripts ya cargados en la página inicial.
     // Esto evita que el SPA intente volver a cargarlos después de un hard refresh.
     function registerInitialScripts() {
         window.spaLoadedScripts = window.spaLoadedScripts || new Set();
@@ -31,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadContent(url, pushState = true) {
-        // MEJORA PROFESIONAL: Disparar un evento ANTES de cargar el nuevo contenido.
+        //  Disparar un evento ANTES de cargar el nuevo contenido.
         // Esto permite que los módulos de página actuales (como lista_ventas.js)
         // limpien sus propios event listeners y timers, evitando "fugas de memoria" y conflictos.
         document.dispatchEvent(new CustomEvent('content-will-load'));
@@ -80,7 +107,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Esto soluciona el error "Identifier '...' has already been declared".
             const scripts = Array.from(mainContent.querySelectorAll('script'));
 
-            // MEJORA PROFESIONAL: Limpiar scripts inline gestionados por el SPA anterior.
+            // Limpiar scripts inline gestionados por el SPA anterior.
             // Esto evita que se acumulen en el body en cada navegación.
             document.querySelectorAll('script[data-spa-managed-inline]').forEach(s => s.remove());
             
@@ -230,7 +257,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // MEJORA PROFESIONAL: Ejecutar el registro de scripts iniciales.
+    //  Ejecutar el registro de scripts iniciales.
     registerInitialScripts();
 
     updateActiveLink(window.location.pathname + window.location.search);

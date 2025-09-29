@@ -1,5 +1,25 @@
 /**
- * Interceptor de autenticación para incluir automáticamente el token JWT de administrador en las peticiones
+ * @file Módulo Interceptor de Autenticación del Panel de Administración.
+ * @description Este script intercepta las llamadas `fetch` para gestionar de forma
+ *              centralizada la sesión y los errores de autenticación del administrador.
+ *              Su principal responsabilidad es reaccionar a los estados de la sesión
+ *              (expirada, cuenta desactivada) para proporcionar una experiencia de
+ *              usuario segura y fluida.
+ *
+ * @funcionalidadesClave
+ * 1.  **Manejo de Sesión Expirada (401):** Detecta respuestas `401 Unauthorized` en
+ *     rutas del admin y redirige automáticamente a la página de login.
+ *
+ * 2.  **Gestión de Cuentas Desactivadas (403):** Captura el código de error
+ *     `ADMIN_ACCOUNT_INACTIVE` y muestra un modal informativo (`showInactiveAdminModal`)
+ *     que explica la situación antes de forzar el cierre de sesión.
+ *
+ * 3.  **Verificación Proactiva de Sesión:** Al cargar la página, realiza una llamada
+ *     a `/admin/me` para validar la sesión actual. Si es inválida o la cuenta
+ *     está inactiva, toma acción inmediata (redirige o muestra el modal).
+ *
+ * 4.  **Logout Centralizado y Seguro:** Proporciona una función `adminLogout` que
+ *     notifica al backend para invalidar la sesión del servidor antes de redirigir.
  */
 
 // Verificar si el interceptor ya ha sido cargado para evitar redeclaraciones
@@ -22,7 +42,7 @@ if (!window.adminAuthInterceptorLoaded) {
     const newOptions = {
       ...options,
       headers,
-      credentials: "same-origin", // Importante para incluir cookies si las hay
+      credentials: "same-origin", // Importante para incluir cookies HttpOnly (como el JWT de admin).
     };
 
     try {
@@ -30,7 +50,7 @@ if (!window.adminAuthInterceptorLoaded) {
 
       // Clonar la respuesta para poder leer el cuerpo dos veces (una para verificar el mensaje, otra para pasarla)
       const clonedResponse = response.clone();
-
+      
       // Si la respuesta es 401 (No autorizado) para una ruta de admin
       if (
         response.status === 401 &&
@@ -62,7 +82,8 @@ if (!window.adminAuthInterceptorLoaded) {
         return Promise.reject(new Error("No autorizado como administrador"));
       }
 
-      // MEJORA PROFESIONAL: Manejar el caso de cuenta de administrador desactivada (403 Forbidden)
+
+      // Manejar el caso de cuenta de administrador desactivada (403 Forbidden)
       if (response.status === 403) {
         try {
           const errorData = await clonedResponse.json();
@@ -71,8 +92,8 @@ if (!window.adminAuthInterceptorLoaded) {
             if (typeof showInactiveAdminModal === 'function') {
               showInactiveAdminModal();
               const okBtn = document.getElementById('inactive-admin-ok-btn');
-              if (okBtn) {
-                okBtn.onclick = () => adminLogout(); // MEJORA: Llamar a la función de logout profesional.
+              if (okBtn) { // Asegurarse de que el botón existe antes de asignar el evento.
+                okBtn.onclick = () => adminLogout(); // Llamar a la función de logout profesional.
               }
               // En lugar de rechazar la promesa (lo que haría que la SPA oculte el overlay),
               // devolvemos una promesa que nunca se resuelve. Esto "congela" la navegación de la SPA,
@@ -80,7 +101,9 @@ if (!window.adminAuthInterceptorLoaded) {
               return new Promise(() => {});
             }
           }
-        } catch (e) { /* No es un JSON esperado, se maneja como un 403 genérico */ }
+        } catch (e) {
+          // No es un JSON esperado, se maneja como un 403 genérico, no hacemos nada especial.
+        }
       }
 
       return response;
@@ -111,7 +134,7 @@ if (!window.adminAuthInterceptorLoaded) {
         console.log("Sesión de administrador activa para:", admin.nombre);
         // Aquí se podría actualizar la UI para mostrar que el admin está logueado
       } else {
-        // MEJORA PROFESIONAL: Verificar si el error es por cuenta inactiva.
+        //  Verificar si el error es por cuenta inactiva.
         if (response.status === 401) {
           console.error(
             "No hay sesión de administrador activa. Redirigiendo al login..."
@@ -120,11 +143,11 @@ if (!window.adminAuthInterceptorLoaded) {
         } else if (response.status === 403) {
             const errorData = await response.json();
             if (errorData && errorData.code === 'ADMIN_ACCOUNT_INACTIVE') {
-                console.error("Cuenta de administrador desactivada detectada en checkAdminSession. Mostrando modal...");
+                console.error("Cuenta de administrador desactivada detectada en checkAdminSession. Mostrando modal de bloqueo...");
                 if (typeof showInactiveAdminModal === 'function') {
                     showInactiveAdminModal();
                     const okBtn = document.getElementById('inactive-admin-ok-btn');
-                    if (okBtn) okBtn.onclick = () => adminLogout(); // MEJORA: Llamar a la función de logout profesional.
+                    if (okBtn) okBtn.onclick = () => adminLogout(); // Llamar a la función de logout profesional.
                 }
             }
         }
@@ -134,7 +157,7 @@ if (!window.adminAuthInterceptorLoaded) {
     }
   }
 
-  // MEJORA PROFESIONAL: Función centralizada para el logout del administrador.
+  // Función centralizada para el logout del administrador.
   // Esta función notifica al backend para invalidar el token y luego redirige.
   async function adminLogout() {
     console.log("Iniciando proceso de logout de administrador...");

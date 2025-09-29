@@ -1,4 +1,17 @@
 # user_routes.py
+"""
+Módulo de Gestión de Usuarios y Administradores (Admin).
+
+Este blueprint centraliza toda la lógica para la administración de las entidades
+de `Usuarios` (clientes) y `Admins` (administradores) desde el panel de control.
+
+Funcionalidades Clave:
+- **Vista Principal**: Renderiza la interfaz de usuario para la gestión de usuarios.
+- **API de Listado**: Endpoints para obtener listas paginadas y filtradas de clientes y administradores, con ordenamiento avanzado (ej. por estado 'en línea').
+- **API de CRUD**: Endpoints para crear, obtener, actualizar y cambiar el estado (activo/inactivo) de usuarios y administradores.
+- **API de Estadísticas**: Un endpoint para obtener métricas clave (total de usuarios, usuarios activos, en línea, etc.) para el dashboard.
+- **API de Heartbeat**: Un endpoint para que el frontend del administrador reporte actividad y mantenga el estado 'en línea'.
+"""
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.models.domains.user_models import Usuarios, Admins
 from app.models.serializers import usuario_to_dict, admin_to_dict
@@ -18,8 +31,14 @@ user_bp = Blueprint('users', __name__)
 @admin_jwt_required
 def usuarios_view(admin_user):
     """
-    Renderiza la vista principal de gestión de usuarios.
-    Esta vista carga el template con la interfaz para administrar clientes y administradores.
+    Renderiza la página principal de gestión de usuarios.
+
+    Esta función actúa como el controlador para la carga inicial de la página.
+    Renderiza la plantilla `lista_usuarios.html`, que contiene la estructura
+    para las tablas de clientes y administradores, así como los modales de edición.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
     """
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
@@ -35,17 +54,16 @@ def usuarios_view(admin_user):
 @admin_jwt_required
 def get_usuarios(admin_user):
     """
-    Obtiene la lista de usuarios (clientes) con paginación y filtros.
+    API: Obtiene la lista de usuarios (clientes) con paginación y filtros.
     
-    Parámetros de consulta:
-    - page: Número de página (default: 1)
-    - per_page: Elementos por página (default: 10)
-    - search: Término de búsqueda para nombre, apellido o teléfono
-    - status: Filtro por estado (activo/inactivo)
-    - sort: Criterio de ordenamiento (recientes, antiguos, nombre_asc, nombre_desc)
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Query Params:
+        page, per_page, search, status, sort.
     
-    Retorna:
-    - JSON con lista de usuarios y datos de paginación
+    Returns:
+        JSON: Un objeto con la lista de usuarios y metadatos de paginación.
     """
     try:
         # Obtener parámetros de consulta
@@ -140,14 +158,17 @@ def get_usuarios(admin_user):
 @admin_jwt_required
 def create_usuario(admin_user):
     """
-    Crea un nuevo usuario (cliente).
+    API: Crea un nuevo usuario (cliente).
     
-    Body:
-    - numero: Teléfono del usuario (requerido)
-    - ... y otros campos del formulario
+    Recibe los datos del nuevo cliente. Si no se proporciona una contraseña,
+    genera una automáticamente a partir del nombre y el número de teléfono.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
     
-    Retorna:
-    - JSON con los datos del usuario creado
+    Returns:
+        JSON: Un objeto con los datos del usuario recién creado o un mensaje de error
+              en caso de validación o duplicados.
     """
     try:
         # Obtener datos del request
@@ -208,10 +229,15 @@ def create_usuario(admin_user):
 @admin_jwt_required
 def handle_usuario(admin_user, user_id):
     """
-    Obtiene (GET) o actualiza (PUT) un usuario (cliente) existente.
+    API: Obtiene (GET) o actualiza (PUT) un usuario (cliente) existente.
     
-    Parámetros:
-    - user_id: ID del usuario
+    - **GET**: Devuelve los datos de un único usuario.
+    - **PUT**: Actualiza los datos de un usuario. Valida la unicidad del número
+      de teléfono si se modifica. La contraseña solo se actualiza si se proporciona.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        user_id (str): El ID del usuario a gestionar.
     """
     usuario = Usuarios.query.get_or_404(user_id)
 
@@ -261,13 +287,14 @@ def handle_usuario(admin_user, user_id):
 @admin_jwt_required
 def toggle_usuario_status(admin_user, user_id):
     """
-    Cambia el estado de un usuario (cliente) entre activo e inactivo.
+    API: Cambia el estado de un usuario (cliente) entre 'activo' e 'inactivo'.
     
-    Parámetros:
-    - user_id: ID del usuario a cambiar estado
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        user_id (str): El ID del usuario a modificar.
     
-    Retorna:
-    - JSON con el resultado de la operación
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
     """
     try:
         usuario = Usuarios.query.get_or_404(user_id)
@@ -294,13 +321,14 @@ def toggle_usuario_status(admin_user, user_id):
 @admin_jwt_required
 def toggle_admin_status(admin_user, admin_id):
     """
-    Cambia el estado de un administrador entre activo e inactivo.
+    API: Cambia el estado de un administrador entre 'activo' e 'inactivo'.
     
-    Parámetros:
-    - admin_id: ID del administrador a cambiar estado
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        admin_id (str): El ID del administrador a modificar.
     
-    Retorna:
-    - JSON con el resultado de la operación
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
     """
     try:
         admin = Admins.query.get_or_404(admin_id)
@@ -327,17 +355,16 @@ def toggle_admin_status(admin_user, admin_id):
 @admin_jwt_required
 def get_admins(admin_user):
     """
-    Obtiene la lista de administradores con paginación y filtros.
+    API: Obtiene la lista de administradores con paginación y filtros.
     
-    Parámetros de consulta:
-    - page: Número de página (default: 1)
-    - per_page: Elementos por página (default: 10)
-    - search: Término de búsqueda para nombre, apellido, cédula o teléfono
-    - status: Filtro por estado (activo/inactivo)
-    - sort: Criterio de ordenamiento (recientes, antiguos, nombre_asc, nombre_desc)
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Query Params:
+        page, per_page, search, status, sort.
     
-    Retorna:
-    - JSON con lista de administradores y datos de paginación
+    Returns:
+        JSON: Un objeto con la lista de administradores y metadatos de paginación.
     """
     try:
         # Obtener parámetros de consulta
@@ -437,13 +464,17 @@ def get_admins(admin_user):
 @admin_jwt_required
 def create_admin(admin_user):
     """
-    Crea un nuevo administrador.
+    API: Crea un nuevo administrador.
     
-    Body:
-    - cedula: Cédula del administrador (requerido)
-    - ... y otros campos del formulario
-    Retorna:
-    - JSON con los datos del administrador creado
+    Recibe los datos del nuevo administrador. Si no se proporciona una contraseña,
+    genera una automáticamente a partir del nombre y el número de teléfono.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto con los datos del administrador recién creado o un mensaje
+              de error en caso de validación o duplicados.
     """
     try:
         # Obtener datos del request
@@ -508,10 +539,16 @@ def create_admin(admin_user):
 @admin_jwt_required
 def handle_admin(admin_user, admin_id):
     """
-    Obtiene (GET) o actualiza (PUT) un administrador existente.
+    API: Obtiene (GET) o actualiza (PUT) un administrador existente.
     
-    Parámetros:
-    - admin_id: ID del administrador
+    - **GET**: Devuelve los datos de un único administrador.
+    - **PUT**: Actualiza los datos de un administrador. Valida la unicidad de la
+      cédula y el número de teléfono si se modifican. La contraseña solo se
+      actualiza si se proporciona.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        admin_id (str): El ID del administrador a gestionar.
     """
     admin = Admins.query.get_or_404(admin_id)
 
@@ -566,13 +603,13 @@ def handle_admin(admin_user, admin_id):
 @admin_jwt_required
 def get_usuario_stats(admin_user):
     """
-    Obtiene estadísticas de usuarios y administradores.
+    API: Obtiene estadísticas clave sobre usuarios y administradores.
     
-    Retorna:
-    - JSON con estadísticas:
-        - total_clientes: Total de clientes
-        - clientes_activos: Total de clientes activos
-        - total_admins: Total de administradores
+    Calcula y devuelve el número total de clientes y administradores, así como
+    cuántos de ellos están activos y cuántos se consideran 'en línea'.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
     """
     try:
         #  Calcular usuarios en línea.
@@ -612,8 +649,12 @@ def get_usuario_stats(admin_user):
 @admin_jwt_required
 def admin_heartbeat(admin_user):
     """
-    Endpoint para que el frontend del admin reporte actividad.
+    API: Endpoint "heartbeat" para que el frontend del admin reporte actividad.
+
     Actualiza el 'last_seen' del administrador para mantenerlo 'En línea'.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
     """
     try:
         # El decorador @admin_jwt_required ya nos da el admin_user

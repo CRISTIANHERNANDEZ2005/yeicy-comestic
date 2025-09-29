@@ -1,3 +1,16 @@
+"""
+Módulo de Creación de Productos (Admin).
+
+Este blueprint gestiona la lógica para la creación de nuevos productos en el
+panel de administración. Proporciona tanto la interfaz de usuario (formulario)
+como los endpoints de API necesarios para una experiencia de creación dinámica.
+
+Funcionalidades Clave:
+- **Renderizado de Formulario**: Muestra la página con el formulario para crear un nuevo producto.
+- **Procesamiento de Datos**: Valida exhaustivamente los datos del formulario, incluyendo campos obligatorios, formatos numéricos y reglas de negocio (ej. precio > costo).
+- **Gestión de Imágenes**: Sube la imagen del producto al servicio de Cloudinary de forma segura.
+- **APIs Auxiliares**: Ofrece endpoints para poblar dinámicamente los selectores de categorías, subcategorías y seudocategorías, mejorando la usabilidad del formulario.
+"""
 from flask import Blueprint, render_template, request, abort, current_app, jsonify, redirect, url_for, flash
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
@@ -14,12 +27,23 @@ admin_crear_product_bp = Blueprint(
 @admin_jwt_required
 def create_product(admin_user):
     """
-    Maneja la solicitud para crear un nuevo producto en el panel de administración.
-    GET: Muestra el formulario de creación.
-    POST: Procesa los datos del formulario y crea el producto.
+    Gestiona la creación de un nuevo producto.
+
+    - **GET**: Renderiza la página con el formulario de creación de productos.
+    - **POST**: Procesa los datos enviados desde el formulario. Realiza una serie
+      de validaciones críticas, sube la imagen a Cloudinary, verifica la unicidad
+      del nombre y el slug, y finalmente crea el nuevo producto en la base de datos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+
+    Returns:
+        Response (GET): La plantilla HTML del formulario de creación.
+        JSON (POST): Una respuesta JSON indicando el éxito o fracaso de la operación,
+                     con mensajes de error detallados si es necesario.
     """
     if request.method == 'GET':
-        # Renderizar el formulario de creación
+        # Para una solicitud GET, simplemente se muestra el formulario vacío.
         return render_template(
             'admin/componentes/producto/nuevo_product.html',
             csrf_token=generate_csrf()
@@ -27,7 +51,7 @@ def create_product(admin_user):
     
     elif request.method == 'POST':
         try:
-            # --- 1. Obtención de datos ---
+            # --- 1. Obtención de datos del formulario (multipart/form-data) ---
             data = request.form
             nombre = data.get('nombre')
             marca = data.get('marca')
@@ -41,13 +65,13 @@ def create_product(admin_user):
             seudocategoria_id = data.get('seudocategoria_id')
             especificaciones_json = data.get('especificaciones', '{}')
 
-            # --- 2. Validaciones Profesionales ---
+            # --- 2. Validaciones de negocio y de formato ---
             errors = []
             if not nombre:
                 errors.append('El nombre del producto es obligatorio.')
             if not marca:
                 errors.append('La marca del producto es obligatoria.')
-            if not descripcion: # La descripción es opcional en algunos casos, pero la mantenemos obligatoria por ahora.
+            if not descripcion:
                 errors.append('La descripción del producto es obligatoria.')
             if not imagen_file:
                 errors.append('La imagen del producto es obligatoria.')
@@ -86,7 +110,7 @@ def create_product(admin_user):
             if errors:
                 return jsonify({'success': False, 'message': ' '.join(errors)}), 400
 
-            # --- 3. Verificación de Unicidad (Nombre y Slug) ---
+            # --- 3. Verificación de Unicidad del Nombre y Slug ---
             from slugify import slugify
             # Verificar unicidad del nombre
             if Productos.query.filter_by(nombre=nombre).first():
@@ -97,7 +121,7 @@ def create_product(admin_user):
             if Productos.query.filter_by(slug=slug).first():
                 return jsonify({'success': False, 'message': f'Ya existe un producto con el nombre ("{slug}").'}), 409
 
-            # --- 4. Subida de Imagen a Cloudinary ---
+            # --- 4. Subida de la Imagen a Cloudinary ---
             imagen_url = None
             try:
                 # El folder ayuda a organizar las imágenes en Cloudinary
@@ -109,7 +133,7 @@ def create_product(admin_user):
                 current_app.logger.error(f"Error al subir imagen a Cloudinary: {e}", exc_info=True)
                 return jsonify({'success': False, 'message': 'Error al subir la imagen del producto.'}), 500
 
-            # --- 5. Verificación de Entidades Relacionadas ---
+            # --- 5. Verificación de la existencia de la categoría seleccionada ---
             seudocategoria = Seudocategorias.query.get(seudocategoria_id)
             if not seudocategoria:
                 return jsonify({
@@ -117,7 +141,7 @@ def create_product(admin_user):
                     'message': 'La seudocategoría seleccionada ya no existe. Por favor, recarga la página.'
                 }), 400
 
-            # --- 6. Procesamiento y Creación del Objeto ---
+            # --- 6. Creación de la instancia del modelo Producto ---
             try:
                 especificaciones = json.loads(especificaciones_json)
                 if not isinstance(especificaciones, dict):
@@ -139,7 +163,7 @@ def create_product(admin_user):
                 especificaciones=especificaciones
             )
 
-            # --- 7. Persistencia en Base de Datos ---
+            # --- 7. Persistencia en la Base de Datos ---
             db.session.add(nuevo_producto)
             db.session.commit()
             
@@ -153,7 +177,7 @@ def create_product(admin_user):
             }), 201
             
         except ValueError as e:
-            # Este error ahora es menos probable gracias a las validaciones de arriba
+            # Captura errores de validación de los Value Objects en el modelo.
             return jsonify({'success': False, 'message': f'Error en los datos proporcionados: {str(e)}'}), 400
         except Exception as e:
             # Loguear el error para depuración
@@ -171,7 +195,14 @@ def create_product(admin_user):
 @admin_jwt_required
 def get_subcategorias(admin_user, categoria_id):
     """
-    Obtiene las subcategorías asociadas a una categoría principal.
+    API para obtener las subcategorías activas de una categoría principal.
+
+    Utilizado por el formulario de creación/edición de productos para poblar
+    dinámicamente el selector de subcategorías cuando se elige una categoría principal.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal padre.
     """
     try:
         subcategorias = Subcategorias.query.filter_by(
@@ -197,7 +228,14 @@ def get_subcategorias(admin_user, categoria_id):
 @admin_jwt_required
 def get_seudocategorias(admin_user, subcategoria_id):
     """
-    Obtiene las seudocategorías asociadas a una subcategoría.
+    API para obtener las seudocategorías activas de una subcategoría.
+
+    Utilizado por el formulario de creación/edición de productos para poblar
+    dinámicamente el selector de seudocategorías cuando se elige una subcategoría.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        subcategoria_id (str): El ID de la subcategoría padre.
     """
     try:
         seudocategorias = Seudocategorias.query.filter_by(
@@ -223,7 +261,13 @@ def get_seudocategorias(admin_user, subcategoria_id):
 @admin_jwt_required
 def get_categorias_principales(admin_user):
     """
-    Obtiene todas las categorías principales activas.
+    API para obtener todas las categorías principales activas.
+
+    Utilizado para poblar el selector inicial de categorías en el formulario
+    de creación/edición de productos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
     """
     try:
         categorias = CategoriasPrincipales.query.filter_by(estado=EstadoEnum.ACTIVO).all()

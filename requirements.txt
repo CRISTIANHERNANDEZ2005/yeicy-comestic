@@ -1,30 +1,30 @@
-alembic==1.16.4
-bcrypt==4.3.0
-blinker==1.9.0
-click==8.2.2
-cloudinary==1.40.0
-colorama==0.4.6
-Flask==3.1.1
-Flask-Bcrypt==1.0.1
-Flask-Login==0.6.3
-Flask-Migrate==4.0.5
-Flask-SQLAlchemy==3.0.5
-greenlet==3.2.3
-itsdangerous==2.2.0
-Jinja2==3.1.6
-Mako==1.3.10
-MarkupSafe==3.0.2
-marshmallow==4.0.0
-marshmallow-sqlalchemy==1.4.2
-packaging==25.0
-psycopg2-binary==2.9.10
-PyJWT==2.10.1
-python-dotenv==1.0.0
-python-slugify==8.0.4
-SQLAlchemy==2.0.42
-typing_extensions==4.14.1
-Werkzeug==3.1.3
-Flask-WTF
-Flask-JWT-Extended
-pytz
-pdfkit
+alembic==1.16.4 # Herramienta para migraciones de bases de datos con SQLAlchemy. Usado por Flask-Migrate.
+bcrypt==4.3.0 # Librería para hashear contraseñas de forma segura. Usado por Flask-Bcrypt.
+blinker==1.9.0 # Sistema de señales (signals) para Flask. Permite comunicación desacoplada entre componentes.
+click==8.2.2 # Librería para crear interfaces de línea de comandos (CLI). Dependencia de Flask.
+cloudinary==1.40.0 # SDK de Python para interactuar con el servicio de Cloudinary (gestión de imágenes y videos).
+colorama==0.4.6 # Permite imprimir texto con colores en la terminal. Dependencia de otros paquetes.
+Flask==3.1.1 # El micro-framework principal sobre el que se construye la aplicación web.
+Flask-Bcrypt==1.0.1 # Integración de Bcrypt con Flask para el hasheo de contraseñas.
+Flask-Login==0.6.3 # Extensión de Flask para gestionar sesiones de usuario (login/logout, recordar usuario).
+Flask-Migrate==4.0.5 # Extensión para manejar migraciones de la base de datos SQLAlchemy usando Alembic.
+Flask-SQLAlchemy==3.0.5 # Integración de SQLAlchemy con Flask, facilitando el uso de un ORM.
+greenlet==3.2.3 # Librería para concurrencia ligera. Dependencia de SQLAlchemy.
+itsdangerous==2.2.0 # Librería para firmar datos de forma segura. Usada por Flask para las cookies de sesión.
+Jinja2==3.1.6 # Motor de plantillas para Flask. Permite renderizar HTML con lógica de Python.
+Mako==1.3.10 # Motor de plantillas. Dependencia de Alembic.
+MarkupSafe==3.0.2 # Librería para escapar HTML y prevenir ataques XSS. Dependencia de Jinja2.
+marshmallow==4.0.0 # Librería para serialización/deserialización de objetos (Python <-> JSON).
+marshmallow-sqlalchemy==1.4.2 # Integración de Marshmallow con SQLAlchemy para serializar modelos.
+packaging==25.0 # Utilidades para manejar versiones y especificaciones de paquetes Python.
+psycopg2-binary==2.9.10 # Adaptador (driver) para conectar la aplicación con bases de datos PostgreSQL.
+PyJWT==2.10.1 # Implementación de JSON Web Tokens (JWT) en Python.
+python-dotenv==1.0.0 # Permite cargar variables de entorno desde un archivo .env para desarrollo local.
+python-slugify==8.0.4 # Librería para convertir texto en "slugs" amigables para URLs.
+SQLAlchemy==2.0.42 # El ORM (Object-Relational Mapper) principal para interactuar con la base de datos.
+typing_extensions==4.14.1 # Proporciona tipos adicionales para el type hinting en Python.
+Werkzeug==3.1.3 # Librería de utilidades WSGI. Es el núcleo de Flask (peticiones, respuestas, enrutamiento).
+Flask-WTF # Extensión para manejar formularios web de forma segura (incluye protección CSRF).
+Flask-JWT-Extended # Extensión para facilitar el uso de JSON Web Tokens (JWT) en Flask.
+pytz # Librería para trabajar con zonas horarias de forma precisa.
+pdfkit # Wrapper para la herramienta wkhtmltopdf, utilizado para generar PDFs desde HTML (facturas).

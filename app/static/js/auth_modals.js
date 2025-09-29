@@ -1,3 +1,29 @@
+/**
+ * Módulo de Modales de Autenticación.
+ *
+ * Este script gestiona de forma integral la interfaz de usuario para la autenticación del cliente,
+ * incluyendo los modales de inicio de sesión, registro y el flujo de recuperación de contraseña.
+ *
+ * Funcionalidades Clave:
+ * 1.  **Gestión de Modales:** Controla la visibilidad y el estado de los modales, permitiendo
+ *     cambiar entre las pestañas de "Iniciar Sesión" y "Registrarse", y limpiando los
+ *     formularios para evitar datos residuales.
+ * 2.  **Validación de Formularios en Tiempo Real:** Implementa validación del lado del cliente para
+ *     campos como número de teléfono, correo, nombre y contraseña, proporcionando feedback
+ *     instantáneo al usuario para mejorar la experiencia.
+ * 3.  **Indicador de Fortaleza de Contraseña:** Ofrece una guía visual en tiempo real sobre la
+ *     seguridad de la contraseña que el usuario está creando.
+ * 4.  **Flujo de Recuperación de Contraseña:** Maneja un proceso completo y seguro de varios pasos
+ *     para que los usuarios puedan restablecer su contraseña (solicitud de código, verificación y
+ *     establecimiento de nueva contraseña).
+ * 5.  **Manejo de Envíos Asíncronos (AJAX):** Gestiona el envío de todos los formularios de
+ *     autenticación mediante `fetch`, mostrando estados de carga y procesando las respuestas del
+ *     servidor para dar mensajes de éxito o error sin recargar la página.
+ * 6.  **Integración con el Ecosistema:** Tras un login/registro exitoso, interactúa con otros
+ *     módulos (`window.auth`, `window.cart`, `window.favoritesManager`) para sincronizar el estado.
+ * 7.  **Mejoras de Experiencia de Usuario (UX):** Incluye toggles para mostrar/ocultar contraseñas,
+ *     cierre con la tecla Escape y prevención de mensajes de validación nativos del navegador.
+ */
 (function () {
   // Constantes y elementos del DOM
   const bg = document.getElementById("auth-modal-bg");
@@ -223,7 +249,7 @@
     switch(fieldName) {
       case 'numero':
         isValid = patterns.phone.test(value);
-        // MEJORA: No mostrar validación de formato de número en el login.
+        // No mostrar validación de formato de número en el login.
         // Solo se valida que no esté vacío (ya cubierto por 'required').
         if (field.id === 'login-numero') {
           isValid = true; // Se asume válido si no está vacío, la validación real la hace el backend.
@@ -461,9 +487,9 @@
               window.auth.setAuthToken(result.token);
             }
             localStorage.setItem('token', result.token); // Guardar token para uso en toda la app
-            // Set global userId for cart synchronization
+            // Establecer el userId global para la sincronización del carrito.
             window.userId = result.usuario.id;
-            // Trigger cart synchronization immediately after login/registration
+            // Disparar la sincronización del carrito inmediatamente después del inicio de sesión/registro.
             if (window.cart) {
               await window.cart.mergeLocalCartWithServer();
             }
@@ -522,7 +548,7 @@
           // Mensaje general arriba del formulario solo si no es error de campo
           if (!fieldErrorShown) {
             msg.textContent = result.error || result.message || "Error en el proceso. Verifica tus datos.";
-            // MEJORA: No recargar la página en caso de error de login.
+            // No recargar la página en caso de error de login.
             // El interceptor ya no forzará la recarga, así que mostramos el mensaje aquí.
             msg.classList.remove("hidden", "text-green-400");
             msg.classList.add("text-red-400", "animate-shake");
@@ -667,7 +693,7 @@
           const result = await resp.json();
 
           if (resp.ok && result.success) {
-              // MEJORA PROFESIONAL: No recargar la página.
+              // No recargar la página.
               // Mostrar mensaje de éxito y cambiar a la vista de login.
               msg.textContent = "¡Contraseña actualizada! Ya puedes iniciar sesión.";
               msg.classList.remove("hidden", "text-red-400");
@@ -699,7 +725,7 @@
   setupRealTimeValidation(forgotPasswordStep3);
   if (forgotPasswordStep4) setupRealTimeValidation(forgotPasswordStep4);
 
-  // Enhanced password toggle
+  // Toggle mejorado para mostrar/ocultar contraseña.
   function setupPasswordToggle(inputId, btnId) {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(btnId);
@@ -724,14 +750,14 @@
   setupPasswordToggle("reset-new-password", "toggle-reset-password");
   setupPasswordToggle("reset-confirm-password", "toggle-reset-confirm-password");
 
-  // Close on escape key
+  // Cerrar modal con la tecla Escape.
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !bg.classList.contains("hidden")) {
       closeModal();
     }
   });
 
-  // MEJORA: Función para prevenir los mensajes de validación nativos del navegador
+  //  Función para prevenir los mensajes de validación nativos del navegador
   // para el campo de contraseña de inicio de sesión.
   // Esto evita que el navegador muestre mensajes como "La contraseña debe tener X caracteres..."
   // y permite que el backend maneje el mensaje genérico de "credenciales inválidas".

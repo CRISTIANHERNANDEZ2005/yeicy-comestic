@@ -1,5 +1,23 @@
 /**
- * Interceptor de autenticación para incluir automáticamente el token JWT en las peticiones
+ * Módulo Interceptor de Autenticación del Cliente.
+ *
+ * Este script intercepta todas las llamadas `fetch` salientes para gestionar de forma
+ * centralizada la autenticación del cliente mediante tokens JWT.
+ *
+ * Funcionalidades Clave:
+ * 1.  **Inyección Automática de Token JWT:** Añade el encabezado `Authorization: Bearer <token>`
+ *     a las peticiones dirigidas a la API del cliente (`/api/...`), excluyendo las rutas de autenticación.
+ * 2.  **Manejo Centralizado de Expiración de Sesión (401):** Detecta respuestas `401 Unauthorized`.
+ *     Si el token ha expirado, limpia la sesión del cliente y lo redirige a la página principal.
+ *     Ignora los `401` en las rutas de autenticación para permitir el manejo de errores en los formularios.
+ * 3.  **Gestión de Cuentas Desactivadas (403):** Captura respuestas `403 Forbidden` con el código
+ *     `ACCOUNT_INACTIVE`, muestra una modal informativa y fuerza el cierre de sesión.
+ * 4.  **Restauración de Sesión:** Al cargar la página, verifica la validez del token existente
+ *     contra el endpoint `/auth/me` para restaurar la sesión del usuario sin que tenga que volver a iniciarla.
+ * 5.  **API de Sesión Global (`window.auth`):** Expone un conjunto de funciones (`logout`, `isAuthenticated`, etc.)
+ *     para que otros módulos de JavaScript puedan interactuar con el estado de autenticación de forma consistente.
+ * 6.  **Sincronización de Cierre de Sesión entre Pestañas:** Utiliza `localStorage` para asegurar que si un
+ *     usuario cierra sesión en una pestaña, se cierre automáticamente en todas las demás pestañas abiertas de la aplicación.
  */
 
 // Guardar la función fetch original
@@ -7,7 +25,7 @@ const originalFetch = window.fetch;
 
 // Sobrescribir la función fetch global
 window.fetch = async function (resource, options = {}) {
-  // Configurar los encabezados por defecto
+  // Configurar los encabezados por defecto.
   const headers = new Headers(options.headers || {});
 
   // Si es una petición a nuestra API y no es una petición de autenticación
@@ -16,16 +34,16 @@ window.fetch = async function (resource, options = {}) {
     resource.startsWith("/api/") &&
     !resource.includes("/auth/")
   ) {
-    // Obtener el token del localStorage
+    // Obtener el token del localStorage.
     const token = localStorage.getItem("token");
 
-    // Si hay un token, agregarlo al encabezado de autorización
+    // Si hay un token, agregarlo al encabezado de autorización.
     if (token) {
       if (!headers.has("Authorization")) {
         headers.append("Authorization", `Bearer ${token}`);
       }
 
-      // Asegurarse de que el Content-Type sea application/json para las peticiones POST/PUT
+      // Asegurarse de que el Content-Type sea application/json para las peticiones POST/PUT.
       if (
         (!options.method ||
           options.method.toUpperCase() === "POST" ||
@@ -37,20 +55,20 @@ window.fetch = async function (resource, options = {}) {
     }
   }
 
-  // Crear las nuevas opciones de la petición
+  // Crear las nuevas opciones de la petición.
   const newOptions = {
     ...options,
     headers,
-    credentials: "same-origin", // Importante para incluir cookies si las hay
+    credentials: "same-origin", // Importante para incluir cookies si las hay.
   };
 
   try {
     const response = await originalFetch(resource, newOptions);
 
-    // Clonar la respuesta para poder leer el cuerpo dos veces
+    // Clonar la respuesta para poder leer el cuerpo dos veces.
     const clonedResponse = response.clone();
 
-    // Si la respuesta es 401 (No autorizado), manejar según el contexto
+    // Si la respuesta es 401 (No autorizado), manejar según el contexto.
     // Si la petición es a cualquier endpoint de autenticación,
     // no redirigir. Dejar que el script que hizo la llamada (ej: auth_modals.js) maneje el error.
     if (response.status === 401) {
@@ -64,39 +82,36 @@ window.fetch = async function (resource, options = {}) {
       try {
         const errorData = await clonedResponse.json();
         if (errorData && errorData.msg === "Token has expired") {
-          console.error("Token de cliente expirado. Redirigiendo a la página principal...");
-          // Limpiar token y datos de usuario antes de redirigir
+          console.error("Token de cliente expirado. Redirigiendo a la página principal..."); // Limpiar token y datos de usuario antes de redirigir.
           if (window.auth && typeof window.auth.setAuthToken === 'function') {
             window.auth.setAuthToken(null);
           }
           localStorage.removeItem("user");
-          window.location.href = "/"; // Redirigir a la página principal
+          window.location.href = "/"; // Redirigir a la página principal.
           return Promise.reject(new Error("Token de cliente expirado"));
         }
       } catch (e) {
-        // No es un JSON o no contiene el mensaje esperado, manejar como un 401 genérico
-        console.error("Error de autenticación (401 genérico). Redirigiendo a la página principal...");
-        // Limpiar token y datos de usuario antes de redirigir
+        // No es un JSON o no contiene el mensaje esperado, manejar como un 401 genérico.
+        console.error("Error de autenticación (401 genérico). Redirigiendo a la página principal..."); // Limpiar token y datos de usuario antes de redirigir.
         if (window.auth && typeof window.auth.setAuthToken === 'function') {
           window.auth.setAuthToken(null);
         }
         localStorage.removeItem("user");
-        window.location.href = "/"; // Redirigir a la página principal
+        window.location.href = "/"; // Redirigir a la página principal.
         return Promise.reject(new Error("No autorizado"));
       }
 
-      // Si no es un token expirado pero sigue siendo un 401, redirigir también
-      console.error("Error de autenticación (401 genérico). Redirigiendo a la página principal...");
-      // Limpiar token y datos de usuario antes de redirigir
+      // Si no es un token expirado pero sigue siendo un 401, redirigir también.
+      console.error("Error de autenticación (401 genérico). Redirigiendo a la página principal..."); // Limpiar token y datos de usuario antes de redirigir.
       if (window.auth && typeof window.auth.setAuthToken === 'function') {
         window.auth.setAuthToken(null);
       }
       localStorage.removeItem("user");
-      window.location.href = "/"; // Redirigir a la página principal
+      window.location.href = "/"; // Redirigir a la página principal.
       return Promise.reject(new Error("No autorizado"));
     }
 
-    //  Manejar el caso de cuenta desactivada (403 Forbidden)
+    // Manejar el caso de cuenta desactivada (403 Forbidden).
     if (response.status === 403) {
       try {
         const errorData = await clonedResponse.json();
@@ -111,7 +126,7 @@ window.fetch = async function (resource, options = {}) {
               okBtn.onclick = () => logout(true);
             }
           } else {
-            // Fallback si la función de la modal no existe
+            // Fallback si la función de la modal no existe.
             await logout(true);
           }
           return Promise.reject(new Error("Cuenta desactivada"));
@@ -136,7 +151,7 @@ function isAuthenticated() {
 
 // Función para obtener el token de autenticación
 function getAuthToken() {
-  // Prioridad: cookie > sessionStorage > localStorage
+  // Prioridad: cookie > sessionStorage > localStorage.
   const tokenFromCookie = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
@@ -157,7 +172,7 @@ function setAuthToken(token) {
   } else {
     localStorage.removeItem("token");
     sessionStorage.removeItem("token");
-    // Borrar cookie con los mismos atributos que al setearla
+    // Borrar cookie con los mismos atributos que al setearla.
     document.cookie = "token=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
   }
 }
@@ -170,9 +185,9 @@ async function logout(isDeactivated = false) {
   // por lo que la lógica del `logoutMessage` ya no es necesaria.
 
 
-  // 1. Limpiar estado del cliente PRIMERO
+  // 1. Limpiar estado del cliente PRIMERO.
   try {
-    // Limpiar el carrito local
+    // Limpiar el carrito local.
     if (window.cart && typeof window.cart.clearCartOnLogout === 'function') {
       window.cart.clearCartOnLogout();
       console.log("Función clearCartOnLogout() llamada exitosamente.");
@@ -180,18 +195,18 @@ async function logout(isDeactivated = false) {
       console.warn("No se encontró window.cart.clearCartOnLogout() para llamar.");
     }
 
-    // Limpiar tokens y datos de usuario
+    // Limpiar tokens y datos de usuario.
     setAuthToken(null);
     localStorage.removeItem("user");
 
-    // Notificar a otras pestañas para que cierren sesión también
+    // Notificar a otras pestañas para que cierren sesión también.
     localStorage.setItem('logout-event', Date.now().toString());
 
   } catch (error) {
     console.error("Error durante la limpieza del cliente en logout:", error);
   }
 
-  // 2. Notificar al servidor
+  // 2. Notificar al servidor.
   try {
     await fetch('/auth/logout', {
       method: 'POST',
@@ -205,12 +220,12 @@ async function logout(isDeactivated = false) {
     console.error("Error al notificar al servidor sobre el logout. La limpieza del cliente ya se realizó.", e);
   }
 
-  // 3. Redirigir
+  // 3. Redirigir.
   console.log("Redirigiendo a la página principal...");
   window.location.replace("/");
 }
 
-// Sincronizar logout entre pestañas
+// Sincronizar logout entre pestañas.
 window.addEventListener('storage', function(event) {
   if (event.key === 'logout-event') {
     setAuthToken(null);
@@ -219,7 +234,7 @@ window.addEventListener('storage', function(event) {
   }
 });
 
-// Exportar funciones para su uso en otros archivos
+// Exportar funciones para su uso en otros archivos.
 window.auth = {
   isAuthenticated,
   getAuthToken,
@@ -227,11 +242,11 @@ window.auth = {
   logout,
 };
 
-// Restaurar sesión automáticamente si hay token válido y la cookie no está vacía
+// Restaurar sesión automáticamente si hay token válido y la cookie no está vacía.
 async function restoreSession() {
-  // Solo restaurar si hay token en cookie, sessionStorage o localStorage
+  // Solo restaurar si hay token en cookie, sessionStorage o localStorage.
   const token = getAuthToken();
-  // Verificar que la cookie no esté vacía (previene restauración tras logout)
+  // Verificar que la cookie no esté vacía (previene restauración tras logout).
   const cookieToken = document.cookie
     .split('; ')
     .find((row) => row.startsWith('token='))
@@ -246,9 +261,9 @@ async function restoreSession() {
       const data = await response.json();
       if (data.usuario) {
         localStorage.setItem("user", JSON.stringify(data.usuario));
-        // Set global userId for cart synchronization
+        // Establecer el userId global para la sincronización del carrito.
         window.userId = data.usuario.id;
-        // Trigger cart synchronization immediately after session restoration
+        // Disparar la sincronización del carrito inmediatamente después de restaurar la sesión.
         if (window.cart) {
           window.cart.hydrateCartFromServer();
         }
@@ -257,7 +272,7 @@ async function restoreSession() {
         );
       }
     } else {
-      //  Si /me falla, podría ser por cuenta inactiva.
+      // Si /me falla, podría ser por cuenta inactiva.
       if (response.status === 403) {
         const errorData = await response.json();
         if (errorData.code === 'ACCOUNT_INACTIVE') {
@@ -279,7 +294,7 @@ async function restoreSession() {
   }
 }
 
-// Ejecutar restauración de sesión al cargar la página
+// Ejecutar restauración de sesión al cargar la página.
 document.addEventListener("DOMContentLoaded", async () => {
   await restoreSession();
 });

@@ -1,4 +1,23 @@
-// --- LIKE AUTH MODAL LOGIC ---
+/**
+ * @file index.js
+ * @description Script para la gestión de la interfaz de usuario de "Me Gusta" para usuarios no autenticados.
+ *
+ * Este módulo se encarga de interceptar las interacciones con los botones de "Me Gusta"
+ * o "Favoritos" y gestionar la experiencia del usuario cuando no ha iniciado sesión.
+ *
+ * Funcionalidades Clave:
+ * 1.  **Modal de Autenticación para "Me Gusta":** Cuando un usuario no autenticado hace clic en
+ *     un botón de "Me Gusta" (`.like-btn`), previene la acción y muestra un modal no intrusivo
+ *     que le informa de la necesidad de iniciar sesión.
+ * 2.  **Posicionamiento Adaptativo (Responsive):** El modal se posiciona de forma inteligente:
+ *     - En dispositivos móviles: en la parte inferior central para fácil acceso.
+ *     - En escritorio: en la esquina inferior izquierda como una notificación sutil.
+ * 3.  **Notificación Auto-ocultable:** El modal actúa como una notificación temporal,
+ *     desapareciendo automáticamente después de unos segundos.
+ * 4.  **Estilos Dinámicos de Iconos:** Ajusta el tamaño de los iconos de "Me Gusta" según el
+ *     ancho de la pantalla para una presentación visual coherente.
+ */
+// --- LÓGICA DEL MODAL DE AUTENTICACIÓN PARA 'ME GUSTA' ---
 let likeAuthModalTimeout;
 function showLikeAuthModal(msg) {
   const modal = document.getElementById("like-auth-modal");
@@ -7,7 +26,7 @@ function showLikeAuthModal(msg) {
   if (modal && modalMsg && modalInner) {
     modalMsg.textContent =
       msg || "Debes iniciar sesión para agregar productos a tus favoritos.";
-    // Responsive position
+    // Posicionamiento responsivo.
     if (window.innerWidth < 768) {
       modal.classList.remove("items-end", "justify-start");
       modal.classList.add("items-end", "justify-center");

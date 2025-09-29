@@ -1,4 +1,24 @@
-# app/__init__.py
+"""
+Módulo de Fábrica de la Aplicación Flask (Application Factory).
+
+Este archivo es el corazón de la aplicación. Contiene la función `create_app`,
+que sigue el patrón de diseño "Application Factory". Este patrón es una buena
+práctica en Flask para crear instancias de la aplicación con diferentes
+configuraciones, lo que facilita las pruebas y la escalabilidad.
+
+Responsabilidades principales:
+- Crear y configurar la instancia principal de la aplicación Flask.
+- Inicializar todas las extensiones de Flask (SQLAlchemy, Bcrypt, Migrate, LoginManager, JWT).
+- Configurar servicios de terceros como Cloudinary.
+- Establecer un sistema de logging profesional.
+- Registrar todos los Blueprints que organizan la lógica de la aplicación (cliente y admin).
+- Definir procesadores de contexto (`context_processor`) para inyectar datos globales
+  en las plantillas Jinja2 (ej. datos del carrito, categorías, estado de autenticación).
+- Configurar manejadores de peticiones (`before_request`) para tareas que se ejecutan
+  antes de cada solicitud, como la restauración de sesiones.
+- Definir manejadores de errores personalizados (ej. para errores 404).
+- Registrar filtros personalizados de Jinja2 para formateo de datos en las plantillas.
+"""
 from flask import Flask, render_template, session, request
 import cloudinary
 from config import Config
@@ -15,26 +35,40 @@ from sqlalchemy import func, not_, and_
 from app.models.serializers import format_currency_cop
 
 def create_app(config_class=Config):
+    """
+    Crea y configura una instancia de la aplicación Flask.
+
+    Este es el punto de entrada principal que sigue el patrón de fábrica de aplicaciones.
+    Permite crear la aplicación con una configuración específica, lo que es ideal para
+    diferentes entornos (desarrollo, producción, pruebas).
+
+    Args:
+        config_class (object): La clase de configuración a utilizar. Por defecto,
+                               utiliza la clase `Config` del módulo `config`.
+
+    Returns:
+        Flask: La instancia de la aplicación Flask configurada y lista para ejecutarse.
+    """
     app = Flask(__name__)
     app.jinja_env.add_extension('jinja2.ext.do')
     app.config.from_object(config_class)
 
-    # --- CLOUDINARY CONFIGURATION ---
-    # La librería de Cloudinary leerá automáticamente la variable de entorno CLOUDINARY_URL
+    # --- CONFIGURACIÓN DE CLOUDINARY ---
+    # La librería de Cloudinary leerá automáticamente la variable de entorno CLOUDINARY_URL.
     cloudinary.config(secure=True)
     app.logger.info('Cloudinary configurado profesionalmente.')
 
     # --- LOGGING PROFESIONAL ---
     import logging
     formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
-    # Solo log a consola en producción/serverless (Vercel no permite escribir archivos)
+    # Solo se registra en la consola en producción/serverless (Vercel no permite escribir archivos).
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.DEBUG)
     app.logger.addHandler(console_handler)
     app.logger.setLevel(logging.DEBUG)
     app.logger.info('Logging profesional inicializado (solo consola)')
-
+    # --- CONFIGURACIÓN DE BASE DE DATOS ---
     # Configuración adicional para SQLAlchemy
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_pre_ping': True,
@@ -46,12 +80,13 @@ def create_app(config_class=Config):
         }
     }
 
-    # Inicializar extensiones
+    # --- INICIALIZACIÓN DE EXTENSIONES ---
     db.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
 
+    # Inicializa Flask-JWT-Extended para la gestión de tokens JWT.
     jwt.init_app(app)
 
     # Configuración de login_manager después de asociar la app
@@ -61,11 +96,23 @@ def create_app(config_class=Config):
 
     @login_manager.user_loader
     def load_user(id):
+        """
+        Función de callback requerida por Flask-Login para cargar un usuario desde la sesión.
+        Dado un ID de usuario, devuelve el objeto de usuario correspondiente.
+        """
         return Usuarios.query.get(id)
 
-    # Context processor to make admin_user available in all templates
+    # --- PROCESADORES DE CONTEXTO Y MANEJADORES DE PETICIONES ---
     @app.context_processor
     def inject_admin_user():
+        """
+        Procesador de contexto para inyectar el objeto `admin_user` en todas las plantillas.
+
+        Intenta decodificar el token JWT de administrador desde las cookies. Si es válido,
+        recupera el administrador de la base de datos y lo hace disponible globalmente
+        en el contexto de las plantillas Jinja2. Esto es útil para la barra de navegación
+        del panel de administración y otros elementos comunes de la UI.
+        """
         admin_user = None
         token = request.cookies.get('admin_jwt')
         if token:
@@ -77,8 +124,15 @@ def create_app(config_class=Config):
     @app.before_request
     def before_request_tasks(): # pragma: no cover
         """
-        Se ejecuta antes de cada petición para realizar tareas globales.
-        1. Asigna el usuario/admin al contexto global `g` si están autenticados.
+        Middleware que se ejecuta antes de cada petición para realizar tareas globales.
+
+        1. **Restauración de Sesión de Cliente**: Llama a `restore_session_from_jwt` para
+           intentar restaurar la sesión del cliente desde un token JWT en las cookies.
+        2. **Asignación a `g`**: Asigna el usuario cliente (`g.user`) y el administrador
+           (`g.admin_user`) al objeto global `g` de Flask si se encuentran tokens válidos.
+           El objeto `g` persiste durante el ciclo de vida de una única petición.
+        3. **Actualización de `last_seen` del Admin**: Actualiza el timestamp `last_seen` del
+           administrador en cada petición para mantener un seguimiento preciso de su actividad.
         """
         from flask import g
         from datetime import datetime, timezone
@@ -105,13 +159,12 @@ def create_app(config_class=Config):
                 admin = Admins.query.get(payload['user_id'])
                 if admin:
                     g.admin_user = admin
-                    # MEJORA PROFESIONAL: Actualizar last_seen en cada petición del admin.
+                    # Actualizar last_seen en cada petición del admin.
                     # Esto asegura que el estado "En línea" sea preciso y en tiempo real.
                     admin.last_seen = datetime.now(timezone.utc)
                     db.session.commit()
 
-
-    # Registrar blueprints cliente
+    # --- REGISTRO DE BLUEPRINTS ---
     from app.blueprints.cliente.auth import auth_bp
     from app.blueprints.cliente.products import products_bp
     from app.blueprints.cliente.cart import cart_bp
@@ -134,8 +187,7 @@ def create_app(config_class=Config):
     from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
     from app.blueprints.admin.usuarios.user_routes import user_bp
 
-    # Registrar blueprints
-    #cliente
+    # Blueprints del cliente
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
     app.register_blueprint(products_bp)
@@ -144,7 +196,7 @@ def create_app(config_class=Config):
     app.register_blueprint(order_bp)
     app.register_blueprint(events_bp)
 
-    # admin
+    # Blueprints del administrador
     app.register_blueprint(admin_auth_bp)
     app.register_blueprint(admin_dashboard_bp)
     app.register_blueprint(admin_lista_product_bp)
@@ -158,13 +210,21 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_api_bp)
     app.register_blueprint(user_bp)
 
-
-
-    # Register the /perfil route directly with the app
+    # --- RUTAS PRINCIPALES DE LA APLICACIÓN ---
     @app.route('/perfil')
     @jwt_required
     def root_perfil(usuario):
+        """
+        Renderiza la página de perfil del usuario autenticado.
 
+        Esta ruta, definida en el nivel principal de la aplicación, calcula estadísticas
+        clave del usuario, como el número de pedidos realizados y el total gastado en
+        compras completadas. Luego, delega la renderización de la plantilla a la
+        función `perfil` del blueprint de autenticación.
+
+        Args:
+            usuario (Usuarios): El objeto de usuario inyectado por el decorador `@jwt_required`.
+        """
         # Contar todos los pedidos excepto aquellos 'en proceso' que están 'inactivos'.
         # Esto incluye:
         # - Pedidos 'en proceso' y 'activos'.
@@ -190,7 +250,7 @@ def create_app(config_class=Config):
         
         return perfil(usuario, pedidos_realizados=pedidos_realizados, total_compras=total_compras_formateado)
 
-    # Verificar conexión a la base de datos al iniciar
+    # --- VERIFICACIÓN DE CONEXIÓN Y PROCESADORES DE CONTEXTO ADICIONALES ---
     with app.app_context():
         try:
             db.engine.connect()
@@ -201,6 +261,17 @@ def create_app(config_class=Config):
     # Context processor para el carrito y categorías
     @app.context_processor
     def inject_global_data():
+        """
+        Procesador de contexto para inyectar datos globales en todas las plantillas del cliente.
+
+        Esta función se ejecuta antes de renderizar cualquier plantilla y hace que los
+        siguientes datos estén disponibles globalmente:
+        - `cart_items`, `total_price`: Para mostrar el estado del carrito en tiempo real.
+        - `categorias`, `categorias_principales`: Para construir menús de navegación dinámicos.
+        - `total_favoritos`: Para el contador de la lista de deseos.
+        - `usuario_autenticado`: Un booleano para cambiar la UI según el estado de sesión.
+        - `now`: La fecha y hora actual para comparaciones en las plantillas.
+        """
         from app.models.serializers import categoria_principal_to_dict
         from app.blueprints.cliente.cart import get_or_create_cart, get_cart_items
         from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
@@ -247,12 +318,20 @@ def create_app(config_class=Config):
             'now': datetime.utcnow()
         }
 
-    # Custom Jinja2 filters
+    # --- FILTROS PERSONALIZADOS DE JINJA2 ---
     def slugify_filter(s):
+        """
+        Filtro Jinja2 para convertir una cadena en un 'slug' amigable para URLs.
+        Ejemplo: "Mi Producto" -> "mi-producto".
+        """
         return s.lower().replace(" ", "-").replace("_", "-")
     app.jinja_env.filters['slugify'] = slugify_filter
 
     def format_date_filter(value):
+        """
+        Filtro Jinja2 para formatear una fecha (objeto datetime o cadena ISO)
+        en el formato 'dd/mm/YYYY'.
+        """
         if value is None:
             return ""
         if isinstance(value, str):
@@ -269,7 +348,7 @@ def create_app(config_class=Config):
 
     app.jinja_env.filters['format_date'] = format_date_filter
 
-    # Dictionary for Spanish month names
+    # Diccionario para los nombres de los meses en español.
     SPANISH_MONTHS = {
         1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
         5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
@@ -277,41 +356,53 @@ def create_app(config_class=Config):
     }
 
     def datetimeformat_filter(value, format='%Y-%m-%d %H:%M:%S'):
+        """
+        Filtro Jinja2 avanzado para formatear fechas y horas.
+
+        - Convierte cadenas ISO a objetos datetime.
+        - Convierte la fecha/hora a la zona horaria de Colombia (America/Bogota).
+        - Reemplaza los especificadores de formato de mes (como %B) por el nombre
+          del mes en español.
+        """
         if value is None:
             return ""
 
-        # If value is a string, attempt to parse it into a datetime object
+        # Si el valor es una cadena, intenta convertirlo en un objeto datetime.
         if isinstance(value, str):
             try:
-                # Handle ISO format with or without 'Z' for UTC
+                # Maneja el formato ISO con o sin 'Z' para UTC.
                 if value.endswith('Z'):
                     value = value[:-1] + '+00:00'
                 value = datetime.fromisoformat(value)
             except ValueError:
-                # If parsing fails, return the original string or an empty string
-                return value # Or ""
+                # Si la conversión falla, devuelve la cadena original.
+                return value
         
-        # Ensure the datetime object is timezone-aware (assuming UTC if naive)
+        # Asegura que el objeto datetime sea consciente de la zona horaria (asumiendo UTC si es 'naive').
         if value.tzinfo is None:
             value = pytz.utc.localize(value)
 
-        # Convert to Colombian time (America/Bogota)
+        # Convierte a la hora de Colombia (America/Bogota).
         colombia_tz = pytz.timezone('America/Bogota')
         colombian_time = value.astimezone(colombia_tz)
 
-        # Get the month name in Spanish
+        # Obtiene el nombre del mes en español.
         spanish_month_name = SPANISH_MONTHS[colombian_time.month]
 
-        # Replace the %B directive with the Spanish month name
+        # Reemplaza la directiva %B con el nombre del mes en español.
         temp_format = format.replace('%B', '___SPANISH_MONTH___')
         formatted_string_with_placeholder = colombian_time.strftime(temp_format)
         final_formatted_string = formatted_string_with_placeholder.replace('___SPANISH_MONTH___', spanish_month_name)
         return final_formatted_string
     app.jinja_env.filters['datetimeformat'] = datetimeformat_filter
 
-    # Manejador de errores 404
+    # --- MANEJADOR DE ERRORES ---
     @app.errorhandler(404)
     def page_not_found(e):
+        """
+        Manejador de errores global para el código de estado 404 (Página no encontrada).
+        Renderiza una plantilla personalizada en lugar de la página de error por defecto.
+        """
         return render_template('cliente/componentes/404.html'), 404
 
     return app

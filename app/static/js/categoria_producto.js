@@ -1,3 +1,31 @@
+/**
+ * Módulo de Página de Categoría Principal.
+ *
+ * Este script gestiona la lógica interactiva de la página de listado de productos
+ * para una categoría principal específica. Permite a los usuarios explorar, filtrar y
+ * ordenar productos de manera dinámica y eficiente.
+ *
+ * Funcionalidades Clave:
+ * 1.  **Gestión de Estado de Filtros:** Mantiene un objeto `currentFilters` para rastrear
+ *     las selecciones del usuario en subcategorías, pseudocategorías, marcas, rango de
+ *     precios y ordenamiento.
+ * 2.  **Filtros Dinámicos y Contextuales:** Carga de forma asíncrona las opciones de filtro
+ *     (subcategorías, marcas, etc.) desde el backend, asegurando que solo se muestren
+ *     las opciones relevantes para la selección actual.
+ * 3.  **Renderizado Asíncrono de Productos:** Utiliza `fetch` para obtener y mostrar
+ *     productos que coinciden con los filtros seleccionados sin necesidad de recargar la página.
+ * 4.  **Control de UI Avanzado:**
+ *     - Gestiona un panel de filtros deslizable ("drawer") para una experiencia de usuario
+ *       limpia en dispositivos móviles y de escritorio.
+ *     - Actualiza dinámicamente el título de la página, la descripción y los "breadcrumbs"
+ *       para reflejar el contexto de navegación actual.
+ *     - Muestra etiquetas de "filtros aplicados" que permiten al usuario eliminar
+ *       filtros individualmente.
+ * 5.  **Paginación "Cargar Más":** Implementa un sistema de paginación simple y efectivo
+ *     que permite al usuario cargar más productos bajo demanda.
+ * 6.  **Optimización de Rendimiento:** Utiliza una función `debounce` para los filtros de
+ *     rango de precios, evitando peticiones excesivas a la API mientras el usuario ajusta los valores.
+ */
 document.addEventListener("DOMContentLoaded", function () {
   // Estado inicial de los filtros
   let currentFilters = {

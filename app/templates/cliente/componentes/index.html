@@ -55,7 +55,7 @@
 
       <!-- Carrusel de productos - Contenedor mejorado -->
       <div class="relative">
-        {% if productos %}
+        {% if productos_data %}
           {% include 'cliente/ui/carrusel_productos.html' %}
         {% else %}
           <!-- Mensaje mejorado cuando no hay productos -->
@@ -68,6 +68,11 @@
             <h3 class="text-xl md:text-2xl font-semibold text-gray-700 mb-3">Productos no disponibles</h3>
             <p class="text-gray-600 max-w-md mx-auto mb-6">No hay productos de {{ categoria_actual }} disponibles en este momento.</p>
             <p class="text-gray-500 text-sm mb-6">Vuelve pronto para descubrir nuestras novedades.</p>
+            <div class="flex flex-col sm:flex-row justify-center gap-3">
+              <button class="px-6 py-3 bg-white text-pink-600 border border-pink-200 rounded-xl hover:bg-pink-50 transition-colors duration-300 shadow-sm">
+                Explorar otras categorías
+              </button>
+            </div>
           </div>
         {% endif %}
       </div>
@@ -75,9 +80,28 @@
   </div>
 </div>
 
+<script src="{{ url_for('static', filename='js/index.js') }}"></script>
+<!-- Datos de productos para JavaScript -->
+<script>
+  window.PRODUCTS_DATA = {{ productos_data|tojson|safe }};
+  window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
+
+  document.addEventListener("DOMContentLoaded", function() {
+    // MEJORA PROFESIONAL: Inicialización específica y robusta.
+    // Solo inicializa el carrusel de productos destacados si su contenedor existe.
+    // Esto evita conflictos con otros carruseles (como el de recomendaciones).
+    const productCarouselContainer = document.getElementById('product-carousel-container');
+    if (productCarouselContainer && typeof initializeProductCarousel === 'function') {
+      initializeProductCarousel('product-carousel-container', window.PRODUCTS_DATA);
+    }
+  });
+</script>
+{% endblock %}
+
+{% block full_width_content_after %}
 {% if usuario_autenticado %}
 <!-- Sección mejorada: Recomendado para Ti -->
-<div class="bg-pink-50 py-16 mt-12">
+<div class="bg-pink-50 py-16">
   <div class="container mx-auto px-4">
     <div id="recomendaciones-container" class="category-section">
       <!-- Encabezado mejorado -->
@@ -117,34 +141,14 @@
         </button>
         </div>
       </div>
-
-      <!-- Indicadores del carrusel (solo para móvil) -->
-      <div id="recomendaciones-indicators" class="flex justify-center mt-6 space-x-2"></div>
-
-      <!-- Mensaje cuando no hay recomendaciones (oculto por defecto) -->
-      <div id="no-recomendaciones" class="col-span-full hidden text-center py-10">
-        <h3 class="text-xl font-semibold text-gray-700 mb-2">Aún no tenemos recomendaciones para ti</h3>
-        <p class="text-gray-600 max-w-md mx-auto">Explora nuestros productos y pronto tendremos sugerencias personalizadas.</p>
-      </div>
-
     </div>
   </div>
 </div>
 {% endif %}
-
-<script src="{{ url_for('static', filename='js/index.js') }}"></script>
-<!-- Datos de productos para JavaScript -->
-<script>
-  window.PRODUCTS_DATA = {{ productos_data|tojson|safe }};
-  window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
-  document.addEventListener("DOMContentLoaded", function() {
-    if (typeof initializeProductCarousel === 'function') {
-      initializeProductCarousel();
-    }
-  });
-</script>
 {% endblock %}
 
 {% block full_width_footer_content %}
   {% include 'cliente/ui/seccion_confianza.html' %}
+  <!-- En el lugar donde queramos mostrar las reseñas -->
+  {% include 'cliente/ui/_reviews_section.html' %}
 {% endblock %}

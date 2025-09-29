@@ -18,7 +18,7 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     </head>
 
-    <body class="bg-gray-100 font-sans flex flex-col min-h-screen" {% if 'user' in session %} data-user-id="{{ session.user.id }}" {% endif %}>
+    <body  data-is-authenticated="{{ 'true' if 'user' in session else 'false' }}" class="bg-gray-100 font-sans flex flex-col min-h-screen" {% if 'user' in session %} data-user-id="{{ session.user.id }}" {% endif %}>
         {% include 'cliente/ui/auth_modals.html' %}
 
         <!-- Navbar principal -->
@@ -177,17 +177,25 @@
 
     {% include 'cliente/ui/mobile_menu.html' %}
 
+    {% include 'cliente/ui/_notification_modal.html' %}
+
+    <!-- Esta modal se mostrará si el usuario intenta usar la página con una cuenta desactivada. -->
+    {% include 'cliente/ui/_inactive_account_modal.html' %}
     
     {% if 'user' in session %}
     {% include 'cliente/ui/modal_edicion_usuario.html' %}
     {% endif %}
-    
+
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/realtime-notifications.js') }}"></script>
     <script src="{{ url_for('static', filename='js/product_card.js') }}"></script>
     <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
     <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
+    {% if g.user %}
+        <script src="{{ url_for('static', filename='js/cliente/client_heartbeat.js') }}"></script>
+    {% endif %}
     <script>
         window.userId = {{ session.get('user_id') | tojson }};
         window.isAuthenticated = {{ 'true' if 'user' in session else 'false' }};

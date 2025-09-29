@@ -1,4 +1,33 @@
-// static/js/cart.js - Versión Ultra Profesional con Contador de Productos Únicos
+/**
+ * @file Módulo del Carrito de Compras del Cliente (ShoppingCart).
+ * @description Este script encapsula toda la lógica del carrito de compras en una clase `ShoppingCart`.
+ *              Gestiona el estado, la interfaz de usuario y la sincronización con el backend.
+ *
+ * @class ShoppingCart
+ *
+ * @funcionalidadesClave
+ * 1.  **Gestión de Estado Dual:**
+ *     - Mantiene el estado del carrito en `localStorage` para persistencia entre sesiones.
+ *     - Sincroniza el estado con la base de datos para usuarios autenticados.
+ *
+ * 2.  **Sincronización Inteligente con Backend:**
+ *     - **Hidratación:** Al cargar la página, si el usuario está autenticado, carga el carrito desde el servidor.
+ *     - **Fusión Post-Login:** Al iniciar sesión, fusiona el carrito local (de sesión anónima) con el del servidor.
+ *     - **Sincronización en Segundo Plano:** Los cambios locales (añadir, eliminar, actualizar) se envían al backend de forma asíncrona.
+ *
+ * 3.  **Interfaz de Usuario (UI) Reactiva y Optimista:**
+ *     - **Modal de Carrito:** Controla un modal deslizable que muestra el estado actual del carrito.
+ *     - **Actualizaciones Optimistas:** La UI se actualiza instantáneamente, proporcionando una experiencia fluida.
+ *     - **Feedback Visual:** Muestra estados de carga, animaciones y notificaciones (toasts) para cada acción.
+ *
+ * 4.  **Flujo de Compra y Pedido:**
+ *     - **Checkout por WhatsApp:** Gestiona la finalización de la compra, creando un pedido en la BD para usuarios autenticados.
+ *     - **Generación de Facturas:** Permite al usuario descargar una factura en formato HTML/PDF.
+ *
+ * 5.  **Optimización de Rendimiento:**
+ *     - **Cache Interna:** Utiliza un objeto `cache` para almacenar totales y contadores, evitando recálculos innecesarios.
+ *     - **Manejo de Sesión:** Se integra con el sistema de autenticación para limpiar el carrito al cerrar sesión.
+ */
 if (typeof ShoppingCart === "undefined") {
   class ShoppingCart {
     constructor() {
@@ -8,19 +37,19 @@ if (typeof ShoppingCart === "undefined") {
       this.isDeleting = false;
       this.currentItemToDelete = null;
       this.storageKey = "ye_cy_cart";
-      this.syncEndpoint = "/api/sync_cart"; // Endpoint para enviar cambios locales
-      this.loadEndpoint = "/api/load_cart"; // Nuevo endpoint para cargar el carrito desde la BD
+      this.syncEndpoint = "/api/sync_cart"; // Endpoint para enviar cambios locales.
+      this.loadEndpoint = "/api/load_cart"; // Endpoint para cargar el carrito desde la BD.
       this.autoOpenOnNewItem = true;
       this.preventAutoClose = false;
       this.originalOverflow = "";
       this.activeButtons = new Map();
-      // 🔢 NUEVO: Cache para optimizar cálculos
+      // Cache para optimizar cálculos.
       this.cache = {
         uniqueCount: 0,
         totalQuantity: 0,
         totalPrice: 0,
       };
-      this.currentOrderId = null; // Para almacenar el ID del pedido actual
+      this.currentOrderId = null; // Almacena el ID del pedido actual.
       this.init();
     }
     init() {
@@ -30,7 +59,7 @@ if (typeof ShoppingCart === "undefined") {
       this.setupDeleteModal();
       this.setupWhatsAppModal();
       this.setupUnauthenticatedWhatsAppModal();
-      // Al iniciar, si el usuario está logueado, hidratar el carrito desde el servidor
+      // Al iniciar, si el usuario está autenticado, hidratar el carrito desde el servidor.
       if (window.userId) {
         this.hydrateCartFromServer();
       }
@@ -40,7 +69,7 @@ if (typeof ShoppingCart === "undefined") {
         const saved = localStorage.getItem(this.storageKey);
         if (saved) {
           this.cartItems = JSON.parse(saved);
-          this.updateCache(); // 🔢 Actualizar cache
+          this.updateCache(); // Actualizar cache.
           this.updateCartCounter();
         }
       } catch (error) {
@@ -52,8 +81,8 @@ if (typeof ShoppingCart === "undefined") {
     saveToStorage() {
       try {
         localStorage.setItem(this.storageKey, JSON.stringify(this.cartItems));
-        this.updateCache(); // 🔢 Actualizar cache después de guardar
-        // Resetear el ID del pedido actual porque el carrito ha cambiado
+        this.updateCache(); // Actualizar cache después de guardar.
+        // Resetear el ID del pedido actual porque el carrito ha cambiado.
         this.currentOrderId = null;
       } catch (error) {
         console.error("Error saving to storage:", error);
@@ -62,9 +91,9 @@ if (typeof ShoppingCart === "undefined") {
     }
     clearStorage() {
       localStorage.removeItem(this.storageKey);
-      this.updateCache(); // 🔢 Limpiar cache
+      this.updateCache(); // Limpiar cache.
     }
-    // 🔢 NUEVO: Método para actualizar cache
+    // Método para actualizar la caché interna.
     updateCache() {
       this.cache.uniqueCount = this.cartItems.length;
       this.cache.totalQuantity = this.cartItems.reduce(
@@ -76,12 +105,12 @@ if (typeof ShoppingCart === "undefined") {
         0
       );
     }
-    // 🔢 NUEVO: Función para formatear moneda COP
+    // Función para formatear moneda a pesos colombianos (COP).
     formatCurrencyCOP(value) {
       if (value === null || value === undefined) {
         return "$ 0";
       }
-      // Ensure value is a number
+      // Asegurarse de que el valor sea un número.
       const numValue = Number(value);
       if (isNaN(numValue)) {
         return "$ 0";
@@ -95,7 +124,7 @@ if (typeof ShoppingCart === "undefined") {
     }
     async syncLocalChanges() {
       if (window.userId) {
-        const previousCartItems = JSON.parse(JSON.stringify(this.cartItems)); // Deep copy
+        const previousCartItems = JSON.parse(JSON.stringify(this.cartItems)); // Copia profunda.
         try {
           const response = await fetch(this.syncEndpoint, {
             method: "POST",
@@ -104,10 +133,10 @@ if (typeof ShoppingCart === "undefined") {
           });
           const data = await response.json();
           if (data.success) {
-            // Removed: this.updateCartItemsFromBackend(data.items);
+            // Eliminado: this.updateCartItemsFromBackend(data.items);
             this.saveToStorage();
-            // Only update UI if the cart state actually changed after backend sync
-            // This comparison is now less relevant as we're not updating from backend response
+            // Solo actualizar la UI si el estado del carrito realmente cambió después de la sincronización.
+            // Esta comparación es ahora menos relevante ya que no estamos actualizando desde la respuesta del backend,
             // but keeping it for consistency if other parts of the code modify cartItems
             if (
               JSON.stringify(previousCartItems) !==
@@ -116,19 +145,19 @@ if (typeof ShoppingCart === "undefined") {
               this.updateCartCounter();
               this.refreshCartModal();
             }
-            // Handle warnings from the backend
+            // Manejar advertencias del backend.
             if (data.warnings && data.warnings.length > 0) {
               data.warnings.forEach((warningMsg) => {
                 this.showToast(warningMsg, "warning");
               });
             }
           } else {
-            // If sync fails, revert to previous local state
+            // Si la sincronización falla, revertir al estado local anterior.
             this.cartItems = previousCartItems;
             this.saveToStorage();
             this.updateCartCounter();
             this.refreshCartModal();
-            // Use the specific message from the backend if available, otherwise a generic one
+            // Usar el mensaje específico del backend si está disponible, de lo contrario uno genérico.
             this.showToast(
               data.message ||
                 "Error al sincronizar el carrito con el servidor.",
@@ -137,7 +166,7 @@ if (typeof ShoppingCart === "undefined") {
           }
         } catch (error) {
           console.error("Error syncing local changes with backend:", error);
-          // If connection error, revert to previous local state
+          // Si hay error de conexión, revertir al estado local anterior.
           this.cartItems = previousCartItems;
           this.saveToStorage();
           this.updateCartCounter();
@@ -167,7 +196,7 @@ if (typeof ShoppingCart === "undefined") {
             this.updateCartCounter();
             this.refreshCartModal();
             console.log("Local cart merged with server cart.");
-            // Handle warnings from the backend
+            // Manejar advertencias del backend.
             if (data.warnings && data.warnings.length > 0) {
               data.warnings.forEach((warningMsg) => {
                 this.showToast(warningMsg, "warning");
@@ -184,50 +213,50 @@ if (typeof ShoppingCart === "undefined") {
           console.error("Connection error while merging carts:", error);
         }
       } else {
-        // If there's no local cart, just load the server cart
+        // Si no hay carrito local, simplemente cargar el del servidor.
         this.hydrateCartFromServer();
       }
     }
     updateCartItemsFromBackend(backendItems) {
       const newCartItems = [];
-      const backendMapById = new Map(); // Map backend items by their actual database ID
-      const backendMapByProductId = new Map(); // Map backend items by product_id for temp ID matching
+      const backendMapById = new Map(); // Mapear artículos del backend por su ID real de la BD.
+      const backendMapByProductId = new Map(); // Mapear artículos del backend por product_id para coincidir con IDs temporales.
       backendItems.forEach((item) => {
         backendMapById.set(item.id, item);
         backendMapByProductId.set(item.product_id, item);
       });
-      // Iterate through current local cart items
+      // Iterar sobre los artículos del carrito local actual.
       this.cartItems.forEach((localItem) => {
         let matchedBackendItem = null;
         if (localItem.id.startsWith("temp_")) {
-          // For temporary items, try to find a match in backend by product_id
+          // Para artículos temporales, intentar encontrar una coincidencia en el backend por product_id.
           matchedBackendItem = backendMapByProductId.get(localItem.product_id);
         } else {
-          // For items with real IDs, try to find a match in backend by real ID
+          // Para artículos con IDs reales, intentar encontrar una coincidencia en el backend por ID real.
           matchedBackendItem = backendMapById.get(localItem.id);
         }
         if (matchedBackendItem) {
-          // Update local item with backend data (especially the ID)
+          // Actualizar el artículo local con datos del backend (especialmente el ID).
           newCartItems.push({
             ...localItem,
-            id: matchedBackendItem.id, // Use the backend-generated ID
-            // Only update quantity if backend quantity is different AND
+            id: matchedBackendItem.id, // Usar el ID generado por el backend.
+            // Solo actualizar la cantidad si la del backend es diferente Y
             // either the local item was temporary (just added)
-            // or the backend quantity is explicitly different (e.g., stock adjustment)
+            // o la cantidad del backend es explícitamente diferente (ej. ajuste de stock).
             quantity:
               localItem.id.startsWith("temp_") ||
               localItem.quantity !== matchedBackendItem.quantity
                 ? matchedBackendItem.quantity
                 : localItem.quantity,
-            subtotal: matchedBackendItem.subtotal, // Subtotal should always come from backend or be recalculated based on backend quantity
-            product: matchedBackendItem.product || localItem.product, // Use backend product data if available
+            subtotal: matchedBackendItem.subtotal, // El subtotal siempre debe venir del backend o ser recalculado.
+            product: matchedBackendItem.product || localItem.product, // Usar datos de producto del backend si están disponibles.
           });
-          // Remove from maps to avoid processing again
+          // Eliminar de los mapas para evitar procesar de nuevo.
           backendMapById.delete(matchedBackendItem.id);
-          backendMapByProductId.delete(matchedBackendItem.product_id); // Also remove from product_id map
+          backendMapByProductId.delete(matchedBackendItem.product_id); // También eliminar del mapa de product_id.
         }
-        // If no match, it means this local item was deleted from backend, so don't add it to newCartItems
-        // Or it's a temporary item that wasn't successfully added to backend (error case)
+        // Si no hay coincidencia, significa que este artículo local fue eliminado del backend, así que no se añade a newCartItems.
+        // O es un artículo temporal que no se pudo añadir al backend (caso de error).
       });
       // Add any items that are only in the backend (newly added or from another device)
       backendMapById.forEach((item) => {
@@ -348,7 +377,7 @@ if (typeof ShoppingCart === "undefined") {
     }
     async confirmOrderAndClearCart() {
       try {
-        // Asegurarse de que el pedido exista antes de vaciar el carrito
+        // Asegurarse de que el pedido exista antes de vaciar el carrito.
         if (!this.currentOrderId) {
           const response = await fetch('/api/create_order', {
             method: 'POST',
@@ -368,7 +397,7 @@ if (typeof ShoppingCart === "undefined") {
           }
         }
 
-        // Ahora que el pedido está asegurado, vaciar el carrito en el backend
+        // Ahora que el pedido está asegurado, vaciar el carrito en el backend.
         const clearResponse = await fetch('/api/clear_cart', {
             method: 'POST',
             headers: {
@@ -383,11 +412,11 @@ if (typeof ShoppingCart === "undefined") {
             return;
         }
 
-        // Si el vaciado en el backend es exitoso, limpiar localmente
+        // Si el vaciado en el backend es exitoso, limpiar localmente.
         this.clearCartAndUI();
         this.showToast("Pedido confirmado y carrito vaciado", "success");
 
-        // Obtener el enlace de WhatsApp
+        // Obtener el enlace de WhatsApp.
         const whatsappResponse = await fetch(`/api/get_whatsapp_link/${this.currentOrderId}`, {
           method: 'GET',
           headers: {
@@ -489,8 +518,6 @@ if (typeof ShoppingCart === "undefined") {
                 `Cantidad de "${product.nombre}" ajustada a ${newQuantity} debido a la disponibilidad.`,
                 "warning"
               );
-            } else {
-              this.showToast("Cantidad actualizada en el carrito", "success");
             }
           }
         } else {
@@ -607,7 +634,7 @@ if (typeof ShoppingCart === "undefined") {
         this.isDeleting = false;
       }
     }
-    // 🔢 MEJORADO: Contador de productos únicos
+    // Contador de productos únicos.
     updateCartCounter() {
       const uniqueCount = this.cache.uniqueCount;
       if (this.cartCounter) {
@@ -621,10 +648,10 @@ if (typeof ShoppingCart === "undefined") {
           }, 600);
         }
       }
-      // 🔢 Actualizar también el contador en el modal
+      // Actualizar también el contador en el modal.
       this.updateModalCounters();
     }
-    // 🔢 NUEVO: Método para actualizar todos los contadores del modal
+    // Método para actualizar todos los contadores del modal.
     updateModalCounters() {
       const uniqueProductCount = document.getElementById("uniqueProductCount");
       const productText = document.getElementById("productText");
@@ -681,15 +708,15 @@ updateCartModal() {
         itemCount.textContent = "0 productos";
         subtotalElement.textContent = "$0.00";
         totalElement.textContent = "$0.00";
-        // Ocultar footer cuando no hay items
+        // Ocultar footer cuando no hay artículos.
         this.animateFooter(false);
         return;
     }
     emptyState.classList.add("hidden");
     emptyState.classList.remove("flex");
-    // Mostrar footer cuando hay items
+    // Mostrar footer cuando hay artículos.
     this.animateFooter(true);
-    // 🔢 Usar valores cacheados para mejor rendimiento
+    // Usar valores cacheados para mejor rendimiento.
     const uniqueCount = this.cache.uniqueCount;
     const totalQuantity = this.cache.totalQuantity;
     const totalPrice = this.cache.totalPrice;
@@ -781,12 +808,12 @@ updateCartModal() {
         .join("");
     this.updateWhatsAppLink(totalPrice);
 }
-// Nuevo método para animar la aparición/desaparición del footer
+// Método para animar la aparición/desaparición del footer.
 animateFooter(show) {
     const cartFooter = document.getElementById("cartFooter");
     if (show) {
         cartFooter.style.display = 'block';
-        // Forzar reflow para reiniciar la animación
+        // Forzar reflow para reiniciar la animación.
         cartFooter.offsetHeight;
         cartFooter.style.opacity = '1';
         cartFooter.style.transform = 'translateY(0)';
@@ -795,13 +822,13 @@ animateFooter(show) {
         cartFooter.style.transform = 'translateY(20px)';
         setTimeout(() => {
             cartFooter.style.display = 'none';
-        }, 300); // Coincide con la duración de la transición
+        }, 300); // Coincide con la duración de la transición.
     }
 }
 
     clearCartAndUI() {
       this.cartItems = [];
-      this.clearStorage(); // Llama a updateCache, que ahora usará cartItems vacío
+      this.clearStorage(); // Llama a updateCache, que ahora usará un carrito vacío.
       this.updateCartCounter();
       this.refreshCartModal();
     }
@@ -829,7 +856,6 @@ animateFooter(show) {
         this.saveToStorage();
         this.updateCartModal();
         this.updateCartCounter();
-        this.showToast("Cantidad actualizada", "success");
         if (window.userId) {
             this.syncLocalChanges();
         }
@@ -862,10 +888,10 @@ animateFooter(show) {
       whatsappBtn.classList.remove("opacity-50", "cursor-not-allowed");
       let message;
       if (window.userId) {
-        // Mensaje para usuarios autenticados
+        // Mensaje para usuarios autenticados.
         message = `¡Hola! 👋 He realizado un nuevo pedido. La factura en PDF se ha descargado en mi dispositivo.`;
       } else {
-        // Mensaje para usuarios no autenticados
+        // Mensaje para usuarios no autenticados.
         message = `¡Hola! 👋 Quiero realizar este pedido:\n\n`;
         this.cartItems.forEach((item) => {
           message += `• ${item.product.nombre} (x${
@@ -875,7 +901,7 @@ animateFooter(show) {
         message += `\n*Total: ${this.formatCurrencyCOP(total)}*\n\n¿Podrían confirmar disponibilidad?`;
       }
       const encodedMessage = encodeURIComponent(message);
-      const phoneNumber = "3044931438"; // Reemplaza con tu número de WhatsApp
+      const phoneNumber = "3044931438"; // Reemplazar con tu número de WhatsApp.
       whatsappBtn.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     }
     showLoadingState(button) {
@@ -920,7 +946,7 @@ animateFooter(show) {
       }, 2000);
     }
     showToast(message, type = "success", duration = 3000) {
-      // Use the global window.toast if it exists, otherwise log to console.
+      // Usar el objeto global window.toast si existe, de lo contrario, registrar en consola.
       if (window.toast && typeof window.toast[type] === "function") {
         window.toast[type](message, duration);
       } else {
@@ -934,7 +960,7 @@ animateFooter(show) {
       this.preventAutoClose = enabled;
     }
     async printInvoice() {
-        // Si no hay un pedido actual, crearlo
+        // Si no hay un pedido actual, crearlo.
         if (!this.currentOrderId) {
             try {
                 const response = await fetch('/api/create_order', {
@@ -959,7 +985,7 @@ animateFooter(show) {
             }
         }
 
-        // Abrir una nueva ventana para imprimir la factura
+        // Abrir una nueva ventana para imprimir la factura.
         this.showToast("Preparando factura para imprimir...", "info");
         try {
             const printUrl = `/print_invoice/${this.currentOrderId}`;
@@ -974,14 +1000,14 @@ animateFooter(show) {
             console.error("Error al abrir la ventana de impresión:", error);
             this.showToast("Error al preparar la impresión de la factura.", "error");
         } finally {
-            this.hideWhatsAppModal(); // Cerrar el modal después de intentar imprimir
+            this.hideWhatsAppModal(); // Cerrar el modal después de intentar imprimir.
         }
     }
   }
-  // Hacer la clase accesible globalmente
+  // Hacer la clase accesible globalmente.
   window.ShoppingCart = ShoppingCart;
 }
-// Inicialización mejorada
+// Inicialización mejorada.
 document.addEventListener("DOMContentLoaded", () => {
   if (!window.cart) {
     window.cart = new ShoppingCart();

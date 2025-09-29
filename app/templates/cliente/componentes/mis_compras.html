@@ -464,60 +464,6 @@
     </div>
   </div>
 </div>
-<!-- Modal para detalles de la compra mejorado -->
-<div id="compra-modal" class="fixed z-60 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-    <div class="fixed inset-0 modal-backdrop transition-opacity" aria-hidden="true"></div>
-    
-    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-    
-    <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full modal-content">
-      <div class="modal-header-gradient px-6 py-6 relative">
-        <div class="flex justify-between items-center relative z-10">
-          <div class="flex items-center space-x-3">
-            <div class="bg-white bg-opacity-20 p-2 rounded-lg">
-              <svg class="h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-              </svg>
-            </div>
-            <h3 class="text-xl font-bold text-white" id="modal-title">
-              Detalles de la Compra
-            </h3>
-          </div>
-          <button id="close-modal" type="button" class="rounded-full text-white hover:text-gray-200 focus:outline-none p-2 modal-close-btn">
-            <svg class="h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      </div>
-      
-      <div class="px-6 py-5">
-        <div id="compra-details" class="space-y-6">
-          <!-- Los detalles de la compra se cargarán aquí -->
-        </div>
-      </div>
-      
-      <div class="bg-gray-50 px-6 py-4 sm:flex sm:flex-row-reverse">
-        <button id="close-modal-btn" type="button" class="w-full inline-flex justify-center rounded-lg border border-transparent shadow-sm px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-base font-medium text-white hover:from-blue-700 hover:to-indigo-800 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm action-btn">
-          Cerrar
-        </button>
-        <button id="reorder-btn" type="button" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm action-btn">
-          <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Comprar de Nuevo
-        </button>
-        <button id="descargar-factura-btn" type="button" class="mt-3 w-full inline-flex justify-center rounded-lg border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm action-btn">
-          <svg class="w-5 h-5 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Descargar Factura
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- Incluir Chart.js y librerías adicionales -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -596,19 +542,6 @@
         currentPage++;
         cargarCompras();
       }
-    });
-    
-    document.getElementById('close-modal').addEventListener('click', cerrarModal);
-    document.getElementById('close-modal-btn').addEventListener('click', cerrarModal);
-    
-    document.getElementById('reorder-btn').addEventListener('click', function() {
-      const compraId = this.getAttribute('data-compra-id');
-      reordenarCompra(compraId);
-    });
-    
-    document.getElementById('descargar-factura-btn').addEventListener('click', function() {
-      const compraId = this.getAttribute('data-compra-id');
-      descargarFactura(compraId);
     });
     
     // Función para cargar compras
@@ -1194,18 +1127,19 @@
         comprasContainer.innerHTML = `
           <ul class="divide-y divide-gray-200">
             ${compras.map((compra, index) => {
-              const fecha =parsePythonDatetime(compra.created_at);
+              const fecha = new Date(compra.created_at);
               const fechaFormateada = fecha.toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: '2-digit',
-                year: 'numeric'
+                year: 'numeric',
+                timeZone: 'America/Bogota'
               });
               
               return `
-                <li class="py-6 px-6 hover:bg-gray-50 cursor-pointer transition-colors duration-200 purchase-card fade-in" style="animation-delay: ${index * 0.1}s" onclick="verDetallesCompra('${compra.id}')">
+                <a href="/pedido/${compra.id}" class="block py-6 px-6 hover:bg-gray-50 cursor-pointer transition-colors duration-200 purchase-card fade-in" style="animation-delay: ${index * 0.1}s">
                   <div class="flex items-center justify-between">
                     <div class="flex items-center">
-                      <div class="min-w-0 flex-1 flex items-center">
+                      <div class="min-w-0 flex-1 flex items-center no-underline">
                         <div class="flex-shrink-0">
                           <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
                             <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1240,7 +1174,7 @@
                       </div>
                     </div>
                   </div>
-                </li>
+                </a>
               `;
             }).join('')}
           </ul>
@@ -1254,11 +1188,12 @@
               const fechaFormateada = fecha.toLocaleDateString('es-ES', {
                 day: '2-digit',
                 month: '2-digit',
-                year: 'numeric'
+                year: 'numeric',
+                timeZone: 'America/Bogota'
               });
               
               return `
-                <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer purchase-card fade-in" style="animation-delay: ${index * 0.1}s" onclick="verDetallesCompra('${compra.id}')">
+                <a href="/pedido/${compra.id}" class="block bg-white rounded-xl shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300 cursor-pointer purchase-card fade-in no-underline" style="animation-delay: ${index * 0.1}s">
                   <div class="p-4">
                     <div class="flex justify-between items-start mb-3">
                       <div class="flex-1 min-w-0">
@@ -1292,7 +1227,7 @@
                       </div>
                     </div>
                   </div>
-                </div>
+                </a>
               `;
             }).join('')}
           </div>
@@ -1340,234 +1275,6 @@
         `;
       }
     }
-    
-    // Función para ver detalles de una compra
-    window.verDetallesCompra = function(compraId) {
-      const modal = document.getElementById('compra-modal');
-      const modalTitle = document.getElementById('modal-title');
-      const compraDetails = document.getElementById('compra-details');
-      
-      modalTitle.textContent = `Detalles de la Compra #${compraId}`;
-      compraDetails.innerHTML = `
-        <div class="text-center py-8">
-          <div class="skeleton-card skeleton-rect w-16 h-16 mx-auto mb-4"></div>
-          <div class="skeleton-card skeleton-line w-3/4 mx-auto mb-2"></div>
-          <div class="skeleton-card skeleton-line w-1/2 mx-auto"></div>
-        </div>
-      `;
-      
-      modal.classList.remove('hidden');
-      
-      fetch(`/api/pedido-detalle/${compraId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          renderCompraDetails(data, compraId);
-          document.getElementById('reorder-btn').setAttribute('data-compra-id', compraId);
-          document.getElementById('descargar-factura-btn').setAttribute('data-compra-id', compraId);
-        } else {
-          compraDetails.innerHTML = `
-            <div class="text-center py-8">
-              <svg class="mx-auto h-12 w-12 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3, 1.732 3z" />
-              </svg>
-              <p class="mt-2 text-red-500">Error al cargar los detalles de la compra</p>
-            </div>
-          `;
-        }
-      })
-      .catch(error => {
-        console.error('Error al cargar detalles de la compra:', error);
-        compraDetails.innerHTML = `
-          <div class="text-center py-8">
-            <svg class="mx-auto h-12 w-12 text-red-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3, 1.732 3z" />
-            </svg>
-            <p class="mt-2 text-red-500">Error al cargar los detalles de la compra</p>
-          </div>
-        `;
-      });
-    };
-    
-    // Función para renderizar detalles de la compra - MEJORADA
-    function renderCompraDetails(data, compraId) {
-      const compraDetails = document.getElementById('compra-details');
-      
-      const fecha = new Date(data.created_at);
-      const fechaFormateada = fecha.toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-      
-      let productosHtml = data.productos.map((producto, index) => `
-        <div class="flex items-center py-4 border-b border-gray-200 product-card" style="animation-delay: ${index * 0.1}s">
-          <div class="flex-shrink-0 h-16 w-16">
-            <img class="h-16 w-16 rounded-md object-cover" src="${producto.producto_imagen_url || '/static/img/default-product.png'}" alt="${producto.producto_nombre}">
-          </div>
-          <div class="ml-4 flex-1">
-            <div class="flex justify-between">
-              <div>
-                <h4 class="text-sm font-medium text-gray-900">${producto.producto_nombre}</h4>
-                <p class="text-sm text-gray-500">${producto.producto_marca || 'Marca no especificada'}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-sm font-medium text-gray-900">${formatCurrency(producto.precio_unitario)}</p>
-                <p class="text-sm text-gray-500">c/u</p>
-              </div>
-            </div>
-            <div class="mt-2 flex justify-between">
-              <div>
-                <p class="text-sm text-gray-500">Cantidad: ${producto.cantidad}</p>
-              </div>
-              <div class="text-right">
-                <p class="text-sm font-medium text-gray-900">${formatCurrency(producto.subtotal)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      `).join('');
-      
-      compraDetails.innerHTML = `
-        <div class="space-y-6">
-          <!-- Información de la Compra con diseño mejorado -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div class="flex items-center justify-between mb-4">
-              <h4 class="text-lg font-bold text-gray-900 flex items-center">
-                <svg class="w-5 h-5 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                Información de la Compra
-              </h4>
-              <div class="badge-status badge-success">
-                <svg class="w-4 h-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Completado
-              </div>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="info-item p-3 rounded-lg">
-                <dt class="text-sm font-medium text-gray-500">ID de la Compra</dt>
-                <dd class="mt-1 text-sm font-bold text-gray-900">#${compraId}</dd>
-              </div>
-              <div class="info-item p-3 rounded-lg">
-                <dt class="text-sm font-medium text-gray-500">Fecha</dt>
-                <dd class="mt-1 text-sm font-bold text-gray-900">${fechaFormateada}</dd>
-              </div>
-              <div class="info-item p-3 rounded-lg">
-                <dt class="text-sm font-medium text-gray-500">Método de Pago</dt>
-                <dd class="mt-1 text-sm font-bold text-gray-900">Contra Entrega</dd>
-              </div>
-              <div class="info-item p-3 rounded-lg">
-                <dt class="text-sm font-medium text-gray-500">Total</dt>
-                <dd class="mt-1 text-sm font-bold text-gray-900">${formatCurrency(data.total)}</dd>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Productos con diseño mejorado -->
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              Productos
-            </h4>
-            <div class="border border-gray-200 rounded-lg overflow-hidden">
-              ${productosHtml}
-            </div>
-          </div>
-          
-          <!-- Resumen de compra con diseño mejorado -->
-          <div class="summary-card p-6">
-            <h4 class="text-lg font-bold text-gray-900 mb-4 flex items-center">
-              <svg class="w-5 h-5 mr-2 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-              </svg>
-              Resumen de Compra
-            </h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div class="space-y-3">
-                <div class="flex justify-between">
-                  <p class="text-sm text-gray-600">Subtotal:</p>
-                  <p class="text-sm font-medium text-gray-900">${formatCurrency(data.total)}</p>
-                </div>
-                <div class="flex justify-between">
-                  <p class="text-sm text-gray-600">Envío:</p>
-                  <p class="text-sm font-medium text-gray-900">$0</p>
-                </div>
-              </div>
-              <div class="flex justify-between items-center bg-white bg-opacity-50 p-4 rounded-lg">
-                <p class="text-base font-bold text-gray-900">Total:</p>
-                <p class="text-xl font-bold text-indigo-700">${formatCurrency(data.total)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-    
-    // Función para cerrar modal
-    function cerrarModal() {
-      document.getElementById('compra-modal').classList.add('hidden');
-    }
-    
-    // Función para reordenar una compra
-    function reordenarCompra(compraId) {
-      const reorderBtn = document.getElementById('reorder-btn');
-      const originalText = reorderBtn.innerHTML;
-      
-      reorderBtn.innerHTML = `
-        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-        </svg>
-        Procesando...
-      `;
-      reorderBtn.disabled = true;
-      
-      fetch(`/reordenar/${compraId}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
-          'Content-Type': 'application/json'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
-        if (data.success) {
-          cerrarModal();
-          window.toast.success(data.message || 'Productos añadidos al carrito exitosamente');
-        } else {
-           window.toast.error(data.message || 'Error al reordenar la compra', 'error');
-        }
-      })
-      .catch(error => {
-        console.error('Error al reordenar compra:', error);
-         window.toast.error('Error al reordenar la compra', 'error');
-      })
-      .finally(() => {
-        reorderBtn.innerHTML = originalText;
-        reorderBtn.disabled = false;
-      });
-    }
-    
-    // Función para descargar factura
-    function descargarFactura(compraId) {
-      window.open(`/factura-pdf/${compraId}`, '_blank');
-    }
-    
-    
     
     // Función para ir a una página específica
     window.goToPage = function(page) {
@@ -1661,21 +1368,18 @@
       return "$ " + value.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
-    // Función para parsear fechas de Python (YYYY-MM-DD HH:MM:SS.ffffff)
+    // Función para parsear fechas de Python (YYYY-MM-DD HH:MM:SS.ffffff) - MEJORADA
     function parsePythonDatetime(dtString) {
         if (!dtString) return null;
-        // Reemplazar 'T' si existe (para ISO format) o simplemente dividir por espacios y delimitadores
-        const parts = dtString.replace('T', ' ').split(/[- :.]/);
-        const year = parseInt(parts[0]);
-        const month = parseInt(parts[1]) - 1; // Mes es 0-indexado en JavaScript
-        const day = parseInt(parts[2]);
-        const hour = parseInt(parts[3] || 0);
-        const minute = parseInt(parts[4] || 0);
-        const second = parseInt(parts[5] || 0);
-        // Tomar los primeros 3 dígitos para milisegundos si existen
-        const millisecond = parseInt((parts[6] || '0').substring(0, 3)); 
-
-        return new Date(year, month, day, hour, minute, second, millisecond);
+        // new Date() es robusto y puede parsear directamente formatos ISO 8601,
+        // que es el estándar que ahora envía el backend.
+        const date = new Date(dtString);
+        // Verificar si la fecha es válida. Si no, new Date() devuelve un objeto Date inválido.
+        if (isNaN(date.getTime())) {
+            console.error("Fecha inválida recibida:", dtString);
+            return null; // Devolver null para manejar el error elegantemente en la UI
+        }
+        return date;
     }
     
     // Detectar cambios en el tamaño de la pantalla para ajustar la vista automáticamente

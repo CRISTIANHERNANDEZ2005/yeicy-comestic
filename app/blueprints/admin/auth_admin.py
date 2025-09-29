@@ -1,0 +1,162 @@
+"""
+Módulo de Autenticación y Gestión de Sesiones para Administradores.
+
+Este blueprint centraliza toda la lógica relacionada con la autenticación
+de los administradores en el panel de control. Utiliza JSON Web Tokens (JWT)
+almacenados en cookies seguras para gestionar las sesiones.
+
+Responsabilidades principales:
+- **Login**: Renderiza la página de inicio de sesión y procesa las credenciales.
+  Si son válidas, genera un token JWT y lo establece en una cookie.
+- **Logout**: Cierra la sesión de forma segura, invalidando la cookie del token
+  y actualizando el estado de 'última vez visto' del administrador.
+- **Validación de Sesión (`/admin/me`)**: Proporciona un endpoint protegido para
+  que el frontend verifique la validez de la sesión actual y obtenga los datos
+  del administrador. Crucialmente, también verifica si la cuenta ha sido
+  desactivada, permitiendo una respuesta proactiva en el frontend.
+- **Validación de Credenciales en Tiempo Real**: Ofrece un endpoint auxiliar
+  para validar credenciales sin completar el inicio de sesión, mejorando la
+  experiencia de usuario en el formulario de login.
+"""
+from flask import Blueprint, request, jsonify, session, render_template, redirect, url_for, make_response, current_app
+from datetime import timedelta, datetime, timezone
+from app.models.domains.user_models import Admins
+from app.extensions import db, bcrypt
+from flask_login import login_user, logout_user, login_required
+from flask_jwt_extended import create_access_token, set_access_cookies, unset_jwt_cookies, jwt_required, get_jwt_identity
+
+admin_auth_bp = Blueprint('admin_auth', __name__)
+
+@admin_auth_bp.route('/validate_credentials', methods=['POST'])
+def validate_credentials():
+    """
+    Endpoint de API para validar credenciales de administrador en tiempo real.
+
+    Este endpoint es utilizado por el formulario de inicio de sesión para verificar
+    si la cédula y la contraseña son correctas sin necesidad de enviar el formulario
+    completo. Mejora la experiencia de usuario al proporcionar retroalimentación
+    instantánea.
+
+    Returns:
+        JSON: Un objeto con `valid: true` o `valid: false` y un mensaje.
+    """
+    data = request.get_json()
+    identificacion = data.get('identificacion')
+    contraseña = data.get('contraseña')
+
+    if not identificacion or not contraseña:
+        return jsonify({'valid': False, 'message': 'Ambos campos son requeridos.'}), 200
+
+    admin = Admins.query.filter_by(cedula=identificacion).first()
+
+    if not admin:
+        return jsonify({'valid': False, 'message': 'Usuario no encontrado.'}), 200
+    
+    if not admin.verificar_contraseña(contraseña):
+        return jsonify({'valid': False, 'message': 'Contraseña incorrecta.'}), 200
+    
+    return jsonify({'valid': True, 'message': 'Credenciales válidas.'}), 200
+
+@admin_auth_bp.route('/administracion', methods=['GET', 'POST'])
+def login():
+    """
+    Gestiona el inicio de sesión del administrador.
+
+    - **GET**: Renderiza la página de inicio de sesión del panel de administración.
+    - **POST**: Procesa la solicitud de inicio de sesión. Verifica las credenciales,
+      y si son correctas y la cuenta está activa, genera un token JWT, lo establece
+      en una cookie segura (`admin_jwt`) y devuelve una respuesta JSON indicando
+      la redirección al dashboard.
+
+    Realiza validaciones secuenciales para devolver mensajes de error específicos
+    y seguros.
+
+    Returns:
+        Response (GET): La plantilla HTML del login.
+        JSON (POST): Respuesta de éxito con URL de redirección o un objeto de error.
+    """
+    if request.method == 'POST':
+        data = request.get_json()
+        identificacion = data.get('identificacion')
+        contraseña = data.get('contraseña')
+
+        if not identificacion or not contraseña:
+            return jsonify({'error': 'Faltan campos requeridos'}), 400
+
+        admin = Admins.query.filter_by(cedula=identificacion).first()
+
+        # Validaciones secuenciales para mensajes de error claros y seguros.
+        if not admin:
+            return jsonify({'error': 'Credenciales inválidas'}), 401
+
+        if not admin.is_active:
+            return jsonify({'error': 'Tu cuenta de administrador ha sido desactivada. Contacta a soporte.'}), 403
+
+        if not admin.verificar_contraseña(contraseña):
+            return jsonify({'error': 'Credenciales inválidas'}), 401
+
+        # Generar el token JWT con la expiración definida en la configuración.
+        # Por defecto, 24 horas si no está configurado.
+        admin_jwt_expiration_minutes = current_app.config.get('ADMIN_JWT_EXPIRATION_MINUTES', 1440)
+        expires_delta = timedelta(minutes=admin_jwt_expiration_minutes)
+        access_token = create_access_token(identity=admin.id, additional_claims={"is_admin": True}, expires_delta=expires_delta)
+
+        response = make_response(jsonify({'success': True, 'redirect': url_for('admin_dashboard_bp.dashboard')}))
+        set_access_cookies(response, access_token, max_age=expires_delta)
+        return response
+
+    return render_template('admin/page/login_admin.html')
+
+@admin_auth_bp.route('/admin/logout', methods=['POST'])
+@jwt_required(locations=["cookies"]) # Proteger el endpoint de logout para evitar CSRF.
+def logout():
+    """
+    Cierra la sesión del administrador de forma segura.
+    1. Marca al administrador como desconectado en la base de datos.
+    2. Invalida la cookie JWT del lado del cliente.
+    """
+    try:
+        # Obtener la identidad del admin desde el token JWT validado.
+        admin_id = get_jwt_identity()
+        admin = Admins.query.get(admin_id)
+        if admin:
+            # Guardar la hora exacta de la desconexión.
+            admin.last_seen = datetime.now(timezone.utc)
+            db.session.commit()
+            current_app.logger.info(f"Administrador {admin.id} marcado como desconectado.")
+    except Exception as e:
+        current_app.logger.error(f"Error al marcar admin como desconectado durante logout: {e}")
+
+    response = make_response(jsonify({'success': True, 'message': 'Sesión cerrada exitosamente.'}))
+    unset_jwt_cookies(response)
+    return response
+
+@admin_auth_bp.route("/admin/me", methods=["GET"])
+@jwt_required(locations=["cookies"]) # Asegura que esta ruta esté protegida
+def admin_me():
+    """
+    Endpoint "who am I" para el administrador autenticado.
+
+    Permite al frontend verificar la validez de la sesión actual y obtener los
+    datos básicos del administrador. Es crucial para mantener la sesión activa
+    en la interfaz y para detectar si la cuenta ha sido desactivada remotamente.
+
+    Returns:
+        JSON: Datos del administrador si la sesión es válida y la cuenta está activa.
+        JSON: Error 404 si el admin no se encuentra o 403 si la cuenta está inactiva.
+    """
+    current_admin_id = get_jwt_identity()
+    admin = Admins.query.get(current_admin_id)
+
+    if not admin:
+        return jsonify({"error": "Admin no encontrado"}), 404
+    
+    if not admin.is_active:
+        return jsonify({"error": "Cuenta de administrador desactivada", "code": "ADMIN_ACCOUNT_INACTIVE"}), 403
+
+    return jsonify({
+        "id": admin.id,
+        "nombre": admin.nombre,
+        "apellido": admin.apellido,
+        "cedula": admin.cedula
+    })

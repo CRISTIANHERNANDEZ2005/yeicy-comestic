@@ -1,3 +1,23 @@
+"""
+Módulo de Gestión de Categorías (Admin).
+
+Este blueprint centraliza toda la lógica para la administración de la jerarquía
+de categorías de productos (Principales, Subcategorías y Seudocategorías).
+Proporciona una interfaz completa para listar, crear, editar y gestionar el
+estado de cada nivel de categoría.
+
+Funcionalidades Clave:
+- **Vistas de Listado**: Ofrece una vista jerárquica ('Todas') y vistas de tabla
+  individuales para cada nivel de categoría, con paginación, búsqueda y filtros.
+- **API de Filtrado en Tiempo Real**: Endpoints que permiten al frontend filtrar
+  y ordenar las listas de categorías dinámicamente sin recargar la página.
+- **Gestión de Estado**: Endpoints para activar o desactivar categorías, lo que
+  afecta su visibilidad en toda la aplicación.
+- **Creación y Edición**: APIs para crear nuevas categorías y actualizar los
+  detalles (nombre, descripción) de las existentes.
+- **Optimización de Consultas**: Utiliza técnicas de carga anticipada (eager loading)
+  como `subqueryload` para prevenir el problema N+1 y asegurar un rendimiento eficiente.
+"""
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import CategoriasPrincipales, Subcategorias, Seudocategorias
@@ -16,6 +36,23 @@ admin_lista_categorias_bp = Blueprint('admin_categorias', __name__, url_prefix='
 @admin_lista_categorias_bp.route('/lista-categorias/<string:view_type>', methods=['GET'])
 @admin_jwt_required
 def get_all_categories(admin_user, view_type=None):
+    """
+    Renderiza la página de gestión de categorías y maneja las diferentes vistas.
+
+    Esta función es el controlador principal para la sección de categorías. Determina
+    la vista solicitada (jerárquica, tabla de principales, etc.), aplica los
+    filtros y la paginación correspondientes, y renderiza la plantilla principal
+    con los datos necesarios.
+
+    Args:
+        admin_user: El objeto del administrador autenticado (inyectado por el decorador).
+        view_type (str, optional): El tipo de vista a mostrar ('principales',
+                                   'subcategorias', 'seudocategorias').
+                                   Por defecto es None, lo que lleva a la vista 'all'.
+
+    Returns:
+        Response: La plantilla `lista_categorias.html` renderizada con los datos.
+    """
     error_message = None
     categorias_data = []
     subcategorias_data = []
@@ -34,7 +71,7 @@ def get_all_categories(admin_user, view_type=None):
     current_view = request.args.get('view', current_view)
     
     try:
-        # Obtener parámetros de filtro
+        # Obtener parámetros de filtro y paginación desde la URL.
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         nombre = request.args.get('nombre', '')
@@ -44,10 +81,14 @@ def get_all_categories(admin_user, view_type=None):
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
         
-        # Cargar datos según la vista actual
+        # Cargar datos según la vista actual.
         if current_view == 'main':
             # Vista de categorías principales
-            query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias))
+            # MEJORA PROFESIONAL: Carga anticipada de toda la jerarquía para evitar N+1 en el serializador.
+            query = CategoriasPrincipales.query.options(
+                subqueryload(CategoriasPrincipales.subcategorias)
+                .subqueryload(Subcategorias.seudocategorias)
+                .subqueryload(Seudocategorias.productos))
             
             if nombre:
                 query = query.filter(CategoriasPrincipales.nombre.ilike(f'%{nombre}%'))
@@ -81,7 +122,11 @@ def get_all_categories(admin_user, view_type=None):
                 
         elif current_view == 'sub':
             # Vista de subcategorías
-            query = Subcategorias.query.options(joinedload(Subcategorias.categoria_principal), subqueryload(Subcategorias.seudocategorias))
+            # MEJORA PROFESIONAL: Carga anticipada completa para el serializador.
+            query = Subcategorias.query.options(
+                joinedload(Subcategorias.categoria_principal), 
+                subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos)
+            )
             
             if nombre:
                 query = query.filter(Subcategorias.nombre.ilike(f'%{nombre}%'))
@@ -122,7 +167,11 @@ def get_all_categories(admin_user, view_type=None):
             
         elif current_view == 'pseudo':
             # Vista de seudocategorías
-            query = Seudocategorias.query.options(joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal), subqueryload(Seudocategorias.productos))
+            # MEJORA PROFESIONAL: Carga anticipada completa para el serializador.
+            query = Seudocategorias.query.options(
+                joinedload(Seudocategorias.subcategoria).joinedload(Subcategorias.categoria_principal), 
+                subqueryload(Seudocategorias.productos)
+            )
             
             if nombre:
                 query = query.filter(Seudocategorias.nombre.ilike(f'%{nombre}%'))
@@ -166,7 +215,14 @@ def get_all_categories(admin_user, view_type=None):
                 
         else:  # Vista 'all' - jerárquica
             # Obtener todas las categorías principales con sus relaciones
-            query = CategoriasPrincipales.query.options(subqueryload(CategoriasPrincipales.subcategorias).subqueryload(Subcategorias.seudocategorias).subqueryload(Seudocategorias.productos))
+            # Se utiliza subqueryload para resolver el problema N+1.
+            # Esto carga todas las subcategorías, seudocategorías y sus productos
+            # en consultas separadas y eficientes. La clave es cargar la jerarquía completa.
+            query = CategoriasPrincipales.query.options(
+                subqueryload(CategoriasPrincipales.subcategorias)
+                .subqueryload(Subcategorias.seudocategorias)
+                .subqueryload(Seudocategorias.productos)
+            )
 
             # Apply sorting (if needed for 'all' view, using 'nombre' as default)
             query = query.order_by(CategoriasPrincipales.created_at.desc())
@@ -218,6 +274,19 @@ def get_all_categories(admin_user, view_type=None):
 @admin_lista_categorias_bp.route('/api/categorias-principales/<string:categoria_id>/status', methods=['POST'])
 @admin_jwt_required
 def update_main_category_status(admin_user, categoria_id):
+    """
+    API para cambiar el estado (activo/inactivo) de una categoría principal.
+
+    Recibe una solicitud POST con el nuevo estado y lo aplica a la categoría
+    correspondiente. Registra la acción en los logs para auditoría.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal a modificar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
     try:
         # Validar que la categoría exista
         categoria = CategoriasPrincipales.query.get(categoria_id)
@@ -302,6 +371,20 @@ def update_main_category_status(admin_user, categoria_id):
 @admin_lista_categorias_bp.route('/api/subcategorias/<string:subcategoria_id>/status', methods=['POST'])
 @admin_jwt_required
 def update_subcategory_status(admin_user, subcategoria_id):
+    """
+    API para cambiar el estado (activo/inactivo) de una subcategoría.
+
+    Recibe una solicitud POST con el nuevo estado. Al cambiar el estado,
+    esta función también podría desencadenar una actualización en el estado de
+    su categoría principal padre si es necesario.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        subcategoria_id (str): El ID de la subcategoría a modificar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
     try:
         # Validar que la subcategoría exista
         subcategoria = Subcategorias.query.get(subcategoria_id)
@@ -384,6 +467,20 @@ def update_subcategory_status(admin_user, subcategoria_id):
 @admin_lista_categorias_bp.route('/api/seudocategorias/<string:seudocategoria_id>/status', methods=['POST'])
 @admin_jwt_required
 def update_pseudocategory_status(admin_user, seudocategoria_id):
+    """
+    API para cambiar el estado (activo/inactivo) de una seudocategoría.
+
+    Recibe una solicitud POST con el nuevo estado. Cambiar el estado de una
+    seudocategoría puede afectar el estado de su subcategoría y categoría
+    principal padre.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        seudocategoria_id (str): El ID de la seudocategoría a modificar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
     try:
         # Validar que la seudocategoría exista
         seudocategoria = Seudocategorias.query.get(seudocategoria_id)
@@ -467,6 +564,20 @@ def update_pseudocategory_status(admin_user, seudocategoria_id):
 @admin_lista_categorias_bp.route('/api/categoria/<string:category_type>/<string:category_id>', methods=['GET'])
 @admin_jwt_required
 def get_category_details(admin_user, category_type, category_id):
+    """
+    API para obtener los detalles de una categoría específica para el modal de edición.
+
+    Devuelve el nombre, descripción y la información de sus padres jerárquicos
+    para mostrar en el formulario de edición.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        category_type (str): El tipo de categoría ('main', 'sub', 'pseudo').
+        category_id (str): El ID de la categoría a obtener.
+
+    Returns:
+        JSON: Un objeto con los detalles de la categoría.
+    """
     try:
         category = None
         data = {}
@@ -525,6 +636,21 @@ def get_category_details(admin_user, category_type, category_id):
 @admin_lista_categorias_bp.route('/api/categoria/<string:category_type>/<string:category_id>', methods=['PUT'])
 @admin_jwt_required
 def update_category_details(admin_user, category_type, category_id):
+    """
+    API para actualizar el nombre y la descripción de una categoría.
+
+    Recibe una solicitud PUT con los nuevos datos. Antes de actualizar, realiza
+    validaciones cruciales para asegurar la unicidad del nombre y del slug generado,
+    previniendo conflictos de URL y datos duplicados.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        category_type (str): El tipo de categoría a actualizar.
+        category_id (str): El ID de la categoría a actualizar.
+
+    Returns:
+        JSON: Un mensaje de éxito o un error de validación/servidor.
+    """
     try:
         data = request.get_json()
         nombre = data.get('nombre')
@@ -584,6 +710,18 @@ def update_category_details(admin_user, category_type, category_id):
 @admin_lista_categorias_bp.route('/api/categorias-principales/filter', methods=['GET'])
 @admin_jwt_required
 def filter_main_categories_api(admin_user):
+    """
+    API para filtrar y paginar las categorías principales en tiempo real.
+
+    Este endpoint es consumido por el frontend para actualizar la vista de tabla
+    de categorías principales cuando el usuario aplica filtros o cambia de página.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto que contiene la lista de categorías y metadatos de paginación.
+    """
     try:
         # Obtener parámetros de filtro
         page = request.args.get('page', 1, type=int)
@@ -658,6 +796,18 @@ def filter_main_categories_api(admin_user):
 @admin_lista_categorias_bp.route('/api/subcategorias/filter', methods=['GET'])
 @admin_jwt_required
 def filter_subcategories_api(admin_user):
+    """
+    API para filtrar y paginar las subcategorías en tiempo real.
+
+    Similar a `filter_main_categories_api`, pero para el nivel de subcategorías.
+    Permite filtrar por categoría principal padre.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto que contiene la lista de subcategorías y metadatos de paginación.
+    """
     try:
         # Obtener parámetros de filtro
         page = request.args.get('page', 1, type=int)
@@ -736,6 +886,18 @@ def filter_subcategories_api(admin_user):
 @admin_lista_categorias_bp.route('/api/seudocategorias/filter', methods=['GET'])
 @admin_jwt_required
 def filter_pseudocategories_api(admin_user):
+    """
+    API para filtrar y paginar las seudocategorías en tiempo real.
+
+    Endpoint para la vista de tabla de seudocategorías, permitiendo filtrar
+    por subcategoría padre.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un objeto que contiene la lista de seudocategorías y metadatos de paginación.
+    """
     try:
         # Obtener parámetros de filtro
         page = request.args.get('page', 1, type=int)
@@ -814,6 +976,19 @@ def filter_pseudocategories_api(admin_user):
 @admin_lista_categorias_bp.route('/api/categorias-principales/<string:categoria_id>/subcategorias', methods=['GET'])
 @admin_jwt_required
 def get_subcategories_for_category(admin_user, categoria_id):
+    """
+    API auxiliar para obtener las subcategorías de una categoría principal específica.
+
+    Utilizado para poblar dinámicamente los selectores de subcategorías en los
+    formularios de creación y edición, basándose en la categoría principal seleccionada.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        categoria_id (str): El ID de la categoría principal padre.
+
+    Returns:
+        JSON: Una lista de objetos de subcategoría (id, nombre).
+    """
     try:
         estado_filtro = request.args.get('estado')
         query = Subcategorias.query.filter_by(categoria_principal_id=categoria_id)
@@ -839,6 +1014,18 @@ def get_subcategories_for_category(admin_user, categoria_id):
 @admin_lista_categorias_bp.route('/api/categorias-principales', methods=['POST'])
 @admin_jwt_required
 def create_main_category(admin_user):
+    """
+    API para crear una nueva categoría principal.
+
+    Recibe los datos (nombre, descripción) a través de una solicitud POST.
+    Valida la unicidad del nombre y del slug antes de crear el registro.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un mensaje de éxito con los datos de la nueva categoría, o un error.
+    """
     try:
         data = request.get_json()
         nombre = data.get('nombre')
@@ -885,6 +1072,18 @@ def create_main_category(admin_user):
 @admin_lista_categorias_bp.route('/api/subcategorias', methods=['POST'])
 @admin_jwt_required
 def create_subcategory(admin_user):
+    """
+    API para crear una nueva subcategoría.
+
+    Recibe nombre, descripción y el ID de la categoría principal padre.
+    Valida la unicidad del nombre y del slug.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un mensaje de éxito con los datos de la nueva subcategoría, o un error.
+    """
     try:
         data = request.get_json()
         nombre = data.get('nombre')
@@ -935,6 +1134,18 @@ def create_subcategory(admin_user):
 @admin_lista_categorias_bp.route('/api/seudocategorias', methods=['POST'])
 @admin_jwt_required
 def create_pseudocategory(admin_user):
+    """
+    API para crear una nueva seudocategoría.
+
+    Recibe nombre, descripción y el ID de la subcategoría padre.
+    Valida la unicidad del nombre y del slug.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Returns:
+        JSON: Un mensaje de éxito con los datos de la nueva seudocategoría, o un error.
+    """
     try:
         data = request.get_json()
         nombre = data.get('nombre')

@@ -1,24 +1,53 @@
+"""
+Módulo de Pedidos del Cliente.
+
+Este blueprint gestiona todas las interacciones del cliente con sus pedidos pasados y presentes.
+Sus responsabilidades incluyen:
+- **Visualización de Pedidos**: Renderiza la página "Mis Pedidos" con filtros y paginación.
+- **Detalle de Pedido**: Muestra una vista detallada de un pedido específico.
+- **Reordenar**: Permite al usuario añadir los productos de un pedido anterior a su carrito actual.
+- **Facturación**: Genera una vista de factura imprimible.
+- **Estadísticas**: Proporciona endpoints de API para que el cliente visualice estadísticas
+  sobre sus compras.
+"""
+# --- Importaciones de Flask y Librerías Estándar ---
 from flask import Blueprint, request, jsonify, session, render_template, current_app, make_response, url_for
+from datetime import datetime, timedelta
+
+# --- Importaciones de Extensiones y Terceros ---
+from sqlalchemy import not_, and_
+
+# --- Importaciones Locales de la Aplicación ---
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.order_models import Pedido, PedidoProducto
 from app.models.domains.cart_models import CartItem
 from app.extensions import db
-from sqlalchemy import not_, and_
 from app.models.enums import EstadoPedido, EstadoEnum
 from app.utils.jwt_utils import jwt_required
-from datetime import datetime, timedelta
 
 order_bp = Blueprint('order', __name__)
 
-# Añadir al archivo cart.py después de las importaciones
+# --- Importaciones de Serializadores ---
 from app.models.serializers import pedido_detalle_cliente_to_dict
 
 @order_bp.route('/mis-pedidos')
 @jwt_required
 def view_orders(usuario):
-    """Vista para que los clientes vean sus pedidos"""
+    """
+    Renderiza la página "Mis Pedidos" para el cliente autenticado.
+
+    Esta vista construye una consulta a la base de datos que recupera los pedidos del usuario,
+    aplicando diversos filtros y opciones de ordenamiento proporcionados en la URL.
+    También calcula totales para las pestañas de estado y maneja la paginación.
+
+    Args:
+        usuario (Usuarios): El objeto de usuario inyectado por el decorador `@jwt_required`.
+
+    Returns:
+        Response: La plantilla `mis_pedidos.html` renderizada con los datos de los pedidos.
+    """
     try:
-        # Obtener parámetros de la URL
+        # --- Obtención de Parámetros de Filtrado y Ordenamiento ---
         orden = request.args.get('orden', 'desc')  # desc para más recientes primero, asc para más antiguos primero
         search = request.args.get('search', '')
         page = request.args.get('page', 1, type=int)
@@ -29,10 +58,12 @@ def view_orders(usuario):
         monto_min = request.args.get('monto_min', 0, type=float)
         monto_max = request.args.get('monto_max', float('inf'), type=float)
         
-        # Construir la consulta base
+        # --- Construcción de la Consulta ---
+        # Inicia la consulta base, filtrando por el ID del usuario.
         query = Pedido.query.filter_by(usuario_id=usuario.id)
         
-        # Excluir pedidos 'en proceso' que estén 'inactivos'
+        # Lógica de negocio: Excluye pedidos 'en proceso' que un administrador haya desactivado,
+        # ya que se consideran en un estado inconsistente o en revisión.
         query = query.filter(
             not_(
                 and_(
@@ -42,7 +73,7 @@ def view_orders(usuario):
             )
         )
         
-        # Aplicar filtro por estado de pedido (ej. 'en proceso', 'completado') si se especifica
+        # Aplica el filtro principal por estado del pedido (pestañas).
         estado_pedido_filtro = request.args.get('estado_pedido', 'todos')
         if estado_pedido_filtro != 'todos':
             try:
@@ -51,58 +82,56 @@ def view_orders(usuario):
             except ValueError:
                 pass # Ignorar si el estado no es válido
         
-        # Aplicar búsqueda si hay término de búsqueda
+        # Aplica el filtro de búsqueda por ID de pedido.
         if search:
-            # Buscar por ID de pedido
             query = query.filter(Pedido.id.ilike(f'%{search}%'))
         
-        # Aplicar filtros de fecha
+        # Aplica los filtros de rango de fechas.
         if fecha_desde:
             fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
             query = query.filter(Pedido.created_at >= fecha_desde_dt)
         
         if fecha_hasta:
-            # Agregar un día a la fecha_hasta para incluir todo ese día
+            # Se suma un día para que la consulta incluya todo el día de la fecha final.
             fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
             query = query.filter(Pedido.created_at <= fecha_hasta_dt)
         
-        # Aplicar filtros de monto
+        # Aplica los filtros de rango de monto.
         query = query.filter(Pedido.total >= monto_min)
         if monto_max != float('inf'):
             query = query.filter(Pedido.total <= monto_max)
         
-        # Aplicar ordenamiento
+        # Aplica el ordenamiento solicitado por el usuario.
         if orden == 'asc':
             query = query.order_by(Pedido.created_at.asc())
         elif orden == 'monto-desc':
             query = query.order_by(Pedido.total.desc())
         elif orden == 'monto-asc':
             query = query.order_by(Pedido.total.asc())
-        else:  # desc por defecto
+        else:  # Por defecto, los más recientes primero.
             query = query.order_by(Pedido.created_at.desc())
         
-        # Obtener conteos para cada estado de pedido (sin aplicar filtros de búsqueda o paginación)
+        # --- Cálculos de Totales para la UI ---
+        # Se obtienen los conteos totales por estado para mostrarlos en las pestañas.
+        # Estas consultas se hacen por separado para no ser afectadas por los filtros de búsqueda.
         total_pedidos_en_proceso = Pedido.query.filter(Pedido.usuario_id==usuario.id, Pedido.estado==EstadoEnum.ACTIVO.value, Pedido.estado_pedido==EstadoPedido.EN_PROCESO).count()
         total_pedidos_completado = Pedido.query.filter(Pedido.usuario_id==usuario.id, Pedido.estado_pedido==EstadoPedido.COMPLETADO).count()
         total_pedidos_cancelado = Pedido.query.filter(Pedido.usuario_id==usuario.id, Pedido.estado_pedido==EstadoPedido.CANCELADO).count()
         total_pedidos_todos = total_pedidos_en_proceso + total_pedidos_completado + total_pedidos_cancelado
 
-        # Obtener el total de resultados para determinar si se necesita paginación
+        # --- Paginación ---
         total_count = query.count()
-        
-        # Determinar si se debe mostrar paginación (solo si hay más de 6 elementos)
         show_pagination = total_count > 6
         
-        # Si no se necesita paginación, obtener todos los resultados
         if not show_pagination:
             pedidos = query.all()
         else:
-            # Paginar los resultados (6 elementos por página)
             per_page = 6
             pedidos_paginados = query.paginate(page=page, per_page=per_page, error_out=False)
             pedidos = pedidos_paginados.items
         
-        # Convertir a diccionarios para la vista
+        # --- Serialización y Renderizado ---
+        # Se convierten los objetos de pedido a diccionarios para pasarlos a la plantilla.
         pedidos_dict = []
         for pedido in pedidos:
             print(f"Debug: Pedido ID before serialization: {pedido.id}") # Add this line
@@ -133,9 +162,16 @@ def view_orders(usuario):
 @order_bp.route('/api/buscar-pedidos', methods=['GET'])
 @jwt_required
 def buscar_pedidos(usuario):
-    """API para buscar pedidos en tiempo real"""
+    """
+    Endpoint de API para buscar y filtrar pedidos en tiempo real.
+
+    Esta función es la contraparte de `view_orders` para peticiones AJAX.
+    Realiza la misma lógica de filtrado y ordenamiento, pero devuelve los resultados
+    en formato JSON para ser consumidos por JavaScript.
+    """
     try:
-        # Obtener parámetros de la URL
+        # La lógica de obtención de parámetros, construcción de consulta, filtrado y ordenamiento
+        # es idéntica a la de la función `view_orders`.
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 6, type=int)  # Cambiado a 6 elementos por página
         orden = request.args.get('orden', 'desc')
@@ -221,7 +257,7 @@ def buscar_pedidos(usuario):
             pedidos = pedidos_paginados.items
             pages = pedidos_paginados.pages
         
-        # Convertir a diccionarios para la respuesta JSON
+        # Serializa los resultados a formato JSON para la respuesta de la API.
         pedidos_dict = []
         for pedido in pedidos:
             print(f"Debug: Pedido ID before serialization (API): {pedido.id}") # Add this line
@@ -250,9 +286,16 @@ def buscar_pedidos(usuario):
 @order_bp.route('/pedido/<uuid:order_id>')
 @jwt_required
 def order_detail(usuario, order_id):
-    """Vista para ver los detalles de un pedido específico"""
+    """
+    Renderiza la página de detalles para un pedido específico.
+
+    Busca un pedido por su ID, asegurándose de que pertenezca al usuario autenticado.
+    Maneja casos especiales, como pedidos inactivos, para proteger la información.
+    Utiliza un serializador para preparar los datos para la plantilla.
+    """
     try:
-        # Modificamos para incluir pedidos cancelados
+        # Busca el pedido por ID y usuario, sin filtrar por estado para que el cliente
+        # pueda ver también sus pedidos completados y cancelados.
         pedido = Pedido.query.filter_by(
             id=str(order_id),
             usuario_id=usuario.id
@@ -261,13 +304,13 @@ def order_detail(usuario, order_id):
         if not pedido:
             return render_template('cliente/componentes/404.html'), 404
 
-        # MEJORA PROFESIONAL: Si un pedido está 'en proceso' pero fue desactivado por un administrador,
-        # no debe ser accesible por el cliente, ya que se considera un estado inconsistente o en revisión.
+        # Lógica de seguridad: Si un pedido está 'en proceso' pero fue desactivado por un administrador,
+        # no debe ser accesible por el cliente.
         if pedido.estado_pedido == EstadoPedido.EN_PROCESO and pedido.estado == EstadoEnum.INACTIVO.value:
             current_app.logger.warning(f"Intento de acceso a pedido inactivo en proceso: {order_id} por usuario {usuario.id}")
             return render_template('cliente/componentes/404.html'), 404
 
-        # Usamos el serializador mejorado
+        # Serializa el objeto Pedido a un diccionario para la plantilla.
         pedido_dict = pedido_detalle_cliente_to_dict(pedido)
         
         print(f"Debug: Pedido total antes de renderizar: {pedido_dict.get('total')}")
@@ -282,9 +325,13 @@ def order_detail(usuario, order_id):
 @order_bp.route('/api/pedido-detalle/<uuid:order_id>')
 @jwt_required
 def api_pedido_detalle(usuario, order_id):
-    """API para obtener los detalles de un pedido específico en formato JSON"""
+    """
+    Endpoint de API para obtener los detalles de un pedido específico en formato JSON.
+
+    Utilizado por componentes de JavaScript para cargar dinámicamente la información
+    de un pedido sin recargar la página.
+    """
     try:
-        # Obtener el pedido
         pedido = Pedido.query.filter_by(
             id=str(order_id),
             usuario_id=usuario.id
@@ -296,15 +343,13 @@ def api_pedido_detalle(usuario, order_id):
                 'message': 'Pedido no encontrado'
             }), 404
         
-        # Convertir a diccionario
         pedido_dict = pedido_detalle_cliente_to_dict(pedido)
         
-        return jsonify({
-            'success': True,
-            'productos': pedido_dict['productos'],
-            'total': pedido_dict['total']
-        })
-    
+        response_data = {'success': True}
+        response_data.update(pedido_dict)
+        
+        return jsonify(response_data)
+
     except Exception as e:
         current_app.logger.error(f"Error al cargar detalles del pedido {order_id}: {str(e)}")
         return jsonify({
@@ -315,9 +360,17 @@ def api_pedido_detalle(usuario, order_id):
 @order_bp.route('/reordenar/<uuid:order_id>', methods=['POST'])
 @jwt_required
 def reorder_order(usuario, order_id):
-    """Añade los productos de un pedido anterior al carrito del usuario."""
+    """
+    Añade los productos de un pedido anterior al carrito del usuario actual.
+
+    Esta función recorre los productos de un pedido histórico y los añade al carrito
+    del usuario. Realiza validaciones importantes:
+    - Verifica que el producto original todavía exista y esté activo.
+    - Comprueba el stock disponible.
+    - Ajusta la cantidad si el stock es insuficiente, generando una advertencia.
+    - Actualiza la cantidad si el producto ya está en el carrito, o lo añade si es nuevo.
+    """
     try:
-        # Obtener el pedido original
         pedido_original = Pedido.query.filter_by(
             id=str(order_id),
             usuario_id=usuario.id
@@ -330,41 +383,40 @@ def reorder_order(usuario, order_id):
             }), 404
 
         warnings = []
-        products_added_to_cart = False # Flag to track if any product was successfully added
+        products_added_to_cart = False # Flag para rastrear si se añadió al menos un producto.
 
-        # Recorrer los productos del pedido original
+        # Itera sobre cada producto en el pedido original.
         for pp in pedido_original.productos:
             producto = pp.producto
             cantidad_solicitada = pp.cantidad
 
-            # Si el producto no está activo o no existe, no se puede añadir
-            if not producto: # El producto original ya no existe en la tabla Productos
-                # Si el producto original no existe, usamos el ID del producto del PedidoProducto
+            # --- Validaciones de Producto y Stock ---
+            if not producto:
                 warnings.append(f'Un producto (ID: {pp.producto_id}) ya no está disponible o ha sido eliminado.')
                 continue
             
-            if producto.estado != EstadoEnum.ACTIVO: # El producto existe pero está inactivo
+            if producto.estado != EstadoEnum.ACTIVO:
                 warnings.append(f'El producto "{producto.nombre}" está inactivo y no puede ser reordenado.')
                 continue
 
-            # Verificar stock
             if producto.existencia <= 0:
                 warnings.append(f'El producto "{producto.nombre}" no tiene stock disponible.')
-                continue # Skip to next product if no stock at all
+                continue
 
             cantidad_a_anadir = cantidad_solicitada
             if producto.existencia < cantidad_solicitada:
                 cantidad_a_anadir = producto.existencia
                 warnings.append(f'Stock insuficiente para "{producto.nombre}". Se añadieron {cantidad_a_anadir} unidades.')
 
-            # Buscar si el item ya está en el carrito
+            # --- Lógica de Añadir/Actualizar Carrito ---
+            # Busca si el producto ya existe en el carrito del usuario.
             cart_item = CartItem.query.filter_by(
                 user_id=usuario.id,
                 product_id=producto.id
             ).first()
 
             if cart_item:
-                # Si ya existe, sumar la cantidad (sin exceder el stock total)
+                # Si ya existe, actualiza la cantidad, asegurando no exceder el stock.
                 nueva_cantidad = cart_item.quantity + cantidad_a_anadir
                 if nueva_cantidad > producto.existencia:
                     nueva_cantidad = producto.existencia
@@ -372,7 +424,7 @@ def reorder_order(usuario, order_id):
                 cart_item.quantity = nueva_cantidad
                 cart_item.updated_at = datetime.utcnow()
             else:
-                # Si no existe, crear un nuevo item en el carrito
+                # Si no existe, crea un nuevo artículo en el carrito.
                 cart_item = CartItem(
                     user_id=usuario.id,
                     product_id=producto.id,
@@ -380,12 +432,12 @@ def reorder_order(usuario, order_id):
                 )
                 db.session.add(cart_item)
             
-            products_added_to_cart = True # At least one product was added or updated
+            products_added_to_cart = True
 
         db.session.commit()
         
+        # --- Construcción de la Respuesta ---
         if not products_added_to_cart:
-            # Consolidar advertencias en un solo mensaje si hay varias
             if warnings:
                 consolidated_warnings = " ".join(warnings)
                 return jsonify({
@@ -402,7 +454,6 @@ def reorder_order(usuario, order_id):
                     'warnings': []
                 }), 400
         else:
-            # Consolidar advertencias en un solo mensaje si hay varias
             if warnings:
                 consolidated_warnings = " ".join(warnings)
                 return jsonify({
@@ -430,7 +481,7 @@ def reorder_order(usuario, order_id):
 
 # Añadir esta función al archivo order.py
 def format_number_colombian(value):
-    """Formatea un número al formato colombiano (puntos de mil, sin decimales)"""
+    """Función de utilidad para formatear un número al estilo de moneda colombiana."""
     try:
         # Convertir a entero para eliminar decimales
         value = int(float(value))
@@ -442,9 +493,12 @@ def format_number_colombian(value):
 @order_bp.route('/factura-pdf/<uuid:order_id>')
 @jwt_required
 def generar_factura_pdf(usuario, order_id):
-    """Genera una factura en formato PDF para un pedido específico"""
+    """
+    Genera una vista HTML con formato de factura para un pedido específico.
+
+    Esta vista está diseñada para ser impresa o guardada como PDF desde el navegador.
+    """
     try:
-        # Obtener el pedido
         pedido = Pedido.query.filter_by(
             id=str(order_id),
             usuario_id=usuario.id
@@ -456,14 +510,12 @@ def generar_factura_pdf(usuario, order_id):
         # Preparar los datos para la plantilla
         pedido_dict = pedido_detalle_cliente_to_dict(pedido)
         
-        # Formatear los precios al formato colombiano
         for item in pedido_dict['productos']:
             item['precio_unitario_formatted'] = format_number_colombian(item['precio_unitario'])
             item['subtotal_formatted'] = format_number_colombian(item['subtotal'])
         
         total_price_formatted = format_number_colombian(pedido.total)
         
-        # Renderizar la plantilla del PDF
         return render_template(
             'cliente/ui/pedido_template.html',
             pedido_id=pedido.id,
@@ -488,9 +540,13 @@ def generar_factura_pdf(usuario, order_id):
 @order_bp.route('/mis-compras')
 @jwt_required
 def view_compras(usuario):
-    """Vista para que los clientes vean sus compras (pedidos completados)"""
+    """
+    Renderiza la página "Mis Compras", que es una vista filtrada de los pedidos completados.
+
+    Es similar a `view_orders`, pero pre-filtra los pedidos para mostrar únicamente
+    aquellos con estado `COMPLETADO`.
+    """
     try:
-        # Obtener parámetros de la URL
         page = request.args.get('page', 1, type=int)
         search = request.args.get('search', '')
         fecha_desde = request.args.get('fecha_desde', '')
@@ -502,25 +558,21 @@ def view_compras(usuario):
         )
         query = query.filter(Pedido.estado_pedido == EstadoPedido.COMPLETADO)
         
-        # Aplicar búsqueda si hay término de búsqueda
         if search:
-            # Buscar por ID de pedido
             query = query.filter(Pedido.id.ilike(f'%{search}%'))
         
-        # Aplicar filtros de fecha
         if fecha_desde:
             fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
             query = query.filter(Pedido.created_at >= fecha_desde_dt)
         
         if fecha_hasta:
-            # Agregar un día a la fecha_hasta para incluir todo ese día
             fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
             query = query.filter(Pedido.created_at <= fecha_hasta_dt)
         
-        # Ordenar por fecha descendente (más recientes primero)
+        # Ordena por defecto con las compras más recientes primero.
         query = query.order_by(Pedido.created_at.desc())
         
-        # Paginar los resultados (6 elementos por página)
+        # Pagina los resultados.
         per_page = 6
         pedidos_paginados = query.paginate(page=page, per_page=per_page, error_out=False)
         pedidos = pedidos_paginados.items
@@ -545,9 +597,14 @@ def view_compras(usuario):
 @order_bp.route('/api/estadisticas-compras', methods=['GET'])
 @jwt_required
 def estadisticas_compras(usuario):
-    """API para obtener estadísticas de compras para el gráfico de evolución"""
+    """
+    Endpoint de API para obtener estadísticas de compras del usuario.
+
+    Calcula y agrupa los datos de compras (pedidos completados) por mes, trimestre o año.
+    Permite la comparación con el período anterior para análisis de tendencias.
+    """
     try:
-        # Obtener parámetros
+        # Obtiene los parámetros para definir el rango y período de las estadísticas.
         periodo = request.args.get('periodo', 'mes')  # mes, trimestre, año
         comparar = request.args.get('comparar', 'false') == 'true'  # si se compara con el período anterior
         fecha_desde = request.args.get('fecha_desde', '')
@@ -694,9 +751,14 @@ def estadisticas_compras(usuario):
 @order_bp.route('/api/categorias-compras', methods=['GET'])
 @jwt_required
 def categorias_compras(usuario):
-    """API para obtener estadísticas de categorías más compradas"""
+    """
+    Endpoint de API para obtener estadísticas de las categorías más compradas por el usuario.
+
+    Analiza todos los pedidos del usuario (filtrados opcionalmente) y agrega las compras
+    por categoría principal, calculando el total gastado, la cantidad de artículos y el
+    número de productos únicos por categoría.
+    """
     try:
-        # Obtener parámetros
         estado_pedido = request.args.get('estado_pedido', 'completado')
         search = request.args.get('search', '')
         fecha_desde = request.args.get('fecha_desde', '')
@@ -708,7 +770,6 @@ def categorias_compras(usuario):
             usuario_id=usuario.id
         )
         
-        # Aplicar filtro por estado de pedido
         if estado_pedido != 'todos':
             try:
                 estado_enum = EstadoPedido(estado_pedido)
@@ -716,11 +777,9 @@ def categorias_compras(usuario):
             except ValueError:
                 pass # Ignorar si el estado no es válido
         
-        # Aplicar búsqueda si hay término de búsqueda
         if search:
             query = query.filter(Pedido.id.ilike(f'%{search}%'))
         
-        # Aplicar filtros de fecha
         if fecha_desde:
             fecha_desde_dt = datetime.strptime(fecha_desde, '%Y-%m-%d')
             query = query.filter(Pedido.created_at >= fecha_desde_dt)
@@ -729,18 +788,15 @@ def categorias_compras(usuario):
             fecha_hasta_dt = datetime.strptime(fecha_hasta, '%Y-%m-%d') + timedelta(days=1)
             query = query.filter(Pedido.created_at <= fecha_hasta_dt)
         
-        # Obtener todos los pedidos que cumplen los filtros
         pedidos = query.all()
         
-        # Obtener detalles de todos los productos de los pedidos
+        # Agrega los datos de los productos por categoría principal.
         categorias_data = {}
         
         for pedido in pedidos:
-            # Obtener detalles del pedido
             pedido_detalle = PedidoProducto.query.filter_by(pedido_id=pedido.id).all()
             
             for detalle in pedido_detalle:
-                # Obtener información del producto
                 producto = Productos.query.filter_by(id=detalle.producto_id).first()
                 
                 if producto and producto.seudocategoria:
@@ -762,7 +818,7 @@ def categorias_compras(usuario):
                     categorias_data[categoria_nombre]['cantidad'] += detalle.cantidad
                     categorias_data[categoria_nombre]['productos'].add(producto.id)
         
-        # Convertir a lista para la respuesta
+        # Convierte el diccionario agregado a una lista para la respuesta JSON.
         categorias_lista = []
         for nombre, data in categorias_data.items():
             categorias_lista.append({

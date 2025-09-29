@@ -1,3 +1,25 @@
+/**
+ * @file Módulo de Creación de Productos (Panel de Administración).
+ * @description Este script controla el formulario de creación de productos en el panel de administración.
+ * Proporciona una interfaz de usuario dinámica con validaciones en tiempo real, previsualización de imágenes
+ * y manejo de la subida de archivos al servidor.
+ *
+ * @funcionalidadesClave
+ * 1.  **Previsualización de Imágenes:** Permite a los administradores ver una vista previa de la imagen del producto
+ *     antes de subirla al servidor, mejorando la experiencia de usuario y reduciendo errores.
+ * 2.  **Validaciones en Tiempo Real:** Proporciona validaciones dinámicas para los campos del formulario,
+ *     como el precio, costo y existencia, asegurando la integridad de los datos.
+ * 3.  **Gestión Dinámica de Especificaciones:** Permite a los administradores añadir y eliminar especificaciones
+ *     del producto de forma dinámica, adaptándose a las necesidades de cada artículo.
+ * 4.  **Rendimiento Optimizado:** Utiliza técnicas de "debounce" para evitar llamadas excesivas al servidor
+ *     durante la validación en tiempo real, mejorando la eficiencia y la experiencia de usuario.
+ * 5.  **Feedback Visual:** Ofrece retroalimentación visual clara sobre el estado del formulario, incluyendo
+ *     indicadores de completitud y mensajes de error descriptivos.
+ * 6.  **Integración con Gráfico de Precios:** Genera un gráfico dinámico que muestra la relación entre el costo
+ *     y el precio de venta, facilitando la toma de decisiones sobre la fijación de precios.
+ * 7.  **Carga Asíncrona de Categorías:** Carga las categorías, subcategorías y seudocategorías de forma
+ *     asíncrona, asegurando que el formulario siempre tenga las opciones más actualizadas.
+ */
 function initializeCrearProductForm() {
   // Elementos del DOM
   const form = document.getElementById("product-form");
@@ -836,7 +858,11 @@ document.addEventListener("DOMContentLoaded", initializeCrearProductForm);
 // Escuchar el evento personalizado 'content-loaded' de admin_spa.js
 document.addEventListener("content-loaded", function (event) {
   // Verificar si el contenido cargado incluye el formulario de creación de producto
-  if (event.detail.container.querySelector("#product-form")) {
+  //  Usar `document` en lugar de `event.detail.container` para asegurar
+  // que la búsqueda se realiza en todo el DOM después de la actualización de la SPA.
+  // Esto es más robusto.
+  if (document.querySelector("#product-form")) {
+    console.log("Product form detected on content-loaded. Initializing...");
     initializeCrearProductForm();
   }
 });

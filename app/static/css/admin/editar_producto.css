@@ -1,0 +1,161 @@
+/* Estilos personalizados */
+.gradient-bg {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.card-shadow {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+.input-focus {
+  transition: all 0.3s ease;
+}
+.input-focus:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+}
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  transition: all 0.3s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 7px 20px rgba(102, 126, 234, 0.4);
+}
+.btn-primary.btn-disabled,
+.btn-primary.btn-disabled:hover {
+  background: #9ca3af;
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pulse {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.progress-fill {
+  transition: width 0.6s ease-in-out;
+}
+.hover-scale {
+  transition: transform 0.3s ease;
+}
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+.metric-card {
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  transition: all 0.3s ease;
+}
+.metric-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+.chart-container {
+  position: relative;
+  height: 200px;
+  width: 100%;
+}
+.formula {
+  font-family: "Courier New", monospace;
+  background-color: rgba(0, 0, 0, 0.05);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  display: inline-block;
+  max-width: 100%;
+  vertical-align: middle;
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+@keyframes backdrop-in {
+  from {
+    background-color: rgba(0, 0, 0, 0);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+}
+
+@keyframes backdrop-out {
+  from {
+    background-color: rgba(0, 0, 0, 0.5);
+  }
+  to {
+    background-color: rgba(0, 0, 0, 0);
+  }
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes panel-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.modal-entering {
+  animation: backdrop-in 0.2s ease-out forwards;
+}
+.modal-entering > div {
+  animation: panel-in 0.2s ease-out forwards;
+}
+
+.modal-exiting {
+  animation: backdrop-out 0.2s ease-in forwards;
+}
+.modal-exiting > div {
+  animation: panel-out 0.2s ease-in forwards;
+}
+
+.loading-spinner {
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 3px solid white;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

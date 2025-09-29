@@ -1,11 +1,11 @@
 <!-- Modal de Autenticación - Ultra Premium -->
 <div
   id="auth-modal-bg"
-  class="fixed inset-0 z-[99999] hidden items-center justify-center bg-black/60 backdrop-blur-sm p-4 transition-all duration-500"
+  class="fixed inset-0 z-[99999] hidden items-center justify-center bg-gray-900/70 backdrop-blur-sm p-4 transition-all duration-500"
 >
   <div
     id="auth-modal"
-    class="relative w-full max-w-xs md:max-w-sm transform rounded-2xl bg-white/40 backdrop-blur-sm p-4 shadow-xl transition-all duration-300 ease-out border border-white/20"
+    class="relative w-full max-w-xs md:max-w-sm transform rounded-2xl bg-white/30 backdrop-blur-lg p-4 shadow-xl transition-all duration-300 ease-out border border-white/20"
   >
     <!-- Close Button -->
     <button
@@ -95,13 +95,10 @@
             type="tel"
             id="login-numero"
             name="numero"
-            maxlength="10"
-            pattern="[0-9]{10}"
             required="required"
             class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
             inputmode="numeric"
             autocomplete="tel"
-            title="Ingresa un número de 10 dígitos"
           />
           <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
         </div>
@@ -136,16 +133,15 @@
                 name="contraseña"
                 required="required"
                 class="w-full px-4 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
-                minlength="8"
                 autocomplete="current-password"
               />
               <div
                 class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
               >
-                <button
+                <button 
                   type="button"
                   id="toggle-login-password"
-                  class="text-white/50 hover:text-white transition-colors p-1 pointer-events-auto"
+                  class="text-gray-300 hover:text-white transition-colors p-1 pointer-events-auto"
                   aria-label="Mostrar contraseña"
                 >
                   <svg
@@ -173,6 +169,16 @@
             <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
           </div>
         </div>
+      </div>
+
+      <div class="text-center mt-2">
+        <button
+          type="button"
+          id="forgot-password-link"
+          class="text-xs text-white/70 hover:text-white hover:underline transition-all"
+        >
+          ¿Olvidaste tu contraseña?
+        </button>
       </div>
 
       <button
@@ -342,10 +348,10 @@
             <div
               class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
             >
-              <button
+              <button 
                 type="button"
                 id="toggle-register-password"
-                class="text-white/50 hover:text-white transition-colors p-1 pointer-events-auto"
+                class="text-gray-300 hover:text-white transition-colors p-1 pointer-events-auto"
                 aria-label="Mostrar contraseña"
               >
                 <svg
@@ -414,6 +420,112 @@
       </button>
     </form>
 
+    <!-- Forgot Password Flow -->
+    <div id="auth-forgot-password-flow" class="hidden">
+      <!-- Step 1: Enter Phone Number -->
+      <form id="auth-forgot-password-form-step1" class="space-y-4">
+        <p class="text-white/80 text-sm text-center">Ingresa tu número de teléfono para recibir un código de recuperación.</p>
+        <div class="space-y-4">
+            <div class="relative group">
+                <label for="forgot-numero" class="sr-only">Número de teléfono</label>
+                <input type="tel" id="forgot-numero" name="numero" required
+                       class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
+                       placeholder="Tu número de teléfono" inputmode="numeric" autocomplete="tel" />
+                <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
+            </div>
+            <div class="relative group">
+                <label for="forgot-nombre" class="sr-only">Nombre</label>
+                <input type="text" id="forgot-nombre" name="nombre" required
+                       class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
+                       placeholder="Tu nombre registrado" autocomplete="given-name" />
+                <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
+            </div>
+        </div>
+        <button type="submit" class="w-full py-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold rounded-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+          Obtener Código
+        </button>
+      </form>
+
+      <!-- Step 2: Show Code and Send via WhatsApp -->
+      <div id="auth-forgot-password-form-step2" class="space-y-4 hidden text-center">
+        <p class="text-white/80 text-sm">Tu código de recuperación es:</p>
+        <div id="recovery-code-display" class="text-4xl font-bold tracking-widest text-white bg-white/10 rounded-lg py-3">
+          ------
+        </div>
+        <p class="text-white/80 text-sm mt-4">Ingresa este código en el siguiente paso para continuar.</p>
+        <button type="button" id="go-to-step3-btn" class="w-full py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-bold rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+          Continuar
+        </button>
+      </div>
+
+      <!-- Step 3: Verify Code -->
+      <form id="auth-forgot-password-form-step3" class="space-y-4 hidden">
+        <p class="text-white/80 text-sm text-center">3. Ingresa el código que nos enviaste para crear tu nueva contraseña.</p>
+        <div class="relative group">
+            <label for="verify-code" class="sr-only">Código de Verificación</label>
+            <input type="text" id="verify-code" name="codigo" required
+                   class="w-full px-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300"
+                   placeholder="Código de 6 dígitos" inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
+            <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
+        </div>
+        <button type="submit" class="w-full py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-bold rounded-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-purple-500/50">
+          Verificar y Continuar
+        </button>
+      </form>
+
+      <!-- Step 4: Reset Password -->
+      <form id="auth-forgot-password-form-step4" class="space-y-4 hidden">
+        <input type="hidden" id="reset-token-input" name="reset_token" />
+        <p class="text-white/80 text-sm text-center">Crea tu nueva contraseña. Asegúrate de que sea segura.</p>
+        
+        <div class="relative group">
+          <label for="reset-new-password" class="block text-sm font-semibold text-white/90 mb-2">
+            <span class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              Nueva Contraseña
+            </span>
+          </label>
+          <div class="relative">
+            <input type="password" id="reset-new-password" name="contraseña" required
+                   class="w-full px-4 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300" 
+                   pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+                   title="Debe contener al menos un número, una letra mayúscula, una minúscula y al menos 8 caracteres"
+                   autocomplete="new-password" />
+            <button type="button" id="toggle-reset-password" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-300 hover:text-white transition-colors p-1" aria-label="Mostrar contraseña">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
+        </div>
+
+        <div class="relative group">
+          <label for="reset-confirm-password" class="block text-sm font-semibold text-white/90 mb-2">
+            <span class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              Confirmar Nueva Contraseña
+            </span>
+          </label>
+          <div class="relative">
+            <input type="password" id="reset-confirm-password" name="confirm_contraseña" required
+                   class="w-full px-4 py-2 pr-12 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-all duration-300" 
+                   autocomplete="new-password" />
+            <button type="button" id="toggle-reset-confirm-password" class="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-300 hover:text-white transition-colors p-1" aria-label="Mostrar contraseña">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268 2.943-9.542-7z"/></svg>
+            </button>
+          </div>
+          <p class="error-message text-xs text-red-500 mt-1 hidden"></p>
+        </div>
+
+        <button type="submit" class="w-full py-2 bg-gradient-to-r from-green-500 to-teal-500 text-white font-bold rounded-lg shadow-2xl hover:shadow-3xl transform hover:scale-105 transition-all duration-300 focus:outline-none focus:ring-4 focus:ring-green-500/50">
+          Restablecer Contraseña
+        </button>
+      </form>
+
+      <button type="button" id="back-to-login-link" class="w-full text-center text-xs text-white/70 hover:text-white hover:underline transition-all mt-4">
+        Volver a Iniciar Sesión
+      </button>
+    </div>
+
     <!-- Message -->
     <div
       id="auth-modal-msg"
@@ -421,48 +533,3 @@
     ></div>
   </div>
 </div>
-
-<style>
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  .animate-fade-in-up {
-    animation: fadeInUp 0.5s ease-out forwards;
-  }
-
-  #auth-modal-bg {
-    backdrop-filter: blur(20px);
-  }
-
-  #auth-modal {
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  }
-
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
-  input:-webkit-autofill:active {
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: #ffffff;
-    transition: background-color 5000s ease-in-out 0s;
-    box-shadow: inset 0 0 20px 20px rgba(255, 255, 255, 0.1);
-  }
-
-  /* Responsive adjustments */
-  @media (max-width: 640px) {
-    #auth-modal {
-      margin: 1rem;
-      padding: 2rem;
-    }
-  }
-</style>

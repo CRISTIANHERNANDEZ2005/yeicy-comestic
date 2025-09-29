@@ -1,3 +1,15 @@
+"""
+Módulo de API Auxiliar para el Panel de Administración.
+
+Este blueprint agrupa una serie de endpoints de API que sirven como utilidades
+para otras partes del panel de administración. Su principal objetivo es proporcionar
+datos para componentes dinámicos como campos de búsqueda autocompletables.
+
+Funcionalidades:
+- Búsqueda de usuarios registrados para asociarlos a pedidos.
+- Búsqueda de productos para añadirlos a un pedido.
+- Filtrado de pedidos (NOTA: funcionalidad similar existe en `lista_pedidos.py`).
+"""
 from flask import Blueprint, jsonify, request, current_app
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.user_models import Usuarios
@@ -13,6 +25,22 @@ admin_api_bp = Blueprint('admin_api', __name__, url_prefix='/admin/api')
 @admin_api_bp.route('/usuarios-registrados', methods=['GET'])
 @admin_jwt_required
 def get_registered_users(admin_user):
+    """
+    API para buscar usuarios (clientes) registrados y activos.
+
+    Este endpoint es utilizado por los formularios del panel de administración
+    (ej. al crear un nuevo pedido) para buscar y seleccionar un cliente a través
+    de un campo de búsqueda autocompletado.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Query Params:
+        q (str): El término de búsqueda para nombre, apellido o número de teléfono.
+
+    Returns:
+        JSON: Una lista de objetos de usuario que coinciden con la búsqueda.
+    """
     try:
         search_term = request.args.get('q', '', type=str)
         
@@ -46,6 +74,24 @@ def get_registered_users(admin_user):
 @admin_api_bp.route('/productos/search', methods=['GET'])
 @admin_jwt_required
 def search_products(admin_user):
+    """
+    API para buscar productos activos.
+
+    Diseñado para el modal de creación/edición de pedidos, este endpoint permite
+    buscar productos por nombre o descripción. Opcionalmente, puede excluir
+    productos que ya están en un pedido específico para evitar duplicados.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Query Params:
+        q (str): El término de búsqueda.
+        pedido_id (str, optional): El ID de un pedido existente. Si se proporciona,
+                                   los productos de ese pedido no se incluirán en los resultados.
+
+    Returns:
+        JSON: Una lista de objetos de producto que coinciden con la búsqueda.
+    """
     try:
         search_term = request.args.get('q', '', type=str)
         pedido_id = request.args.get('pedido_id', None, type=str)
@@ -98,6 +144,23 @@ def search_products(admin_user):
 @admin_api_bp.route('/pedidos/filter', methods=['GET'])
 @admin_jwt_required
 def get_all_pedidos(admin_user):
+    """
+    API para filtrar y paginar la lista de pedidos.
+
+    NOTA PROFESIONAL: Este endpoint tiene una funcionalidad muy similar al endpoint
+    `/api/pedidos/filter` definido en `app/blueprints/admin/pedido/lista_pedidos.py`.
+    Se recomienda consolidar ambos en un único endpoint para evitar la duplicación
+    de código y mantener una única fuente de verdad para el filtrado de pedidos.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+
+    Query Params:
+        page, per_page, estado, cliente, fecha_inicio, fecha_fin, sort_by, sort_order.
+
+    Returns:
+        JSON: Un objeto con la lista paginada de pedidos y metadatos de paginación.
+    """
     try:
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 10, type=int)

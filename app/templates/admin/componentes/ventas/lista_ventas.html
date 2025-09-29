@@ -12,17 +12,17 @@
                 <p class="text-gray-600 mt-1">Visualiza y gestiona todas las ventas completadas</p>
             </div>
             <div class="mt-4 md:mt-0">
-                <button id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200">
+                <button id="addVentaBtn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center transition duration-200 shadow-md hover:shadow-lg">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    Actualizar
+                    Agregar Venta
                 </button>
             </div>
         </div>
         
         <!-- Tarjetas de estadísticas -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center">
                     <div class="p-3 rounded-full bg-blue-400 bg-opacity-30">
@@ -33,6 +33,7 @@
                     <div class="ml-4">
                         <h2 class="text-lg font-semibold text-blue-100">Total Ventas</h2>
                         <p class="text-2xl font-bold text-white" id="total-ventas">0</p>
+                        <p class="text-xs text-blue-200 mt-1 opacity-90">(Ventas completadas)</p>
                     </div>
                 </div>
             </div>
@@ -47,10 +48,56 @@
                     <div class="ml-4">
                         <h2 class="text-lg font-semibold text-green-100">Ingresos Totales</h2>
                         <p class="text-2xl font-bold text-white" id="total-ingresos">$0</p>
+                        <p class="text-xs text-green-200 mt-1 opacity-90">(Precio de venta * Cantidad)</p>
                     </div>
                 </div>
             </div>
             
+            <div class="bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-yellow-400 bg-opacity-30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-lg font-semibold text-yellow-100">Inversión Total</h2>
+                        <p class="text-2xl font-bold text-white" id="total-inversion">$0</p>
+                        <p class="text-xs text-yellow-200 mt-1 opacity-90">(Costo de producto * Cantidad)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-pink-500 to-red-500 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-pink-400 bg-opacity-30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-lg font-semibold text-pink-100">Utilidad Total</h2>
+                        <p class="text-2xl font-bold text-white" id="total-utilidad">$0</p>
+                        <p class="text-xs text-pink-200 mt-1 opacity-90">(Ingresos - Inversión)</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-teal-500 to-cyan-600 rounded-xl shadow-lg p-6 text-white">
+                <div class="flex items-center">
+                    <div class="p-3 rounded-full bg-teal-400 bg-opacity-30">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <h2 class="text-lg font-semibold text-teal-100">Margen de Utilidad</h2>
+                        <p class="text-2xl font-bold text-white" id="margen-utilidad">0%</p>
+                        <p class="text-xs text-teal-200 mt-1 opacity-90">(Utilidad / Ingresos)</p>
+                    </div>
+                </div>
+            </div>
+
             <div class="bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl shadow-lg p-6 text-white">
                 <div class="flex items-center">
                     <div class="p-3 rounded-full bg-purple-400 bg-opacity-30">
@@ -61,19 +108,33 @@
                     <div class="ml-4">
                         <h2 class="text-lg font-semibold text-purple-100">Ticket Promedio</h2>
                         <p class="text-2xl font-bold text-white" id="ticket-promedio">$0</p>
+                        <p class="text-xs text-purple-200 mt-1 opacity-90">(Ingresos / Total Ventas)</p>
                     </div>
                 </div>
             </div>
         </div>
         
         <!-- Gráfico de ventas -->
-        <div class="bg-white rounded-xl shadow-md p-6 mb-6">
-            <h2 class="text-lg font-semibold text-gray-800 mb-4">Evolución de Ventas (Últimos 30 días)</h2>
+        <div class="relative bg-white rounded-xl shadow-md p-6 mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
+                <h2 id="chart-title" class="text-lg font-semibold text-gray-800 mb-2 sm:mb-0">Evolución de Ventas</h2>
+                <div id="chart-period-selector" class="flex items-center bg-gray-100 rounded-lg p-1 space-x-1">
+                    <button data-period="7d" class="chart-period-btn">7D</button>
+                    <button data-period="30d" class="chart-period-btn active">30D</button>
+                    <button data-period="1y" class="chart-period-btn">1A</button>
+                </div>
+            </div>
+            <!-- Contenedor para el spinner del gráfico -->
+            <div id="chart-loading-overlay" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 hidden rounded-xl">
+                <div class="text-center">
+                    <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-3"></div>
+                    <p class="text-gray-600 font-medium">Actualizando gráfico...</p>
+                </div>
+            </div>
             <div class="h-64">
                 <canvas id="ventas-chart"></canvas>
             </div>
         </div>
-    </div>
     
     <!-- Tabla de ventas -->
     <div class="bg-white rounded-xl shadow-lg overflow-hidden">
@@ -181,6 +242,17 @@
         
         <div class="flex-1">
             <form id="filter-form">
+                <!-- Filtro por ID de Venta -->
+                <div class="filter-section mb-6">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        ID de Venta
+                    </label>
+                    <input type="text" id="venta_id" name="venta_id" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm" placeholder="Buscar por ID...">
+                </div>
+
                 <!-- Filtro por cliente -->
                 <div class="filter-section mb-6">
                     <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -401,12 +473,12 @@
         </div>
     </div>
 </div>
-<style>
 
-</style>
+<!-- Incluir el modal de creación de pedidos/ventas -->
+{% include 'admin/ui/_pedido_form_modal.html' %}
+
 <!-- Scripts necesarios -->
 <script src="{{ url_for('static', filename='js/admin/lista_ventas.js') }}"></script>
+<script src="{{ url_for('static', filename='js/admin/lista_pedido.js') }}"></script>
 <link rel="stylesheet" href="{{ url_for('static', filename='css/admin/lista_ventas.css') }}">
- <!-- Librerías globales cargadas una sola vez para toda la SPA -->
- <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 {% endblock %}

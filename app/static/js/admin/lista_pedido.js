@@ -35,6 +35,8 @@ window.pedidosApp = {
     this.initializeView();
 
     // Resetear filtros de forma segura
+    const pedidoIdFilter = document.getElementById("pedidoIdFilter");
+    if (pedidoIdFilter) pedidoIdFilter.value = "";
     const clienteFilter = document.getElementById("clienteFilter");
     if (clienteFilter) clienteFilter.value = "";
     const fechaInicioFilter = document.getElementById("fechaInicioFilter");
@@ -82,7 +84,7 @@ window.pedidosApp = {
     console.log("Initializing Seguimiento Section...");
     const seguimientoContent = document.getElementById("seguimientoContent");
     const noPedidosMessage = document.getElementById("noPedidosMessage");
-    
+
     // Verificar si hay pedidos disponibles
     const pedidoSelect = document.getElementById("pedidoSeguimientoSelect");
     if (pedidoSelect && pedidoSelect.options.length <= 1) {
@@ -156,20 +158,27 @@ window.pedidosApp = {
   updateSeguimientoUI: function (pedido) {
     const currentEstadoEl = document.getElementById("currentSeguimientoEstado");
     if (currentEstadoEl) {
-        currentEstadoEl.textContent = (pedido.seguimiento_estado || 'recibido').replace("_", " ").title();
-        currentEstadoEl.className = `seguimiento-badge seguimiento-${(pedido.seguimiento_estado || 'recibido').replace(" ", "-")}`;
+      currentEstadoEl.textContent = (pedido.seguimiento_estado || "recibido")
+        .replace("_", " ")
+        .title();
+      currentEstadoEl.className = `seguimiento-badge seguimiento-${(
+        pedido.seguimiento_estado || "recibido"
+      ).replace(" ", "-")}`;
     }
 
     const notasTextarea = document.getElementById("seguimientoNotas");
     if (notasTextarea) {
-        // MEJORA: Muestra la última nota del historial o la nota general.
-        const historial = pedido.seguimiento_historial || [];
-        const ultimaEntrada = historial.length > 0 ? historial[historial.length - 1] : null;
-        notasTextarea.value = ultimaEntrada ? ultimaEntrada.notas : (pedido.notas_seguimiento || "");
+      // MEJORA: Muestra la última nota del historial o la nota general.
+      const historial = pedido.seguimiento_historial || [];
+      const ultimaEntrada =
+        historial.length > 0 ? historial[historial.length - 1] : null;
+      notasTextarea.value = ultimaEntrada
+        ? ultimaEntrada.notas
+        : pedido.notas_seguimiento || "";
     }
 
     this.updateTimeline(pedido);
-    this.selectSeguimientoEstado(pedido.seguimiento_estado || 'recibido');
+    this.selectSeguimientoEstado(pedido.seguimiento_estado || "recibido");
   },
 
   // MEJORA: Función unificada para actualizar la línea de tiempo con estados y timestamps.
@@ -183,15 +192,15 @@ window.pedidosApp = {
     const tieneEstadoRecibido = historial.some((e) => e.estado === "recibido");
 
     if (!tieneEstadoRecibido) {
-        // Se crea una copia para no mutar el objeto original directamente.
-        historial = [
-            {
-                estado: 'recibido',
-                notas: 'Pedido recibido en el sistema', // Nota genérica para retrocompatibilidad
-                timestamp: pedido.created_at 
-            },
-            ...historial
-        ];
+      // Se crea una copia para no mutar el objeto original directamente.
+      historial = [
+        {
+          estado: "recibido",
+          notas: "Pedido recibido en el sistema", // Nota genérica para retrocompatibilidad
+          timestamp: pedido.created_at,
+        },
+        ...historial,
+      ];
     }
 
     // MEJORA PROFESIONAL: Crear un mapa con la última entrada del historial para cada estado.
@@ -202,13 +211,22 @@ window.pedidosApp = {
     });
 
     const timelineItems = document.querySelectorAll(".timeline-item");
-    const estadosOrden = ["recibido", "en preparacion", "en camino", "entregado"];
+    const estadosOrden = [
+      "recibido",
+      "en preparacion",
+      "en camino",
+      "entregado",
+    ];
     const ultimoEstadoIndex = estadosOrden.indexOf(ultimoEstado);
 
-    timelineItems.forEach(item => {
+    timelineItems.forEach((item) => {
       const estado = item.getAttribute("data-estado");
-      const timestampEl = document.getElementById(`${estado.replace(/ /g, "-")}-timestamp`);
-      const notasEl = document.getElementById(`${estado.replace(/ /g, "-")}-notas`);
+      const timestampEl = document.getElementById(
+        `${estado.replace(/ /g, "-")}-timestamp`
+      );
+      const notasEl = document.getElementById(
+        `${estado.replace(/ /g, "-")}-notas`
+      );
       const dot = item.querySelector(".timeline-dot");
 
       // Resetea estilos y contenido
@@ -222,10 +240,11 @@ window.pedidosApp = {
       }
       if (notasEl) {
         // El estado 'recibido' tiene un texto por defecto diferente.
-        if (estado === 'recibido') {
-            notasEl.textContent = 'El pedido ha sido recibido en nuestro sistema.';
+        if (estado === "recibido") {
+          notasEl.textContent =
+            "El pedido ha sido recibido en nuestro sistema.";
         } else {
-            notasEl.textContent = "Pendiente de actualización.";
+          notasEl.textContent = "Pendiente de actualización.";
         }
       }
 
@@ -234,31 +253,44 @@ window.pedidosApp = {
         const entry = statusHistoryMap[estado];
         if (timestampEl) {
           const date = new Date(entry.timestamp);
-          const dateOptions = { day: "2-digit", month: "short", year: "numeric", timeZone: "America/Bogota" };
-          const timeOptions = { hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "America/Bogota" };
-          timestampEl.textContent = `${date.toLocaleDateString("es-CO", dateOptions)} ${date.toLocaleTimeString("es-CO", timeOptions)}`;
+          const dateOptions = {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "America/Bogota",
+          };
+          const timeOptions = {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+            timeZone: "America/Bogota",
+          };
+          timestampEl.textContent = `${date.toLocaleDateString(
+            "es-CO",
+            dateOptions
+          )} ${date.toLocaleTimeString("es-CO", timeOptions)}`;
         }
         if (notasEl && entry.notas) {
           notasEl.textContent = entry.notas;
         }
       }
 
-        // Actualiza el estado visual (activo/completado)
-        if (ultimoEstado === 'cancelado' && estado === 'cancelado') {
-            item.classList.add('active');
-            if (dot) dot.classList.add('bg-red-500');
-        } else {
-            const itemIndex = estadosOrden.indexOf(estado);
-            if (itemIndex !== -1) {
-                if (itemIndex < ultimoEstadoIndex || ultimoEstado === 'entregado') {
-                    item.classList.add('completed');
-                    if (dot) dot.classList.add('bg-green-500');
-                } else if (itemIndex === ultimoEstadoIndex) {
-                    item.classList.add('active');
-                    if (dot) dot.classList.add('bg-blue-500');
-                }
-            }
+      // Actualiza el estado visual (activo/completado)
+      if (ultimoEstado === "cancelado" && estado === "cancelado") {
+        item.classList.add("active");
+        if (dot) dot.classList.add("bg-red-500");
+      } else {
+        const itemIndex = estadosOrden.indexOf(estado);
+        if (itemIndex !== -1) {
+          if (itemIndex < ultimoEstadoIndex || ultimoEstado === "entregado") {
+            item.classList.add("completed");
+            if (dot) dot.classList.add("bg-green-500");
+          } else if (itemIndex === ultimoEstadoIndex) {
+            item.classList.add("active");
+            if (dot) dot.classList.add("bg-blue-500");
+          }
         }
+      }
     });
   },
 
@@ -269,7 +301,9 @@ window.pedidosApp = {
 
     // MEJORA PROFESIONAL: Acotar el selector para que solo afecte a los botones de la sección principal de seguimiento,
     // evitando conflictos con los botones del modal.
-    const seguimientoButtons = document.querySelectorAll("#mainSeguimientoButtons .seguimiento-btn");
+    const seguimientoButtons = document.querySelectorAll(
+      "#mainSeguimientoButtons .seguimiento-btn"
+    );
     seguimientoButtons.forEach((btn) => {
       btn.classList.remove("active");
       if (btn.getAttribute("data-estado") === estado) {
@@ -279,7 +313,12 @@ window.pedidosApp = {
   },
 
   // Actualizar estado de seguimiento
-  updateSeguimiento: function (pedidoId, nuevoEstado, notas, onSuccessCallback = null) {
+  updateSeguimiento: function (
+    pedidoId,
+    nuevoEstado,
+    notas,
+    onSuccessCallback = null
+  ) {
     if (this.isLoading) return;
 
     const seguimientoContent = document.getElementById("seguimientoContent");
@@ -417,6 +456,7 @@ window.pedidosApp = {
 
   // Verificar si hay filtros activos
   checkActiveFilters: function () {
+    const pedidoId = document.getElementById("pedidoIdFilter")?.value || "";
     const cliente = document.getElementById("clienteFilter")?.value || "";
     const fechaInicio =
       document.getElementById("fechaInicioFilter")?.value || "";
@@ -427,6 +467,7 @@ window.pedidosApp = {
       document.getElementById("statusFilter")?.value || "all";
 
     this.hasActiveFilters = !!(
+      pedidoId ||
       cliente ||
       fechaInicio ||
       fechaFin ||
@@ -616,26 +657,26 @@ window.pedidosApp = {
     if (nuevoEstado === "completado") {
       if (pedido.estado_pedido === "en proceso") {
         confirmMessage =
-          "Está a punto de marcar este pedido como completado. El cliente recibirá una notificación y se procesará el envío.";
+          "Está a punto de marcar este pedido como completado. El cliente recibirá una notificación.";
       } else if (pedido.estado_pedido === "cancelado") {
         confirmMessage =
-          "Está a punto de cambiar este pedido de cancelado a completado. El stock se ajustará automáticamente.";
+          "Está a punto de cambiar este pedido de cancelado a completado. La existencia se ajustará automáticamente y el cliente recibirá una notificación.";
       }
     } else if (nuevoEstado === "cancelado") {
       if (pedido.estado_pedido === "en proceso") {
         confirmMessage =
-          "Está a punto de cancelar este pedido. El stock de los productos será devuelto al inventario y el cliente recibirá una notificación.";
+          "Está a punto de cancelar este pedido. La existencia de los productos será devuelta y el cliente recibirá una notificación.";
       } else if (pedido.estado_pedido === "completado") {
         confirmMessage =
-          "Está a punto de cambiar este pedido de completado a cancelado. El stock será devuelto al inventario.";
+          "Está a punto de cambiar este pedido de completado a cancelado. La existencia será devuelto al producto y el cliente recibirá una notificación.";
       }
     } else if (nuevoEstado === "en proceso") {
       if (pedido.estado_pedido === "completado") {
         confirmMessage =
-          "Está a punto de cambiar este pedido de completado a en proceso. El estado del pedido se actualizará pero no se afectará el stock.";
+          "Está a punto de cambiar este pedido de completado a en proceso. El estado del pedido se actualizará pero no se afectará la existencia y el cliente recibirá una notificación.";
       } else if (pedido.estado_pedido === "cancelado") {
         confirmMessage =
-          "Está a punto de reactivar este pedido cancelado. El stock se ajustará automáticamente y el pedido volverá a estar en proceso.";
+          "Está a punto de reactivar este pedido cancelado. La existencia se ajustará automáticamente y el pedido volverá a estar en proceso y el cliente recibirá una notificación.";
       }
     }
 
@@ -750,6 +791,7 @@ window.pedidosApp = {
       this.currentPage = 1;
     }
 
+    const pedidoId = document.getElementById("pedidoIdFilter")?.value || "";
     const cliente = document.getElementById("clienteFilter")?.value || "";
     const fechaInicio =
       document.getElementById("fechaInicioFilter")?.value || "";
@@ -765,6 +807,7 @@ window.pedidosApp = {
       this.itemsPerPage
     }&estado=${this.getEstadoFromView()}`;
 
+    if (pedidoId) apiUrl += `&pedido_id=${encodeURIComponent(pedidoId)}`;
     if (cliente) apiUrl += `&cliente=${encodeURIComponent(cliente)}`;
     if (fechaInicio) apiUrl += `&fecha_inicio=${fechaInicio}`;
     if (fechaFin) apiUrl += `&fecha_fin=${fechaFin}`;
@@ -1409,13 +1452,16 @@ window.pedidosApp = {
     // MEJORA PROFESIONAL: Mostrar la nota específica del estado actual en el modal.
     // Esto da un contexto más preciso al administrador.
     const historial = pedido.seguimiento_historial || [];
-    const estadoActual = pedido.seguimiento_estado || 'recibido';
+    const estadoActual = pedido.seguimiento_estado || "recibido";
     let notaActual = pedido.notas_seguimiento || "No hay notas de seguimiento"; // Fallback
 
     // Buscar la última entrada en el historial que coincida con el estado actual del pedido.
-    const entradaActual = historial.slice().reverse().find(e => e.estado === estadoActual);
+    const entradaActual = historial
+      .slice()
+      .reverse()
+      .find((e) => e.estado === estadoActual);
     if (entradaActual && entradaActual.notas) {
-        notaActual = entradaActual.notas;
+      notaActual = entradaActual.notas;
     }
 
     const seguimientoNotas = document.getElementById("currentSeguimientoNotas");
@@ -1423,25 +1469,42 @@ window.pedidosApp = {
       seguimientoNotas.textContent = notaActual;
     }
 
-    const seguimientoNotasModal = document.getElementById("seguimientoNotasModal");
+    const seguimientoNotasModal = document.getElementById(
+      "seguimientoNotasModal"
+    );
     if (seguimientoNotasModal) {
-      seguimientoNotasModal.value = notaActual === "No hay notas de seguimiento" ? "" : notaActual;
+      seguimientoNotasModal.value =
+        notaActual === "No hay notas de seguimiento" ? "" : notaActual;
     }
 
     const seguimientoButtons = document.getElementById("seguimientoButtons");
     if (seguimientoButtons) {
       // MEJORA PROFESIONAL: Deshabilitar controles si el pedido está inactivo.
-      const isInactive = pedido.estado === 'inactivo';
-      seguimientoButtons.innerHTML = this.generateSeguimientoButtons(pedido.seguimiento_estado || "recibido", isInactive);
+      const isInactive = pedido.estado === "inactivo";
+      seguimientoButtons.innerHTML = this.generateSeguimientoButtons(
+        pedido.seguimiento_estado || "recibido",
+        isInactive
+      );
 
-      const seguimientoModalContainer = document.getElementById("seguimientoModalContainer");
+      const seguimientoModalContainer = document.getElementById(
+        "seguimientoModalContainer"
+      );
       if (seguimientoModalContainer) {
         if (isInactive) {
-          seguimientoModalContainer.classList.add('opacity-50', 'pointer-events-none');
-          seguimientoModalContainer.setAttribute('title', 'Activa el pedido para gestionar su seguimiento.');
+          seguimientoModalContainer.classList.add(
+            "opacity-50",
+            "pointer-events-none"
+          );
+          seguimientoModalContainer.setAttribute(
+            "title",
+            "Activa el pedido para gestionar su seguimiento."
+          );
         } else {
-          seguimientoModalContainer.classList.remove('opacity-50', 'pointer-events-none');
-          seguimientoModalContainer.removeAttribute('title');
+          seguimientoModalContainer.classList.remove(
+            "opacity-50",
+            "pointer-events-none"
+          );
+          seguimientoModalContainer.removeAttribute("title");
         }
       }
     }
@@ -1493,15 +1556,18 @@ window.pedidosApp = {
       // MEJORA PROFESIONAL: Permitir cambiar el estado desde 'entregado' o 'cancelado',
       // pero manteniendo la restricción para pedidos inactivos.
       const disabled = isInactive;
-      const isFinalState = currentEstado === 'entregado' || currentEstado === 'cancelado';
+      const isFinalState =
+        currentEstado === "entregado" || currentEstado === "cancelado";
       const isRevertAction = isFinalState && estado.value !== currentEstado;
-      
+
       const formattedValue = estado.value.replace(/ /g, "-");
 
       buttonsHtml += `
                 <button class="seguimiento-btn ${isActive ? "active" : ""} ${
         disabled ? "disabled" : ""
-      } ${isRevertAction ? "revert-action" : ""} seguimiento-btn-${formattedValue}"
+      } ${
+        isRevertAction ? "revert-action" : ""
+      } seguimiento-btn-${formattedValue}"
                         data-estado="${estado.value}" 
                         onclick="pedidosApp.selectSeguimientoEstadoModal('${
                           estado.value
@@ -1559,21 +1625,28 @@ window.pedidosApp = {
       this.seguimientoModalUpdateHandler = () => {
         if (this.selectedSeguimientoEstadoModal) {
           // MEJORA: Leer notas del modal, validar y llamar a la función de actualización.
-          const notasTextarea = document.getElementById("seguimientoNotasModal");
+          const notasTextarea = document.getElementById(
+            "seguimientoNotasModal"
+          );
           const notas = notasTextarea.value.trim();
 
           if (!notas) {
-              window.toast.error("Las notas de seguimiento son obligatorias.");
-              notasTextarea.focus();
-              notasTextarea.classList.add('border-red-500', 'ring-red-500');
-              setTimeout(() => {
-                  notasTextarea.classList.remove('border-red-500', 'ring-red-500');
-              }, 3000);
-              return;
+            window.toast.error("Las notas de seguimiento son obligatorias.");
+            notasTextarea.focus();
+            notasTextarea.classList.add("border-red-500", "ring-red-500");
+            setTimeout(() => {
+              notasTextarea.classList.remove("border-red-500", "ring-red-500");
+            }, 3000);
+            return;
           }
 
           // Llamar a updateSeguimiento con un callback para cerrar el modal al éxito.
-          this.updateSeguimiento(pedidoId, this.selectedSeguimientoEstadoModal, notas, () => this.closePedidoModal());
+          this.updateSeguimiento(
+            pedidoId,
+            this.selectedSeguimientoEstadoModal,
+            notas,
+            () => this.closePedidoModal()
+          );
         } else {
           window.toast.warning(
             "Por favor, selecciona un estado de seguimiento"
@@ -1640,6 +1713,7 @@ window.pedidosApp = {
   },
 
   clearFilters: function () {
+    document.getElementById("pedidoIdFilter").value = "";
     document.getElementById("clienteFilter").value = "";
     document.getElementById("fechaInicioFilter").value = "";
     document.getElementById("fechaFinFilter").value = "";
@@ -1657,69 +1731,79 @@ window.pedidosApp = {
   setupEventListeners: function () {
     // Usar delegación de eventos en un contenedor estático (document)
     // Esto es más robusto para SPAs y evita problemas de listeners duplicados.
-    
+
     // --- Delegación para la sección de SEGUIMIENTO ---
-    document.body.removeEventListener('click', this._handleSeguimientoClick);
+    document.body.removeEventListener("click", this._handleSeguimientoClick);
     this._handleSeguimientoClick = (e) => {
-        // MEJORA PROFESIONAL: Hacer el selector específico para los botones de la sección principal.
-        // Esto evita que este listener se dispare para los botones del modal, que tienen su propio `onclick`.
-        const mainSeguimientoBtn = e.target.closest('#mainSeguimientoButtons .seguimiento-btn');
-        if (mainSeguimientoBtn) {
-            const estado = mainSeguimientoBtn.getAttribute("data-estado");
-            this.selectSeguimientoEstado(estado);
-            return;
-        }
+      // MEJORA PROFESIONAL: Hacer el selector específico para los botones de la sección principal.
+      // Esto evita que este listener se dispare para los botones del modal, que tienen su propio `onclick`.
+      const mainSeguimientoBtn = e.target.closest(
+        "#mainSeguimientoButtons .seguimiento-btn"
+      );
+      if (mainSeguimientoBtn) {
+        const estado = mainSeguimientoBtn.getAttribute("data-estado");
+        this.selectSeguimientoEstado(estado);
+        return;
+      }
 
-        const updateBtn = e.target.closest('#updateSeguimientoBtn');
-        if (updateBtn) {
-            if (this.selectedPedidoId && this.selectedSeguimientoEstado) {
-                const notasTextarea = document.getElementById("seguimientoNotas");
-                const notas = notasTextarea.value.trim();
+      const updateBtn = e.target.closest("#updateSeguimientoBtn");
+      if (updateBtn) {
+        if (this.selectedPedidoId && this.selectedSeguimientoEstado) {
+          const notasTextarea = document.getElementById("seguimientoNotas");
+          const notas = notasTextarea.value.trim();
 
-                if (!notas) {
-                    window.toast.error("Las notas de seguimiento son obligatorias.");
-                    notasTextarea.focus();
-                    notasTextarea.classList.add('border-red-500', 'ring-red-500');
-                    setTimeout(() => {
-                        notasTextarea.classList.remove('border-red-500', 'ring-red-500');
-                    }, 3000);
-                    return;
-                }
-                this.updateSeguimiento(this.selectedPedidoId, this.selectedSeguimientoEstado, notas);
-            } else {
-                window.toast.warning("Por favor, selecciona un pedido y un estado de seguimiento");
-            }
+          if (!notas) {
+            window.toast.error("Las notas de seguimiento son obligatorias.");
+            notasTextarea.focus();
+            notasTextarea.classList.add("border-red-500", "ring-red-500");
+            setTimeout(() => {
+              notasTextarea.classList.remove("border-red-500", "ring-red-500");
+            }, 3000);
             return;
+          }
+          this.updateSeguimiento(
+            this.selectedPedidoId,
+            this.selectedSeguimientoEstado,
+            notas
+          );
+        } else {
+          window.toast.warning(
+            "Por favor, selecciona un pedido y un estado de seguimiento"
+          );
         }
+        return;
+      }
 
-        const refreshBtn = e.target.closest('#refreshSeguimientoBtn');
-        if (refreshBtn) {
-            if (this.selectedPedidoId) {
-                this.loadSeguimientoData(this.selectedPedidoId);
-                window.toast.success("Datos de seguimiento actualizados");
-            } else {
-                window.toast.warning("Por favor, selecciona un pedido");
-            }
-            return;
+      const refreshBtn = e.target.closest("#refreshSeguimientoBtn");
+      if (refreshBtn) {
+        if (this.selectedPedidoId) {
+          this.loadSeguimientoData(this.selectedPedidoId);
+          window.toast.success("Datos de seguimiento actualizados");
+        } else {
+          window.toast.warning("Por favor, selecciona un pedido");
         }
+        return;
+      }
     };
-    document.body.addEventListener('click', this._handleSeguimientoClick);
+    document.body.addEventListener("click", this._handleSeguimientoClick);
 
-    document.body.removeEventListener('change', this._handleSeguimientoChange);
+    document.body.removeEventListener("change", this._handleSeguimientoChange);
     this._handleSeguimientoChange = (e) => {
-        if (e.target.id === 'pedidoSeguimientoSelect') {
-            const selectedOption = e.target.options[e.target.selectedIndex];
-            if (selectedOption.value) {
-                this.selectedPedidoId = selectedOption.value;
-                this.loadSeguimientoData(selectedOption.value);
-                document.getElementById("seguimientoContent")?.classList.remove("hidden");
-                document.getElementById("noPedidosMessage")?.classList.add("hidden");
-            } else {
-                this.closeSeguimientoSection();
-            }
+      if (e.target.id === "pedidoSeguimientoSelect") {
+        const selectedOption = e.target.options[e.target.selectedIndex];
+        if (selectedOption.value) {
+          this.selectedPedidoId = selectedOption.value;
+          this.loadSeguimientoData(selectedOption.value);
+          document
+            .getElementById("seguimientoContent")
+            ?.classList.remove("hidden");
+          document.getElementById("noPedidosMessage")?.classList.add("hidden");
+        } else {
+          this.closeSeguimientoSection();
         }
+      }
     };
-    document.body.addEventListener('change', this._handleSeguimientoChange);
+    document.body.addEventListener("change", this._handleSeguimientoChange);
 
     // Tabs para estados de pedido - MEJORADO PARA CERRAR SEGUIMIENTO AL CAMBIAR DE TAB
     document.querySelectorAll(".tab-btn").forEach((button) => {
@@ -1763,6 +1847,11 @@ window.pedidosApp = {
       debounceTimeout = setTimeout(() => {
         this.loadPedidos();
       }, 500);
+    };
+
+    const pedidoIdFilterInput = document.getElementById("pedidoIdFilter");
+    if (pedidoIdFilterInput) {
+      pedidoIdFilterInput.addEventListener("keyup", debounceLoadData);
     };
 
     const clienteFilterInput = document.getElementById("clienteFilter");
@@ -1900,6 +1989,8 @@ window.crearPedidoApp = {
   elements: {},
   isEditMode: false,
   editingPedidoId: null,
+  submitUrl: '/admin/api/pedidos', // URL por defecto para la creación
+  isVentaMode: false, // Flag para saber si estamos creando una venta
 
   init: function () {
     this.cacheElements();
@@ -2348,9 +2439,9 @@ window.crearPedidoApp = {
       })),
     };
 
-    let url = "/admin/api/pedidos";
+    let url = this.submitUrl; // Usar la URL configurable
     let method = "POST";
-    let successMessage = "Pedido creado exitosamente";
+    let successMessage = this.isVentaMode ? "Venta creada exitosamente" : "Pedido creado exitosamente";
 
     if (this.isEditMode) {
       url = `/admin/api/pedidos/${this.editingPedidoId}`;
@@ -2374,7 +2465,13 @@ window.crearPedidoApp = {
         if (data.success) {
           window.toast.success(successMessage);
           this.closeModal();
-          if (window.pedidosApp) {
+          // MEJORA PROFESIONAL: Determinar qué vista recargar.
+          if (this.isVentaMode && window.VentasPageModule) {
+            // Si se creó una venta, recargar el módulo de ventas.
+            window.VentasPageModule.loadEstadisticas(); // Actualiza solo las estadísticas y el gráfico.
+            window.VentasPageModule.loadVentas(1, window.VentasPageModule.currentPerPage, true); // Actualiza la tabla de ventas.
+          } else if (!this.isVentaMode && window.pedidosApp) {
+            // Si se creó/editó un pedido, recargar el módulo de pedidos.
             window.pedidosApp.loadPedidos();
           } else {
             window.location.reload();
@@ -2417,6 +2514,14 @@ window.crearPedidoApp = {
 function initializePedidosApp() {
   console.log("Running initializePedidosApp...");
 
+  // MEJORA PROFESIONAL: Verificación de contexto para SPA.
+  // Antes de inicializar, nos aseguramos de que estamos en la página de pedidos
+  // buscando un elemento clave que solo existe en `lista_pedidos.html`.
+  if (!document.getElementById("pedidosTableBody")) {
+    console.log("Not on the pedidos page. Skipping initialization.");
+    return; // Salir si no estamos en la página correcta.
+  }
+
   let paginationData = {};
   const paginationScript = document.getElementById("pagination-data");
   if (paginationScript) {
@@ -2436,31 +2541,29 @@ function initializePedidosApp() {
 
     // Re-adjuntar el listener del botón de "Agregar Pedido" para evitar duplicados en SPA.
     // Ya no es necesario con delegación de eventos, pero lo mantenemos por si crearPedidoApp tiene su propia lógica.
-    document.getElementById("addPedidoBtn")?.addEventListener("click", () => crearPedidoApp.openModal());
+    document
+      .getElementById("addPedidoBtn")
+      ?.addEventListener("click", () => crearPedidoApp.openModal());
   }
 }
 
-/**
- * Esta función es el punto de entrada para la reinicialización de la página por el SPA.
- */
-window.reinitializePage = function() {
-    console.log("Reinitializing Pedidos Page via reinitializePage...");
-    initializePedidosApp();
-}
+// MEJORA PROFESIONAL: Patrón de inicialización robusto para SPA.
+// Este bloque asegura que la inicialización se ejecute correctamente en cualquier escenario.
 
-// Se usa una bandera para asegurar que los listeners se adjunten solo una vez por carga de página completa.
-if (!window.pedidosAppInitialized) {
-    // Para la carga directa de la página
-    document.addEventListener("DOMContentLoaded", initializePedidosApp);
+const runPedidosInitialization = () => {
+  // La función `initializePedidosApp` ya tiene una guardia de contexto,
+  // por lo que es seguro llamarla.
+  initializePedidosApp();
+};
 
-    // Para la navegación SPA (cuando se carga contenido dinámicamente)
-    document.addEventListener("content-loaded", function (e) {
-        // Verificar si el contenido cargado es la página de pedidos
-        if (e.detail.container && e.detail.container.querySelector("#pedidosTableBody")) {
-            console.log("Initializing Pedidos Page via content-loaded...");
-            initializePedidosApp();
-        }
-    });
+// 1. Para navegación SPA: Escuchar el evento personalizado de admin_spa.js
+document.addEventListener("content-loaded", runPedidosInitialization);
 
-    window.pedidosAppInitialized = true;
+// 2. Para carga de página directa:
+// Si el DOM ya está cargado cuando el script se ejecuta (común en SPA), inicializar de inmediato.
+// Si no, esperar al evento DOMContentLoaded.
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', runPedidosInitialization);
+} else {
+  runPedidosInitialization();
 }

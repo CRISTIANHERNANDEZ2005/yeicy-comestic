@@ -39,10 +39,11 @@
               d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
               clip-rule="evenodd"
             />
-          </svg>
-          <span class="text-gray-600 font-medium"
-            >{{ main_category_name }}</span
-          >
+          </svg> 
+          <a href="{{ url_for('products.productos_por_categoria', slug_categoria=main_category_slug) }}"
+             class="text-gray-600 hover:text-pink-600 transition-all duration-300 font-medium">
+            {{ main_category_name }}
+          </a>
         </li>
         {% endif %} {% if subcategory_name %}
         <li class="flex items-center">
@@ -57,7 +58,9 @@
               clip-rule="evenodd"
             />
           </svg>
-          <span class="text-gray-600 font-medium">{{ subcategory_name }}</span>
+          <a href="{{ url_for('products.productos_por_subcategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug) }}"
+             class="text-gray-600 hover:text-pink-600 transition-all duration-300 font-medium">
+            {{ subcategory_name }}</a>
         </li>
         {% endif %} {% if pseudocategory_name %}
         <li class="flex items-center">
@@ -72,9 +75,10 @@
               clip-rule="evenodd"
             />
           </svg>
-          <span class="text-gray-600 font-medium"
-            >{{ pseudocategory_name }}</span
-          >
+          <a href="{{ url_for('products.productos_por_seudocategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug, slug_seudocategoria=pseudocategory_slug) }}"
+             class="text-gray-600 hover:text-pink-600 transition-all duration-300 font-medium">
+            {{ pseudocategory_name }}
+          </a>
         </li>
         {% endif %}
 
@@ -609,7 +613,7 @@
             <div class="prose max-w-none">
               <h3 class="text-xl font-bold text-gray-800 mb-4">Información de Envíos y Devoluciones</h3>
               <div class="space-y-4 text-gray-600">
-                <p><strong>Envíos:</strong> Ofrecemos envío estándar gratuito en todos los pedidos. El tiempo de entrega estimado es de 3 a 5 días hábiles. También disponemos de envío express por un costo adicional.</p>
+                <p><strong>Envíos:</strong> Ofrecemos envío estándar gratuito en todos los pedidos. El tiempo de entrega estimado es de 3 a 5 días hábiles.</p>
                 <p><strong>Devoluciones:</strong> Aceptamos devoluciones dentro de los 30 días posteriores a la compra. El producto debe estar en su empaque original y sin usar. Para iniciar una devolución, por favor contacta a nuestro servicio al cliente.</p>
               </div>
             </div>
@@ -623,8 +627,12 @@
     <section class="mb-12">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-3xl font-bold text-gray-900">Productos relacionados</h2>
-        <a href="#" class="text-pink-600 hover:text-pink-700 font-semibold">
-          Ver todos →
+        <a
+          href="{{ url_for('products.productos_por_seudocategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug, slug_seudocategoria=pseudocategory_slug) }}"
+          class="text-pink-600 hover:text-pink-700 font-semibold flex items-center transition-colors"
+        >
+          Ver todos
+          <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
         </a>
       </div>
       {% include 'cliente/ui/carrusel_productos.html' %}

@@ -1,4 +1,35 @@
-// Manejo de favoritos en la interfaz de usuario
+/**
+ * @file Módulo de Gestión de Favoritos (FavoritesManager).
+ * @description Este script encapsula la lógica para gestionar la "lista de deseos" o
+ *              "favoritos" de un usuario, proporcionando una experiencia de usuario
+ *              optimista y una sincronización de datos robusta.
+ *
+ * @class FavoritesManager
+ *
+ * @funcionalidadesClave
+ * 1.  **UI Optimista:** La interfaz de usuario (botones de corazón, contadores) se
+ *     actualiza instantáneamente al hacer clic, proporcionando una respuesta inmediata
+ *     mientras la sincronización con el servidor ocurre en segundo plano.
+ *
+ * 2.  **Gestión de Estado Dual (Local + Servidor):**
+ *     - **Caché Local:** Utiliza `localStorage` para persistir los favoritos en el
+ *       cliente, permitiendo una carga rápida y acceso sin conexión.
+ *     - **Sincronización con Backend:** Para usuarios autenticados, los cambios se
+ *       sincronizan con la base de datos para garantizar la consistencia entre dispositivos.
+ *
+ * 3.  **Sincronización Inteligente y Tolerante a Fallos:**
+ *     - **Debounce y Encolado:** Agrupa múltiples acciones rápidas del usuario para
+ *       enviar una única petición al servidor, optimizando el uso de la red.
+ *     - **Manejo de Fallos:** Si una sincronización falla (p. ej., por pérdida de conexión),
+ *       el cambio local se mantiene y se reintentará la sincronización más tarde.
+ *     - **Sincronización en Segundo Plano:** Sincroniza periódicamente y cuando la pestaña
+ *       del navegador vuelve a estar visible.
+ *
+ * 4.  **Manejo de Autenticación:**
+ *     - **Usuarios Invitados:** Muestra notificaciones no intrusivas para iniciar sesión
+ *       si un usuario no autenticado intenta guardar un favorito.
+ *     - **Transición de Sesión:** Gestiona los eventos de inicio y cierre de sesión para cargar o limpiar los datos.
+ */
 if (typeof FavoritesManager === "undefined") {
   class FavoritesManager {
     /**
@@ -567,7 +598,7 @@ if (typeof FavoritesManager === "undefined") {
       this.syncQueue = this.syncQueue.then(async () => {
         try {
           const token =
-            window.auth?.getAuthToken?.() || this.getCookie("access_token");
+            window.auth?.getAuthToken?.() || this.getCookie("token");
           if (!token)
             throw new Error("No se encontró el token de autenticación");
 
@@ -753,7 +784,6 @@ if (typeof FavoritesManager === "undefined") {
         this.syncInProgress = false;
         this._showSyncIndicator(false);
         console.error("Error durante la sincronización de favoritos:", error);
-        this._showNotification("Error al sincronizar favoritos.", "error");
         return { success: false, synced: false, error };
       }
     }
@@ -761,7 +791,6 @@ if (typeof FavoritesManager === "undefined") {
     // Actualizar la UI de los botones de favoritos
     updateFavoritesUI() {
       // Obtener todos los botones de favoritos
-      // Unificación: solo usar updateAllFavoriteButtons para evitar duplicidad
       this.updateAllFavoriteButtons();
     }
 
@@ -770,7 +799,6 @@ if (typeof FavoritesManager === "undefined") {
         (id) => typeof id === "string" && id.length > 0
       ).length;
 
-      // Update general counter in navbar
       const counters = document.querySelectorAll("#favorites-counter");
       counters.forEach((counter) => {
         if (counter) {
@@ -779,12 +807,11 @@ if (typeof FavoritesManager === "undefined") {
         }
       });
 
-      // Update specific counter on favorites page
       const pageCounter = document.getElementById("favorites-page-counter");
       if (pageCounter) {
-        pageCounter.textContent = `${count} ${ 
+        pageCounter.textContent = `${count} ${
           count === 1 ? "producto guardado" : "productos guardados"
-        }`;
+        }`; // Esto ahora reemplaza todo el contenido, lo cual es correcto.
       }
 
       document.dispatchEvent(
@@ -823,7 +850,7 @@ if (typeof FavoritesManager === "undefined") {
           const parts = value.split(`; ${name}=`);
           if (parts.length === 2) return parts.pop().split(";").shift();
         };
-        const token = getCookie("access_token");
+        const token = getCookie("token");
 
         const headers = {
           "Content-Type": "application/json",
@@ -897,7 +924,7 @@ if (typeof FavoritesManager === "undefined") {
           const parts = value.split(`; ${name}=`);
           if (parts.length === 2) return parts.pop().split(";").shift();
         };
-        const token = getCookie("access_token");
+        const token = getCookie("token");
 
         const headers = {};
 
@@ -1198,7 +1225,7 @@ if (typeof FavoritesManager === "undefined") {
 
         // Obtener el token de autenticación
         const token =
-          window.auth?.getAuthToken?.() || this.getCookie("access_token");
+          window.auth?.getAuthToken?.() || this.getCookie("token");
         if (!token) {
           throw new Error("No se encontró el token de autenticación");
         }

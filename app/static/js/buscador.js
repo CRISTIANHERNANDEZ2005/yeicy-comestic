@@ -1,9 +1,30 @@
-// static/js/buscador.js
+/**
+ * Módulo de Búsqueda Avanzada y Sugerencias.
+ *
+ * Este script gestiona la funcionalidad de búsqueda de productos en todo el sitio,
+ * proporcionando una experiencia de usuario interactiva y en tiempo real a través de un modal.
+ * Además, implementa un sistema de analítica para registrar y sincronizar los
+ * términos de búsqueda que conducen a clics en productos.
+ *
+ * Funcionalidades Clave:
+ * 1.  **Modal de Búsqueda Interactivo:** Activa un modal al interactuar con el campo de
+ *     búsqueda, mejorando la experiencia y centrando la atención del usuario.
+ * 2.  **Búsqueda en Tiempo Real (Debounced):** Realiza peticiones asíncronas con un retardo
+ *     'debounce' para optimizar el rendimiento y no sobrecargar el servidor con cada
+ *     pulsación de tecla.
+ * 3.  **Sugerencias Dinámicas:** Carga y muestra términos de búsqueda populares o sugerencias
+ *     cuando el campo de búsqueda está vacío para guiar al usuario.
+ * 4.  **Registro de Analíticas de Búsqueda:** Cuando un usuario hace clic en un resultado,
+ *     el término de búsqueda y el ID del producto se guardan en una cola en `localStorage`.
+ * 5.  **Sincronización por Lotes (Batch Syncing):** Los datos de analítica se envían al
+ *     servidor periódicamente y de forma eficiente usando `navigator.sendBeacon` para
+ *     garantizar la entrega de datos incluso si el usuario abandona la página.
+ */
 (function() {
     'use strict';
 
-    const SEARCH_SYNC_INTERVAL = 15000; // 15 segundos
-    const SEARCH_QUEUE_KEY = 'searchQueue';
+    const SEARCH_SYNC_INTERVAL = 15000; // Intervalo de sincronización: 15 segundos.
+    const SEARCH_QUEUE_KEY = 'searchQueue'; // Clave para la cola de búsqueda en localStorage.
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initBuscador);
@@ -12,6 +33,7 @@
     }
 
     function initBuscador() {
+        // --- Selección de Elementos del DOM ---
         const searchInput = document.getElementById('searchInput');
         const searchModal = document.getElementById('searchModal');
         const searchOverlay = document.getElementById('searchOverlay');
@@ -23,6 +45,7 @@
         let searchTimeout;
 
         function abrirModal() {
+            // Evita abrir si ya está visible.
             if (searchModal.classList.contains('hidden')) {
                 searchModal.classList.remove('hidden');
                 searchModal.classList.add('show');
@@ -42,6 +65,7 @@
         }
 
         function limpiarBusqueda() {
+            // Restaura el mensaje inicial en la lista de resultados.
             resultadosList.innerHTML = '<p class="text-gray-500 col-span-2 text-center py-8">Empieza a escribir para buscar productos</p>';
         }
 
@@ -51,6 +75,7 @@
         searchOverlay.addEventListener('click', cerrarModal);
 
         searchInput.addEventListener('input', function(e) {
+            // Lógica de búsqueda con debounce para optimizar rendimiento.
             const query = e.target.value.trim();
             clearTimeout(searchTimeout);
 
@@ -63,6 +88,7 @@
         });
 
         document.addEventListener('keydown', function(e) {
+            // Cierra el modal al presionar la tecla Escape.
             if (e.key === 'Escape' && !searchModal.classList.contains('hidden')) {
                 cerrarModal();
             }
@@ -73,6 +99,7 @@
             resultadosList.innerHTML = '';
 
             try {
+                // Realiza la petición al endpoint de búsqueda.
                 const response = await fetch(`/buscar?q=${encodeURIComponent(query)}`);
                 const data = await response.json();
                 loadingIndicator.classList.add('hidden');
@@ -86,6 +113,7 @@
         }
 
         function mostrarResultados(productos, query) {
+            // Renderiza los productos encontrados o un mensaje de "no resultados".
             if (!productos || productos.length === 0) {
                 resultadosList.innerHTML = '<p class="text-gray-500 col-span-2 text-center py-8">No se encontraron productos</p>';
                 return;
@@ -104,6 +132,7 @@
                     </div>
                 `;
                 div.addEventListener('click', () => {
+                    // Al hacer clic, registra el término para análisis y redirige.
                     logSearchClick(producto, query);
                     window.location.href = `/producto/${producto.id}`;
                 });
@@ -112,6 +141,7 @@
         }
 
         function logSearchClick(producto, query) {
+            // Añade el término de búsqueda y el producto a una cola en localStorage.
             const queue = JSON.parse(localStorage.getItem(SEARCH_QUEUE_KEY) || '[]');
             queue.push({
                 product_id: producto.id,
@@ -119,10 +149,11 @@
                 timestamp: new Date().toISOString()
             });
             localStorage.setItem(SEARCH_QUEUE_KEY, JSON.stringify(queue));
-            console.log(`[Search] Term '${query}' for product ${producto.id} queued for sync.`);
+            console.log(`[Búsqueda] Término '${query}' para producto ${producto.id} encolado para sincronización.`);
         }
 
         async function cargarSugerencias() {
+            // Carga y muestra sugerencias de búsqueda cuando el input está vacío.
             try {
                 const response = await fetch('/buscar?q=');
                 const data = await response.json();
@@ -150,13 +181,14 @@
                 return;
             }
 
-            console.log(`[Search] Syncing ${queue.length} search terms.`);
+            console.log(`[Búsqueda] Sincronizando ${queue.length} términos de búsqueda.`);
 
             const data = {
                 terminos: queue
             };
 
-            // Usar navigator.sendBeacon si está disponible para mayor fiabilidad
+            // Usa navigator.sendBeacon si está disponible para una sincronización más fiable,
+            // especialmente cuando el usuario abandona la página.
             if (navigator.sendBeacon) {
                 const headers = { type: 'application/json' };
                 const blob = new Blob([JSON.stringify(data)], headers);
@@ -171,21 +203,21 @@
                 }).then(response => {
                     if (response.ok) {
                         localStorage.removeItem(SEARCH_QUEUE_KEY);
-                        console.log('[Search] Sync successful.');
+                        console.log('[Búsqueda] Sincronización exitosa.');
                     } else {
-                        console.error('[Search] Sync failed.');
+                        console.error('[Búsqueda] La sincronización falló.');
                     }
                 }).catch(error => {
-                    console.error('[Search] Sync error:', error);
+                    console.error('[Búsqueda] Error de sincronización:', error);
                 });
             }
         }
 
-        // Sincronizar al cargar la página y periódicamente
+        // Sincroniza al cargar la página y luego periódicamente.
         syncSearchTerms();
         setInterval(syncSearchTerms, SEARCH_SYNC_INTERVAL);
 
-        // Sincronizar antes de que el usuario abandone la página
+        // Asegura la sincronización antes de que el usuario abandone la página.
         window.addEventListener('pagehide', syncSearchTerms);
         window.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {

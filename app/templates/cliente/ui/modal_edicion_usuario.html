@@ -92,7 +92,7 @@
             class="block text-sm font-semibold text-gray-700 mb-2 flex items-center"
           >
             <i class="fas fa-lock text-rose-400 mr-2"></i>
-            Contraseña
+            Nueva Contraseña
           </label>
           <div class="relative">
             <input
@@ -266,15 +266,24 @@
   }
 
   // Funciones del Modal
-  function openModal() {
+  window.openModal = function() { // Make it global so it can be called from the button
     const modal = document.getElementById("editModal");
     modal.classList.remove("hidden");
     document.body.style.overflow = "hidden";
 
-    // Populate fields with current user data
-    document.getElementById("modalNombre").value = "{{ current_user.nombre | default('') }}";
-    document.getElementById("modalApellido").value = "{{ current_user.apellido | default('') }}";
-    document.getElementById("modalTelefono").value = "{{ current_user.numero | default('') }}";
+    // MEJORA: Leer los datos más recientes directamente desde la vista principal
+    // Esto asegura que el modal siempre muestre la información actualizada.
+    const nombreActual = document.getElementById("displayNombre")?.textContent.trim();
+    const apellidoActual = document.getElementById("displayApellido")?.textContent.trim();
+    const telefonoActual = document.getElementById("displayTelefono")?.textContent.trim();
+
+    const nombreInput = document.getElementById("modalNombre");
+    const apellidoInput = document.getElementById("modalApellido");
+    const telefonoInput = document.getElementById("modalTelefono");
+
+    if (nombreInput) nombreInput.value = nombreActual || "";
+    if (apellidoInput) apellidoInput.value = apellidoActual || "";
+    if (telefonoInput) telefonoInput.value = telefonoActual || "";
     document.getElementById("modalPassword").value = ""; // Always clear password field for security
 
     // Animación suave

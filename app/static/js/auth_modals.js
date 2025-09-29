@@ -1,3 +1,29 @@
+/**
+ * Módulo de Modales de Autenticación.
+ *
+ * Este script gestiona de forma integral la interfaz de usuario para la autenticación del cliente,
+ * incluyendo los modales de inicio de sesión, registro y el flujo de recuperación de contraseña.
+ *
+ * Funcionalidades Clave:
+ * 1.  **Gestión de Modales:** Controla la visibilidad y el estado de los modales, permitiendo
+ *     cambiar entre las pestañas de "Iniciar Sesión" y "Registrarse", y limpiando los
+ *     formularios para evitar datos residuales.
+ * 2.  **Validación de Formularios en Tiempo Real:** Implementa validación del lado del cliente para
+ *     campos como número de teléfono, correo, nombre y contraseña, proporcionando feedback
+ *     instantáneo al usuario para mejorar la experiencia.
+ * 3.  **Indicador de Fortaleza de Contraseña:** Ofrece una guía visual en tiempo real sobre la
+ *     seguridad de la contraseña que el usuario está creando.
+ * 4.  **Flujo de Recuperación de Contraseña:** Maneja un proceso completo y seguro de varios pasos
+ *     para que los usuarios puedan restablecer su contraseña (solicitud de código, verificación y
+ *     establecimiento de nueva contraseña).
+ * 5.  **Manejo de Envíos Asíncronos (AJAX):** Gestiona el envío de todos los formularios de
+ *     autenticación mediante `fetch`, mostrando estados de carga y procesando las respuestas del
+ *     servidor para dar mensajes de éxito o error sin recargar la página.
+ * 6.  **Integración con el Ecosistema:** Tras un login/registro exitoso, interactúa con otros
+ *     módulos (`window.auth`, `window.cart`, `window.favoritesManager`) para sincronizar el estado.
+ * 7.  **Mejoras de Experiencia de Usuario (UX):** Incluye toggles para mostrar/ocultar contraseñas,
+ *     cierre con la tecla Escape y prevención de mensajes de validación nativos del navegador.
+ */
 (function () {
   // Constantes y elementos del DOM
   const bg = document.getElementById("auth-modal-bg");
@@ -7,6 +33,15 @@
   const registerTab = document.getElementById("auth-register-tab");
   const loginForm = document.getElementById("auth-login-form");
   const registerForm = document.getElementById("auth-register-form");
+  // --- INICIO: Nuevos elementos para el flujo de contraseña olvidada ---
+  const forgotPasswordFlow = document.getElementById("auth-forgot-password-flow");
+  const forgotPasswordStep1 = document.getElementById("auth-forgot-password-form-step1");
+  const forgotPasswordStep2 = document.getElementById("auth-forgot-password-form-step2");
+  const forgotPasswordStep3 = document.getElementById("auth-forgot-password-form-step3");
+  const forgotPasswordStep4 = document.getElementById("auth-forgot-password-form-step4");
+  const goToStep3Btn = document.getElementById("go-to-step3-btn");
+  const forgotPasswordLink = document.getElementById("forgot-password-link");
+  const backToLoginLink = document.getElementById("back-to-login-link");
   const msg = document.getElementById("auth-modal-msg");
 
   // Expresiones regulares para validación
@@ -24,7 +59,8 @@
     password: 'Mínimo 8 caracteres, una mayúscula, una minúscula y un número',
     name: 'Solo se permiten letras y espacios',
     email: 'Ingresa un correo electrónico válido',
-    passwordMismatch: 'Las contraseñas no coinciden'
+    passwordMismatch: 'Las contraseñas no coinciden',
+    confirmPassword: 'Por favor, confirma tu contraseña'
   };
 
   // Función para limpiar un formulario y sus estados
@@ -71,6 +107,7 @@
     // Limpia el formulario que se va a ocultar
     if (mode === "register") {
       resetForm(loginForm);
+      resetForgotPasswordFlow(); // Limpia todo el flujo de reseteo
     } else {
       resetForm(registerForm);
     }
@@ -88,6 +125,7 @@
     if (mode === "register") {
       loginForm.classList.add("hidden");
       registerForm.classList.remove("hidden");
+      forgotPasswordFlow.classList.add("hidden");
       
       // Actualiza estilos de las pestañas
       loginTab.classList.remove(
@@ -110,6 +148,7 @@
     } else {
       registerForm.classList.add("hidden");
       loginForm.classList.remove("hidden");
+      forgotPasswordFlow.classList.add("hidden");
       
       // Actualiza estilos de las pestañas
       registerTab.classList.remove(
@@ -138,6 +177,18 @@
     msg.classList.add("hidden");
     loginForm.reset();
     registerForm.reset();
+    resetForgotPasswordFlow();
+  }
+
+  // Función para resetear el flujo de contraseña olvidada a su estado inicial
+  function resetForgotPasswordFlow() {
+    forgotPasswordStep1.reset();
+    forgotPasswordStep3.reset();
+    if (forgotPasswordStep4) forgotPasswordStep4.reset();
+    forgotPasswordStep1.classList.remove("hidden");
+    forgotPasswordStep2.classList.add("hidden");
+    forgotPasswordStep3.classList.add("hidden");
+    if (forgotPasswordStep4) forgotPasswordStep4.classList.add("hidden");
   }
 
   closeBtn.onclick = closeModal;
@@ -149,6 +200,34 @@
   };
   registerTab.onclick = function () {
     window.showAuthModal("register");
+  };
+
+  // --- INICIO: Lógica para Olvidé mi Contraseña ---
+  forgotPasswordLink.onclick = function () {
+    // Oculta los formularios de login/registro y muestra el de reseteo
+    loginForm.classList.add("hidden");
+    registerForm.classList.add("hidden");
+    forgotPasswordFlow.classList.remove("hidden");
+    msg.classList.add("hidden");
+    msg.textContent = "";
+    resetForm(loginForm);
+    resetForm(registerForm);
+    resetForgotPasswordFlow();
+  };
+
+  backToLoginLink.onclick = function () {
+    // Vuelve a mostrar el formulario de login
+    loginForm.classList.remove("hidden");
+    registerForm.classList.add("hidden");
+    forgotPasswordFlow.classList.add("hidden");
+    msg.classList.add("hidden");
+    msg.textContent = "";
+    resetForgotPasswordFlow();
+  };
+
+  goToStep3Btn.onclick = function() {
+    forgotPasswordStep2.classList.add("hidden");
+    forgotPasswordStep3.classList.remove("hidden");
   };
 
   // Función para validar un campo según su tipo
@@ -170,17 +249,47 @@
     switch(fieldName) {
       case 'numero':
         isValid = patterns.phone.test(value);
+        // No mostrar validación de formato de número en el login.
+        // Solo se valida que no esté vacío (ya cubierto por 'required').
+        if (field.id === 'login-numero') {
+          isValid = true; // Se asume válido si no está vacío, la validación real la hace el backend.
+          break;
+        }
         if (!isValid) setFieldError(field, errorMessages.phone, errorElement);
         break;
       case 'password':
       case 'contraseña':
         isValid = patterns.password.test(value);
+        // Para el campo de contraseña de inicio de sesión, no aplicamos la validación de formato detallada.
+        // Solo se verifica si está vacío (lo cual ya está cubierto por la comprobación 'required' al inicio de la función).
+        if (field.id === 'login-password') {
+          isValid = true; // Consideramos el campo válido en el frontend si no está vacío, la validación real la hace el backend.
+          break;
+        }
         if (!isValid) setFieldError(field, errorMessages.password, errorElement);
         break;
       case 'nombre':
       case 'apellido':
         isValid = patterns.name.test(value);
         if (!isValid) setFieldError(field, errorMessages.name, errorElement);
+        break;
+      // --- INICIO: Nuevas validaciones para el formulario de reseteo ---
+      case 'reset-new-password':
+        isValid = patterns.password.test(value);
+        if (!isValid) setFieldError(field, errorMessages.password, errorElement);
+        break;
+      case 'reset-confirm-password':
+        const newPasswordValue = document.getElementById('reset-new-password').value.trim();
+        if (!value) {
+          setFieldError(field, errorMessages.confirmPassword, errorElement);
+          return false; // Devolver false directamente
+        }
+        if (value !== newPasswordValue) {
+          setFieldError(field, errorMessages.passwordMismatch, errorElement);
+          return false; // Devolver false directamente
+        }
+        break;
+      // --- FIN: Nuevas validaciones para el formulario de reseteo ---
         break;
       case 'email':
         isValid = patterns.email.test(value);
@@ -378,9 +487,9 @@
               window.auth.setAuthToken(result.token);
             }
             localStorage.setItem('token', result.token); // Guardar token para uso en toda la app
-            // Set global userId for cart synchronization
+            // Establecer el userId global para la sincronización del carrito.
             window.userId = result.usuario.id;
-            // Trigger cart synchronization immediately after login/registration
+            // Disparar la sincronización del carrito inmediatamente después del inicio de sesión/registro.
             if (window.cart) {
               await window.cart.mergeLocalCartWithServer();
             }
@@ -439,8 +548,11 @@
           // Mensaje general arriba del formulario solo si no es error de campo
           if (!fieldErrorShown) {
             msg.textContent = result.error || result.message || "Error en el proceso. Verifica tus datos.";
-            msg.classList.remove("text-green-400", "hidden");
-            msg.classList.add("text-red-400");
+            // No recargar la página en caso de error de login.
+            // El interceptor ya no forzará la recarga, así que mostramos el mensaje aquí.
+            msg.classList.remove("hidden", "text-green-400");
+            msg.classList.add("text-red-400", "animate-shake");
+            setTimeout(() => msg.classList.remove('animate-shake'), 500);
           }
         }
       } catch (err) {
@@ -455,11 +567,165 @@
     };
   }
 
+  // --- INICIO: Manejo del nuevo flujo de contraseña olvidada ---
+
+  // Paso 1: Solicitar el código
+  forgotPasswordStep1.onsubmit = async function (e) {
+    e.preventDefault();
+    msg.classList.add("hidden");
+    
+    const numeroInput = document.getElementById('forgot-numero'); // Se mantiene
+    const apellidoInput = document.getElementById('forgot-nombre'); // Cambiado a nombre
+    
+    // Validar ambos campos
+    const isNumeroValid = validateField(numeroInput);
+    const isApellidoValid = validateField(apellidoInput);
+    if (!isNumeroValid || !isApellidoValid) return;
+
+    const submitBtn = forgotPasswordStep1.querySelector('button[type="submit"]');
+    submitBtn.innerHTML = 'Procesando...';
+    submitBtn.disabled = true;
+
+    try {
+      const formData = new FormData(forgotPasswordStep1);
+      const data = Object.fromEntries(formData);
+
+      const resp = await fetch('/auth/request-reset', {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      const result = await resp.json();
+
+      if (resp.ok && result.codigo) {
+          // Éxito: Mostrar el código y avanzar al siguiente paso
+        document.getElementById('recovery-code-display').textContent = result.codigo;
+        forgotPasswordStep1.classList.add('hidden');
+        forgotPasswordStep2.classList.remove('hidden');
+      } else {
+          // Error: Mostrar el mensaje de error del backend en el modal.
+          // Esto previene la redirección por el interceptor en caso de 401.
+          if (resp.status === 401) {
+            console.warn("Error de credenciales (401) en recuperación de contraseña. Mostrando mensaje en modal.");
+          }
+
+        const errorMessage = result.error || "Error al procesar la solicitud.";
+        msg.textContent = errorMessage;
+        // Asegurarse de que el mensaje de error sea visible y tenga el color correcto.
+        msg.classList.remove("hidden", "text-green-400");
+        msg.classList.add("text-red-400");
+      }
+    } finally {
+      submitBtn.innerHTML = 'Obtener Código';
+      submitBtn.disabled = false;
+    }
+  };
+
+  // Paso 3: Verificar el código
+  forgotPasswordStep3.onsubmit = async function (e) {
+      e.preventDefault();
+      msg.classList.add("hidden");
+      const codigoInput = document.getElementById('verify-code');
+      if (!validateField(codigoInput)) return;
+
+      const submitBtn = forgotPasswordStep3.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'Procesando...';
+      submitBtn.disabled = true;
+
+      try {
+        const resp = await fetch('/auth/verify-reset-code', {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ codigo: codigoInput.value }),
+        });
+        const result = await resp.json();
+
+        if (resp.ok && result.reset_token) {
+          // El código es correcto. Ocultar paso 3 y mostrar paso 4.
+          forgotPasswordStep3.classList.add('hidden');
+          forgotPasswordStep4.classList.remove('hidden');
+          
+          // Guardar el token en el formulario del paso 4
+          const tokenInput = document.getElementById('reset-token-input');
+          tokenInput.value = result.reset_token;
+
+        } else {
+          msg.textContent = result.error || "Error al verificar el código.";
+          msg.classList.remove("hidden", "text-green-400");
+          msg.classList.add("text-red-400");
+        }
+      } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+  };
+
+  // Paso 4: Enviar la nueva contraseña
+  forgotPasswordStep4.onsubmit = async function (e) {
+      e.preventDefault();
+      msg.classList.add("hidden");
+
+      const newPasswordInput = document.getElementById('reset-new-password');
+      const confirmPasswordInput = document.getElementById('reset-confirm-password');
+      const tokenInput = document.getElementById('reset-token-input');
+
+      // Validar campos
+      const isNewPasswordValid = validateField(newPasswordInput);
+      const isConfirmPasswordValid = validateField(confirmPasswordInput);
+
+      if (!isNewPasswordValid || !isConfirmPasswordValid) return;
+
+      const submitBtn = forgotPasswordStep4.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = 'Procesando...';
+      submitBtn.disabled = true;
+
+      try {
+          const resp = await fetch(`/auth/reset-password/${tokenInput.value}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ 
+                  contraseña: newPasswordInput.value,
+                  confirm_contraseña: confirmPasswordInput.value
+              }),
+          });
+          const result = await resp.json();
+
+          if (resp.ok && result.success) {
+              // No recargar la página.
+              // Mostrar mensaje de éxito y cambiar a la vista de login.
+              msg.textContent = "¡Contraseña actualizada! Ya puedes iniciar sesión.";
+              msg.classList.remove("hidden", "text-red-400");
+              msg.classList.add("text-green-400");
+
+              // Después de un momento, cambiar a la vista de login.
+              setTimeout(() => {
+                  backToLoginLink.click(); // Simula el clic en "Volver a Iniciar Sesión"
+                  msg.textContent = ""; // Limpia el mensaje para la nueva vista
+              }, 2000);
+          } else {
+              msg.textContent = result.error || "Error al restablecer la contraseña.";
+              msg.classList.remove("hidden", "text-green-400");
+              msg.classList.add("text-red-400");
+          }
+      } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+      }
+  };
+
+  // --- FIN: Manejo del nuevo flujo de contraseña olvidada ---
+
   // Setup forms
   handleSubmit(loginForm, "/auth/login");
-  handleSubmit(registerForm, "/auth/register");
+  handleSubmit(registerForm, "/auth/register"); 
+  // Configurar validación en tiempo real para los formularios de reseteo
+  setupRealTimeValidation(forgotPasswordStep1);
+  setupRealTimeValidation(forgotPasswordStep3);
+  if (forgotPasswordStep4) setupRealTimeValidation(forgotPasswordStep4);
 
-  // Enhanced password toggle
+  // Toggle mejorado para mostrar/ocultar contraseña.
   function setupPasswordToggle(inputId, btnId) {
     const input = document.getElementById(inputId);
     const btn = document.getElementById(btnId);
@@ -481,11 +747,27 @@
 
   setupPasswordToggle("login-password", "toggle-login-password");
   setupPasswordToggle("register-password", "toggle-register-password");
+  setupPasswordToggle("reset-new-password", "toggle-reset-password");
+  setupPasswordToggle("reset-confirm-password", "toggle-reset-confirm-password");
 
-  // Close on escape key
+  // Cerrar modal con la tecla Escape.
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && !bg.classList.contains("hidden")) {
       closeModal();
     }
   });
+
+  //  Función para prevenir los mensajes de validación nativos del navegador
+  // para el campo de contraseña de inicio de sesión.
+  // Esto evita que el navegador muestre mensajes como "La contraseña debe tener X caracteres..."
+  // y permite que el backend maneje el mensaje genérico de "credenciales inválidas".
+  function preventLoginPasswordNativeValidationMessages() {
+    const loginPasswordField = document.getElementById('login-password');
+    if (loginPasswordField) {
+      loginPasswordField.addEventListener('invalid', function(event) {
+        event.preventDefault(); // Evita que el navegador muestre su mensaje de error predeterminado.
+      });
+    }
+  }
+  document.addEventListener('DOMContentLoaded', preventLoginPasswordNativeValidationMessages);
 })();

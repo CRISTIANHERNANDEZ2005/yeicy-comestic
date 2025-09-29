@@ -4,48 +4,133 @@
 {% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-8">
-    Colección Exclusiva {{ categoria_actual }}
-  </h1>
-
-  <div class="category-section mb-12">
-    <div class="flex justify-between items-center mb-6 px-2">
-      <h2 class="text-2xl font-semibold text-gray-700">Productos Destacados</h2>
-      {% if categoria_maquillaje and categorias|length > 0 %}
-      <a
-        href="{{ url_for('products.productos_por_categoria', slug_categoria=categoria_maquillaje.slug) }}"
-        class="flex items-center text-pink-600 hover:text-pink-800 font-medium transition-colors"
-      >
-        Ver Todos
-        <svg
-          class="w-5 h-5 ml-1"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M17 8l4 4m0 0l-4 4m4-4H3"
-          />
-        </svg>
-      </a>
-      {% endif %}
+<div class="container mx-auto px-4 py-4 md:py-12">
+  <!-- Encabezado mejorado con diseño premium -->
+  <div class="text-center mb-10 md:mb-14">
+    <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-pink-100 to-purple-100 shadow-lg mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+      </svg>
     </div>
+    <h1 class="text-3xl md:text-4xl lg:text-5xl font-bold text-center text-gray-800 mb-3">
+      Colección Exclusiva <span class="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600">{{ categoria_actual }}</span>
+    </h1>
+    <div class="w-24 h-1 bg-gradient-to-r from-pink-400 to-purple-500 mx-auto rounded-full"></div>
+  </div>
 
-    <!-- Carrusel de productos - VERSIÓN ULTRA PROFESIONAL CON CORRECCIONES -->
-    {% if productos %}
-      {% include 'cliente/ui/carrusel_productos.html' %}
-    {% else %}
-      <div class="text-center py-10">
-        <p class="text-xl text-gray-600">No hay productos de {{ categoria_actual }} disponibles en este momento.</p>
-        <p class="text-md text-gray-500 mt-2">Vuelve pronto para descubrir nuestras novedades.</p>
+  <div class="category-section mb-12 md:mb-16">
+    <!-- Sección de productos destacados con diseño mejorado -->
+    <div class="bg-white rounded-2xl shadow-lg p-6 md:p-8 mb-8">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 md:mb-8">
+        <div class="mb-4 sm:mb-0">
+          <h2 class="text-2xl md:text-3xl font-bold text-gray-800 flex items-center">
+            <span class="inline-block w-3 h-3 rounded-full bg-pink-500 mr-3"></span>
+            Productos Destacados
+          </h2>
+          <p class="text-gray-600 mt-2">Los más populares entre nuestros clientes</p>
+        </div>
+        
+        {% if categoria_maquillaje and categorias|length > 0 %}
+        <a
+          href="{{ url_for('products.productos_por_categoria', slug_categoria=categoria_maquillaje.slug) }}"
+          class="group inline-flex items-center px-5 py-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 hover:border-pink-300 transition-all duration-300 shadow-sm hover:shadow-md"
+        >
+          <span class="text-pink-600 font-medium group-hover:text-pink-700 transition-colors">Ver Todos</span>
+          <svg
+            class="w-5 h-5 ml-2 text-pink-500 group-hover:translate-x-1 transition-transform duration-300"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+        </a>
+        {% endif %}
       </div>
-    {% endif %}
+
+      <!-- Carrusel de productos - Contenedor mejorado -->
+      <div class="relative">
+        {% if productos %}
+          {% include 'cliente/ui/carrusel_productos.html' %}
+        {% else %}
+          <!-- Mensaje mejorado cuando no hay productos -->
+          <div class="text-center py-12 md:py-16 bg-gradient-to-br from-pink-50 to-purple-50 rounded-2xl">
+            <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white shadow-md mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
+            <h3 class="text-xl md:text-2xl font-semibold text-gray-700 mb-3">Productos no disponibles</h3>
+            <p class="text-gray-600 max-w-md mx-auto mb-6">No hay productos de {{ categoria_actual }} disponibles en este momento.</p>
+            <p class="text-gray-500 text-sm mb-6">Vuelve pronto para descubrir nuestras novedades.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
   </div>
 </div>
+
+{% if usuario_autenticado %}
+<!-- Sección mejorada: Recomendado para Ti -->
+<div class="bg-pink-50 py-16 mt-12">
+  <div class="container mx-auto px-4">
+    <div id="recomendaciones-container" class="category-section">
+      <!-- Encabezado mejorado -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h2 class="text-3xl font-bold text-gray-800">Recomendado para Ti</h2>
+        <p class="text-gray-600 mt-2">Una selección especial basada en tus gustos y productos favoritos.</p>
+      </div>
+      
+      <!-- MEJORA PROFESIONAL: Contenedor de carrusel para móvil, grid para desktop -->
+      <div class="relative group">
+        <!-- MEJORA: Se añade la estructura de 'carousel-container' para permitir el efecto de zoom sin recortes. -->
+        <div class="carousel-container">
+          <div class="relative overflow-hidden">
+            <!-- MEJORA: Track del carrusel unificado y responsivo -->
+            <div id="recomendaciones-track" class="flex transition-transform duration-500 ease-in-out">
+              <!-- Las diapositivas se insertarán aquí -->
+            </div>
+          </div>
+        </div>
+        <!-- Placeholder de carga (común para ambas vistas) -->
+          <div id="recomendaciones-loader" class="col-span-full flex flex-col items-center justify-center py-10">
+            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500 mb-4"></div>
+            <p class="text-lg text-gray-600 font-medium">Cargando tus recomendaciones...</p>
+            <p class="text-gray-500 text-sm mt-2">Esto solo tomará un momento</p>
+          </div>
+
+        <button id="recomendaciones-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-transform duration-300 hover:scale-110">
+          <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+        </button>
+        <button id="recomendaciones-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-transform duration-300 hover:scale-110">
+          <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+        </button>
+        </div>
+      </div>
+
+      <!-- Indicadores del carrusel (solo para móvil) -->
+      <div id="recomendaciones-indicators" class="flex justify-center mt-6 space-x-2"></div>
+
+      <!-- Mensaje cuando no hay recomendaciones (oculto por defecto) -->
+      <div id="no-recomendaciones" class="col-span-full hidden text-center py-10">
+        <h3 class="text-xl font-semibold text-gray-700 mb-2">Aún no tenemos recomendaciones para ti</h3>
+        <p class="text-gray-600 max-w-md mx-auto">Explora nuestros productos y pronto tendremos sugerencias personalizadas.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 <!-- Datos de productos para JavaScript -->

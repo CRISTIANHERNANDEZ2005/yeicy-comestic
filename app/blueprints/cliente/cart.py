@@ -1,32 +1,69 @@
-# app/blueprints/cart.py
+"""
+Módulo del Carrito de Compras (Cliente).
+
+Este blueprint gestiona toda la lógica relacionada con el carrito de compras del cliente.
+Sus responsabilidades incluyen:
+- Creación y gestión de carritos para usuarios autenticados y anónimos.
+- Añadir, actualizar y eliminar productos del carrito.
+- Sincronización del carrito local (localStorage) con la base de datos al iniciar sesión.
+- Creación de pedidos a partir del contenido del carrito.
+- Generación de facturas y enlaces de WhatsApp para la confirmación de pedidos.
+"""
+
+# --- Importaciones de Flask y Librerías Estándar ---
 from flask import Blueprint, request, jsonify, session, render_template, current_app, make_response, url_for
+from datetime import datetime, timedelta
+import uuid
+from io import BytesIO
+
+# --- Importaciones Locales de la Aplicación ---
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
 from app.models.domains.cart_models import CartItem
 from app.models.domains.order_models import Pedido, PedidoProducto
-from app.models.enums import EstadoPedido, EstadoEnum
+from app.models.enums import EstadoPedido, EstadoEnum, EstadoSeguimiento
 from app.extensions import db
-from datetime import datetime, timedelta
-import uuid
 from app.utils.jwt_utils import jwt_required
-from io import BytesIO
+
 cart_bp = Blueprint('cart', __name__)
 
 
 def get_or_create_cart():
-    """Obtiene o crea un carrito basado en la sesión del usuario"""
+    """
+    Obtiene el identificador del carrito basado en la sesión del usuario.
+
+    Esta función es clave para manejar carritos persistentes.
+    - Si el usuario está autenticado (logueado), utiliza su `user_id`.
+    - Si el usuario es anónimo, genera y almacena un `cart_id` (UUID) en la sesión de Flask,
+      permitiendo que el carrito persista entre visitas.
+
+    Returns:
+        dict: Un diccionario que contiene `user_id` o `session_id`.
+    """
     if 'user_id' in session:
-        # Usuario autenticado - retorna user_id
+        # Usuario autenticado: el carrito se asocia a su ID de usuario.
         return {'user_id': session['user_id']}
     else:
-        # Usuario no autenticado - generar session_id temporal
+        # Usuario anónimo: se usa un ID de sesión para el carrito.
         if 'cart_id' not in session:
             session['cart_id'] = str(uuid.uuid4())
         return {'session_id': session['cart_id']}
 
 def get_cart_items(cart_info):
-    """Obtiene los items del carrito con datos completos de productos"""
+    """
+    Obtiene los artículos del carrito con sus productos asociados.
+
+    Realiza una consulta a la base de datos que filtra los artículos según el `cart_info`
+    proporcionado. Crucialmente, realiza `joins` para asegurar que tanto los productos
+    como toda su jerarquía de categorías (principal, sub, seudo) estén activos.
+
+    Args:
+        cart_info (dict): Diccionario con `user_id` o `session_id`.
+
+    Returns:
+        list: Una lista de diccionarios, donde cada uno representa un artículo del carrito.
+    """
     if 'user_id' in cart_info:
-        # Usuario autenticado - obtener de BD
+        # Consulta para usuarios autenticados.
         items = CartItem.query.filter_by(user_id=cart_info['user_id'])\
             .join(CartItem.product)\
             .filter(Productos.estado == EstadoEnum.ACTIVO)\
@@ -38,7 +75,7 @@ def get_cart_items(cart_info):
             .filter(CategoriasPrincipales.estado == EstadoEnum.ACTIVO)\
             .all()
     else:
-        # Usuario no autenticado - obtener de BD por session_id
+        # Consulta para usuarios anónimos (visitantes).
         items = CartItem.query.filter_by(session_id=cart_info['session_id'])\
             .join(CartItem.product)\
             .filter(Productos.estado == EstadoEnum.ACTIVO)\
@@ -54,10 +91,15 @@ def get_cart_items(cart_info):
 
 @cart_bp.route('/carrito')
 def view_cart():
+    """
+    Renderiza la página de visualización del carrito de compras.
+
+    Calcula los totales y pasa los datos a la plantilla `carrito.html`.
+    También puede responder con JSON si se solicita vía AJAX.
+    """
     cart_info = get_or_create_cart()
     items = get_cart_items(cart_info)
 
-    # Calcular totales
     total_items = sum(item['quantity'] for item in items)
     total_price = sum(item['subtotal'] for item in items)
 
@@ -76,6 +118,11 @@ def view_cart():
 
 @cart_bp.route('/api/cart_count')
 def get_cart_count():
+    """
+    Endpoint de API para obtener el número total de artículos en el carrito.
+
+    Es utilizado por el frontend para actualizar el contador del ícono del carrito.
+    """
     cart_info = get_or_create_cart()
     items = get_cart_items(cart_info)
     total_items = sum(item['quantity'] for item in items)
@@ -83,8 +130,16 @@ def get_cart_count():
     return jsonify({'total_items': total_items})
 
 
+# --- NOTA PROFESIONAL: RUTA DUPLICADA ---
+# El siguiente endpoint '/api/add_to_cart' está definido dos veces en este archivo.
+# En Flask, cuando se define la misma ruta varias veces, solo la última definición
+# será la que se registre y se utilice. La función `add_to_cart` de abajo
+# es efectivamente ignorada por la aplicación. La lógica real es manejada por
+# `add_to_cart_optimized`. Se mantiene aquí por si es referencia histórica,
+# pero debería ser eliminada para evitar confusiones.
 @cart_bp.route('/api/add_to_cart', methods=['POST'])
 def add_to_cart():
+    """(Endpoint Inactivo) Agrega un producto al carrito."""
     product_id = request.form.get('product_id')
     quantity = int(request.form.get('quantity', 1))
 
@@ -134,7 +189,12 @@ def add_to_cart():
 
 @cart_bp.route('/api/get_cart_data', methods=['GET'])
 def get_cart_data():
-    """Endpoint optimizado para obtener datos del carrito"""
+    """
+    Endpoint de API para obtener el contenido completo y los totales del carrito.
+
+    Utilizado por el modal del carrito para renderizar su estado actual
+    sin necesidad de recargar la página.
+    """
     cart_info = get_or_create_cart()
     items = get_cart_items(cart_info)
     total_items = sum(item['quantity'] for item in items)
@@ -150,7 +210,17 @@ def get_cart_data():
 
 @cart_bp.route('/api/add_to_cart', methods=['POST'])
 def add_to_cart_optimized():
-    """Endpoint optimizado para agregar productos al carrito"""
+    """
+    (Endpoint Activo) Endpoint optimizado para agregar productos al carrito.
+
+    Valida la disponibilidad y el stock del producto. Si el producto ya está en
+    el carrito, incrementa su cantidad; de lo contrario, lo añade como un nuevo
+    artículo. Devuelve advertencias si la cantidad solicitada excede el stock.
+
+    Returns:
+        JSON: Objeto con el estado de la operación, el contenido actualizado del
+              carrito y posibles advertencias.
+    """
     product_id = request.form.get('product_id')
     quantity = int(request.form.get('quantity', 1))
 
@@ -168,7 +238,7 @@ def add_to_cart_optimized():
 
     try:
         response_message = 'Producto agregado exitosamente'
-        response_type = 'success'
+        response_type = 'success' # Tipo de toast a mostrar en el frontend
         warnings = []
 
         # Ajustar la cantidad a la existencia disponible
@@ -220,7 +290,21 @@ def add_to_cart_optimized():
 @cart_bp.route('/api/sync_cart', methods=['POST'])
 @jwt_required
 def sync_cart(usuario):
-    """Sincroniza el carrito del localStorage con la BD para usuarios autenticados"""
+    """
+    Sincroniza el carrito local del frontend con la base de datos.
+
+    Este endpoint es fundamental para la persistencia del carrito de un usuario logueado.
+    Recibe el estado del carrito desde el `localStorage` del cliente y lo reconcilia
+    con el estado en la base de datos.
+
+    Args:
+        usuario (Usuarios): El objeto de usuario inyectado por el decorador `@jwt_required`.
+
+    Body (JSON):
+        - cart_items (list): Lista de artículos del carrito del cliente.
+        - merge (bool, optional): Si es `True`, fusiona el carrito local con el del servidor
+          en lugar de sobrescribirlo. Se usa típicamente justo después del login.
+    """
     try:
         warnings = [] # Initialize warnings list
         if not request.is_json or request.json is None:
@@ -230,6 +314,7 @@ def sync_cart(usuario):
         merge = request.json.get('merge', False)
         user_id = usuario.id
 
+        # Carga los items existentes en la BD en un mapa para acceso rápido.
         existing_db_cart_items = CartItem.query.filter_by(user_id=user_id).all()
         existing_db_cart_map_by_id = {item.id: item for item in existing_db_cart_items}
         existing_db_cart_map_by_product_id = {item.product_id: item for item in existing_db_cart_items}
@@ -237,6 +322,7 @@ def sync_cart(usuario):
         items_to_keep_in_db = set() # Track items that are in frontend cart and should remain in DB
 
         for item_data in cart_data_from_frontend:
+            # Procesa cada artículo enviado desde el frontend.
             frontend_item_id = item_data.get('id')
             product_id = item_data.get('product_id')
             quantity = item_data.get('quantity')
@@ -250,12 +336,13 @@ def sync_cart(usuario):
                 current_app.logger.warning(f"Product {product_id} not found or inactive during sync.")
                 continue
 
+            # Valida y ajusta la cantidad según el stock disponible.
             original_quantity = quantity # Store original quantity for comparison
             quantity = min(original_quantity, product._existencia )
             if original_quantity > product._existencia :
                 warnings.append(f'La cantidad de {product.nombre} se ajustó a {product._existencia } debido a la disponibilidad.')
 
-
+            # Busca el artículo en la base de datos, primero por ID real y luego por ID de producto.
             db_item = None
             if frontend_item_id and not frontend_item_id.startswith('temp_'):
                 # Try to find by real ID if available
@@ -296,7 +383,7 @@ def sync_cart(usuario):
                     db.session.flush() # Get the ID for the newly added item
                     items_to_keep_in_db.add(cart_item.id) # Mark as kept
             else:
-                # Item not found by ID or product_id, add as new
+                # El artículo no existe en la BD, se crea uno nuevo.
                 cart_item = CartItem(
                     user_id=user_id,
                     product_id=product_id,
@@ -306,14 +393,14 @@ def sync_cart(usuario):
                 db.session.flush() # Get the ID for the newly added item
                 items_to_keep_in_db.add(cart_item.id) # Mark as kept
 
-        # Delete items from DB that are not in the frontend cart (only if not merging)
+        # Si no es una fusión, elimina los artículos de la BD que ya no están en el carrito del frontend.
         if not merge:
             for db_item in existing_db_cart_items:
                 if db_item.id not in items_to_keep_in_db:
                     db.session.delete(db_item)
 
         db.session.commit()
-
+        
         # Return the updated cart from the database
         items = CartItem.query.filter_by(user_id=user_id).all()
         cart_items_response = [item.to_dict() for item in items]
@@ -337,7 +424,12 @@ def sync_cart(usuario):
 @cart_bp.route('/api/load_cart', methods=['GET'])
 @jwt_required
 def load_cart(usuario):
-    """Carga el carrito del usuario desde la BD para hidratar el frontend"""
+    """
+    Carga el carrito completo de un usuario desde la base de datos.
+
+    Este endpoint se utiliza para "hidratar" (poblar) el estado del carrito en el
+    frontend cuando un usuario inicia sesión o recarga la página.
+    """
     try:
         user_id = usuario.id
         items = CartItem.query.filter_by(user_id=user_id)\
@@ -367,7 +459,11 @@ def load_cart(usuario):
 
 @cart_bp.route('/api/product/<product_id>')
 def get_product_details(product_id):
-    """Obtiene los detalles de un producto específico"""
+    """
+    Endpoint de API para obtener los detalles básicos de un producto.
+
+    Utilizado por el carrito para obtener información actualizada de un producto, como su stock.
+    """
     product = Productos.query.get(product_id)
 
     if not product or product.estado != EstadoEnum.ACTIVO:
@@ -387,7 +483,10 @@ def get_product_details(product_id):
 @jwt_required
 def print_invoice(usuario, order_id):
     """
-    Renderiza la factura de un pedido específico en formato HTML para impresión directa.
+    Renderiza la factura de un pedido en formato HTML para ser impresa.
+
+    Genera una página HTML con el formato de una factura, que el usuario puede
+    imprimir directamente desde su navegador.
     """
     pedido = Pedido.query.filter_by(id=str(order_id), usuario_id=usuario.id).first()
 
@@ -434,7 +533,11 @@ def print_invoice(usuario, order_id):
 @cart_bp.route('/api/get_whatsapp_link/<uuid:order_id>')
 @jwt_required
 def get_whatsapp_link(usuario, order_id):
-    """Genera un enlace de WhatsApp para compartir la factura PDF."""
+    """
+    Genera un enlace de WhatsApp pre-poblado para confirmar un pedido.
+
+    Crea una URL `wa.me` con un mensaje que incluye el ID del pedido.
+    """
     # Asegúrate de que el pedido exista y pertenezca al usuario
     pedido = Pedido.query.filter_by(id=str(order_id), usuario_id=usuario.id).first()
     if not pedido:
@@ -452,7 +555,13 @@ def get_whatsapp_link(usuario, order_id):
 @cart_bp.route('/api/create_order', methods=['POST'])
 @jwt_required
 def create_order(usuario):
-    """Crea un nuevo pedido a partir del carrito del usuario autenticado."""
+    """
+    Crea un nuevo pedido a partir del carrito del usuario.
+
+    Este endpoint toma todos los artículos del carrito del usuario, valida el stock,
+    calcula el total y crea un registro de `Pedido` y `PedidoProducto` asociados.
+    El pedido se crea inicialmente en estado 'en proceso' e 'inactivo'.
+    """
     try:
         user_id = usuario.id
         cart_items = CartItem.query.filter_by(user_id=user_id).all()
@@ -482,11 +591,21 @@ def create_order(usuario):
             })
 
         # Crear el pedido
+        # Inicializar el historial de seguimiento al crear el pedido.
+        # Esto asegura que el estado 'recibido' siempre tenga un timestamp y una nota inicial.
+        nota_inicial = "Tu pedido ha sido recibido y está pendiente de confirmación por parte de nuestro equipo."
         nuevo_pedido = Pedido(
             usuario_id=user_id,
             total=total_pedido,
             estado_pedido=EstadoPedido.EN_PROCESO,
-            estado=EstadoEnum.INACTIVO
+            estado=EstadoEnum.INACTIVO,
+            seguimiento_estado=EstadoSeguimiento.RECIBIDO,
+            notas_seguimiento=nota_inicial,
+            seguimiento_historial=[{
+                'estado': EstadoSeguimiento.RECIBIDO.value,
+                'notas': nota_inicial,
+                'timestamp': datetime.utcnow().isoformat() + "Z"
+            }]
         )
         db.session.add(nuevo_pedido)
         db.session.flush()
@@ -522,7 +641,11 @@ def create_order(usuario):
 @cart_bp.route('/api/clear_cart', methods=['POST'])
 @jwt_required
 def clear_cart(usuario):
-    """Elimina todos los items del carrito de un usuario."""
+    """
+    Endpoint de API para eliminar todos los artículos del carrito de un usuario.
+
+    Se utiliza después de que un pedido se ha confirmado y procesado.
+    """
     try:
         user_id = usuario.id
         CartItem.query.filter_by(user_id=user_id).delete()

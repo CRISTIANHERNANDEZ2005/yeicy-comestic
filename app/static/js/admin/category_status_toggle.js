@@ -1,3 +1,21 @@
+/**
+ * @file Módulo para el Cambio de Estado de Categorías.
+ * @description Este script proporciona una función reutilizable `toggleCategoryStatus` para
+ *              gestionar la activación y desactivación de categorías, subcategorías y
+ *              seudocategorías. Está diseñado para ofrecer una experiencia de usuario
+ *              fluida y con feedback visual inmediato.
+ *
+ * @funcionalidad
+ * 1.  **Petición Asíncrona:** Envía una solicitud `POST` a la API correspondiente para
+ *     actualizar el estado de la categoría en la base de datos.
+ * 2.  **Feedback Visual:** Muestra una animación de carga en el interruptor (toggle)
+ *     mientras se procesa la solicitud, y resalta la fila afectada.
+ * 3.  **Manejo de Estados:** Actualiza la apariencia del interruptor para reflejar el
+ *     nuevo estado (activo/inactivo) tras una respuesta exitosa.
+ * 4.  **Gestión de Errores:** En caso de fallo en la API o en la red, revierte
+ *     visualmente el interruptor a su estado original y muestra una notificación
+ *     de error al usuario, garantizando la consistencia de la UI.
+ */
 
 function toggleCategoryStatus(categoryId, categoryType, isActive) {
     const toggle = document.getElementById(`toggle-${categoryType}-${categoryId}`);
@@ -10,16 +28,15 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
     const span = label.querySelector('span');
     const row = toggle.closest('tr');
 
-    // Store original state to revert on error
     const originalChecked = toggle.checked;
     const originalLabelClasses = Array.from(label.classList);
     const originalSpanClasses = Array.from(span.classList);
     const originalSpanInnerHTML = span.innerHTML;
 
-    // Deshabilitar el toggle durante la petición
+    // Deshabilitar el interruptor durante la petición para evitar clics múltiples.
     toggle.disabled = true;
 
-    // Añadir animación de carga
+    // Añadir animación de carga al interruptor para feedback visual.
     span.innerHTML = `
         <svg class="animate-spin h-3 w-3 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -27,12 +44,12 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
         </svg>
     `;
 
-    // Resaltar la fila durante la operación
+    // Resaltar la fila de la tabla durante la operación.
     if (row) {
         row.classList.add('bg-blue-100');
     }
 
-    // Realizar la petición AJAX
+    // Construir la URL de la API dinámicamente según el tipo de categoría.
     let apiUrl = '';
     if (categoryType === 'main') {
         apiUrl = `/admin/api/categorias-principales/${categoryId}/status`;
@@ -42,7 +59,7 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
         apiUrl = `/admin/api/seudocategorias/${categoryId}/status`;
     } else {
         console.error('Tipo de categoría desconocido:', categoryType);
-        // Revertir el toggle visualmente y mostrar error
+        // Revertir el interruptor visualmente y mostrar error.
         toggle.checked = originalChecked;
         label.className = originalLabelClasses.join(' ');
         span.className = originalSpanClasses.join(' ');
@@ -55,15 +72,14 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
         return;
     }
 
-    fetch(apiUrl, { // Use the dynamically constructed URL
+    fetch(apiUrl, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': getCsrfToken() // Assuming getCsrfToken() is available globally
+            'X-CSRFToken': getCsrfToken() // Asume que getCsrfToken() está disponible globalmente.
         },
         body: JSON.stringify({
             estado: isActive ? 'activo' : 'inactivo'
-            // category_type is not needed in the body as it's part of the URL
         })
     })
     .then(response => {
@@ -76,7 +92,7 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
     })
     .then(data => {
         if (data.success) {
-            // Si el estado no cambió, mostrar mensaje informativo y revertir
+            // Si el estado no cambió en el backend, mostrar un mensaje informativo y revertir la UI.
             if (data.status_unchanged) {
                 window.toast.info(data.message);
                 toggle.checked = originalChecked;
@@ -86,7 +102,7 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
                 return;
             }
 
-            // Actualizar la UI del toggle
+            // Actualizar la UI del interruptor para reflejar el nuevo estado.
             if (data.new_status === 'activo') {
                 label.classList.remove('bg-gray-300');
                 label.classList.add('bg-gradient-to-r', 'from-green-400', 'to-emerald-500', 'shadow-lg');
@@ -110,8 +126,13 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
             }
             window.toast.success(data.message);
 
+            // Recargar la tabla para reflejar cambios (ej. la aparición/desaparición del botón de editar).
+            if (window.categoriesApp && typeof window.categoriesApp.loadTableData === 'function') {
+                window.categoriesApp.loadTableData(false); // `false` para no resetear la paginación.
+            }
+
         } else {
-            // Revertir el toggle visualmente y mostrar error si success is false
+            // Revertir el interruptor visualmente y mostrar error si la API devuelve success: false.
             toggle.checked = originalChecked;
             label.className = originalLabelClasses.join(' ');
             span.className = originalSpanClasses.join(' ');
@@ -121,20 +142,20 @@ function toggleCategoryStatus(categoryId, categoryType, isActive) {
     })
     .catch(error => {
         console.error('Error al cambiar estado de la categoría:', error);
-        // Revertir el toggle visualmente en caso de error de red o de la promesa
+        // Revertir el interruptor visualmente en caso de error de red o de la promesa.
         toggle.checked = originalChecked;
         label.className = originalLabelClasses.join(' ');
         span.className = originalSpanClasses.join(' ');
-        span.innerHTML = originalSpanInnerHTML; // Restore original icon
+        span.innerHTML = originalSpanInnerHTML;
         window.toast.error('Error de conexión o servidor. No se pudo cambiar el estado de la categoría.');
     })
     .finally(() => {
-        // Restaurar el estado original de la fila
+        // Restaurar el estado original de la fila, eliminando el resaltado.
         if (row) {
             row.classList.remove('bg-blue-100');
         }
         
-        // Habilitar el toggle nuevamente
+        // Habilitar el interruptor nuevamente, independientemente del resultado.
         toggle.disabled = false;
     });
 }

@@ -1,0 +1,46 @@
+<!-- 
+  Modal Profesional Reutilizable para Cuentas Inactivas.
+  Este modal se muestra inmediatamente cuando se detecta que la cuenta de un usuario
+  ha sido desactivada por un administrador, bloqueando la interacción con la página
+  y proporcionando una explicación clara antes de cerrar la sesión.
+-->
+<div id="inactive-account-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-[9999] hidden transition-opacity duration-300">
+  <div id="inactive-account-modal-content" class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 text-center transform transition-all duration-300 scale-95 opacity-0">
+    
+    <!-- Icono Profesional -->
+    <div class="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-red-100 mb-6">
+      <svg class="h-12 w-12 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+    </div>
+
+    <!-- Título y Mensaje -->
+    <h3 class="text-2xl font-bold text-gray-900 mb-2">Cuenta Desactivada</h3>
+    <p class="text-gray-600 mb-8">
+      Tu cuenta ha sido desactivada por un administrador. Por esta razón, tu sesión será cerrada. 
+      Si crees que esto es un error, por favor, contacta a soporte.
+    </p>
+
+    <!-- Botón de Acción -->
+    <button id="inactive-account-ok-btn" class="w-full bg-red-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-4 focus:ring-red-300 transition-all duration-300 transform hover:scale-105">
+      Entendido, cerrar sesión
+    </button>
+
+  </div>
+</div>
+
+<script>
+  // Lógica para mostrar y ocultar la modal
+  function showInactiveAccountModal() {
+    const modal = document.getElementById('inactive-account-modal');
+    const content = document.getElementById('inactive-account-modal-content');
+    if (modal && content) {
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        modal.classList.add('opacity-100');
+        content.classList.remove('scale-95', 'opacity-0');
+        content.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+  }
+</script>

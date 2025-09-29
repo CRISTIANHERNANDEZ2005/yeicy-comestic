@@ -166,6 +166,11 @@ body.no-scroll {
     opacity: 1;
 }
 
+#crearPedidoModal .modal-backdrop {
+    transition: opacity 0.3s ease;
+}
+
+
 /* Estilos para las tarjetas de información */
 .info-card {
     background: linear-gradient(to bottom right, #ffffff, #f9fafb);
@@ -455,4 +460,47 @@ body.no-scroll {
 
 .row-updated {
     animation: highlightRow 2s ease-in-out;
+}
+
+/* Estilos para el selector de período del gráfico */
+.chart-period-btn {
+    padding: 0.375rem 0.75rem; /* 6px 12px */
+    border-radius: 0.375rem; /* 6px */
+    font-size: 0.875rem; /* 14px */
+    font-weight: 500;
+    color: #4b5563; /* gray-600 */
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.chart-period-btn.active {
+    background-color: white;
+    color: #3b82f6; /* blue-500 */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+/* Estilos para el overlay de carga del gráfico */
+#chart-loading-overlay {
+    transition: opacity 0.3s ease-in-out;
+}
+
+#chart-loading-overlay .loading-spinner {
+    width: 3rem; /* 48px */
+    height: 3rem; /* 48px */
+    border-width: 4px;
+    border-color: #3b82f6; /* blue-500 */
+    border-top-color: transparent;
+    border-bottom-color: transparent;
+}
+
+#chart-loading-overlay p {
+    color: #4b5563; /* gray-600 */
+    font-weight: 500;
+    margin-top: 1rem;
+}
+
+#margen-utilidad {
+    text-align: left;
 }

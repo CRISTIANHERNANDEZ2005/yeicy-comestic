@@ -127,7 +127,7 @@
                                 Editar Producto
                             </a>
                         {% else %}
-                            <button type="button" id="edit-product-inactive-button" class="w-full text-center bg-gray-400 text-white py-3 px-4 rounded-xl cursor-pointer" title="Para editar, el producto debe estar activo">
+                            <button type="button" id="edit-product-inactive-button" class="w-full text-center bg-gray-400 text-white py-3 px-4 rounded-xl cursor-not-allowed" title="Para editar, el producto debe estar activo">
                                 <i class="fas fa-edit mr-2"></i>
                                 Editar Producto
                             </button>
@@ -217,11 +217,18 @@
                                 días</p>
                         </div>
                         <div class="bg-white rounded-xl p-4 text-center shadow-md">
-                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-shopping-cart text-purple-500 text-xl"></i>
+                            <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-chart-line text-green-500 text-xl"></i>
                             </div>
                             <p class="text-sm text-gray-600 mb-1">Ventas</p>
                             <p class="text-xl font-bold text-gray-800">{{ product.ventas_unidades }}</p>
+                        </div>
+                        <div class="bg-white rounded-xl p-4 text-center shadow-md col-span-2">
+                            <div class="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-dollar-sign text-purple-500 text-xl"></i>
+                            </div>
+                            <p class="text-sm text-gray-600 mb-1">Ingresos Totales</p>
+                            <p class="text-xl font-bold text-gray-800">{{ product.ingresos_totales_formateado }}</p>
                         </div>
                     </div>
                 </div>
@@ -330,29 +337,20 @@
                 </div>
 
                 <!-- Reseñas y Calificaciones -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in delay-3">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-2xl font-bold text-gray-800">Reseñas y Calificaciones</h3>
-                        <button class="text-indigo-600 hover:text-indigo-800 transition font-medium">
-                            <i class="fas fa-filter mr-2"></i>Filtrar
-                        </button>
-                    </div>
+                <div id="reviews-section" class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in delay-3" data-product-id="{{ product.id }}">
+                    <h3 class="text-2xl font-bold text-gray-800 mb-2">Reseñas y Calificaciones</h3>
 
-                    <div class="flex items-center mb-8 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl shadow-sm">
+                    <!-- Resumen de Calificaciones -->
+                    <div class="flex items-center mb-6 p-4 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl shadow-sm">
                         <div class="text-4xl font-bold mr-6 text-amber-600">{{ "%.1f"|format(product.calificacion_promedio) }}</div>
                         <div class="flex-1">
                             <div class="flex items-center mb-2">
                                 <div class="star-rating text-xl mr-3">
                                     {% for i in range(5) %}
-                                        {% if i < product.calificacion_promedio|round|int %}
-                                            <i class="fas fa-star"></i>
-                                        {% else %}
-                                            <i class="far fa-star"></i>
-                                        {% endif %}
+                                        <i class="fas fa-star {% if i >= product.calificacion_promedio|round|int %}text-gray-300{% endif %}"></i>
                                     {% endfor %}
                                 </div>
-                                <span class="text-gray-700 font-medium">({{ product.reseñas_count }}
-                                    reseñas)</span>
+                                <span class="text-gray-700 font-medium">({{ product.reseñas_count }} reseñas)</span>
                             </div>
                             <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                                 <div class="bg-gradient-to-r from-amber-400 to-yellow-500 h-3 rounded-full shine-effect" style="width: {{ (product.calificacion_promedio / 5) * 100 }}%"></div>
@@ -360,46 +358,78 @@
                         </div>
                     </div>
 
-                    <div class="space-y-6">
-                        {% for review in reviews %}
-                            <div class="border-b pb-6">
-                                <div class="flex justify-between mb-3">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-indigo-600 flex items-center justify-center mr-3 shadow-md">
-                                            <span class="text-white font-bold">{{ review.usuario.nombre[0] if review.usuario }}{{ review.usuario.apellido[0] if review.usuario }}</span>
-                                        </div>
-                                        <div>
-                                            <p class="font-bold text-gray-800">{{ review.usuario.nombre if review.usuario }}
-                                                {{ review.usuario.apellido if review.usuario }}</p>
-                                            <div class="flex text-amber-400 text-sm">
-                                                {% for i in range(5) %}
-                                                    {% if i < review.calificacion %}
-                                                        <i class="fas fa-star"></i>
-                                                    {% else %}
-                                                        <i class="far fa-star"></i>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <span class="text-gray-500 text-sm">{{ review.created_at|datetimeformat }}</span>
-                                </div>
-                                <h4 class="font-bold text-lg mb-2">{{ review.titulo }}</h4>
-                                <p class="text-gray-700">{{ review.texto }}</p>
-                            </div>
-                        {% else %}
-                            <p class="text-center text-gray-500">Este producto aún no tiene reseñas.</p>
-                        {% endfor %}
+                    <!-- Filtros de Reseñas -->
+                    <div class="flex flex-wrap gap-4 items-center mb-6 border-b pb-4">
+                        <div class="flex-grow">
+                            <label for="rating-filter" class="text-sm font-medium text-gray-700 mr-2">Filtrar por calificación:</label>
+                            <select id="rating-filter" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                <option value="all">Todas</option>
+                                <option value="5">5 estrellas</option>
+                                <option value="4">4 estrellas</option>
+                                <option value="3">3 estrellas</option>
+                                <option value="2">2 estrellas</option>
+                                <option value="1">1 estrella</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="sort-filter" class="text-sm font-medium text-gray-700 mr-2">Ordenar por:</label>
+                            <select id="sort-filter" class="border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50">
+                                <option value="newest">Más recientes</option>
+                                <option value="oldest">Más antiguas</option>
+                                <option value="rating_desc">Mejor calificadas</option>
+                                <option value="rating_asc">Peor calificadas</option>
+                            </select>
+                        </div>
                     </div>
 
-                    {% if reviews|length > 2 %}
-                        <div class="mt-6 text-center">
-                            <button class="inline-flex items-center text-indigo-600 hover:text-indigo-800 transition font-medium">
-                                Ver todas las reseñas
-                                <i class="fas fa-arrow-right ml-2"></i>
-                            </button>
+                    <!-- Contenedor de Reseñas y Paginación -->
+                    <div id="reviews-container" class="relative min-h-[200px]">
+                        <!-- Overlay de Carga -->
+                        <div id="reviews-loader" class="absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10 hidden">
+                            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
                         </div>
-                    {% endif %}
+
+                        <!-- Lista de Reseñas (se llenará con JS) -->
+                        <div id="reviews-list" class="space-y-6">
+                            <!-- Plantilla de reseña (para clonar) -->
+                            <template id="review-template">
+                                <div class="border-b pb-6 review-item">
+                                    <div class="flex justify-between mb-3">
+                                        <div class="flex items-center">
+                                            <div class="review-avatar w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-indigo-600 flex items-center justify-center mr-3 shadow-md">
+                                                <span class="review-initials text-white font-bold"></span>
+                                            </div>
+                                            <div>
+                                                <p class="review-user font-bold text-gray-800"></p>
+                                                <div class="review-stars flex text-amber-400 text-sm"></div>
+                                            </div>
+                                        </div>
+                                        <span class="review-date text-gray-500 text-sm"></span>
+                                    </div>
+                                    <h4 class="review-title font-bold text-lg mb-2"></h4>
+                                    <p class="review-text text-gray-700"></p>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Mensaje de no hay reseñas -->
+                        <div id="no-reviews-message" class="text-center py-10 hidden">
+                            <i class="fas fa-comment-slash text-4xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-500">No se encontraron reseñas que coincidan con los filtros.</p>
+                        </div>
+                    </div>
+
+                    <!-- Controles de Paginación -->
+                    <div id="reviews-pagination" class="mt-6 flex justify-between items-center hidden">
+                        <button id="prev-page" class="pagination-btn">
+                            <i class="fas fa-arrow-left mr-2"></i> Anterior
+                        </button>
+                        <span id="page-info" class="text-sm text-gray-600"></span>
+                        <button id="next-page" class="pagination-btn">
+                            Siguiente
+                            <i class="fas fa-arrow-right ml-2"></i>
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Historial de Cambios -->
@@ -452,32 +482,5 @@
         </div>
     </main>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Script para animaciones al hacer scroll
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.classList.add('fade-in');
-                    }
-                });
-            }, {threshold: 0.1});
-
-            document.querySelectorAll('.card-hover').forEach(card => {
-                observer.observe(card);
-            });
-
-            // Script para el botón de editar inactivo
-            const inactiveEditButton = document.getElementById('edit-product-inactive-button');
-            if (inactiveEditButton) {
-                inactiveEditButton.addEventListener('click', function() {
-                    if (window.toast) {
-                        window.toast.warning('Para editar, el producto debe estar activo.');
-                    } else {
-                        alert('Para editar, el producto debe estar activo.');
-                    }
-                });
-            }
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/admin/detalle_producto.js') }}"></script>
 {% endblock %}

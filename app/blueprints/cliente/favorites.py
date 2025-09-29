@@ -1,18 +1,32 @@
 """
-Módulo para manejar las operaciones relacionadas con los favoritos del usuario.
+Módulo de Favoritos del Cliente.
+
+Este blueprint gestiona todas las operaciones relacionadas con los productos favoritos
+de un usuario autenticado. Sus responsabilidades incluyen:
+
+- **API CRUD**: Proporciona endpoints para listar, agregar, eliminar y sincronizar
+  los productos favoritos.
+- **Renderizado de Página**: Contiene la vista para la página de "Mis Favoritos".
+- **Autenticación**: Todas las operaciones requieren un token JWT válido a través
+  del decorador `@jwt_required`.
+- **Optimización**: Utiliza carga anticipada (`joinedload`) para optimizar las
+  consultas a la base de datos y evitar el problema N+1.
 """
+# --- Importaciones de Extensiones y Terceros ---
 from app.extensions import db
+from flask import Blueprint, render_template, request, jsonify
+from sqlalchemy.orm import joinedload
+
+# --- Importaciones Locales de la Aplicación ---
 from app.models.enums import EstadoEnum
 from app.utils.jwt_utils import jwt_required
 from datetime import datetime
 from app.models.domains.product_models import Productos, CategoriasPrincipales, Subcategorias, Seudocategorias
 from app.models.domains.review_models import Likes
 from app.models.serializers import producto_to_dict, categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, like_to_dict
-from flask import Blueprint, render_template, request, jsonify
-from sqlalchemy.orm import joinedload
 from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
 
-# Crear el blueprint para favoritos
+# --- Creación del Blueprint ---
 favorites_bp = Blueprint('favorites', __name__)
 
 
@@ -20,10 +34,13 @@ favorites_bp = Blueprint('favorites', __name__)
 @jwt_required
 def manejar_favoritos(usuario):
     """
-    Maneja las operaciones CRUD para los favoritos del usuario.
+    Endpoint principal para gestionar los favoritos de un usuario.
+
+    Este endpoint es multifuncional y responde de manera diferente según el método HTTP.
+    Requiere que el usuario esté autenticado.
 
     GET: 
-      - Retorna la lista de favoritos del usuario
+      - Retorna la lista de productos favoritos del usuario, con paginación y ordenamiento.
       - Parámetros opcionales:
         - page: Número de página (default: 1)
         - per_page: Items por página (default: 20)
@@ -32,14 +49,20 @@ def manejar_favoritos(usuario):
         - sort_order: Orden (asc, desc)
 
     POST: 
-      - Agrega o elimina un producto de favoritos
-      - Body: { "producto_id": int, "accion": "agregar"|"eliminar" (opcional) }
+      - Agrega, elimina o alterna el estado de un producto en la lista de favoritos.
+      - Body (JSON): { "producto_id": str, "accion": "agregar"|"eliminar"|"toggle" }
+
+    Args:
+        usuario (Usuarios): El objeto de usuario inyectado por el decorador `@jwt_required`.
+
+    Returns:
+        JSON: Una lista de favoritos o un mensaje de estado de la operación.
     """
     from flask import current_app
 
     if request.method == 'GET':
         try:
-            # Validación y obtención de parámetros
+            # --- Validación y obtención de parámetros de la URL ---
             page = request.args.get('page', 1, type=int)
             per_page = min(request.args.get('per_page', 20, type=int), 100)
             ids_only = request.args.get('ids_only', 'false').lower() == 'true'
@@ -49,7 +72,8 @@ def manejar_favoritos(usuario):
             if page < 1 or per_page < 1:
                 return jsonify({'success': False, 'error': 'Los parámetros de paginación deben ser mayores a 0', 'code': 'INVALID_PAGINATION'}), 400
 
-            # Validar sort_by y sort_order
+            # --- Construcción de la consulta ---
+            # Mapea los parámetros de ordenamiento a los campos del modelo SQLAlchemy.
             valid_sort_fields = {'fecha': Likes.created_at,
                                  'nombre': Productos.nombre, 'precio': Productos.precio}
             if sort_by not in valid_sort_fields:
@@ -57,7 +81,9 @@ def manejar_favoritos(usuario):
             order_field = valid_sort_fields[sort_by].asc(
             ) if sort_order == 'asc' else valid_sort_fields[sort_by].desc()
 
-            # Consulta de favoritos
+            # Consulta base para obtener los 'Likes' activos del usuario.
+            # Se realizan JOINs para asegurar que el producto y toda su jerarquía de categorías estén activos.
+            # `joinedload` se usa para cargar eficientemente las relaciones y evitar consultas N+1.
             query = Likes.query.filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO)\
                 .join(Productos).filter(Productos.estado == EstadoEnum.ACTIVO)\
                 .options(
@@ -68,18 +94,18 @@ def manejar_favoritos(usuario):
             )\
                 .order_by(order_field)
 
-            # IDs only
+            # Si solo se solicitan los IDs, se devuelve una lista simple.
             if ids_only:
                 favoritos_ids = [str(fav.producto_id) for fav in query.all()]
                 return jsonify({'success': True, 'favoritos': favoritos_ids, 'total': len(favoritos_ids)}), 200
 
-            # Paginación
+            # Aplica la paginación a la consulta.
             pagination = query.paginate(
                 page=page, per_page=per_page, error_out=False)
             favoritos = pagination.items
 
-            # Respuesta
-            # Agrupar favoritos por categoría principal
+            # --- Procesamiento y agrupación de resultados ---
+            # Agrupa los productos favoritos por su categoría principal para la presentación en la UI.
             favoritos_por_categoria = {}
             for fav in favoritos:
                 categoria_principal_nombre = fav.producto.seudocategoria.subcategoria.categoria_principal.nombre \
@@ -105,6 +131,7 @@ def manejar_favoritos(usuario):
                     }
                 })
 
+            # Construye la respuesta final en formato JSON.
             response_data = {
                 'success': True,
                 'favoritos_por_categoria': favoritos_por_categoria, # Nuevo campo
@@ -129,6 +156,7 @@ def manejar_favoritos(usuario):
 
     elif request.method == 'POST':
         try:
+            # --- Procesamiento de la solicitud POST ---
             data = request.get_json()
             if not data:
                 return jsonify({
@@ -137,11 +165,10 @@ def manejar_favoritos(usuario):
                     'code': 'MISSING_DATA'
                 }), 400
 
-            # Asegurarse que el producto_id sea string (UUID)
+            # Valida los datos de entrada (producto_id y acción).
             producto_id = data.get('producto_id')
             if producto_id is not None:
                 producto_id = str(producto_id)
-            # Por defecto: toggle
             accion = data.get('accion', 'toggle').lower()
 
             # Validar acción
@@ -159,7 +186,7 @@ def manejar_favoritos(usuario):
                     'code': 'MISSING_PRODUCT_ID'
                 }), 400
 
-            # Verificar si el producto existe y está activo
+            # Verifica si el producto existe y está activo antes de proceder.
             producto = Productos.query.filter_by(
                 id=producto_id,
                 estado=EstadoEnum.ACTIVO
@@ -172,18 +199,18 @@ def manejar_favoritos(usuario):
                     'code': 'PRODUCT_NOT_FOUND'
                 }), 404
 
-            # Buscar favorito existente (activo o inactivo)
+            # Busca si ya existe un registro de 'Like' para este usuario y producto.
             favorito = Likes.query.filter_by(
                 usuario_id=usuario.id,
                 producto_id=producto_id
             ).first()
 
-            # Determinar la acción a realizar
+            # Si la acción es 'toggle', determina si se debe agregar o eliminar.
             if accion == 'toggle':
                 accion = 'eliminar' if (
                     favorito and favorito.estado == EstadoEnum.ACTIVO) else 'agregar'
 
-            # Procesar la acción
+            # --- Lógica de negocio para agregar o eliminar ---
             if accion == 'eliminar':
                 if not favorito or favorito.estado == EstadoEnum.INACTIVO:
                     return jsonify({
@@ -194,7 +221,7 @@ def manejar_favoritos(usuario):
                         'accion': 'noop'
                     }), 200
 
-                # Marcar como inactivo (eliminación lógica)
+                # Realiza una eliminación lógica (soft delete) cambiando el estado a 'inactivo'.
                 favorito.estado = EstadoEnum.INACTIVO
                 favorito.fecha_actualizacion = datetime.utcnow()
                 db.session.commit()
@@ -221,12 +248,12 @@ def manejar_favoritos(usuario):
                             'accion': 'noop'
                         }), 200
                     else:
-                        # Reactivar favorito existente
+                        # Si el 'Like' existía pero estaba inactivo, lo reactiva.
                         favorito.estado = EstadoEnum.ACTIVO
                         favorito.fecha = datetime.utcnow()
                         accion_realizada = 'reactivado'
                 else:
-                    # Crear nuevo favorito
+                    # Si no existía, crea un nuevo registro de 'Like'.
                     favorito = Likes(
                         usuario_id=usuario.id,
                         producto_id=producto_id,
@@ -263,14 +290,19 @@ def manejar_favoritos(usuario):
 @jwt_required
 def eliminar_favorito(usuario, producto_id):
     """
-    Elimina un producto de los favoritos del usuario.
+    Elimina un producto de los favoritos del usuario (método DELETE).
 
-    Este endpoint es un alias para POST /api/favoritos con accion=eliminar
+    Este endpoint es un alias semántico para `POST /api/favoritos` con `accion=eliminar`.
+    Sigue las mejores prácticas RESTful al usar el método DELETE para una operación de borrado.
+
+    Args:
+        usuario (Usuarios): El objeto de usuario inyectado.
+        producto_id (int): El ID del producto a eliminar de favoritos.
     """
     from flask import current_app, jsonify, request
 
     try:
-        # Verificar si el producto existe y está activo
+        # Verifica si el producto existe y está activo.
         producto = Productos.query.filter_by(
             id=producto_id,
             estado=EstadoEnum.ACTIVO
@@ -283,13 +315,13 @@ def eliminar_favorito(usuario, producto_id):
                 'code': 'PRODUCT_NOT_FOUND'
             }), 404
 
-        # Buscar el favorito (activo o inactivo)
+        # Busca el registro de 'Like'.
         favorito = Likes.query.filter_by(
             usuario_id=usuario.id,
             producto_id=producto_id
         ).first()
 
-        # Si no existe o ya está inactivo, devolver éxito
+        # Si no existe o ya está inactivo, la operación es idempotente y se considera exitosa.
         if not favorito or favorito.estado == EstadoEnum.INACTIVO:
             return jsonify({
                 'success': True,
@@ -299,12 +331,12 @@ def eliminar_favorito(usuario, producto_id):
                 'accion': 'noop'
             }), 200
 
-        # Marcar como inactivo (eliminación lógica)
+        # Realiza la eliminación lógica.
         favorito.estado = EstadoEnum.INACTIVO
         favorito.fecha_actualizacion = datetime.utcnow()
         db.session.commit()
 
-        # Registrar la acción
+        # Registra la acción en los logs del servidor.
         current_app.logger.info(
             f'Usuario {usuario.id} eliminó el producto {producto_id} de favoritos')
 
@@ -334,7 +366,10 @@ def eliminar_favorito(usuario, producto_id):
 def sincronizar_favoritos(usuario):
     """
     Sincroniza los favoritos locales con los del servidor de manera más eficiente.
-
+    
+    Este endpoint está diseñado para reconciliar el estado de los favoritos del cliente
+    (almacenados en `localStorage`) con el estado en la base de datos, manejando
+    acciones pendientes que ocurrieron sin conexión.
     Body:
     {
         "favoritos_locales": [int],  # Lista de IDs de productos favoritos locales
@@ -365,7 +400,7 @@ def sincronizar_favoritos(usuario):
     from flask import current_app, request, jsonify
 
     try:
-        # Obtener favoritos actuales del usuario
+        # Obtiene el estado actual de los favoritos desde la base de datos.
         favoritos_actuales = set(
             fav[0] for fav in db.session.query(Likes.producto_id)
             .filter(
@@ -377,13 +412,13 @@ def sincronizar_favoritos(usuario):
             .all()
         )
 
-        # Obtener datos de la solicitud
+        # Extrae los datos enviados por el cliente.
         data = request.get_json()
         favoritos_locales = data.get('favoritos_locales', [])
         timestamp = data.get('timestamp')
         acciones_pendientes = data.get('acciones', [])
 
-        # Obtener timestamp del servidor
+        # Genera un timestamp actual para la respuesta.
         server_timestamp = int(datetime.utcnow().timestamp())
 
         # Verificar si los favoritos locales coinciden con los del servidor
@@ -401,7 +436,7 @@ def sincronizar_favoritos(usuario):
                 }
             }), 200
 
-        # Procesar acciones pendientes de manera más eficiente
+        # Agrupa las acciones pendientes por tipo ('agregar' o 'eliminar') para procesarlas en lote.
         acciones_por_tipo = {'agregar': [], 'eliminar': []}
 
         # Agrupar acciones por tipo para procesamiento por lotes
@@ -410,7 +445,7 @@ def sincronizar_favoritos(usuario):
                 continue
             acciones_por_tipo[accion['accion']].append(accion['producto_id'])
 
-        # Procesar eliminaciones
+        # Procesa todas las eliminaciones pendientes en una sola consulta a la BD.
         if acciones_por_tipo['eliminar']:
             # Eliminar en lote
             Likes.query.filter(
@@ -418,19 +453,19 @@ def sincronizar_favoritos(usuario):
                 Likes.producto_id.in_(acciones_por_tipo['eliminar'])
             ).update({'estado': EstadoEnum.INACTIVO.value}, synchronize_session='fetch')
 
-            # Actualizar conjunto local
+            # Actualiza el conjunto en memoria para reflejar los cambios.
             favoritos_actuales.difference_update(acciones_por_tipo['eliminar'])
 
-        # Procesar adiciones
+        # Procesa todas las adiciones pendientes.
         if acciones_por_tipo['agregar']:
-            # Filtrar productos que ya están en favoritos
+            # Filtra productos que ya podrían estar en favoritos para evitar duplicados.
             productos_a_agregar = [
                 pid for pid in acciones_por_tipo['agregar']
                 if pid not in favoritos_actuales
             ]
 
             if productos_a_agregar:
-                # Verificar que los productos existan y estén activos
+                # Verifica que los productos a agregar existan y estén activos.
                 productos_validos = set(
                     pid[0] for pid in db.session.query(Productos.id)
                     .filter(
@@ -440,7 +475,7 @@ def sincronizar_favoritos(usuario):
                     .all()
                 )
 
-                # Insertar en lote
+                # Inserta los nuevos favoritos en lote para mayor eficiencia.
                 nuevos_favoritos = [
                     {
                         'usuario_id': usuario.id,
@@ -457,7 +492,7 @@ def sincronizar_favoritos(usuario):
                         Likes.__mapper__, nuevos_favoritos)
                     favoritos_actuales.update(productos_validos)
 
-        # Confirmar cambios en la base de datos
+        # Confirma todos los cambios en la base de datos en una única transacción.
         try:
             db.session.commit()
         except Exception as e:
@@ -470,11 +505,10 @@ def sincronizar_favoritos(usuario):
                 'code': 'SYNC_ERROR'
             }), 500
 
-        # Obtener lista de IDs eliminados
         current_app.logger.info(
             f"Favoritos sincronizados para usuario {usuario.id}")
 
-        # Obtener la lista completa de favoritos actualizada
+        # Obtiene la lista final y completa de favoritos para devolverla al cliente.
         favoritos_actuales_obj = Likes.query.filter_by(
             usuario_id=usuario.id, estado=EstadoEnum.ACTIVO).all()
         todos_favoritos = [{
@@ -506,14 +540,21 @@ def sincronizar_favoritos(usuario):
 @jwt_required
 def favoritos(usuario):
     """
-    Muestra la página de productos favoritos del usuario
-    quiero que mejores el endpoint de la pagina de favoritos para que devuelva correctamente los productos que tiene el usuarios en la base de datos, ya que antes de realizarme las mejoras como te mensione habia eliminado un producto en la pagina de favorito cuando ya me realizastes las mejoras ya puedo eliminar los productos de la pagina de favoritos y volverlos a colocar desde la pagina principal pero como habia eliminado antes de la mejora que me realizaste ahora ese producto no me aparece en la pagina de favorito pero si en la base de datos.
+    Renderiza la página "Mis Favoritos" con los productos guardados por el usuario.
+
+    Este endpoint realiza una consulta a la base de datos para obtener todos los
+    productos que el usuario ha marcado como favoritos y que siguen activos en el
+    sistema. Luego, pasa estos datos a la plantilla `favoritos.html` para su
+    visualización.
+
+    Args:
+        usuario (Usuarios): El objeto de usuario inyectado por el decorador `@jwt_required`.
     """
     from flask import current_app as app, session
     app.logger.info("Accediendo a la página de favoritos")
 
     try:
-        # Validar que el usuario esté autenticado
+        # Valida que el usuario esté autenticado, obteniendo su ID.
         user_id = usuario.id if hasattr(usuario, 'id') else None
         if not user_id and 'user' in session:
             user_id = session['user'].get('id')
@@ -525,12 +566,14 @@ def favoritos(usuario):
 
         app.logger.info(f"Buscando favoritos para el usuario ID: {user_id}")
 
-        # Obtener los objetos 'Like' de los favoritos, asegurando que el producto esté activo
+        # --- Consulta Optimizada ---
+        # Obtiene los registros 'Like' activos del usuario, asegurando que tanto el producto
+        # como toda su jerarquía de categorías (principal, sub, seudo) también estén activos.
         likes = Likes.query.filter_by(usuario_id=user_id, estado='activo')            .join(Likes.producto)            .filter(Productos.estado == 'activo')            .join(Productos.seudocategoria)            .filter(Seudocategorias.estado == 'activo')            .join(Seudocategorias.subcategoria)            .filter(Subcategorias.estado == 'activo')            .join(Subcategorias.categoria_principal)            .filter(CategoriasPrincipales.estado == 'activo')            .options(                joinedload(Likes.producto).joinedload(                    Productos.seudocategoria)                .joinedload(Seudocategorias.subcategoria)                .joinedload(Subcategorias.categoria_principal)            )            .all()
         app.logger.info(
             f"Se encontraron {len(likes)} registros de 'likes' activos.")
 
-        # Crear una lista plana de productos favoritos
+        # Serializa los productos encontrados a un formato de diccionario para la plantilla.
         favoritos = [producto_to_dict(like.producto) for like in likes if like.producto]
         app.logger.info(f"Se encontraron {len(favoritos)} productos favoritos para el usuario con ID {user_id}")
 

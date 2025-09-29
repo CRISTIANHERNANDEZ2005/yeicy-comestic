@@ -1,0 +1,328 @@
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.status-active {
+  background: linear-gradient(135deg, #dcfce7 0%, #bbf7d0 100%);
+  color: #166534;
+  padding: 6px 16px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.status-inactive {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #b91c1c;
+  padding: 6px 16px;
+  border-radius: 24px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.status-active:hover {
+  background: linear-gradient(135deg, #bbf7d0 0%, #6ee7b7 100%);
+  transform: scale(1.05);
+}
+.status-inactive:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  transform: scale(1.05);
+}
+.pagination-button {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 2px solid transparent;
+}
+.pagination-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  border-color: #2563eb;
+}
+.pagination-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+}
+.active-page {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: white !important;
+  border-color: #2563eb !important;
+}
+.card-hover {
+  transition: all 0.3s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+.action-btn {
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+.action-btn:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+.search-input {
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+.search-input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+/* Animations for table rows */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+tbody tr {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* Mejoras para las tarjetas de estadísticas */
+.stats-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+}
+
+/* Efecto de brillo para las tarjetas */
+.stats-card:hover::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  pointer-events: none;
+}
+
+/* Animación para los números de estadísticas */
+.stat-number {
+  transition: all 0.3s ease;
+}
+
+.stat-number:hover {
+  transform: scale(1.05);
+}
+
+
+.action-btn-disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important; /* Evita el efecto hover de escala */
+}
+
+/* Contenedor interno para asegurar que la barra de herramientas y la tabla se desplacen juntas */
+.table-wrapper-inner {
+  /* MEJORA PROFESIONAL: Hacer que el contenedor interno se ajuste al ancho de su contenido (la tabla). */
+  /* Esto asegura que la barra de herramientas siempre coincida con el ancho de la tabla, sin importar cuántas columnas tenga. */
+  display: inline-block;
+  min-width: 100%;
+}
+
+/* Estilo para la fila del administrador autenticado */
+.authenticated-admin-row {
+  background-color: #eef2ff; /* Un azul muy claro, como el de Tailwind 'indigo-50' */
+  border-left: 4px solid #4f46e5; /* Borde izquierdo de color índigo para resaltar */
+  transition: all 0.3s ease;
+}
+
+.authenticated-admin-row:hover {
+  background-color: #e0e7ff; /* Un poco más oscuro al pasar el mouse */
+}
+
+/* Estilo para el botón de limpiar filtros */
+#clear-filters-btn:hover i {
+  transform: rotate(90deg);
+}
+
+#clear-filters-btn i {
+  transition: transform 0.3s ease-in-out;
+}
+
+/* Estilo para la fila del cliente en línea */
+.online-client-row {
+  background-color: #f0fdf4; /* Tailwind 'green-50' */
+  border-left: 4px solid #22c55e; /* Tailwind 'green-500' */
+  transition: all 0.3s ease;
+}
+
+.online-client-row:hover {
+  background-color: #dcfce7; /* Tailwind 'green-100' */
+}
+
+/* Indicador de estado en línea */
+.online-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #15803d; /* Tailwind 'green-700' */
+}
+
+.online-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e; /* Tailwind 'green-500' */
+  border-radius: 50%;
+  margin-right: 6px;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Estilo para la fila del cliente desconectado (pero activo) */
+.offline-user-row {
+  background-color: #f9fafb; /* Tailwind 'gray-50' */
+  transition: all 0.3s ease;
+}
+
+.offline-user-row:hover {
+  background-color: #f3f4f6; /* Tailwind 'gray-100' */
+}
+
+/* Indicador de estado desconectado */
+.offline-indicator {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #4b5563; /* Tailwind 'gray-600' */
+}
+
+.offline-indicator .dot {
+  width: 8px;
+  height: 8px;
+  background-color: #9ca3af; /* Tailwind 'gray-400' */
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* MEJORA PROFESIONAL: Estilo para el texto de "última vez" */
+.last-seen-text {
+    font-size: 0.78rem; /* Un poco más pequeño */
+    color: #6b7280; /* Tailwind 'gray-500' */
+    font-weight: 400; /* Normal, no negrita */
+}
+
+/* Estilo para la fila del cliente inactivo */
+.inactive-client-row {
+  background-color: #fef2f2; /* Tailwind 'red-50' */
+  border-left: 4px solid #ef4444; /* Tailwind 'red-500' */
+  opacity: 0.8;
+  transition: all 0.3s ease;
+}
+
+.inactive-client-row:hover {
+  background-color: #fee2e2; /* Tailwind 'red-100' */
+  opacity: 1;
+}
+
+/* El botón de estado 'Inactivo' ya tiene su propio estilo, por lo que no se necesita un indicador de texto adicional en el nombre. */
+/* La fila completa con color y opacidad ya comunica el estado de forma profesional. */
+
+/* Estilo para la fila del admin en línea */
+.online-admin-row {
+  background-color: #f5f3ff; /* Tailwind 'purple-50' */
+  border-left: 4px solid #7c3aed; /* Tailwind 'purple-600' */
+}
+
+.online-admin-row:hover {
+  background-color: #ede9fe; /* Tailwind 'purple-100' */
+}
+
+/* Estilo para la fila del admin inactivo */
+.inactive-admin-row {
+  background-color: #fef2f2; /* Tailwind 'red-50' */
+  border-left: 4px solid #ef4444; /* Tailwind 'red-500' */
+  opacity: 0.8;
+}
+
+.inactive-admin-row:hover {
+  background-color: #fee2e2; /* Tailwind 'red-100' */
+  opacity: 1;
+}
+
+/* El indicador 'online-indicator', 'offline-indicator' y 'offline-user-row' se reutiliza para ambos,
+   ya que su diseño es genérico y profesional. Si se deseara un color distinto
+   para el punto del admin, se podrían crear nuevas clases como 'online-admin-indicator'.
+   Por ahora, la reutilización es eficiente. */
+
+/* El estilo 'authenticated-admin-row' ya existe y tiene mayor precedencia,
+   lo cual es correcto para resaltar siempre al admin actual. */
+
+/* Insignia para el contador de usuarios en línea en las tarjetas de estadísticas */
+.online-count-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    background-color: #dcfce7; /* Tailwind 'green-100' */
+    color: #166534; /* Tailwind 'green-800' */
+    border-radius: 9999px; /* 'rounded-full' */
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1;
+    transition: all 0.3s ease;
+}
+
+.online-count-badge .dot {
+    width: 7px;
+    height: 7px;
+    background-color: #22c55e; /* Tailwind 'green-500' */
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+.online-count-badge.hidden { display: none; }
+
+/* Estilo para las columnas de fecha */
+.date-column {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+    font-size: 0.85rem;
+    color: #4b5563; /* Tailwind 'gray-600' */
+}

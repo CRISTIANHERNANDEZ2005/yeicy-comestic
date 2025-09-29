@@ -1,7 +1,44 @@
+/**
+ * @file Módulo de Navegación SPA (Single-Page Application) del Panel de Administración.
+ * @description Este script es el motor que transforma el panel de administración en una
+ *              Single-Page Application (SPA), proporcionando una experiencia de usuario
+ *              rápida y fluida, similar a la de una aplicación de escritorio, al eliminar
+ *              las recargas de página completas durante la navegación.
+ *
+ * @funcionalidadesClave
+ * 1.  **Navegación Asíncrona:** Intercepta los clics en los enlaces de navegación designados
+ *     (ej. en la barra lateral) y, en lugar de recargar la página, utiliza `fetch` para
+ *     obtener el contenido de la nueva vista de forma asíncrona.
+ *
+ * 2.  **Inyección de Contenido Dinámico:** Analiza el HTML recibido, extrae el contenedor
+ *     principal (`#main-content-container`) y lo inyecta en el DOM actual, actualizando
+ *     también el título de la página.
+ *
+ * 3.  **Gestión Inteligente de Scripts:**
+ *     - **Carga Única:** Mantiene un registro de los scripts ya cargados para evitar
+ *       volver a cargarlos y prevenir errores de redeclaración de variables.
+ *     - **Ejecución Contextual:** Carga y ejecuta dinámicamente los scripts específicos
+ *       de cada página solo cuando son necesarios.
+ *
+ * 4.  **Ciclo de Vida de Eventos (Event Lifecycle):** Dispara eventos personalizados para
+ *     orquestar la inicialización y destrucción de los módulos de JavaScript de cada página:
+ *     - `content-will-load`: Se emite ANTES de cargar nuevo contenido, permitiendo que los scripts actuales limpien listeners y timers.
+ *     - `content-loaded`: Se emite DESPUÉS de que el nuevo contenido y sus scripts se han cargado, sirviendo como señal para la inicialización.
+ */
 document.addEventListener('DOMContentLoaded', function() {
     const mainContentContainer = document.getElementById('main-content-container');
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
     const loadingOverlay = document.getElementById('loading-overlay');
+
+    //  Registrar los scripts ya cargados en la página inicial.
+    // Esto evita que el SPA intente volver a cargarlos después de un hard refresh.
+    function registerInitialScripts() {
+        window.spaLoadedScripts = window.spaLoadedScripts || new Set();
+        document.querySelectorAll('script[src]').forEach(script => {
+            const scriptURL = new URL(script.src, window.location.origin).href;
+            window.spaLoadedScripts.add(scriptURL);
+        });
+    }
 
     // Almacén para scripts ya cargados por el SPA
     window.spaLoadedScripts = window.spaLoadedScripts || new Set();
@@ -21,6 +58,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     function loadContent(url, pushState = true) {
+        //  Disparar un evento ANTES de cargar el nuevo contenido.
+        // Esto permite que los módulos de página actuales (como lista_ventas.js)
+        // limpien sus propios event listeners y timers, evitando "fugas de memoria" y conflictos.
+        document.dispatchEvent(new CustomEvent('content-will-load'));
+        console.log(`Event 'content-will-load' dispatched for URL: ${url}`);
+
         showLoadingOverlay();
         fetch(url, {
             headers: {
@@ -63,12 +106,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // volver a ejecutar scripts globales de base.html.
             // Esto soluciona el error "Identifier '...' has already been declared".
             const scripts = Array.from(mainContent.querySelectorAll('script'));
+
+            // Limpiar scripts inline gestionados por el SPA anterior.
+            // Esto evita que se acumulen en el body en cada navegación.
+            document.querySelectorAll('script[data-spa-managed-inline]').forEach(s => s.remove());
             
             const executeScripts = async () => {
-                // Limpiar scripts de la carga anterior para evitar duplicados y fugas de memoria.
-                // Se buscan scripts que fueron añadidos por el SPA (tienen un atributo 'data-spa-managed').
-                // Ya no es necesario removerlos, ya que no los volveremos a añadir si ya existen.
-
                 for (const script of scripts) {
                     // Omitir scripts que no son de JS ejecutable (ej. application/json)
                     if (script.type && !['text/javascript', 'application/javascript', ''].includes(script.type)) {
@@ -80,10 +123,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         
                         // Si el script ya fue cargado, llamar a su función de reinicialización si existe
                         if (window.spaLoadedScripts.has(scriptURL)) {
-                            if (typeof window.reinitializePage === 'function') {
-                                console.log(`Re-initializing content for ${scriptURL}`);
-                                window.reinitializePage();
-                            }
+                            // El script ya está cargado. Su listener 'content-loaded' se encargará de la reinicialización.
+                            console.log(`Script ${scriptURL} already loaded. Skipping re-execution.`);
                             continue; // No volver a cargar el script
                         }
 
@@ -109,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         // Para scripts inline, simplemente los añadimos para que se ejecuten
                         const newScript = document.createElement('script');
                         script.getAttributeNames().forEach(attr => newScript.setAttribute(attr, script.getAttribute(attr)));
-                        newScript.setAttribute('data-spa-managed', 'true');
+                        newScript.setAttribute('data-spa-managed-inline', 'true'); // Etiqueta específica para inline
                         newScript.textContent = script.innerText;
                         document.body.appendChild(newScript);
                     }
@@ -216,5 +257,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
+    //  Ejecutar el registro de scripts iniciales.
+    registerInitialScripts();
+
     updateActiveLink(window.location.pathname + window.location.search);
 });

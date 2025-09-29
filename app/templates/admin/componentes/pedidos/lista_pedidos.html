@@ -121,22 +121,46 @@
                                                     <button class="action-button view text-blue-600 hover:text-blue-800" title="Ver detalles" onclick="pedidosApp.viewPedido('{{ pedido.id }}')">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    {% if pedido.estado != 'inactivo' and pedido.estado_pedido == 'en proceso' %}
+                                                    {% if pedido.estado != 'inactivo' %}
+                                                        {% if pedido.estado_pedido == 'en proceso' %}
                                                         <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
                                                                 title="Editar pedido" 
                                                                 onclick="pedidosApp.editPedido('{{ pedido.id }}')">
                                                             <i class="fas fa-edit"></i>
                                                         </button>
                                                         <button class="action-button complete text-green-600 hover:text-green-800" 
-                                                                title="Marcar como completado" 
-                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
+                                                                    title="Marcar como completado" 
+                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
                                                             <i class="fas fa-check-circle"></i>
                                                         </button>
                                                         <button class="action-button cancel text-red-600 hover:text-red-800" 
-                                                                title="Cancelar pedido" 
-                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
+                                                                    title="Cancelar pedido" 
+                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
                                                             <i class="fas fa-times-circle"></i>
                                                         </button>
+                                                        {% elif pedido.estado_pedido == 'completado' %}
+                                                            <button class="action-button process text-blue-600 hover:text-blue-800" 
+                                                                    title="Poner en proceso" 
+                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
+                                                                <i class="fas fa-sync-alt"></i>
+                                                            </button>
+                                                            <button class="action-button cancel text-red-600 hover:text-red-800" 
+                                                                    title="Cancelar pedido" 
+                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
+                                                                <i class="fas fa-times-circle"></i>
+                                                            </button>
+                                                        {% elif pedido.estado_pedido == 'cancelado' %}
+                                                            <button class="action-button process text-blue-600 hover:text-blue-800" 
+                                                                    title="Poner en proceso" 
+                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
+                                                                <i class="fas fa-sync-alt"></i>
+                                                            </button>
+                                                            <button class="action-button complete text-green-600 hover:text-green-800" 
+                                                                    title="Marcar como completado" 
+                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
+                                                                <i class="fas fa-check-circle"></i>
+                                                            </button>
+                                                        {% endif %}
                                                     {% endif %}
                                                 </div>
                                             </td>
@@ -178,24 +202,6 @@
                                 Seguimiento de Pedidos
                             </h2>
                             <p class="text-gray-600 mt-2">Gestiona el seguimiento de los pedidos seleccionados en tiempo real</p>
-                            <div class="mt-2 flex items-center">
-                                <div class="h-2 w-2 bg-green-500 rounded-full mr-2 animate-pulse"></div>
-                                <span class="text-xs text-green-600 font-medium">Conectado en tiempo real</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 md:mt-0 flex space-x-3">
-                            <button id="refreshSeguimientoBtn" class="px-4 py-2 bg-white text-blue-600 rounded-lg border border-blue-200 hover:bg-blue-50 flex items-center transition-all duration-300 shadow-sm">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                Actualizar
-                            </button>
-                            <button id="syncRealTimeBtn" class="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg hover:from-blue-700 hover:to-indigo-800 flex items-center transition-all duration-300 shadow-md">
-                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                                </svg>
-                                Sincronizar Ahora
-                            </button>
                         </div>
                     </div>
 
@@ -669,6 +675,17 @@
             
             <!-- Formulario de filtros -->
             <form id="filterForm" class="space-y-6" onsubmit="return false;">
+                <!-- Búsqueda por ID de Pedido -->
+                <div class="filter-field">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
+                        <svg class="w-4 h-4 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                        ID de Pedido
+                    </label>
+                    <input type="text" id="pedidoIdFilter" placeholder="Buscar por ID..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm">
+                </div>
+
                 <!-- Búsqueda por cliente -->
                 <div class="filter-field">
                     <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">

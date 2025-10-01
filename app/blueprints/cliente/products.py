@@ -890,7 +890,6 @@ def get_all_products():
     productos = Productos.query.filter_by(estado=EstadoEnum.ACTIVO).filter(Productos._existencia  > 0).all()
     return jsonify([producto_to_dict(p) for p in productos])
 
-
 @products_bp.route('/api/productos/categoria/<nombre_categoria>')
 def get_products_by_category(nombre_categoria):
     """

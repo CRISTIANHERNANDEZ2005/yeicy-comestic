@@ -415,7 +415,6 @@ def votar_review(usuario, review_id):
         return jsonify({'success': False, 'error': 'Reseña no encontrada'}), 404
 
     try:
-        # ---  Bloqueo Pesimista ---
         # Se utiliza `with_for_update()` para bloquear la fila del voto (o el espacio donde iría)
         # y prevenir condiciones de carrera (race conditions) si el usuario hace doble clic.
         # Esto asegura que solo una transacción a la vez pueda verificar y modificar el voto.

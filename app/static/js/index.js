@@ -131,7 +131,7 @@ class HomePageManager {
     this.bindEvents();
     this.updateLikeBtnStyles();
     // Inicia la carga de recomendaciones si el usuario está autenticado.
-    // MEJORA: La inicialización del carrusel se mueve aquí, dentro de la condición.
+    // La inicialización del carrusel se mueve aquí, dentro de la condición.
     if (window.USUARIO_AUTENTICADO) {
       this.recomendacionesCarousel = new SimpleCarousel({
         trackId: 'recomendaciones-track',
@@ -254,7 +254,6 @@ class HomePageManager {
     }
   }
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   new HomePageManager();
 });

@@ -234,7 +234,6 @@ window.addEventListener('storage', function(event) {
     window.location.href = "/";
   }
 });
-
 // Exportar funciones para su uso en otros archivos.
 window.auth = {
   isAuthenticated,

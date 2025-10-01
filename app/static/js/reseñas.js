@@ -8,14 +8,15 @@
  * @param {HTMLElement} button - El botón que fue presionado.
  */
 async function voteForReview(reviewId, button) {
-  // 1. Verificar autenticación (usando la variable global o una función de ayuda)
-  const isAuthenticated = window.USUARIO_AUTENTICADO || (document.body.dataset.userId !== null);
+  // 1. MEJORA PROFESIONAL: Verificar autenticación ANTES de cualquier cambio en la UI.
+  const isAuthenticated = window.USUARIO_AUTENTICADO || (document.body.dataset.userId != null);
   if (!isAuthenticated) {
-    // Usar el sistema de toast global para notificar al usuario
+    // Si no está autenticado, mostrar un mensaje claro y detener la ejecución.
     if (window.toast && typeof window.toast.info === 'function') {
       window.toast.info("Debes iniciar sesión para votar.", 3000, {
         action: {
           text: 'Iniciar Sesión',
+          // Dispara el evento para mostrar el modal de autenticación.
           onClick: () => document.dispatchEvent(new CustomEvent('showAuthModal'))
         }
       });

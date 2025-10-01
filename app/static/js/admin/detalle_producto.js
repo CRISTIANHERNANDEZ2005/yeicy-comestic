@@ -12,14 +12,20 @@ document.addEventListener('DOMContentLoaded', function () {
     const nextButton = document.getElementById('next-page');
     const pageInfo = document.getElementById('page-info');
 
+    // MEJORA: Obtener los elementos de los filtros
+    const ratingFilter = document.getElementById('rating-filter');
+    const sortFilter = document.getElementById('sort-filter');
+
     let currentPage = 1;
     let totalPages = 1;
 
     /**
      * Función principal para obtener y renderizar las reseñas.
      * @param {number} page - El número de página a solicitar.
+     * @param {string} rating - El filtro de calificación.
+     * @param {string} sort - El criterio de ordenamiento.
      */
-    async function fetchAndRenderReviews(page = 1) {
+    async function fetchAndRenderReviews(page = 1, rating = 'all', sort = 'newest') {
         if (!productId) return;
 
         // Mostrar el loader y ocultar contenido anterior
@@ -28,8 +34,18 @@ document.addEventListener('DOMContentLoaded', function () {
         noReviewsMessage.classList.add('hidden');
         paginationContainer.classList.add('hidden');
 
+        // MEJORA: Construir la URL con todos los parámetros de filtro.
+        const params = new URLSearchParams({
+            page: page,
+            sort: sort
+        });
+        if (rating && rating !== 'all') {
+            params.append('rating', rating);
+        }
+        const apiUrl = `/admin/api/producto/${productId}/reviews?${params.toString()}`;
+
         try {
-            const response = await fetch(`/admin/api/producto/${productId}/reviews?page=${page}`);
+            const response = await fetch(apiUrl);
             if (!response.ok) {
                 throw new Error(`Error del servidor: ${response.statusText}`);
             }
@@ -140,19 +156,32 @@ document.addEventListener('DOMContentLoaded', function () {
 
     prevButton.addEventListener('click', () => {
         if (currentPage > 1) {
-            fetchAndRenderReviews(currentPage - 1);
+            // MEJORA: Pasar los filtros actuales al cambiar de página.
+            fetchAndRenderReviews(currentPage - 1, ratingFilter.value, sortFilter.value);
         }
     });
 
     nextButton.addEventListener('click', () => {
         if (currentPage < totalPages) {
-            fetchAndRenderReviews(currentPage + 1);
+            // MEJORA: Pasar los filtros actuales al cambiar de página.
+            fetchAndRenderReviews(currentPage + 1, ratingFilter.value, sortFilter.value);
         }
+    });
+
+    // MEJORA: Añadir listeners para los filtros.
+    // Al cambiar un filtro, siempre se vuelve a la página 1.
+    ratingFilter.addEventListener('change', () => {
+        fetchAndRenderReviews(1, ratingFilter.value, sortFilter.value);
+    });
+
+    sortFilter.addEventListener('change', () => {
+        fetchAndRenderReviews(1, ratingFilter.value, sortFilter.value);
     });
 
     // Carga inicial de las reseñas
     if (reviewsSection) {
-        fetchAndRenderReviews();
+        // MEJORA: La carga inicial también respeta los valores por defecto de los filtros.
+        fetchAndRenderReviews(1, ratingFilter.value, sortFilter.value);
     }
 
     // --- Lógica para el botón de editar en productos inactivos ---

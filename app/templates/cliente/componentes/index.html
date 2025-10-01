@@ -79,7 +79,60 @@
     </div>
   </div>
 </div>
-
+{% if usuario_autenticado %}
+<!-- Sección mejorada: Recomendado para Ti -->
+<div class="bg-pink-50 py-16">
+  <div class="container mx-auto px-4">
+    <div id="recomendaciones-container" class="category-section">
+      <!-- Encabezado mejorado -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h2 class="text-3xl font-bold text-gray-800">Recomendado para Ti</h2>
+        <p class="text-gray-600 mt-2">Una selección especial basada en tus gustos y productos favoritos.</p>
+      </div>
+      
+      <!-- Contenedor principal para el carrusel y sus controles -->
+      <div>
+        <!-- MEJORA PROFESIONAL: Contenedor de carrusel para móvil, grid para desktop -->
+        <div class="relative group">
+          <!-- MEJORA: Se añade la estructura de 'carousel-container' para permitir el efecto de zoom sin recortes. -->
+          <div class="carousel-container">
+            <div class="relative overflow-hidden">
+              <!-- MEJORA: Track del carrusel unificado y responsivo -->
+              <div id="recomendaciones-track" class="flex transition-transform duration-500 ease-in-out">
+                <!-- Las diapositivas se insertarán aquí -->
+              </div>
+            </div>
+          </div>
+          <!-- Placeholder de carga (común para ambas vistas) -->
+          <div id="recomendaciones-loader" class="col-span-full flex flex-col items-center justify-center py-10">
+              <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500 mb-4"></div>
+              <p class="text-lg text-gray-600 font-medium">Cargando tus recomendaciones...</p>
+              <p class="text-gray-500 text-sm mt-2">Esto solo tomará un momento</p>
+          </div>
+          <!-- Mensaje para cuando no hay recomendaciones -->
+          <div id="no-recomendaciones" class="hidden text-center py-10">
+              <p class="text-gray-600">Aún no tenemos recomendaciones para ti. ¡Sigue explorando y guardando tus productos favoritos!</p>
+          </div>
+          <button id="recomendaciones-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-transform duration-300 hover:scale-110">
+            <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+          </button>
+          <button id="recomendaciones-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-transform duration-300 hover:scale-110">
+            <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+          </button>
+        </div>
+        <!-- MEJORA PROFESIONAL: Contenedor para los indicadores de paginación del carrusel. -->
+        <!-- El script SimpleCarousel buscará este ID para generar los puntos de navegación. -->
+        <div id="recomendaciones-indicators" class="flex justify-center mt-4 space-x-2"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 <!-- Datos de productos para JavaScript -->
 <script>
@@ -98,53 +151,6 @@
 </script>
 {% endblock %}
 
-{% block full_width_content_after %}
-{% if usuario_autenticado %}
-<!-- Sección mejorada: Recomendado para Ti -->
-<div class="bg-pink-50 py-16">
-  <div class="container mx-auto px-4">
-    <div id="recomendaciones-container" class="category-section">
-      <!-- Encabezado mejorado -->
-      <div class="text-center mb-10">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
-          </svg>
-        </div>
-        <h2 class="text-3xl font-bold text-gray-800">Recomendado para Ti</h2>
-        <p class="text-gray-600 mt-2">Una selección especial basada en tus gustos y productos favoritos.</p>
-      </div>
-      
-      <!-- MEJORA PROFESIONAL: Contenedor de carrusel para móvil, grid para desktop -->
-      <div class="relative group">
-        <!-- MEJORA: Se añade la estructura de 'carousel-container' para permitir el efecto de zoom sin recortes. -->
-        <div class="carousel-container">
-          <div class="relative overflow-hidden">
-            <!-- MEJORA: Track del carrusel unificado y responsivo -->
-            <div id="recomendaciones-track" class="flex transition-transform duration-500 ease-in-out">
-              <!-- Las diapositivas se insertarán aquí -->
-            </div>
-          </div>
-        </div>
-        <!-- Placeholder de carga (común para ambas vistas) -->
-          <div id="recomendaciones-loader" class="col-span-full flex flex-col items-center justify-center py-10">
-            <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500 mb-4"></div>
-            <p class="text-lg text-gray-600 font-medium">Cargando tus recomendaciones...</p>
-            <p class="text-gray-500 text-sm mt-2">Esto solo tomará un momento</p>
-          </div>
-        <button id="recomendaciones-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-transform duration-300 hover:scale-110">
-          <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
-        </button>
-        <button id="recomendaciones-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-transform duration-300 hover:scale-110">
-          <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </button>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-{% endif %}
-{% endblock %}
 {% block full_width_footer_content %}
   {% include 'cliente/ui/seccion_confianza.html' %}
   <!-- En el lugar donde queramos mostrar las reseñas -->

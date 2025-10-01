@@ -958,3 +958,56 @@ def get_price_range():
         'min_price': min_price if min_price is not None else 0,
         'max_price': max_price if max_price is not None else 0
     })
+
+@products_bp.route('/api/productos/recomendados')
+@jwt_required
+def get_recomendaciones(usuario):
+    """
+    API: Devuelve productos recomendados para el usuario autenticado.
+
+    La lógica de recomendación se basa en los productos que le han gustado al usuario.
+    1.  Obtiene las seudocategorías de los productos que le gustan al usuario.
+    2.  Busca otros productos populares (basado en la cantidad de 'likes') dentro de esas mismas seudocategorías.
+    3.  Si no hay suficientes, rellena con productos populares de la tienda en general.
+
+    Args:
+        usuario (Usuarios): El objeto de usuario inyectado por el decorador `@jwt_required`.
+
+    Returns:
+        JSON: Una lista de objetos de producto recomendados.
+    """
+    try:
+        # Obtener los IDs de los productos que le gustan al usuario
+        liked_product_ids = db.session.query(Likes.producto_id).filter_by(usuario_id=usuario.id, estado=EstadoEnum.ACTIVO).all()
+        liked_product_ids = [pid[0] for pid in liked_product_ids]
+
+        recomendaciones = []
+        
+        if liked_product_ids:
+            # Obtener las seudocategorías de los productos que le gustan
+            liked_seudocategorias = db.session.query(Productos.seudocategoria_id).filter(Productos.id.in_(liked_product_ids)).distinct().all()
+            liked_seudocategorias_ids = [sid[0] for sid in liked_seudocategorias]
+
+            if liked_seudocategorias_ids:
+                # Buscar otros productos en esas seudocategorías, excluyendo los que ya le gustan
+                recomendaciones = Productos.query.filter(
+                    Productos.seudocategoria_id.in_(liked_seudocategorias_ids),
+                    Productos.id.notin_(liked_product_ids),
+                    Productos.estado == EstadoEnum.ACTIVO,
+                    Productos._existencia > 0
+                ).order_by(func.random()).limit(12).all()
+
+        # Si no hay suficientes recomendaciones, rellenar con productos populares generales
+        if len(recomendaciones) < 12:
+            ids_existentes = [p.id for p in recomendaciones] + liked_product_ids
+            productos_populares = Productos.query.filter(
+                Productos.id.notin_(ids_existentes),
+                Productos.estado == EstadoEnum.ACTIVO,
+                Productos._existencia > 0
+            ).order_by(func.random()).limit(12 - len(recomendaciones)).all()
+            recomendaciones.extend(productos_populares)
+
+        return jsonify([producto_to_dict(p) for p in recomendaciones])
+    except Exception as e:
+        current_app.logger.error(f"Error al generar recomendaciones para el usuario {usuario.id}: {e}")
+        return jsonify({'error': 'No se pudieron generar las recomendaciones'}), 500

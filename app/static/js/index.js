@@ -229,14 +229,16 @@ class HomePageManager {
     if (!container || !loader || !noRecomendaciones || !this.recomendacionesCarousel) return;
 
     try {
-      // Simulación de llamada a la API. Reemplazar con el endpoint real.
-      // const response = await fetch('/api/productos/recomendados');
-      // const productos = await response.json();
+      const token = localStorage.getItem("token");
+      const response = await fetch('/api/productos/recomendados', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-      // --- INICIO: Datos simulados ---
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular retraso de red
-      const productos = window.PRODUCTS_DATA.slice(0, 8); // Usar 8 productos para el ejemplo
-      // --- FIN: Datos simulados ---
+      if (!response.ok) throw new Error('Error al cargar recomendaciones desde la API.');
+      
+      const productos = await response.json();
 
       loader.style.display = "none";
 
@@ -250,7 +252,11 @@ class HomePageManager {
       }
     } catch (error) {
       console.error("Error al cargar recomendaciones:", error);
-      loader.innerHTML = '<p class="text-red-500">No se pudieron cargar las recomendaciones.</p>';
+      // MEJORA PROFESIONAL: Si hay un error, ocultar toda la sección de recomendaciones.
+      // Es una mejor experiencia de usuario que mostrar un mensaje de error persistente.
+      if (container) {
+        container.style.display = 'none';
+      }
     }
   }
 }

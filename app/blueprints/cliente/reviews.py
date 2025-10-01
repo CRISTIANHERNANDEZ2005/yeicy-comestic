@@ -199,6 +199,41 @@ def listar_reviews(producto_id):
         'total_reviews_count': total_reviews_count
     })
 
+@reviews_bp.route('/api/productos/<string:producto_id>/reviews/me', methods=['GET'])
+@jwt_required
+def obtener_mi_review(usuario, producto_id):
+    """
+    Endpoint protegido para obtener la reseña del usuario autenticado para un producto específico.
+
+    Este endpoint es crucial para que el frontend pueda determinar si el usuario ya ha
+    dejado una reseña, independientemente de los filtros aplicados en la lista principal.
+    Permite mostrar el botón "Editar mi reseña" de forma consistente.
+
+    Args:
+        usuario (Usuarios): Objeto del usuario autenticado, inyectado por `@jwt_required`.
+        producto_id (str): El ID del producto.
+
+    Returns:
+        JSON: Un objeto con la reseña del usuario o un mensaje indicando que no existe.
+    """
+    _log_request_info('obtener_mi_review', f'usuario={usuario.id}, producto_id={producto_id}')
+
+    review = Reseñas.query.filter_by(
+        usuario_id=usuario.id,
+        producto_id=producto_id
+    ).first()
+
+    if not review:
+        return jsonify({
+            'success': True,
+            'review': None,
+            'message': 'El usuario no ha dejado una reseña para este producto.'
+        })
+
+    return jsonify({
+        'success': True,
+        'review': resena_to_dict(review, current_user_id=usuario.id)
+    })
 @reviews_bp.route('/api/productos/<string:producto_id>/reviews', methods=['POST'])
 @jwt_required
 def crear_review(usuario, producto_id):

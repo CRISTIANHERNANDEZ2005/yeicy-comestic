@@ -69,7 +69,7 @@ class ReviewsManager {
   constructor() {
     const wrapper = document.getElementById("reviews-section-wrapper");
     this.productId = wrapper ? wrapper.dataset.productId : null;
-    this.user = null;
+    this.user = null; // MEJORA: Se mantiene para saber si hay un usuario logueado.
     this.userReview = null;
 
     this.currentPage = 1;
@@ -78,6 +78,7 @@ class ReviewsManager {
     this.isLoading = false;
     this.hasMore = true;
     this.reviews = new Map();
+    this.userHasReviewData = null; // MEJORA PROFESIONAL: Estado persistente para la reseña del usuario.
     this.currentTotal = 0; // MEJORA: Propiedad para rastrear el total de la consulta actual.
     this.formRating = 0;
 
@@ -87,7 +88,8 @@ class ReviewsManager {
   async init() {
     // La verificación de autenticación ahora es el primer paso y bloquea la inicialización de la UI.
     await this.checkAuthentication();
-    this.bindEvents();
+    await this.loadUserReview(); // MEJORA: Cargar la reseña del usuario de forma independiente.
+    this.bindEvents(); // Los eventos se bindean después de tener el estado inicial.
     await this.loadReviews(); // loadReviews ahora maneja la lógica de estado del botón
     this.setupInfiniteScroll();
     this.renderFilterChips();
@@ -224,6 +226,37 @@ class ReviewsManager {
     }
   }
 
+  /**
+   * MEJORA PROFESIONAL: Carga la reseña del usuario de forma independiente.
+   * Este método asegura que this.userHasReviewData siempre tenga la información correcta,
+   * sin importar los filtros aplicados en la lista principal.
+   */
+  async loadUserReview() {
+    if (!this.user) {
+      this.userHasReviewData = null;
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/productos/${this.productId}/reviews/me`, {
+        headers: this.getAuthHeaders(),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.review) {
+          this.userHasReviewData = data.review;
+        } else {
+          this.userHasReviewData = null;
+        }
+      } else {
+        this.userHasReviewData = null;
+      }
+    } catch (error) {
+      console.error("Error al cargar la reseña del usuario:", error);
+      this.userHasReviewData = null;
+    }
+  }
+
   // Modal de agregar/editar reseña
   openModal(isEdit = false, review = null) {
     const modal = document.getElementById("reviewModal");
@@ -261,7 +294,7 @@ class ReviewsManager {
 
   closeModal() {
     document.getElementById("reviewModal").classList.add("hidden");
-    this._clearValidationStates(); // MEJORA: Limpiar estados de validación al cerrar.
+    this._clearValidationStates(); //  Limpiar estados de validación al cerrar.
     document.body.style.overflow = "";
   }
 
@@ -270,7 +303,8 @@ class ReviewsManager {
       this.showToast("Debes iniciar sesión para dejar una reseña.", "info");
       return;
     }
-    this.openModal(!!this.userReview, this.userReview);
+    // La decisión de editar o crear se basa en el estado persistente.
+    this.openModal(!!this.userHasReviewData, this.userHasReviewData);
   }
 
   editReview(reviewId) {
@@ -316,6 +350,11 @@ class ReviewsManager {
         this.showToast(result.mensaje, "success");
         this.closeDeleteModal();
 
+        //  Limpiar el estado de la reseña del usuario inmediatamente.
+        // Esto es crucial para que el botón "Editar mi reseña" se actualice a "Escribir reseña" al instante.
+        this.userHasReviewData = null;
+        this.userReview = null;
+
         const reviewElement = document.querySelector(
           `[data-review-id="${reviewIdToDelete}"]`
         );
@@ -324,14 +363,11 @@ class ReviewsManager {
           reviewElement.style.opacity = "0";
           reviewElement.style.transform = "scale(0.95)";
           setTimeout(async () => {
-            reviewElement.remove();
-            this.reviews.delete(reviewIdToDelete);
-            if (this.userReview && this.userReview.id === reviewIdToDelete) {
-              this.userReview = null;
-              this.updateReviewButtonState();
-            }
-            this.updateContainerVisibility();
-
+            // MEJORA PROFESIONAL: En lugar de manipular el DOM localmente,
+            // se reinician los filtros y se recarga la lista completa.
+            // Esto asegura que la UI refleje el estado verdadero después de la eliminación.
+            this.clearFilters();
+            
             const ratingResponse = await fetch(
               `/api/productos/${this.productId}/rating`
             );
@@ -346,8 +382,10 @@ class ReviewsManager {
               }
               this.updateStats(ratingData);
             }
-          }, 300);
+          }, 300); // Esperar a que la animación de salida termine antes de recargar.
         } else {
+          // Si el elemento no estaba en el DOM (debido a filtros), simplemente recargamos.
+          this.clearFilters();
         }
       } else {
         this.showToast(result.error || "Error al eliminar la reseña.", "error");
@@ -481,48 +519,14 @@ class ReviewsManager {
         this.showToast(result.mensaje, "success");
         this.closeModal();
 
-        if (method === "POST") {
-          if (
-            this.user &&
-            result.review.usuario &&
-            this.user.id === result.review.usuario.id
-          ) {
-            result.review.puede_editar = true;
-          }
-          const newReviewElement = this.createReviewElement(result.review);
-          // MEJORA PROFESIONAL: Aplicar el estilo de destaque inmediatamente.
-          newReviewElement.classList.add("border-2", "border-pink-500", "shadow-lg");
-          const container = document.getElementById("reviews-list");
+        // MEJORA PROFESIONAL: Después de crear o actualizar una reseña,
+        // siempre reiniciamos los filtros para asegurar que la reseña nueva/actualizada
+        // sea visible inmediatamente en la parte superior de la lista.
+        this.clearFilters();
 
-          container.prepend(newReviewElement);
-          this.reviews.set(result.review.id, result.review);
-          this.userReview = result.review;
-          this.updateReviewButtonState();
-          this.updateContainerVisibility();
-        } else {
-          const existingReviewElement = document.querySelector(
-            `[data-review-id="${result.review.id}"]`
-          );
-          if (existingReviewElement) {
-            if (
-              this.user &&
-              result.review.usuario &&
-              this.user.id === result.review.usuario.id
-            ) {
-              result.review.puede_editar = true;
-            }
-            const updatedReviewElement = this.createReviewElement(
-              result.review
-            );
-            existingReviewElement.replaceWith(updatedReviewElement);
-            this.reviews.set(result.review.id, result.review);
-            this.userReview = result.review;
-            this.updateReviewButtonState();
-            this.updateContainerVisibility();
-          } else {
-            this.refreshReviews();
-          }
-        }
+        // Actualizar el estado persistente de la reseña del usuario.
+        this.userHasReviewData = result.review;
+        this.updateReviewButtonState();
 
         const ratingResponse = await fetch(
           `/api/productos/${this.productId}/rating`
@@ -600,6 +604,10 @@ class ReviewsManager {
       document.getElementById("reviews-list").innerHTML = "";
     }
 
+    // MEJORA PROFESIONAL: Llamar a updateContainerVisibility INMEDIATAMENTE después de poner isLoading a true.
+    // Esto asegura que la UI entre en estado de carga de forma síncrona, ocultando cualquier
+    // estado previo (como "no hay resultados") ANTES de que se muestren los esqueletos.
+    this.updateContainerVisibility();
     this.showLoadingState(reset);
 
     try {
@@ -624,7 +632,6 @@ class ReviewsManager {
 
       const data = await response.json();
 
-
       if (data.success) {
         this.appendReviews(data);
         this.hasMore = data.page < data.pages;
@@ -640,17 +647,7 @@ class ReviewsManager {
     } finally {
       this.isLoading = false;
       this.hideLoadingState();
-      this.updateContainerVisibility(); // MEJORA: Llamar a la función que gestiona qué mostrar (lista, estado vacío, etc.)
-      
-      // MEJORA PROFESIONAL: Determinar si la reseña del usuario está en la página actual
-      // y actualizar el estado del botón "Escribir/Editar reseña".
-      this.userReview = null; // Resetear
-      for (const review of this.reviews.values()) {
-          if (review.puede_editar) {
-              this.userReview = review;
-              break;
-          }
-      }
+      this.updateContainerVisibility(); // Llamada final para mostrar el estado definitivo (resultados, sin resultados, etc.)
 
       this.updateReviewButtonState(); // Actualizar el estado del botón después de cargar las reseñas.
     }
@@ -666,6 +663,10 @@ class ReviewsManager {
       // Check if the current user is the author of the review
       if (this.user && review.usuario && this.user.id === review.usuario.id) {
         review.puede_editar = true;
+        // MEJORA: Aunque la reseña del usuario se carga por separado, si aparece en la
+        // lista principal (porque no hay filtros o coincide), nos aseguramos de que
+        // el estado `userReview` (para la UI) esté actualizado con el objeto completo.
+        this.userReview = review;
       } else {
         review.puede_editar = false; // Ensure it's false if not the owner
       }
@@ -1068,12 +1069,13 @@ class ReviewsManager {
     if (!button || !text) return;
 
     if (!this.user) {
-      text.textContent = "Escribir reseña";
+      text.textContent = "Cargando..."; // Estado inicial mientras se verifica
       button.disabled = true;
       return;
     }
 
-    if (this.userReview) {
+    // MEJORA: La lógica ahora depende del estado persistente `userHasReviewData`.
+    if (this.userHasReviewData) {
       text.textContent = "Editar mi reseña";
     } else {
       text.textContent = "Escribir reseña";
@@ -1101,7 +1103,7 @@ class ReviewsManager {
     }
   }
 
-  updateContainerVisibility() {
+  updateContainerVisibility() { // MEJORA PROFESIONAL: Lógica de visibilidad refactorizada y a prueba de errores.
     const emptyState = document.getElementById("empty-state");
     const noResultsMessage = document.getElementById("no-results-message");
     const scrollContainer = document.getElementById("reviews-scroll-container");
@@ -1110,42 +1112,46 @@ class ReviewsManager {
       "#reviews-container > div:not(#reviews-scroll-container):not(#empty-state):not(#no-results-message)"
     );
 
-    // Ocultar todos los contenedores de estado por defecto para un lienzo limpio.
+    // Ocultar todos los contenedores de estado para empezar desde un lienzo limpio.
     if (emptyState) emptyState.classList.add("hidden");
     if (noResultsMessage) noResultsMessage.classList.add("hidden");
     if (scrollContainer) scrollContainer.classList.add("hidden");
 
-    // MEJORA PROFESIONAL: La lógica ahora se basa en el total de la consulta y los filtros activos.
-    const hasActiveFilters = this.currentRatingFilter !== null || this.currentSort !== "newest";
-    const hasAnyReviewsOnPage = this.reviews.size > 0;
-    const queryReturnedResults = this.currentTotal > 0;
+    // ESTADO 1: CARGANDO. Es la máxima prioridad.
+    // Si estamos cargando, solo mostramos el contenedor de la lista (que tendrá los esqueletos).
+    // Se detiene la ejecución aquí para evitar mostrar otros estados.
+    if (this.isLoading) {
+      if (scrollContainer) scrollContainer.classList.remove("hidden");
+      return;
+    }
 
-    if (queryReturnedResults || (hasAnyReviewsOnPage && !hasActiveFilters)) {
-      // ESTADO 1: Hay reseñas. Mostrar todo el bloque y la lista.
+    const hasActiveFilters = this.currentRatingFilter !== null || this.currentSort !== "newest";
+    const hasReviews = this.reviews.size > 0;
+
+    if (hasReviews) {
+      // ESTADO 2: HAY RESEÑAS PARA MOSTRAR.
       if (reviewsWrapper) reviewsWrapper.classList.remove("hidden");
       filtersAndHeader.forEach((el) => el.classList.remove("hidden"));
       if (scrollContainer) scrollContainer.classList.remove("hidden");
     } else {
+      // ESTADO 3: NO HAY RESEÑAS. Decidir si es por filtros o porque no existen.
       if (hasActiveFilters) {
-        // ESTADO 2: No hay resultados para los filtros aplicados.
-        // Mostrar el bloque de reseñas, los filtros y el mensaje de "no resultados".
-        // **Asegurarse de que el contenedor de la lista esté oculto.**
+        // ESTADO 3.1: No hay resultados para los filtros aplicados.
         if (reviewsWrapper) reviewsWrapper.classList.remove("hidden");
         filtersAndHeader.forEach((el) => el.classList.remove("hidden"));
         if (noResultsMessage) noResultsMessage.classList.remove("hidden");
-        if (scrollContainer) scrollContainer.classList.add("hidden"); // Corrección clave: Ocultar el contenedor de la lista.
       } else {
-        // ESTADO 3: No hay reseñas en absoluto (y sin filtros). Mostrar el estado vacío. // Corregido: "newest"
-        // MEJORA: Mostrar el estado vacío siempre que no haya reseñas, independientemente de si el usuario está autenticado.
-        // El botón para escribir la reseña ya está condicionado en el HTML.
+        // ESTADO 3.2: No hay reseñas en absoluto (y sin filtros).
         if (reviewsWrapper) reviewsWrapper.classList.remove("hidden");
         filtersAndHeader.forEach((el) => el.classList.remove("hidden"));
         if (emptyState) emptyState.classList.remove("hidden");
-
+  
         const writeFirstReviewBtn = document.getElementById(
           "write-first-review-btn"
         );
-        if (writeFirstReviewBtn) writeFirstReviewBtn.classList.toggle("hidden", !this.user);
+        if (writeFirstReviewBtn) {
+          writeFirstReviewBtn.classList.toggle("hidden", !this.user);
+        }
       }
     }
   }

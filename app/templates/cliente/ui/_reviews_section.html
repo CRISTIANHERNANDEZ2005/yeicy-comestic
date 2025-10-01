@@ -438,6 +438,9 @@
         page = 1;
         hasMore = true;
         allReviews = []; // Corregido: Resetear la variable correcta
+        // MEJORA PROFESIONAL: Reiniciar el carrusel a la primera diapositiva.
+        // Esto asegura que al filtrar, el usuario siempre vea los resultados desde el inicio.
+        currentSlide = 0;
         loadReviews(currentFilter, false);
       });
     });

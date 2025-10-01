@@ -78,67 +78,82 @@
       </div>
     </div>
   </div>
-</div>
-{% if usuario_autenticado %}
+</div>{% if usuario_autenticado %}
 <!-- Sección mejorada: Recomendado para Ti -->
-<div class="bg-pink-50 py-16">
+<div class="bg-gradient-to-br from-pink-50 to-purple-50 py-16 shadow-inner">
   <div class="container mx-auto px-4">
     <div id="recomendaciones-container" class="category-section">
       <!-- Encabezado mejorado -->
-      <div class="text-center mb-10">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white shadow-md mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
+      <div class="text-center mb-12 relative">
+        <div class="absolute inset-0 flex items-center justify-center opacity-10">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-32 w-32 text-pink-500" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
           </svg>
         </div>
-        <h2 class="text-3xl font-bold text-gray-800">Recomendado para Ti</h2>
-        <p class="text-gray-600 mt-2">Una selección especial basada en tus gustos y productos favoritos.</p>
+        <div class="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r from-pink-500 to-purple-600 shadow-lg mb-5 transform transition-transform duration-500 hover:scale-110">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+          </svg>
+        </div>
+        <h2 class="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-pink-600 to-purple-700 mb-3">Recomendado para Ti</h2>
+        <p class="text-gray-700 max-w-2xl mx-auto text-lg">Una selección especial basada en tus gustos y productos favoritos, descubierta exclusivamente para ti.</p>
+        <div class="w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-600 mx-auto mt-4 rounded-full"></div>
       </div>
       
       <!-- Contenedor principal para el carrusel y sus controles -->
       <div>
-        <!-- MEJORA PROFESIONAL: Contenedor de carrusel para móvil, grid para desktop -->
-        <div class="relative group">
-          <!-- MEJORA PROFESIONAL: Se añade la clase 'carousel-container' para permitir el efecto de zoom sin recortes, igual que en el carrusel principal. -->
-          <div class="carousel-container relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center">
-            <div id="recomendaciones-track" class="flex transition-transform duration-500 ease-in-out">
+        <!-- Contenedor de carrusel para móvil, grid para desktop -->
+        <div class="relative">
+          <!-- Contenedor del carrusel con efectos mejorados -->
+          <div class="carousel-container relative overflow-hidden min-h-[400px] md:min-h-[500px] flex items-center rounded-2xl bg-white/30 backdrop-blur-sm shadow-lg p-2">
+            <div id="recomendaciones-track" class="flex transition-transform duration-700 ease-in-out">
               <!-- Las diapositivas se insertarán aquí -->
             </div>
-            <!-- MEJORA PROFESIONAL: El loader y el mensaje de 'no-recomendaciones' se mueven DENTRO del contenedor del carrusel. -->
-            <!-- Esto evita el salto de layout (layout shift) al cargar el contenido. -->
+            
+            <!-- Loader mejorado -->
             <div id="recomendaciones-loader" class="w-full">
-              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-6 px-4">
                 {% set skeleton_count = 4 %}
                 {% for i in range(skeleton_count) %}
-                <div class="product-skeleton bg-white rounded-xl shadow-lg overflow-hidden animate-pulse">
+                <div class="product-skeleton bg-white rounded-2xl shadow-lg overflow-hidden animate-pulse transform transition-all duration-500 hover:shadow-xl">
                   <div class="relative overflow-hidden aspect-square">
-                    <div class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"></div>
+                    <div class="w-full h-full bg-gradient-to-br from-pink-100 to-purple-200"></div>
                   </div>
-                  <div class="p-4 space-y-3">
-                    <div class="h-4 w-1/3 bg-gray-200 rounded"></div>
-                    <div class="h-5 w-3/4 bg-gray-200 rounded"></div>
-                    <div class="h-3 w-full bg-gray-200 rounded"></div>
-                    <div class="h-3 w-2/3 bg-gray-200 rounded"></div>
+                  <div class="p-5 space-y-4">
+                    <div class="h-5 w-1/3 bg-pink-200 rounded"></div>
+                    <div class="h-6 w-3/4 bg-pink-200 rounded"></div>
+                    <div class="h-4 w-full bg-pink-200 rounded"></div>
+                    <div class="h-4 w-2/3 bg-pink-200 rounded"></div>
                   </div>
                 </div>
                 {% endfor %}
               </div>
             </div>
+            
             <!-- Mensaje para cuando no hay recomendaciones -->
-            <div id="no-recomendaciones" class="hidden text-center py-10 w-full">
-                <p class="text-gray-600">Aún no tenemos recomendaciones para ti. ¡Sigue explorando y guardando tus productos favoritos!</p>
+            <div id="no-recomendaciones" class="hidden text-center py-12 w-full">
+              <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <p class="text-gray-700 text-lg max-w-md mx-auto">Aún no tenemos recomendaciones para ti. ¡Sigue explorando y guardando tus productos favoritos!</p>
             </div>
           </div>
-          <button id="recomendaciones-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-all duration-300 hover:scale-110 opacity-0 scale-90">
+          
+          <!-- Botones de navegación estáticos -->
+          <button id="recomendaciones-prev" class="absolute left-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-all duration-300 hover:scale-110">
             <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
           </button>
-          <button id="recomendaciones-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-all duration-300 hover:scale-110 opacity-0 scale-90">
+          <button id="recomendaciones-next" class="absolute right-2 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white p-3 rounded-full shadow-xl z-20 transition-all duration-300 hover:scale-110">
             <svg class="h-6 w-6 text-pink-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
           </button>
         </div>
-        <!-- MEJORA PROFESIONAL: Contenedor para los indicadores de paginación del carrusel. -->
-        <!-- El script SimpleCarousel buscará este ID para generar los puntos de navegación. -->
-        <div id="recomendaciones-indicators" class="flex justify-center mt-4 space-x-2"></div>
+        
+        <!-- Indicadores de paginación mejorados -->
+        <div id="recomendaciones-indicators" class="flex justify-center mt-6 space-x-2">
+          <!-- Los indicadores se generarán dinámicamente -->
+        </div>
       </div>
     </div>
   </div>

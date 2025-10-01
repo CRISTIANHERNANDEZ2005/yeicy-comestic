@@ -4,6 +4,7 @@
  *              Single-Page Application (SPA), proporcionando una experiencia de usuario
  *              rápida y fluida, similar a la de una aplicación de escritorio, al eliminar
  *              las recargas de página completas durante la navegación.
+ *              También gestiona la funcionalidad de colapsar/expandir el sidebar.
  *
  * @funcionalidadesClave
  * 1.  **Navegación Asíncrona:** Intercepta los clics en los enlaces de navegación designados
@@ -25,10 +26,13 @@
  *     - `content-will-load`: Se emite ANTES de cargar nuevo contenido, permitiendo que los scripts actuales limpien listeners y timers.
  *     - `content-loaded`: Se emite DESPUÉS de que el nuevo contenido y sus scripts se han cargado, sirviendo como señal para la inicialización.
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const mainContentContainer = document.getElementById('main-content-container');
     const sidebarLinks = document.querySelectorAll('.sidebar-link');
     const loadingOverlay = document.getElementById('loading-overlay');
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const body = document.body;
+    const SIDEBAR_COLLAPSED_KEY = 'adminSidebarCollapsed';
 
     //  Registrar los scripts ya cargados en la página inicial.
     // Esto evita que el SPA intente volver a cargarlos después de un hard refresh.
@@ -42,21 +46,21 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Almacén para scripts ya cargados por el SPA
     window.spaLoadedScripts = window.spaLoadedScripts || new Set();
-    
+
     function showLoadingOverlay() {
         loadingOverlay.classList.remove('hidden');
         setTimeout(() => {
             loadingOverlay.classList.add('opacity-100');
         }, 10);
     }
-    
+
     function hideLoadingOverlay() {
         loadingOverlay.classList.remove('opacity-100');
         setTimeout(() => {
             loadingOverlay.classList.add('hidden');
         }, 300);
     }
-    
+
     function loadContent(url, pushState = true) {
         //  Disparar un evento ANTES de cargar el nuevo contenido.
         // Esto permite que los módulos de página actuales (como lista_ventas.js)
@@ -71,14 +75,14 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         })
         .then(response => {
-            if (response.redirected) {
+            if (response.redirected && !response.url.includes('/administracion')) { // Avoid redirecting to login if already there
                 window.location.href = response.url;
                 return null;
             }
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
-            return response.text();
+            return response.text(); // Return the text content of the response
         })
         .then(html => {
             if (!html) return;
@@ -92,15 +96,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 window.location.reload();
                 return;
             }
-            
+
             const newContent = mainContent.innerHTML;
             mainContentContainer.innerHTML = newContent;
-            
+
             const newTitle = doc.querySelector('title')?.textContent;
             if (newTitle) {
                 document.title = newTitle;
             }
-            
+
             // Cargar y ejecutar scripts de la página cargada.
             // Se buscan scripts SOLO dentro del contenedor principal para no
             // volver a ejecutar scripts globales de base.html.
@@ -110,17 +114,17 @@ document.addEventListener('DOMContentLoaded', function() {
             // Limpiar scripts inline gestionados por el SPA anterior.
             // Esto evita que se acumulen en el body en cada navegación.
             document.querySelectorAll('script[data-spa-managed-inline]').forEach(s => s.remove());
-            
+
             const executeScripts = async () => {
                 for (const script of scripts) {
                     // Omitir scripts que no son de JS ejecutable (ej. application/json)
                     if (script.type && !['text/javascript', 'application/javascript', ''].includes(script.type)) {
                         continue;
                     }
-                    
+
                     if (script.src) {
                         const scriptURL = new URL(script.src, window.location.origin).href;
-                        
+
                         // Si el script ya fue cargado, llamar a su función de reinicialización si existe
                         if (window.spaLoadedScripts.has(scriptURL)) {
                             // El script ya está cargado. Su listener 'content-loaded' se encargará de la reinicialización.
@@ -156,14 +160,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             };
-            
+
             executeScripts()
                 .then(() => {
                     // Disparar evento personalizado DESPUÉS de que los scripts se hayan cargado
                     document.dispatchEvent(new CustomEvent('content-loaded', { 
                         detail: { container: mainContentContainer, url: url } 
                     }));
-
                     // Devolver una promesa que se resuelva cuando el contenido esté completamente listo
                     // Esto es útil si 'content-loaded' desencadena más operaciones asíncronas.
                     return new Promise(resolve => setTimeout(resolve, 0));
@@ -194,9 +197,9 @@ document.addEventListener('DOMContentLoaded', function() {
             hideLoadingOverlay();
         });
     }
-    
+
     window.loadAdminContent = loadContent;
-    
+
     function updateActiveLink(currentUrl) {
         let currentPathname = new URL(currentUrl, window.location.origin).pathname;
         if (currentPathname.length > 1 && currentPathname.endsWith('/')) {
@@ -208,23 +211,23 @@ document.addEventListener('DOMContentLoaded', function() {
             if (linkPathname.length > 1 && linkPathname.endsWith('/')) {
                 linkPathname = linkPathname.slice(0, -1);
             }
-            
+
             link.classList.remove('active', 'bg-blue-800', 'text-white');
             link.classList.add('text-blue-200', 'hover:bg-blue-800', 'hover:text-white');
-            
+
             if (linkPathname === currentPathname && link.getAttribute('href') !== '#') {
                 link.classList.add('active', 'bg-blue-800', 'text-white');
                 link.classList.remove('text-blue-200', 'hover:bg-blue-800', 'hover:text-white');
             }
         });
     }
-    
+
     window.addEventListener('popstate', function(event) {
         if (event.state && event.state.path) {
             loadContent(event.state.path, false);
         }
     });
-    
+
     sidebarLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
@@ -234,7 +237,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     });
-    
+
     document.addEventListener('click', function(e) {
         const targetLink = e.target.closest('.spa-back-link');
         if (targetLink) {
@@ -245,7 +248,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     document.addEventListener('click', function(e) {
         const targetLink = e.target.closest('.spa-link');
         if (targetLink) {
@@ -256,9 +259,21 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
     });
-    
+
     //  Ejecutar el registro de scripts iniciales.
     registerInitialScripts();
 
     updateActiveLink(window.location.pathname + window.location.search);
+
+    // --- Sidebar Toggle Functionality ---
+    function toggleSidebar() {
+        // MEJORA: Alternar la clase en `document.documentElement` para ser consistente con el script de base.html
+        const isCollapsed = document.documentElement.classList.toggle('sidebar-collapsed');
+        localStorage.setItem(SIDEBAR_COLLAPSED_KEY, isCollapsed);
+    }
+
+    // Add event listener for the toggle button
+    if (sidebarToggle) {
+        sidebarToggle.addEventListener('click', toggleSidebar);
+    }
 });

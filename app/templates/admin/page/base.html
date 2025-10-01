@@ -14,6 +14,24 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/admin/styles.css') }}"
     />
+
+    <!-- Este script se ejecuta antes de que la página se renderice para aplicar el estado colapsado si es necesario. -->
+    <script>
+      (function() {
+          const isCollapsed = localStorage.getItem('adminSidebarCollapsed') === 'true';
+          try {
+              if (isCollapsed) {
+                  // Aplicamos la clase al elemento <html> porque <body> puede no existir aún.
+                  document.documentElement.classList.add('sidebar-collapsed');
+              } else {
+                  // MEJORA: Asegurarnos de que la clase no esté presente si el sidebar debe estar abierto.
+                  document.documentElement.classList.remove('sidebar-collapsed');
+              }
+          } catch (e) {
+              console.error('Error al aplicar el estado del sidebar desde localStorage:', e);
+          }
+      })();
+  </script>
   </head>
   <body class="bg-gray-50 font-sans">
     <!-- Header para móvil -->

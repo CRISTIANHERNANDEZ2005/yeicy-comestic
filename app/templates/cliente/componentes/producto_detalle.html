@@ -622,22 +622,63 @@
       </div>
     </div>
 
-    <!-- Productos Relacionados con Carrusel -->
-    {% if productos_relacionados %}
-    <section class="mb-12">
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-3xl font-bold text-gray-900">Productos relacionados</h2>
-        <a
-          href="{{ url_for('products.productos_por_seudocategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug, slug_seudocategoria=pseudocategory_slug) }}"
-          class="text-pink-600 hover:text-pink-700 font-semibold flex items-center transition-colors"
-        >
-          Ver todos
-          <svg class="w-5 h-5 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path></svg>
-        </a>
-      </div>
-      {% include 'cliente/ui/carrusel_productos.html' %}
-    </section>
-    {% endif %}
+    <!-- Productos Relacionados con Carrusel Mejorado -->
+{% if productos_relacionados %}
+<section class="mb-16 py-12 bg-gradient-to-br from-gray-50 to-pink-50/30 rounded-2xl shadow-sm relative overflow-hidden">
+    <!-- Elementos decorativos de fondo -->
+    <div class="absolute top-0 right-0 w-64 h-64 bg-pink-100 rounded-full filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"></div>
+    <div class="absolute bottom-0 left-0 w-80 h-80 bg-purple-100 rounded-full filter blur-3xl opacity-20 translate-y-1/2 -translate-x-1/2"></div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+        <!-- Encabezado mejorado -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
+            <div class="mb-6 md:mb-0">
+                <div class="flex items-center mb-4">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-r from-pink-500 to-rose-500 flex items-center justify-center mr-4 shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl md:text-4xl font-bold text-gray-900">Productos relacionados</h2>
+                </div>
+                <p class="text-gray-600 ml-16 max-w-2xl">Descubre más artículos que complementan tu selección actual</p>
+                <div class="w-20 h-1 bg-gradient-to-r from-pink-500 to-rose-500 rounded-full mt-4 ml-16"></div>
+            </div>
+            
+            <a
+                href="{{ url_for('products.productos_por_seudocategoria', slug_categoria_principal=main_category_slug, slug_subcategoria=subcategory_slug, slug_seudocategoria=pseudocategory_slug) }}"
+                class="inline-flex items-center px-6 py-3 bg-white border border-pink-200 text-pink-600 hover:bg-pink-50 font-medium rounded-full transition-all duration-300 shadow-sm hover:shadow-md transform hover:-translate-y-1"
+            >
+                Ver todos
+                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                </svg>
+            </a>
+        </div>
+
+        <!-- Contenedor del carrusel con diseño mejorado -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+            <div class="relative">
+                {% include 'cliente/ui/carrusel_productos.html' %}
+                
+                <!-- Decoración adicional para el carrusel -->
+                <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500/20 via-rose-500/20 to-pink-500/20 rounded-t-2xl"></div>
+                <div class="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-pink-500/20 via-rose-500/20 to-pink-500/20 rounded-b-2xl"></div>
+            </div>
+        </div>
+        
+        <!-- Indicador de productos -->
+        <div class="flex items-center justify-center mt-6">
+            <div class="flex items-center text-sm text-gray-600 bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-pink-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>Desliza para ver más productos</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
 
     <!-- Sección de Reseñas Rediseñada -->
     <section class="mb-12" id="reviews-section-wrapper" data-product-id="{{ producto.id }}">

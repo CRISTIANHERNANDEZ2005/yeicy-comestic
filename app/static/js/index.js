@@ -94,13 +94,13 @@ class SimpleCarousel {
     // Mostrar indicadores solo en móvil
     // MEJORA PROFESIONAL: Mostrar indicadores en todas las resoluciones si hay más de una diapositiva.
     // Esto proporciona una navegación consistente tanto en móvil como en escritorio.
-    // MEJORA PROFESIONAL: Animar la aparición de los botones.
-    this.indicatorsContainer.style.display = 'flex';
+    //  Animar la aparición de los botones.
     this.prevBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
-    this.nextBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
     // Forzar reflow para que la transición se aplique
     void this.prevBtn.offsetWidth;
     void this.nextBtn.offsetWidth;
+    this.nextBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+    this.indicatorsContainer.style.display = 'flex';
 
     this.slides.forEach((_, index) => {
       const indicator = document.createElement('button');

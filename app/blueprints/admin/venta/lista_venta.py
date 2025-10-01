@@ -369,15 +369,32 @@ def create_venta(admin_user):
                 'precio_unitario': producto.precio
             })
 
-        # Añadir historial de seguimiento para notificar al cliente.
-        # Al crear una venta directa, se genera una notificación de "Entregado".
-        nota_seguimiento = "Tu pedido esta completado con exito."
-        historial_inicial = [{
-            'estado': EstadoSeguimiento.ENTREGADO.value,
-            'notas': nota_seguimiento,
-            'timestamp': datetime.utcnow().isoformat() + "Z",
-            'notified_to_client': False  # Clave para que se muestre la notificación al cliente.
-        }]
+        # MEJORA PROFESIONAL: Al crear una venta directa, generar un historial de seguimiento completo.
+        # Esto le da al cliente una visión profesional de todo el proceso, aunque se haya completado en un solo paso.
+        nota_final = "Tu pedido ha sido completado y entregado con éxito."
+        timestamp_actual = datetime.utcnow().isoformat() + "Z"
+
+        # Secuencia completa de seguimiento con notas profesionales.
+        secuencia_completa = [
+            (EstadoSeguimiento.RECIBIDO, "Tu pedido fue recibido y está siendo procesado."),
+            (EstadoSeguimiento.EN_PREPARACION, "Tu pedido está en preparación."),
+            (EstadoSeguimiento.EN_CAMINO, "Tu pedido ya se encuentra en camino."),
+            (EstadoSeguimiento.ENTREGADO, nota_final)
+        ]
+
+        # Crear el historial completo.
+        # MEJORA PROFESIONAL: Marcar solo el estado 'ENTREGADO' para notificación.
+        # Los estados anteriores se añaden al historial para que el cliente vea un
+        # timeline completo, pero se marcan como ya notificados para no enviarle
+        # alertas innecesarias de 'recibido', 'en preparación', etc., en una venta directa.
+        historial_inicial = [
+            {
+                'estado': estado_secuencia.value,
+                'notas': nota_secuencia,
+                'timestamp': timestamp_actual,
+                'notified_to_client': True if estado_secuencia != EstadoSeguimiento.ENTREGADO else False
+            } for estado_secuencia, nota_secuencia in secuencia_completa
+        ]
 
         nueva_venta = Pedido(
             usuario_id=usuario_id,
@@ -385,7 +402,7 @@ def create_venta(admin_user):
             estado_pedido=EstadoPedido.COMPLETADO, # La diferencia clave: se crea como COMPLETADO
             estado=EstadoEnum.ACTIVO.value,
             seguimiento_estado=EstadoSeguimiento.ENTREGADO,
-            notas_seguimiento=nota_seguimiento,
+            notas_seguimiento=nota_final,
             seguimiento_historial=historial_inicial
         )
         db.session.add(nueva_venta)

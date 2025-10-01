@@ -62,9 +62,11 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function loadContent(url, pushState = true) {
-        //  Disparar un evento ANTES de cargar el nuevo contenido.
-        // Esto permite que los módulos de página actuales (como lista_ventas.js)
-        // limpien sus propios event listeners y timers, evitando "fugas de memoria" y conflictos.
+        // --- MEJORA PROFESIONAL: CICLO DE VIDA DE LA SPA ---
+        // 1. Evento 'content-will-load': Se dispara ANTES de cargar el nuevo contenido.
+        //    Es la señal para que los módulos de la página actual (ej. lista_ventas.js)
+        //    se "destruyan": limpien sus event listeners y detengan temporizadores (setInterval).
+        //    Esto evita que el JS de una página interfiera con otra, solucionando el error reportado.
         document.dispatchEvent(new CustomEvent('content-will-load'));
         console.log(`Event 'content-will-load' dispatched for URL: ${url}`);
 
@@ -163,7 +165,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
             executeScripts()
                 .then(() => {
-                    // Disparar evento personalizado DESPUÉS de que los scripts se hayan cargado
+                    // 2. Evento 'content-loaded': Se dispara DESPUÉS de que el nuevo contenido
+                    //    y sus scripts se han cargado. Es la señal para que el módulo de la
+                    //    nueva página se inicialice.
                     document.dispatchEvent(new CustomEvent('content-loaded', { 
                         detail: { container: mainContentContainer, url: url } 
                     }));

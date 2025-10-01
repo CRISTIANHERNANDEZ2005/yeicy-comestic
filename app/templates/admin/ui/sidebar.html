@@ -138,12 +138,14 @@
     }
 
     /* MEJORA: Ajuste del contenido principal con transición fluida */
-    .main-content-area {
-        margin-left: 16rem; /* Default w-64 */
-        transition: margin-left 0.3s ease-in-out;
-    }
-    html.sidebar-collapsed .main-content-area {
-        margin-left: 5rem; /* Match collapsed sidebar width */
+    @media (min-width: 1024px) { /* lg breakpoint */
+        .main-content-area {
+            margin-left: 16rem; /* Default w-64 */
+            transition: margin-left 0.3s ease-in-out;
+        }
+        html.sidebar-collapsed .main-content-area {
+            margin-left: 5rem; /* Match collapsed sidebar width */
+        }
     }
 
     /* MEJORA: Animación del icono de hamburguesa a flecha */

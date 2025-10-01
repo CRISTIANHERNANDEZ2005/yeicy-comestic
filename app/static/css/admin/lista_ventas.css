@@ -17,7 +17,6 @@ body.no-scroll {
 .animate-pulse-slow {
     animation: pulse-slow 3s infinite;
 }
-
 /* Estilos para los selects personalizados */
 .custom-select-container {
     position: relative;

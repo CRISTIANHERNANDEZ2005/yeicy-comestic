@@ -744,34 +744,80 @@ def update_pedido_estado(admin_user, pedido_id):
             # Sincronizar estado de seguimiento automáticamente
             # Asignar la nota correcta según el estado final.
             nota_por_defecto = ""
+            
+            # MEJORA PROFESIONAL: Al completar un pedido, rellenar el historial de seguimiento.
+            # Esto asegura que el cliente vea un historial completo y profesional, incluso si los
+            # pasos intermedios se omitieron en el panel de administración.
             if nuevo_estado == EstadoPedido.COMPLETADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.ENTREGADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.ENTREGADO.value
                 nota_por_defecto = "Tu pedido ha sido completado y entregado."
+
+                # --- Lógica de relleno de historial ---
+                if pedido.seguimiento_historial is None:
+                    pedido.seguimiento_historial = []
+
+                # Obtener los estados ya registrados en el historial.
+                estados_existentes = {entry['estado'] for entry in pedido.seguimiento_historial}
+
+                # Definir la secuencia completa de seguimiento y las notas por defecto.
+                secuencia_completa = [
+                    (EstadoSeguimiento.RECIBIDO, "Tu pedido fue recibido y está siendo procesado."),
+                    (EstadoSeguimiento.EN_PREPARACION, "Tu pedido está en preparación."),
+                    (EstadoSeguimiento.EN_CAMINO, "Tu pedido ya se encuentra en camino."),
+                    (EstadoSeguimiento.ENTREGADO, nota_por_defecto) # Usar la nota final para el último estado.
+                ]
+
+                # Añadir solo los estados que faltan en el historial.
+                for estado_secuencia, nota_secuencia in secuencia_completa:
+                    if estado_secuencia.value not in estados_existentes:
+                        new_history_entry = {
+                            'estado': estado_secuencia.value,
+                            'notas': nota_secuencia,
+                            'timestamp': datetime.utcnow().isoformat() + "Z",
+                            'notified_to_client': False
+                        }
+                        pedido.seguimiento_historial.append(new_history_entry)
+                
+                # Marcar el historial como modificado para que SQLAlchemy detecte el cambio.
+                flag_modified(pedido, "seguimiento_historial")
+                pedido.notas_seguimiento = nota_por_defecto
+
             elif nuevo_estado == EstadoPedido.CANCELADO:
                 pedido.seguimiento_estado = EstadoSeguimiento.CANCELADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.CANCELADO.value
                 nota_por_defecto = "Tu pedido ha sido cancelado."
+                
+                # Si se cancela, añadir solo la entrada de cancelación.
+                if pedido.seguimiento_historial is None:
+                    pedido.seguimiento_historial = []
+                new_history_entry = {
+                    'estado': nuevo_seguimiento,
+                    'notas': nota_por_defecto,
+                    'timestamp': datetime.utcnow().isoformat() + "Z",
+                    'notified_to_client': False
+                }
+                pedido.seguimiento_historial.append(new_history_entry)
+                flag_modified(pedido, "seguimiento_historial")
+                pedido.notas_seguimiento = nota_por_defecto
+
             elif nuevo_estado == EstadoPedido.EN_PROCESO:
                 pedido.seguimiento_estado = EstadoSeguimiento.RECIBIDO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
                 nota_por_defecto = "Tu pedido fue recibido y está siendo procesado."
-
-            # Si el estado de seguimiento cambió, añadir una entrada al historial.
-            if seguimiento_cambiado and nota_por_defecto:
+                
+                # Si se mueve a "en proceso", añadir solo la entrada de recibido.
                 if pedido.seguimiento_historial is None:
                     pedido.seguimiento_historial = []
-                
                 new_history_entry = {
                     'estado': nuevo_seguimiento,
                     'notas': nota_por_defecto,
                     'timestamp': datetime.utcnow().isoformat() + "Z",
-                    'notified_to_client': False # Flag para notificaciones en la carga de página del cliente.
+                    'notified_to_client': False
                 }
-                # Modificar la lista in-place y marcarla como modificada.
                 pedido.seguimiento_historial.append(new_history_entry)
                 flag_modified(pedido, "seguimiento_historial")
                 pedido.notas_seguimiento = nota_por_defecto

@@ -2536,6 +2536,9 @@ function initializePedidosApp() {
     pedidosApp.init(paginationData);
   }
 
+  // El objeto crearPedidoApp ahora se inicializa desde su propio script,
+  // por lo que no es necesario inicializarlo aquí. Solo nos aseguramos
+  // de que el botón de "Agregar Pedido" funcione correctamente.
   if (typeof crearPedidoApp !== "undefined") {
     crearPedidoApp.init();
 
@@ -2547,21 +2550,25 @@ function initializePedidosApp() {
   }
 }
 
-// MEJORA PROFESIONAL: Patrón de inicialización robusto para SPA.
-// Este bloque asegura que la inicialización se ejecute correctamente en cualquier escenario.
-
 const runPedidosInitialization = () => {
-  // La función `initializePedidosApp` ya tiene una guardia de contexto,
-  // por lo que es seguro llamarla.
+  // La función `initializePedidosApp` ya tiene una guardia de contexto, por lo que es seguro llamarla.
   initializePedidosApp();
 };
 
-// 1. Para navegación SPA: Escuchar el evento personalizado de admin_spa.js
+const destroyPedidosModule = () => {
+    // Aunque pedidosApp no tiene timers, es una buena práctica tener una función de limpieza.
+    // Si en el futuro se añaden, se colocarían aquí.
+    if (window.pedidosApp && window.pedidosApp.initialized) {
+        console.log("Destroying PedidosApp module (placeholder).");
+        window.pedidosApp.initialized = false; // Marcar como no inicializado.
+    }
+};
+
+// --- MEJORA PROFESIONAL: GESTIÓN DEL CICLO DE VIDA SPA ---
+document.addEventListener("content-will-load", destroyPedidosModule);
 document.addEventListener("content-loaded", runPedidosInitialization);
 
-// 2. Para carga de página directa:
-// Si el DOM ya está cargado cuando el script se ejecuta (común en SPA), inicializar de inmediato.
-// Si no, esperar al evento DOMContentLoaded.
+// Para la carga inicial de la página (no SPA).
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', runPedidosInitialization);
 } else {

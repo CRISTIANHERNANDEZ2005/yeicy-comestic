@@ -21,8 +21,22 @@ main {
   z-index: 1000; /* Asegura que esté por encima de otros elementos */
 }
 
-/* Estilo para modales que deben estar por encima de todo */
-.z-modal-top {
+/*
+  MEJORA PROFESIONAL: Clases de z-index centralizadas.
+  Define una jerarquía clara para los elementos superpuestos en la aplicación.
+  - z-drawer-backdrop: Para el fondo oscuro de los paneles laterales (filtros).
+  - z-drawer: Para paneles laterales como los filtros.
+  - z-modal: Para modales de contenido.
+  - z-modal-top: Para modales que deben aparecer sobre otros modales (ej. confirmaciones).
+  - z-notification: Para notificaciones toast.
+*/
+.z-drawer-backdrop {
+  z-index: 1040;
+}
+.z-drawer {
+  z-index: 1045;
+}
+.z-modal {
   z-index: 1050;
 }
 
@@ -77,4 +91,11 @@ main {
 .sidebar-link:hover::before,
 .sidebar-link.active::before {
   transform: translateX(0);
+}
+.z-modal-top {
+  z-index: 1060;
+}
+
+.z-notification {
+  z-index: 9999;
 }

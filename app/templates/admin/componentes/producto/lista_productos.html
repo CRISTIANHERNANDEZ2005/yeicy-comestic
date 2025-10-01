@@ -192,7 +192,7 @@
             {% if pagination.pages > 1 %}
                 <div class="flex flex-wrap justify-center gap-2">
                     <!-- Botón anterior -->
-                    <a href="#" onclick="goToPage({{ pagination.prev_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center" title="Ir a la página anterior">
+                    <a href="#" data-page="{{ pagination.prev_num }}" class="pagination-link px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_prev %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center" title="Ir a la página anterior">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
@@ -207,7 +207,7 @@
                                     {{ page_num }}
                                 </span>
                             {% else %}
-                                <a href="#" onclick="goToPage({{ page_num }})" class="px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200" title="Ir a la página {{ page_num }}">
+                                <a href="#" data-page="{{ page_num }}" class="pagination-link px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors duration-200" title="Ir a la página {{ page_num }}">
                                     {{ page_num }}
                                 </a>
                             {% endif %}
@@ -217,7 +217,7 @@
                     {% endfor %}
 
                     <!-- Botón siguiente -->
-                    <a href="#" onclick="goToPage({{ pagination.next_num }})" class="px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center" title="Ir a la página siguiente">
+                    <a href="#" data-page="{{ pagination.next_num }}" class="pagination-link px-4 py-2 rounded-lg border border-gray-300 text-sm font-medium {% if not pagination.has_next %}text-gray-400 cursor-not-allowed{% else %}text-gray-700 hover:bg-gray-50 transition-colors duration-200{% endif %} inline-flex items-center" title="Ir a la página siguiente">
                         Siguiente
                         <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
@@ -260,30 +260,6 @@
     </style>
     
     <script>
-        // Función para ir a una página específica
-        function goToPage(page) {
-            // Actualizar el campo de página en el formulario
-            let pageInput = document.querySelector('input[name="page"]');
-            if (!pageInput) {
-                pageInput = document.createElement('input');
-                pageInput.type = 'hidden';
-                pageInput.name = 'page';
-                document.getElementById('filterForm').appendChild(pageInput);
-            }
-            pageInput.value = page;
-            
-            // Aplicar filtros
-            applyFilters();
-        }
-        
-        // Función para resetear los filtros
-        function resetFilters() {
-            // Llamar a la función del archivo de filtros
-            if (typeof window.resetFilters === 'function') {
-                window.resetFilters();
-            }
-        }
-        
         // Actualizar el formulario cuando cambie el número de elementos por página
         document.getElementById('perPageSelect').addEventListener('change', function () {
             // Actualizar el campo per_page en el formulario

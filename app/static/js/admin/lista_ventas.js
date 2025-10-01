@@ -1,10 +1,10 @@
 // MEJORA PROFESIONAL: Patrón de Módulo para la página de Ventas.
 // Esto encapsula toda la lógica, evita colisiones de nombres en el ámbito global
 // y permite una reinicialización segura en un entorno SPA.
-
 const VentasPageModule = (() => {
   // Estado del módulo
   let ventasChart = null;
+  // MEJORA: `isInitialized` previene la doble inicialización.
   let isInitialized = false;
   let currentFilterParams = new URLSearchParams(window.location.search);
   let eventListenersAttached = false;
@@ -18,27 +18,19 @@ const VentasPageModule = (() => {
    */
   function init() {
     // Guardia de contexto: si no estamos en la página de ventas, no hacer nada.
-    // Y si ya está inicializado, tampoco.
     if (!document.getElementById("ventas-chart")) {
       console.log("Not on the Ventas page. Skipping initialization.");
       return;
     }
+    // Si ya está inicializado, no hacer nada para evitar duplicar listeners.
     if (isInitialized) {
-        console.log("Ventas page already initialized. Skipping.");
+        console.warn("Ventas page already initialized. Skipping.");
         return;
     }
     console.log("Initializing Ventas Page...");
 
     setupEventListeners();
     loadInitialData();
-
-    // Inicializar el módulo para crear pedidos/ventas si existe
-    if (typeof crearPedidoApp !== 'undefined') {
-      crearPedidoApp.init();
-      // Sobrescribir la URL de envío para que apunte a la creación de ventas
-      crearPedidoApp.submitUrl = '/admin/api/ventas';
-      crearPedidoApp.isVentaMode = true; // Flag para indicar que estamos creando una venta
-    }
 
     isInitialized = true;
   }
@@ -57,11 +49,13 @@ const VentasPageModule = (() => {
    * Esencial para el correcto funcionamiento de la SPA.
    */
   function destroy() {
+    // Si no está inicializado, no hay nada que limpiar.
     if (!isInitialized) {
       return;
     }
     console.log("Destroying Ventas Page module...");
     removeEventListeners();
+    // Destruir la instancia del gráfico para liberar memoria.
     if (ventasChart) {
       ventasChart.destroy();
       ventasChart = null;
@@ -1186,15 +1180,12 @@ const VentasPageModule = (() => {
       applyFilters();
     }
 
-    // Botón de refrescar
+    // Botón para agregar una nueva venta
     if (e.target.closest("#addVentaBtn")) {
-      if (typeof crearPedidoApp !== 'undefined') {
-        // MEJORA PROFESIONAL: Configurar el modal para el modo "Venta"
-        crearPedidoApp.submitUrl = '/admin/api/ventas';
-        crearPedidoApp.isVentaMode = true;
-        crearPedidoApp.openModal();
-        // Cambiar el título del modal para que sea específico para ventas.
-        document.getElementById('pedidoModalTitle').textContent = 'Crear Nueva Venta';
+      if (typeof crearVentaApp !== 'undefined') {
+        // MEJORA PROFESIONAL: Abrir el modal de ventas dedicado.
+        // La configuración (URL, título) ya está en el propio script `crear_venta.js`.
+        crearVentaApp.openModal();
       }
     }
 
@@ -1318,22 +1309,23 @@ const VentasPageModule = (() => {
 // MEJORA PROFESIONAL: Exponer el módulo en el objeto window para que otros scripts puedan interactuar con él.
 // Esto es crucial para que el modal de creación de ventas pueda llamar a `reloadData`.
 window.VentasPageModule = VentasPageModule;
-
 const runVentasInitialization = () => {
   window.VentasPageModule.init();
 };
 const destroyVentasModule = () => {
     window.VentasPageModule.destroy();
 };
-
-// 1. Para carga de página directa (hard refresh)
-document.addEventListener("DOMContentLoaded", () => {
-    // Antes de inicializar, nos aseguramos de que cualquier módulo anterior sea destruido.
-    // Esto es una salvaguarda para recargas en caliente (hot-reloads) en desarrollo.
-    destroyVentasModule();
-    runVentasInitialization();
-});
-
-// 2. Para navegación SPA: Escuchar eventos de admin_spa.js
+// --- MEJORA PROFESIONAL: GESTIÓN DEL CICLO DE VIDA SPA ---
+// 1. Escuchar el evento `content-will-load` para limpiar el módulo antes de navegar a otra página.
+//    Esto detiene los timers y elimina listeners, evitando el error reportado.
 document.addEventListener("content-will-load", destroyVentasModule);
+// 2. Escuchar el evento `content-loaded` para inicializar el módulo cuando se carga esta página.
 document.addEventListener("content-loaded", runVentasInitialization);
+// 3. Para la carga inicial de la página (no SPA), también usamos `content-loaded`
+//    que es disparado por el SPA al final de su propia inicialización.
+//    Esto unifica el punto de entrada y evita la necesidad de `DOMContentLoaded`.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', runVentasInitialization);
+} else {
+    runVentasInitialization();
+}

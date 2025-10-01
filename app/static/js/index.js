@@ -86,17 +86,21 @@ class SimpleCarousel {
     // Ocultar controles e indicadores si solo hay una diapositiva o menos
     if (this.slides.length <= 1) {
       this.indicatorsContainer.style.display = 'none';
-      this.prevBtn.style.display = 'none';
-      this.nextBtn.style.display = 'none';
+      this.prevBtn.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+      this.nextBtn.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
       return;
     }
     
     // Mostrar indicadores solo en móvil
     // MEJORA PROFESIONAL: Mostrar indicadores en todas las resoluciones si hay más de una diapositiva.
     // Esto proporciona una navegación consistente tanto en móvil como en escritorio.
+    // MEJORA PROFESIONAL: Animar la aparición de los botones.
     this.indicatorsContainer.style.display = 'flex';
-    this.prevBtn.style.display = 'block'; // Mostrar botones en todas las resoluciones
-    this.nextBtn.style.display = 'block';
+    this.prevBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+    this.nextBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+    // Forzar reflow para que la transición se aplique
+    void this.prevBtn.offsetWidth;
+    void this.nextBtn.offsetWidth;
 
     this.slides.forEach((_, index) => {
       const indicator = document.createElement('button');

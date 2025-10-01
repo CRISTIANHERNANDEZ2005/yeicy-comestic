@@ -18,9 +18,15 @@ class SimpleCarousel {
     this.slides = [];
     this.currentIndex = 0;
 
-    this.prevBtn.addEventListener('click', () => this.navigate('prev'));
-    this.nextBtn.addEventListener('click', () => this.navigate('next'));
-    window.addEventListener('resize', () => this.updateSlides());
+    // MEJORA PROFESIONAL: Código defensivo.
+    // Solo añadir listeners si los elementos existen para evitar errores.
+    if (this.track && this.prevBtn && this.nextBtn) {
+      this.prevBtn.addEventListener('click', () => this.navigate('prev'));
+      this.nextBtn.addEventListener('click', () => this.navigate('next'));
+      window.addEventListener('resize', () => this.updateSlides());
+    } else {
+      console.warn(`Carousel elements not found for trackId: ${options.trackId}. Carousel will not be initialized.`);
+    }
   }
 
   /**
@@ -115,20 +121,24 @@ class SimpleCarousel {
 class HomePageManager {
   constructor() {
     this.likeAuthModalTimeout = null;
+    // MEJORA: Inicializar la propiedad del carrusel como null.
+    // Se creará solo si el usuario está autenticado.
+    this.recomendacionesCarousel = null;
     this.init();
-    this.recomendacionesCarousel = new SimpleCarousel({
-      trackId: 'recomendaciones-track',
-      prevBtnId: 'recomendaciones-prev',
-      nextBtnId: 'recomendaciones-next',
-      indicatorsId: 'recomendaciones-indicators',
-    });
   }
 
   init() {
     this.bindEvents();
     this.updateLikeBtnStyles();
     // Inicia la carga de recomendaciones si el usuario está autenticado.
+    // MEJORA: La inicialización del carrusel se mueve aquí, dentro de la condición.
     if (window.USUARIO_AUTENTICADO) {
+      this.recomendacionesCarousel = new SimpleCarousel({
+        trackId: 'recomendaciones-track',
+        prevBtnId: 'recomendaciones-prev',
+        nextBtnId: 'recomendaciones-next',
+        indicatorsId: 'recomendaciones-indicators',
+      });
       this.initRecomendaciones();
     }
   }
@@ -216,7 +226,7 @@ class HomePageManager {
     const loader = document.getElementById("recomendaciones-loader");
     const noRecomendaciones = document.getElementById("no-recomendaciones");
 
-    if (!container || !loader || !noRecomendaciones) return;
+    if (!container || !loader || !noRecomendaciones || !this.recomendacionesCarousel) return;
 
     try {
       // Simulación de llamada a la API. Reemplazar con el endpoint real.

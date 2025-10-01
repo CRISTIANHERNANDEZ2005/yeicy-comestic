@@ -280,11 +280,11 @@ if (typeof ToastNotification === 'undefined') {
 
     // Enhanced global function with animation options
     window.toast = {
-        success: (msg, duration, animation) => toast.success(msg, duration, { animationType: animation }),
-        error: (msg, duration, animation) => toast.error(msg, duration, { animationType: animation }),
-        warning: (msg, duration, animation) => toast.warning(msg, duration, { animationType: animation }),
-        info: (msg, duration, animation) => toast.info(msg, duration, { animationType: animation }),
-        // Advanced show method
+        success: (msg, duration, options) => toast.success(msg, duration, options),
+        error: (msg, duration, options) => toast.error(msg, duration, options),
+        warning: (msg, duration, options) => toast.warning(msg, duration, options),
+        info: (msg, duration, options) => toast.info(msg, duration, options),
+        // MEJORA: El método `show` ya está disponible en la instancia `toast`, por lo que no es necesario re-exponerlo aquí.
         show: (msg, type, duration, options) => toast.show(msg, type, duration, options)
     };
 

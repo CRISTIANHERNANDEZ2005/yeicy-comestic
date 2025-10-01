@@ -594,9 +594,15 @@ def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocate
     reseñas_count = len(reseñas)
 
     es_favorito = False
-    if 'user' in session:
+    current_user_id = None
+    if hasattr(current_user, 'id'):
+        current_user_id = current_user.id
+    elif 'user' in session and 'id' in session['user']:
+        current_user_id = session['user']['id']
+
+    if current_user_id:
         like = Likes.query.filter_by(
-            usuario_id=session['user'].get('id'),
+            usuario_id=current_user_id,
             producto_id=producto.id,
             estado=EstadoEnum.ACTIVO
         ).first()

@@ -174,6 +174,9 @@ function initializeSmartNavbar() {
     () => {
       const currentScrollY = window.scrollY;
 
+      // MEJORA PROFESIONAL: Si el navbar está "bloqueado", ignorar el evento de scroll.
+      if (navbarContainer.classList.contains("navbar-locked")) return;
+
       // No hacer nada si el cambio en el scroll es menor que el delta
       if (Math.abs(lastScrollY - currentScrollY) <= scrollDelta) return;
 

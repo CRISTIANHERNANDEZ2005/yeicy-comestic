@@ -648,6 +648,11 @@
 
 <!-- Script para funcionalidad -->
 <script>
+  // MEJORA PROFESIONAL: Definir una variable global para el estado de autenticación.
+  // Esto permite que otros scripts (como product_card.js o favorites.js) sepan de forma
+  // síncrona si el usuario está logueado sin necesidad de llamadas asíncronas.
+  window.USUARIO_AUTENTICADO = {{ 'true' if current_user.is_authenticated else 'false' }};
+
   window.PRODUCTS_DATA = {{ productos_relacionados | tojson }};
 
   // Función global para actualizar la calificación del producto en la sección de detalles
@@ -668,8 +673,11 @@
   }
 
   document.addEventListener("DOMContentLoaded", function() {
+      // MEJORA: Pasar los datos de productos relacionados directamente a la función.
+      // Esto hace que el carrusel sea independiente de variables globales y más reutilizable.
       if (typeof initializeProductCarousel === 'function') {
-          initializeProductCarousel();
+          // El ID del contenedor es 'product-carousel-container' según carrusel_productos.html
+          initializeProductCarousel('product-carousel-container', window.PRODUCTS_DATA);
       }
 
       // Formatear el precio del producto
@@ -840,6 +848,14 @@
           section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
           observer.observe(section);
       });
+  });
+
+  // MEJORA: Escuchar el evento de login exitoso para actualizar la UI sin recargar.
+  document.addEventListener('auth:success', function(e) {
+      // Si el gestor de reseñas existe, lo reiniciamos para que verifique la elegibilidad.
+      if (window.reviewsManager && typeof window.reviewsManager.init === 'function') {
+          window.reviewsManager.init();
+      }
   });
 </script>
 {% endblock %}

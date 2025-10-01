@@ -29,10 +29,11 @@ window.fetch = async function (resource, options = {}) {
   const headers = new Headers(options.headers || {});
 
   // Si es una petición a nuestra API y no es una petición de autenticación
+  // MEJORA: Permitir que /auth/me reciba el token para la validación de sesión.
   if (
     typeof resource === "string" &&
-    resource.startsWith("/api/") &&
-    !resource.includes("/auth/")
+    (resource.startsWith("/api/") || resource.startsWith("/auth/me")) &&
+    !resource.includes("/auth/login") && !resource.includes("/auth/register")
   ) {
     // Obtener el token del localStorage.
     const token = localStorage.getItem("token");

@@ -2,7 +2,7 @@
 """
 Módulo de Gestión de Usuarios y Administradores (Admin).
 
-Este blueprint centraliza toda la lógica para la administración de las entidades
+Este blueprint centraliza toda la lógica para la administración de las entidades de
 de `Usuarios` (clientes) y `Admins` (administradores) desde el panel de control.
 
 Funcionalidades Clave:
@@ -14,7 +14,7 @@ Funcionalidades Clave:
 """
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.models.domains.user_models import Usuarios, Admins
-from app.models.serializers import usuario_to_dict, admin_to_dict
+from app.models.serializers import admin_to_dict
 from app.models.enums import EstadoEnum
 from app.extensions import db
 from sqlalchemy import or_, case, desc
@@ -22,6 +22,24 @@ from app.extensions import bcrypt
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 import uuid, datetime
+
+# MEJORA: Crear un serializador específico para esta ruta que omita 'updated_at'.
+# Esto mantiene el serializador global intacto para otros usos.
+def usuario_to_dict_lista(usuario):
+    """
+    Convierte un objeto Usuario a un diccionario para la lista de usuarios,
+    omitiendo el campo 'updated_at'.
+    """
+    if not usuario:
+        return None
+    return {
+        'id': usuario.id,
+        'nombre': usuario.nombre,
+        'apellido': usuario.apellido,
+        'numero': usuario.numero,
+        'estado': usuario.estado,
+        'created_at': usuario.created_at.isoformat() if usuario.created_at else None,
+    }
 
 # Crear el blueprint
 user_bp = Blueprint('users', __name__)
@@ -131,7 +149,7 @@ def get_usuarios(admin_user):
         # El serializador base no incluye propiedades, así que lo agregamos aquí.
         usuarios_list = []
         for usuario in usuarios.items:
-            user_dict = usuario_to_dict(usuario)
+            user_dict = usuario_to_dict_lista(usuario)
             user_dict['is_online'] = usuario.is_online
             user_dict['last_seen_display'] = usuario.last_seen_display
             usuarios_list.append(user_dict)
@@ -214,7 +232,7 @@ def create_usuario(admin_user):
         return jsonify({
             'success': True,
             'message': 'Usuario creado correctamente',
-            'usuario': usuario_to_dict(usuario)
+            'usuario': usuario_to_dict_lista(usuario)
         }), 201
     
     except ValueError as e:
@@ -244,7 +262,7 @@ def handle_usuario(admin_user, user_id):
     if request.method == 'GET':
         return jsonify({
             'success': True,
-            'usuario': usuario_to_dict(usuario)
+            'usuario': usuario_to_dict_lista(usuario)
         })
 
     if request.method == 'PUT':
@@ -272,7 +290,7 @@ def handle_usuario(admin_user, user_id):
             return jsonify({
                 'success': True,
                 'message': 'Usuario actualizado correctamente',
-                'usuario': usuario_to_dict(usuario)
+                'usuario': usuario_to_dict_lista(usuario)
             })
         
         except ValueError as e:
@@ -309,7 +327,7 @@ def toggle_usuario_status(admin_user, user_id):
         return jsonify({
             'success': True,
             'message': 'Estado de usuario actualizado correctamente',
-            'usuario': usuario_to_dict(usuario)
+            'usuario': usuario_to_dict_lista(usuario)
         })
     
     except Exception as e:

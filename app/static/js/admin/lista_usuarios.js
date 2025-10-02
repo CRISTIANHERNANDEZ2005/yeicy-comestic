@@ -913,7 +913,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 5 : 6; // Colspan para admin es 6
+      const colspan = type === "clientes" ? 6 : 7;
 
       tbody.innerHTML = `
                     <tr class="loading-row">
@@ -938,7 +938,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 5 : 6; // Colspan para admin es 6
+      const colspan = type === "clientes" ? 6 : 7;
 
       tbody.innerHTML = `
                     <tr>
@@ -966,7 +966,7 @@ if (!window.usuariosApp) {
       if (!clientes || clientes.length === 0) {
         tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="px-8 py-16 text-center">
+                            <td colspan="6" class="px-8 py-16 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-users text-3xl mb-3"></i>
                                     <p class="text-lg font-medium">No se encontraron clientes</p>
@@ -1018,9 +1018,6 @@ if (!window.usuariosApp) {
                         }</td>
                         <td class="px-8 py-5 whitespace-nowrap date-column">
                             ${new Date(cliente.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </td>
-                        <td class="px-8 py-5 whitespace-nowrap date-column">
-                            ${new Date(cliente.updated_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-status" data-id="${
@@ -1106,7 +1103,7 @@ if (!window.usuariosApp) {
       if (!administradores || administradores.length === 0) {
         tbody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="px-8 py-16 text-center">
+                            <td colspan="7" class="px-8 py-16 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-user-shield text-3xl mb-3"></i>
                                     <p class="text-lg font-medium">No se encontraron administradores</p>
@@ -1160,9 +1157,6 @@ if (!window.usuariosApp) {
                         <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600">${admin.numero_telefono}</td>
                         <td class="px-8 py-5 whitespace-nowrap date-column">
                             ${new Date(admin.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </td>
-                        <td class="px-8 py-5 whitespace-nowrap date-column">
-                            ${new Date(admin.updated_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-admin-status" data-id="${admin.id}" class="${

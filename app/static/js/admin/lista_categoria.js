@@ -1243,6 +1243,28 @@ window.categoriesApp = {
       "warning"
     );
   },
+  // MEJORA PROFESIONAL: Función centralizada para limpiar filtros.
+  // Esto evita la duplicación de código y hace que el comportamiento sea consistente.
+  clearFilters: function () {
+    const nameFilter = document.getElementById("nameFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const mainCategoryFilter = document.getElementById("mainCategoryFilter");
+    const subCategoryFilter = document.getElementById("subCategoryFilter");
+    const sortFilter = document.getElementById("sortFilter");
+
+    if (nameFilter) nameFilter.value = "";
+    if (statusFilter) statusFilter.value = "all";
+    if (mainCategoryFilter) mainCategoryFilter.value = "all";
+    if (subCategoryFilter) subCategoryFilter.value = "all";
+    // Restablecer al valor por defecto que es 'created_at' (más recientes)
+    if (sortFilter) sortFilter.value = "created_at";
+
+    // Si estamos en la vista de seudocategorías, al limpiar, debemos recargar
+    // la lista completa de subcategorías en el filtro.
+    if (this.currentView === "pseudo") {
+      this.loadSubcategoriesForFilter();
+    }
+  },
   // Configurar event listeners
   setupEventListeners: function () {
     let debounceTimeout;
@@ -1265,7 +1287,14 @@ window.categoriesApp = {
         btn.classList.add("active", "border-blue-500", "text-blue-600");
         btn.classList.remove("border-transparent", "text-gray-500");
         // Actualizar la vista actual
+        const previousView = this.currentView;
         this.currentView = btn.getAttribute("data-level");
+
+        // MEJORA PROFESIONAL: Limpiar filtros si se cambia de una vista de tabla a otra.
+        if (previousView !== this.currentView && this.currentView !== 'all') {
+            this.clearFilters();
+        }
+
         // Mostrar la vista correspondiente
         this.showView(this.currentView);
         // Actualizar la URL sin recargar la página
@@ -1320,20 +1349,8 @@ window.categoriesApp = {
     const clearFiltersBtn = document.getElementById("clearFilters");
     if (clearFiltersBtn) {
       clearFiltersBtn.addEventListener("click", () => {
-        const nameFilter = document.getElementById("nameFilter");
-        const statusFilter = document.getElementById("statusFilter");
-        const mainCategoryFilter =
-          document.getElementById("mainCategoryFilter");
-        const subCategoryFilter = document.getElementById("subCategoryFilter");
-        const sortFilter = document.getElementById("sortFilter");
-        if (nameFilter) nameFilter.value = "";
-        if (statusFilter) statusFilter.value = "all";
-        if (mainCategoryFilter) mainCategoryFilter.value = "all";
-        if (subCategoryFilter) subCategoryFilter.value = "all";
-        if (sortFilter) sortFilter.value = "nombre";
-        if (this.currentView === "pseudo") {
-          this.loadSubcategoriesForFilter();
-        }
+        // Usar la nueva función centralizada
+        this.clearFilters();
         this.loadTableData();
       });
     }
@@ -1349,10 +1366,8 @@ window.categoriesApp = {
     const clearFiltersViewBtn = document.getElementById("clearFiltersViewBtn");
     if (clearFiltersViewBtn) {
       clearFiltersViewBtn.addEventListener("click", () => {
-        const clearFiltersMenuBtn = document.getElementById("clearFilters");
-        if (clearFiltersMenuBtn) {
-          clearFiltersMenuBtn.click(); // Simula un clic en el botón del menú
-        }
+        this.clearFilters();
+        this.loadTableData();
       });
     }
     // --- FIN: Event Listeners para el NUEVO filtro ---

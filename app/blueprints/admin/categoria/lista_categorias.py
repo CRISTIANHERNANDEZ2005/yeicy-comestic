@@ -904,6 +904,7 @@ def filter_pseudocategories_api(admin_user):
         per_page = request.args.get('per_page', 20, type=int)
         nombre = request.args.get('nombre', '')
         estado = request.args.get('estado', '')
+        categoria_id = request.args.get('categoria_id', '')
         subcategoria_id = request.args.get('subcategoria_id', '')
         sort_by = request.args.get('sort_by', 'created_at')
         sort_order = request.args.get('sort_order', 'desc')
@@ -918,8 +919,13 @@ def filter_pseudocategories_api(admin_user):
         if estado:
             query = query.filter(Seudocategorias.estado == estado)
             
-        if subcategoria_id:
+        # MEJORA PROFESIONAL: Lógica de filtrado jerárquico.
+        # Si se especifica una subcategoría, tiene prioridad.
+        # Si no, se filtra por la categoría principal.
+        if subcategoria_id and subcategoria_id != 'all':
             query = query.filter(Seudocategorias.subcategoria_id == subcategoria_id)
+        elif categoria_id and categoria_id != 'all':
+            query = query.join(Subcategorias).filter(Subcategorias.categoria_principal_id == categoria_id)
 
         # Aplicar ordenamiento
         if sort_by == 'nombre':
@@ -1009,6 +1015,53 @@ def get_subcategories_for_category(admin_user, categoria_id):
             'success': False,
             'message': 'Error al obtener subcategorías'
         }), 500
+
+# MEJORA PROFESIONAL: Nuevo endpoint para obtener todas las subcategorías activas.
+# Esto es crucial para que el filtro de subcategorías sea independiente al inicio.
+@admin_lista_categorias_bp.route('/api/subcategorias/activas', methods=['GET'])
+@admin_jwt_required
+def get_all_active_subcategories(admin_user):
+    """
+    API para obtener una lista de todas las subcategorías activas.
+    Utilizado para poblar el filtro de seudocategorías de forma independiente.
+    """
+    try:
+        subcategorias = Subcategorias.query.filter_by(estado=EstadoEnum.ACTIVO).order_by(Subcategorias.nombre).all()
+        subcategorias_data = [subcategoria_to_dict(sub) for sub in subcategorias]
+        return jsonify({
+            'success': True,
+            'subcategorias': subcategorias_data
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener todas las subcategorías activas: {e}")
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
+# MEJORA PROFESIONAL: Nuevo endpoint para obtener detalles de una subcategoría para el filtro.
+@admin_lista_categorias_bp.route('/api/subcategorias/<string:subcategoria_id>/detalles-filtro', methods=['GET'])
+@admin_jwt_required
+def get_subcategory_details_for_filter(admin_user, subcategoria_id):
+    """
+    API auxiliar para obtener detalles de una subcategoría, incluyendo el ID de su padre.
+    Utilizado por el filtro de seudocategorías para auto-seleccionar la categoría principal
+    cuando se elige una subcategoría.
+    """
+    try:
+        subcategoria = Subcategorias.query.get(subcategoria_id)
+        if not subcategoria:
+            return jsonify({'success': False, 'message': 'Subcategoría no encontrada'}), 404
+
+        return jsonify({
+            'success': True,
+            'subcategoria': {
+                'id': subcategoria.id,
+                'nombre': subcategoria.nombre,
+                'categoria_principal_id': subcategoria.categoria_principal_id
+            }
+        })
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener detalles de subcategoría para filtro: {e}")
+        return jsonify({'success': False, 'message': 'Error interno del servidor'}), 500
+
 
 # Endpoint para crear una nueva categoría principal
 @admin_lista_categorias_bp.route('/api/categorias-principales', methods=['POST'])

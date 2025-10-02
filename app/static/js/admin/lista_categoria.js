@@ -246,33 +246,44 @@ window.categoriesApp = {
       });
   },
   // Función para cargar subcategorías para el filtro
-  loadSubcategoriesForFilter: function () {
-    const mainCategoryId = document.getElementById("mainCategoryFilter")?.value;
-    const subCategoryFilter = document.getElementById("subCategoryFilter");
-    if (!subCategoryFilter) return;
+  loadSubcategoriesForFilter: function (mainCategoryId = null) {
+    const subCategorySelect = document.getElementById("subCategoryFilter");
+    if (!subCategorySelect) return;
 
-    // Limpiar opciones actuales
-    subCategoryFilter.innerHTML =
-      '<option value="all">Todas las subcategorías</option>';
-    if (mainCategoryId !== "all") {
-      // Obtener subcategorías del servidor
-      fetch(`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success && data.subcategorias) {
-            data.subcategorias.forEach((subcategory) => {
-              const option = document.createElement("option");
-              option.value = subcategory.id;
-              option.textContent = subcategory.nombre;
-              subCategoryFilter.appendChild(option);
-            });
-          }
-        })
-        .catch((error) => {
-          console.error("Error al cargar subcategorías:", error);
-          this.showNotification("Error al cargar subcategorías", "error");
-        });
+    // Lógica de carga independiente.
+    // Determina qué API usar: todas las subcategorías o las de una categoría principal.
+    let apiUrl;
+    if (mainCategoryId && mainCategoryId !== "all") {
+      apiUrl = `/admin/api/categorias-principales/${mainCategoryId}/subcategorias?estado=activo`;
+    } else {
+      // Si no hay categoría principal, carga TODAS las subcategorías activas.
+      apiUrl = `/admin/api/subcategorias/activas`;
     }
+
+    subCategorySelect.innerHTML = '<option value="">Cargando...</option>';
+
+    fetch(apiUrl)
+      .then((response) => response.json())
+      .then((data) => {
+        subCategorySelect.innerHTML =
+          '<option value="all">Todas las subcategorías</option>';
+        if (data.success && data.subcategorias) {
+          // Poblar el select con las opciones obtenidas.
+          data.subcategorias.forEach((subcategory) => {
+            const option = document.createElement("option");
+            option.value = subcategory.id;
+            option.textContent = subcategory.nombre;
+            subCategorySelect.appendChild(option);
+          });
+          // El filtro de subcategoría siempre está habilitado.
+          subCategorySelect.disabled = false;
+        }
+      })
+      .catch((error) => {
+        console.error("Error al cargar subcategorías para el filtro:", error);
+        subCategorySelect.innerHTML =
+          '<option value="all">Error al cargar</option>';
+      });
   },
   // Función para cargar categorías jerárquicas
   loadHierarchicalCategories: function () {
@@ -657,11 +668,14 @@ window.categoriesApp = {
     if (statusFilter !== "all") apiUrl += `&estado=${statusFilter}`;
 
     if (this.currentView === "sub" && mainCategoryFilter !== "all")
-      apiUrl += `&categoria_id=${mainCategoryFilter}`;
+      apiUrl += `&categoria_id=${encodeURIComponent(mainCategoryFilter)}`;
 
-    if (this.currentView === "pseudo" && subCategoryFilter !== "all")
-      apiUrl += `&subcategoria_id=${subCategoryFilter}`;
-
+    // MEJORA PROFESIONAL: Enviar ambos filtros para seudocategorías.
+    // El backend priorizará subcategoría sobre categoría principal si ambos están presentes.
+    if (this.currentView === "pseudo") {
+      if (mainCategoryFilter !== "all") apiUrl += `&categoria_id=${encodeURIComponent(mainCategoryFilter)}`;
+      if (subCategoryFilter !== "all") apiUrl += `&subcategoria_id=${encodeURIComponent(subCategoryFilter)}`;
+    }
     // Agregar parámetros de ordenamiento
     let sortBy = "nombre";
     let sortOrder = "asc";
@@ -1340,26 +1354,57 @@ window.categoriesApp = {
     if (sortFilterInput) {
       sortFilterInput.addEventListener("change", () => this.loadTableData());
     }
-    const subCategoryFilterInput = document.getElementById("subCategoryFilter");
-    if (subCategoryFilterInput) {
-      subCategoryFilterInput.addEventListener("change", () =>
-        this.loadTableData()
-      );
+
+    // MEJORA PROFESIONAL: Lógica interdependiente para filtros de categoría.
+    const mainCategoryFilter = document.getElementById("mainCategoryFilter");
+    const subCategoryFilter = document.getElementById("subCategoryFilter");
+
+    if (mainCategoryFilter) {
+      mainCategoryFilter.addEventListener("change", () => {
+        // Este evento ahora solo se dispara cuando el USUARIO cambia manualmente la categoría principal.
+        const mainCategoryId = mainCategoryFilter.value;
+        if (this.currentView === "pseudo") {
+          // Al cambiar la categoría principal, recargar las subcategorías correspondientes.
+          this.loadSubcategoriesForFilter(mainCategoryId);
+        }
+        // Cuando el usuario elige una categoría principal, tiene sentido resetear la subcategoría
+        // para evitar un estado de filtro inconsistente.
+        if (subCategoryFilter) subCategoryFilter.value = "all";
+        // Recargar la tabla con el nuevo filtro principal.
+        this.loadTableData();
+      });
     }
+
+    if (subCategoryFilter) {
+      subCategoryFilter.addEventListener("change", () => {
+        const subcategoryId = subCategoryFilter.value;
+        if (subcategoryId && subcategoryId !== "all") {
+          // Si se selecciona una subcategoría, buscar su padre y seleccionarlo.
+          fetch(`/admin/api/subcategorias/${subcategoryId}/detalles-filtro`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success && mainCategoryFilter) {
+                // Auto-seleccionar la categoría principal padre.
+                // NO se dispara el evento 'change' del mainCategoryFilter.
+                mainCategoryFilter.value = data.subcategoria.categoria_principal_id;
+              }
+            })
+            .catch((err) => {
+              console.error("Error al obtener detalles del padre:", err);
+            })
+            .finally(() => this.loadTableData()); // Cargar tabla después de la operación.
+        } else {
+          // Si se selecciona "Todas", simplemente recargar.
+          this.loadTableData();
+        }
+      });
+    }
+
     const clearFiltersBtn = document.getElementById("clearFilters");
     if (clearFiltersBtn) {
       clearFiltersBtn.addEventListener("click", () => {
         // Usar la nueva función centralizada
         this.clearFilters();
-        this.loadTableData();
-      });
-    }
-    const mainCategoryFilter = document.getElementById("mainCategoryFilter");
-    if (mainCategoryFilter) {
-      mainCategoryFilter.addEventListener("change", () => {
-        if (this.currentView === "pseudo") {
-          this.loadSubcategoriesForFilter();
-        }
         this.loadTableData();
       });
     }

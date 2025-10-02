@@ -126,6 +126,25 @@ const VentasPageModule = (() => {
             margenElement.textContent = `${endValue.toFixed(1)}%`;
         }
 
+        // MEJORA PROFESIONAL: Mostrar la diferencia entre la utilidad y la inversión del período.
+        const utilidadDiferenciaElement = document.getElementById("utilidad-diferencia");
+        if (utilidadDiferenciaElement) {
+            const utilidadPeriodo = data.estadisticas.utilidad_periodo_actual;
+            const inversionPeriodo = data.estadisticas.inversion_periodo_actual;
+            const diferencia = utilidadPeriodo - inversionPeriodo;
+
+            if (data.estadisticas.total_ventas > 0) {
+                const sign = diferencia >= 0 ? "+" : "-";
+                // MEJORA: Colores que resaltan más sobre el fondo degradado de la tarjeta.
+                const colorClass = diferencia >= 0 ? "text-green-200" : "text-yellow-200";
+                utilidadDiferenciaElement.className = `text-sm font-semibold mt-1 ${colorClass}`;
+                utilidadDiferenciaElement.textContent = `${sign} ${formatCurrency(Math.abs(diferencia))}`;
+            } else {
+                utilidadDiferenciaElement.textContent = "+ $0";
+                utilidadDiferenciaElement.className = "text-sm font-semibold mt-1 text-white";
+            }
+        }
+
         // Actualizar gráfico
         updateVentasChart(data.estadisticas.grafico, currentChartPeriod);
       } else {

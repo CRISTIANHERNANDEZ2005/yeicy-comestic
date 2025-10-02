@@ -596,6 +596,17 @@ def get_ventas_estadisticas(admin_user):
             PedidoProducto.pedido_id.in_(pedidos_filtrados_ids)
         ).one()
 
+        # --- MEJORA PROFESIONAL: Calcular utilidad e inversión del período actual ---
+        # Estos valores se usarán en el frontend para mostrar la ganancia/pérdida sobre la inversión.
+        financials_periodo_actual = db.session.query(
+            func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ingresos'),
+            func.sum(PedidoProducto.cantidad * Productos.costo).label('total_inversion')
+        ).join(Productos, PedidoProducto.producto_id == Productos.id).filter(
+            PedidoProducto.pedido_id.in_(pedidos_filtrados_ids)
+        ).one()
+        utilidad_periodo_actual = (financials_periodo_actual.total_ingresos or 0) - (financials_periodo_actual.total_inversion or 0)
+        inversion_periodo_actual = financials_periodo_actual.total_inversion or 0
+
         total_ingresos = financials.total_ingresos or 0
         total_inversion = financials.total_inversion or 0
         total_utilidad = total_ingresos - total_inversion
@@ -672,6 +683,8 @@ def get_ventas_estadisticas(admin_user):
                 'total_inversion': float(total_inversion),
                 'total_utilidad': float(total_utilidad),
                 'margen_utilidad': float(margen_utilidad),
+                'utilidad_periodo_actual': float(utilidad_periodo_actual),
+                'inversion_periodo_actual': float(inversion_periodo_actual),
                 'grafico': {
                     'fechas': fechas,
                     'cantidades': cantidades,

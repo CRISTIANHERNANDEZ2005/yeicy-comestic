@@ -1721,15 +1721,21 @@ window.pedidosApp = {
         this.isLoading = false;
       });
   },
-
-  clearFilters: function () {
+  
+  // MEJORA PROFESIONAL: La función ahora acepta un parámetro `loadData` (por defecto true).
+  // Esto permite limpiar los campos de los filtros sin necesariamente disparar una recarga
+  // de datos, lo que es útil al cambiar de pestaña, donde la recarga se maneja por separado.
+  clearFilters: function (loadData = true) {
     document.getElementById("pedidoIdFilter").value = "";
     document.getElementById("clienteFilter").value = "";
     document.getElementById("fechaInicioFilter").value = "";
     document.getElementById("fechaFinFilter").value = "";
     document.getElementById("sortFilter").value = "created_at";
     document.getElementById("statusFilter").value = "all";
-    this.loadPedidos();
+    
+    if (loadData) {
+        this.loadPedidos();
+    }
   },
 
   showInactiveOrderMessage: function () {
@@ -1826,6 +1832,10 @@ window.pedidosApp = {
         btn.classList.add("active", "border-blue-500", "text-blue-600");
         btn.classList.remove("border-transparent", "text-gray-500");
 
+        // MEJORA PROFESIONAL: Limpiar los filtros al cambiar de pestaña.
+        // Se llama a clearFilters(false) para resetear los campos del formulario
+        // sin disparar una recarga extra, ya que loadPedidos() se llama justo después.
+        this.clearFilters(false);
         // Cerrar la sección de seguimiento al cambiar de tab
         this.closeSeguimientoSection();
 

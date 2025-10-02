@@ -598,25 +598,67 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                     nuevo_estado_pedido = EstadoPedido.EN_PROCESO.value
                     current_app.logger.info(f"Pedido {pedido.id} movido a 'en proceso' a través del seguimiento.")
 
-            # Lógica de actualización del historial.
-            # Siempre se debe añadir una nueva entrada al historial para mantener un registro claro.
+            # --- MEJORA PROFESIONAL: Lógica de relleno de historial ---
+            # Al cambiar el estado de seguimiento, rellenamos los pasos intermedios para
+            # que el cliente vea un historial completo y profesional.
             if pedido.seguimiento_historial is None:
                 pedido.seguimiento_historial = []
 
-            new_history_entry = {
-                'estado': nuevo_seguimiento_enum.value,
-                'notas': notas,
-                'timestamp': datetime.utcnow().isoformat() + "Z",
-                'notified_to_client': False # Flag para notificaciones en la carga de página del cliente.
-            }
-            
-            pedido.seguimiento_historial.append(new_history_entry)
+            timestamp_actual = datetime.utcnow().isoformat() + "Z"
+
+            # MEJORA PROFESIONAL: Si el estado es 'cancelado', no rellenar estados intermedios.
+            # Esto preserva el historial exacto de en qué punto se canceló el pedido.
+            if nuevo_seguimiento_enum == EstadoSeguimiento.CANCELADO:
+                new_history_entry = {
+                    'estado': nuevo_seguimiento_enum.value,
+                    'notas': notas,
+                    'timestamp': timestamp_actual,
+                    'notified_to_client': False
+                }
+                pedido.seguimiento_historial.append(new_history_entry)
+            else:
+                # Lógica de relleno para los demás estados.
+                estados_existentes = {entry['estado'] for entry in pedido.seguimiento_historial}
+
+                # Definir la secuencia completa de seguimiento y las notas por defecto.
+                secuencia_completa = [
+                    (EstadoSeguimiento.RECIBIDO, "Tu pedido fue recibido y está siendo procesado."),
+                    (EstadoSeguimiento.EN_PREPARACION, "Tu pedido está en preparación."),
+                    (EstadoSeguimiento.EN_CAMINO, "Tu pedido ya se encuentra en camino."),
+                    (EstadoSeguimiento.ENTREGADO, "Tu pedido ha sido completado y entregado.")
+                ]
+
+                # Añadir solo los estados que faltan en el historial hasta el estado actual.
+                for estado_secuencia, nota_secuencia in secuencia_completa:
+                    # Si el estado es el que el admin acaba de seleccionar:
+                    if estado_secuencia == nuevo_seguimiento_enum:
+                        # Añadirlo al historial con las notas del admin y marcarlo para notificación.
+                        new_history_entry = {
+                            'estado': estado_secuencia.value,
+                            'notas': notas, # Usar las notas proporcionadas por el admin.
+                            'timestamp': timestamp_actual,
+                            'notified_to_client': False # Marcar para que el cliente sea notificado.
+                        }
+                        pedido.seguimiento_historial.append(new_history_entry)
+                        # Una vez que llegamos al estado seleccionado, no rellenamos más.
+                        break
+                    
+                    # Si es un estado intermedio que no estaba en el historial:
+                    elif estado_secuencia.value not in estados_existentes:
+                        # Añadirlo con una nota por defecto y marcarlo como ya notificado.
+                        new_history_entry = {
+                            'estado': estado_secuencia.value,
+                            'notas': nota_secuencia, # Usar la nota por defecto.
+                            'timestamp': timestamp_actual,
+                            'notified_to_client': True # Marcar como ya notificado para no enviar alertas extra.
+                        }
+                        pedido.seguimiento_historial.append(new_history_entry)
+
             flag_modified(pedido, "seguimiento_historial")
 
             pedido.seguimiento_estado = nuevo_seguimiento_enum
             pedido.notas_seguimiento = notas
             pedido.updated_at = datetime.utcnow()
-            
             db.session.commit()
 
             current_app.logger.info(

@@ -670,7 +670,7 @@ window.categoriesApp = {
     if (this.currentView === "sub" && mainCategoryFilter !== "all")
       apiUrl += `&categoria_id=${encodeURIComponent(mainCategoryFilter)}`;
 
-    // MEJORA PROFESIONAL: Enviar ambos filtros para seudocategorías.
+    //  Enviar ambos filtros para seudocategorías.
     // El backend priorizará subcategoría sobre categoría principal si ambos están presentes.
     if (this.currentView === "pseudo") {
       if (mainCategoryFilter !== "all") apiUrl += `&categoria_id=${encodeURIComponent(mainCategoryFilter)}`;
@@ -1257,7 +1257,7 @@ window.categoriesApp = {
       "warning"
     );
   },
-  // MEJORA PROFESIONAL: Función centralizada para limpiar filtros.
+  //  Función centralizada para limpiar filtros.
   // Esto evita la duplicación de código y hace que el comportamiento sea consistente.
   clearFilters: function () {
     const nameFilter = document.getElementById("nameFilter");
@@ -1304,7 +1304,7 @@ window.categoriesApp = {
         const previousView = this.currentView;
         this.currentView = btn.getAttribute("data-level");
 
-        // MEJORA PROFESIONAL: Limpiar filtros si se cambia de una vista de tabla a otra.
+        // Limpiar filtros si se cambia de una vista de tabla a otra.
         if (previousView !== this.currentView && this.currentView !== 'all') {
             this.clearFilters();
         }
@@ -1355,7 +1355,7 @@ window.categoriesApp = {
       sortFilterInput.addEventListener("change", () => this.loadTableData());
     }
 
-    // MEJORA PROFESIONAL: Lógica interdependiente para filtros de categoría.
+    //  Lógica interdependiente para filtros de categoría.
     const mainCategoryFilter = document.getElementById("mainCategoryFilter");
     const subCategoryFilter = document.getElementById("subCategoryFilter");
 

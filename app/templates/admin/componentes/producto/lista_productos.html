@@ -431,6 +431,289 @@
                 toggle.disabled = false;
             });
         }
+
+        function resetFilters() {
+            // La lógica principal ahora está en filtro_producto.js para centralizarla.
+            window.resetFilters();
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            // Esta función se ejecutará cuando un custom select cambie de valor.
+            // La hemos movido aquí para que esté en el mismo scope que las funciones de ayuda.
+            window.handleCustomSelectChange = function(selectDiv) {
+                const name = selectDiv.dataset.name;
+                const value = document.querySelector(`input[name="${name}"]`).value;
+
+                // Si el cambio es en un filtro de categoría, actualizamos las dependencias.
+                if (['categoria_id', 'subcategoria_id', 'seudocategoria_id'].includes(name)) { // Cambio en una categoría
+                    updateCategoryDependencies(name, value);
+                } else if (name === 'marca') { // Cambio en la marca
+                    updateDependenciesForBrand(value);
+                } else { // Cualquier otro filtro
+                    applyFilters();
+                }
+            };
+        });
+
+        /**
+         * Actualiza los selectores de categorías dependientes y las marcas.
+         * @param {string} level - El nivel de la categoría que cambió ('categoria_id', 'subcategoria_id', 'seudocategoria_id').
+         * @param {string} id - El ID de la categoría seleccionada.
+         */
+        async function updateCategoryDependencies(level, id, applyFiltersAfter = true) {
+            const mainCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="categoria_id"]');
+            const subCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="subcategoria_id"]');
+            const pseudoCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="seudocategoria_id"]');
+            const brandSelect = document.querySelector('#filtersPanel .custom-select[data-name="marca"]');
+
+            // Si se deselecciona una categoría (se elige "Todas"), reseteamos las dependencias.
+            if (!id) {
+                // MEJORA PROFESIONAL: Lógica de reseteo más robusta.
+                // Cuando se quita un filtro de categoría, no solo se resetean los hijos,
+                // sino que también se debe recargar la lista completa de marcas.
+                if (level === 'categoria_id') {
+                    resetCategoryVisibility(false, true, true);
+                    setCustomSelectValue(subCatSelect, "");
+                    setCustomSelectValue(pseudoCatSelect, "");
+                } else if (level === 'subcategoria_id') {
+                    // Si se quita la subcategoría, las seudocategorías se resetean.
+                    // Las categorías principales ya se muestran todas por la lógica anterior.
+                    resetCategoryVisibility(false, false, true);
+                    setCustomSelectValue(pseudoCatSelect, "");
+                } else if (level === 'seudocategoria_id') {
+                    // Si se quita la seudocategoría, no hay hijos que resetear.
+                    // Las categorías principales y subcategorías ya se muestran todas.
+                } else if (level === 'seudocategoria_id') {
+                    // No hay hijos que resetear
+                }
+                // El endpoint sin ID devolverá todas las marcas, así que las recargamos.
+                await updateBrandOptions(); // Recarga la lista completa de marcas.
+                if (applyFiltersAfter) {
+                    applyFilters();
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/api/products/category-dependencies?level=${level}&id=${id}`);
+                if (!response.ok) throw new Error('Error en la respuesta de la API');
+                
+                const data = await response.json();
+                if (!data.success) throw new Error(data.message);
+
+                // 1. Pre-seleccionar padres
+                if (data.main_category_id && level !== 'categoria_id') {
+                    setCustomSelectValue(mainCatSelect, data.main_category_id);
+                }
+                if (data.sub_category_id && level !== 'subcategoria_id') {
+                    setCustomSelectValue(subCatSelect, data.sub_category_id);
+                }
+
+                // 2. Filtrar hijos
+                // Si el cambio fue en una categoría principal, filtramos las sub y seudo.
+                if (level === 'categoria_id') {
+                    filterOptions(subCatSelect, data.sub_category_ids);
+                    filterOptions(pseudoCatSelect, data.pseudo_category_ids);
+                // Si el cambio fue en una subcategoría, solo filtramos las seudo.
+                } else if (level === 'subcategoria_id') {
+                    resetCategoryVisibility(true, false, false); // Mostrar todas las principales
+                    filterOptions(pseudoCatSelect, data.pseudo_category_ids);
+                // Si el cambio fue en una seudocategoría, no hay hijos que filtrar, solo padres que preseleccionar.
+                } else if (level === 'seudocategoria_id') {
+                    resetCategoryVisibility(true, true, false); // Mostrar todas las principales y sub
+                }
+
+                // 3. Actualizar marcas
+                await updateBrandOptions(data.brands);
+
+                // --- MEJORA PROFESIONAL: Limpiar filtros hijos si ya no son válidos ---
+                // Después de filtrar las opciones, verificamos si la selección actual sigue siendo válida.
+                if (level === 'categoria_id') {
+                    const subCatValue = subCatSelect.querySelector('input[type="hidden"]').value;
+                    if (subCatValue && !data.sub_category_ids.includes(subCatValue)) {
+                        setCustomSelectValue(subCatSelect, ""); // Limpiar subcategoría
+                        setCustomSelectValue(pseudoCatSelect, ""); // Limpiar seudocategoría también
+                    }
+                }
+                if (level === 'categoria_id' || level === 'subcategoria_id') {
+                    const pseudoCatValue = pseudoCatSelect.querySelector('input[type="hidden"]').value;
+                    if (pseudoCatValue && !data.pseudo_category_ids.includes(pseudoCatValue)) {
+                        setCustomSelectValue(pseudoCatSelect, ""); // Limpiar seudocategoría
+                    }
+                }
+
+                // --- MEJORA PROFESIONAL: Limpiar filtro de marca si ya no es válido ---
+                const brandValue = brandSelect.querySelector('input[type="hidden"]').value;
+                if (brandValue && !data.brands.includes(brandValue)) {
+                    setCustomSelectValue(brandSelect, ""); // Limpiar marca
+                }
+
+                if (applyFiltersAfter) {
+                    applyFilters();
+                }
+
+            } catch (error) {
+                console.error('Error al actualizar dependencias de categorías:', error);
+                window.toast.error('No se pudieron actualizar los filtros de categoría.');
+            }
+        }
+
+        /**
+         * Actualiza los selectores de categorías cuando se selecciona una marca.
+         * @param {string} brandName - El nombre de la marca seleccionada.
+         */
+        async function updateDependenciesForBrand(brandName) {
+            const mainCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="categoria_id"]');
+            const subCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="subcategoria_id"]');
+            const pseudoCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="seudocategoria_id"]');
+
+            if (!brandName) {
+                // MEJORA PROFESIONAL: Lógica de reseteo completa.
+                // Si se quita el filtro de marca, es crucial resetear la visibilidad
+                // de TODAS las categorías para que vuelvan a mostrar su lista completa.
+                resetCategoryVisibility(true, true, true);
+                applyFilters();
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/api/products/category-dependencies?level=marca&id=${encodeURIComponent(brandName)}`);
+                if (!response.ok) throw new Error('Error en la respuesta de la API de marcas');
+
+                const data = await response.json();
+                if (!data.success) throw new Error(data.message);
+
+                // Filtrar las opciones de todas las categorías basadas en los IDs devueltos
+                filterOptions(mainCatSelect, data.main_category_ids);
+                filterOptions(subCatSelect, data.sub_category_ids);
+                filterOptions(pseudoCatSelect, data.pseudo_category_ids);
+
+                // Limpiar selecciones de categoría si ya no son válidas
+                const mainCatValue = mainCatSelect.querySelector('input[type="hidden"]').value;
+                if (mainCatValue && !data.main_category_ids.includes(mainCatValue)) setCustomSelectValue(mainCatSelect, "");
+
+                const subCatValue = subCatSelect.querySelector('input[type="hidden"]').value;
+                if (subCatValue && !data.sub_category_ids.includes(subCatValue)) setCustomSelectValue(subCatSelect, "");
+
+                const pseudoCatValue = pseudoCatSelect.querySelector('input[type="hidden"]').value;
+                if (pseudoCatValue && !data.pseudo_category_ids.includes(pseudoCatValue)) setCustomSelectValue(pseudoCatSelect, "");
+
+                applyFilters();
+            } catch (error) {
+                console.error('Error al actualizar dependencias para la marca:', error);
+                window.toast.error('No se pudieron actualizar los filtros para la marca seleccionada.');
+            }
+        }
+
+        /**
+         * Filtra las opciones de un custom select para mostrar solo las que están en una lista de IDs.
+         * @param {HTMLElement} selectElement - El elemento .custom-select.
+         * @param {string[]} allowedIds - Array de IDs que se deben mostrar.
+         */
+        function filterOptions(selectElement, allowedIds) {
+            const options = selectElement.querySelectorAll('.custom-select-option');
+            let hasVisibleOptions = false;
+            options.forEach(option => {
+                const value = option.dataset.value;
+                if (value === "") { // La opción "Todas" siempre se muestra
+                    option.style.display = 'block';
+                } else if (value) {
+                    option.style.display = allowedIds.includes(value) ? 'block' : 'none';
+                }
+            });
+        }
+
+        /**
+         * Restablece la visibilidad de las opciones en los selectores de categoría.
+         * @param {boolean} main - ¿Restablecer categorías principales?
+         * @param {boolean} sub - ¿Restablecer subcategorías?
+         * @param {boolean} pseudo - ¿Restablecer seudocategorías?
+         */
+        function resetCategoryVisibility(main, sub, pseudo) {
+            if (main) {
+                document.querySelectorAll('#filtersPanel .custom-select[data-name="categoria_id"] .custom-select-option').forEach(opt => opt.style.display = 'block');
+            }
+            if (sub) {
+                document.querySelectorAll('#filtersPanel .custom-select[data-name="subcategoria_id"] .custom-select-option').forEach(opt => opt.style.display = 'block');
+            }
+            if (pseudo) {
+                document.querySelectorAll('#filtersPanel .custom-select[data-name="seudocategoria_id"] .custom-select-option').forEach(opt => opt.style.display = 'block');
+            }
+        }
+
+        /**
+         * Actualiza las opciones del selector de marcas.
+         * @param {string[]} brands - Array con los nombres de las marcas a mostrar.
+         */
+        async function updateBrandOptions(brands) {
+            const brandSelect = document.querySelector('#filtersPanel .custom-select[data-name="marca"]');
+            if (!brandSelect) return;
+            const optionsContainer = brandSelect.querySelector('.custom-select-options');
+            const hiddenInput = brandSelect.querySelector('input[type="hidden"]');
+            const currentBrandValue = hiddenInput ? hiddenInput.value : '';
+
+            let brandsToShow = brands;
+ 
+            // Si no se proporcionan marcas, las obtenemos de la API.
+            if (!brands) {
+                // Llamada sin parámetros para obtener todas las marcas
+                const response = await fetch('/admin/api/products/category-dependencies');
+                const data = await response.json();
+                if (data.success) {
+                    brandsToShow = data.brands;
+                } else {
+                    brandsToShow = [];
+                }
+            }
+
+            let newOptionsHtml = '<div class="custom-select-option" data-value="">Todas</div>';
+            if (brandsToShow) {
+                brandsToShow.forEach(brand => {
+                    newOptionsHtml += `<div class="custom-select-option" data-value="${brand}">${brand}</div>`;
+                });
+            }
+
+            optionsContainer.innerHTML = newOptionsHtml;
+
+            // Re-seleccionar el valor actual si todavía existe en las nuevas opciones.
+            setCustomSelectValue(brandSelect, currentBrandValue);
+        }
+
+        /**
+         * Establece el valor de un custom select programáticamente.
+         * @param {HTMLElement} selectElement - El elemento .custom-select.
+         * @param {string} value - El valor a seleccionar.
+         */
+        function setCustomSelectValue(selectElement, value) {
+            // MEJORA PROFESIONAL: Añadir una guarda para prevenir errores si el elemento no existe.
+            // Esto soluciona el error "TypeError: Cannot set properties of null".
+            if (!selectElement) return;
+            const hiddenInput = selectElement.querySelector('input[type="hidden"]');
+            // MEJORA PROFESIONAL: Añadir una segunda guarda para el input oculto.
+            if (!hiddenInput) return;
+            const valueDisplay = selectElement.querySelector('.custom-select-value');
+            const options = selectElement.querySelectorAll('.custom-select-option');
+
+            hiddenInput.value = value;
+
+            let found = false;
+            options.forEach(option => {
+                if (option.dataset.value === value) {
+                    option.classList.add('selected');
+                    valueDisplay.textContent = option.textContent.trim();
+                    found = true;
+                } else {
+                    option.classList.remove('selected');
+                }
+            });
+
+            if (!found) {
+                const allOption = selectElement.querySelector('.custom-select-option[data-value=""]');
+                if (allOption) {
+                    allOption.classList.add('selected');
+                    valueDisplay.textContent = allOption.textContent.trim();
+                }
+            }
+        }
     </script>
     {% if error_message %}
     <script>

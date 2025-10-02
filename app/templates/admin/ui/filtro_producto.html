@@ -27,7 +27,7 @@
         </div>
         
         <!-- Formulario de filtros -->
-        <form id="filterForm" method="GET" class="space-y-6" onsubmit="return false;">
+        <form id="filterForm" method="GET" class="space-y-6" onsubmit="applyFilters(); return false;">
             <!-- Filtro por nombre -->
             <div class="filter-section">
                 <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -55,6 +55,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="estado" value="{{ filter_params.get('estado', '') }}">
                         <div class="custom-select-options">
                             <div class="custom-select-option" data-value="">Todos</div>
                             <div class="custom-select-option {% if filter_params.get('estado') == 'activo' %}selected{% endif %}" data-value="activo">Activo</div>
@@ -80,11 +81,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="categoria_id" value="{{ filter_params.get('categoria_id', '') }}">
                         <div class="custom-select-options">
                             <div class="custom-select-option" data-value="">Todas</div>
                             {% for categoria in categorias %}
-                                <div class="custom-select-option {% if filter_params.get('categoria_id') == categoria.id %}selected{% endif %}" data-value="{{ categoria.id }}">
+                                <div class="custom-select-option {% if filter_params.get('categoria_id') == categoria.id %}selected{% endif %} {% if categoria.estado == 'inactivo' %}inactive-option{% endif %}" data-value="{{ categoria.id }}">
                                     {{ categoria.nombre }}
+                                    {% if categoria.estado == 'inactivo' %}
+                                        <span class="status-dot-inactive" title="Categoría inactiva"></span>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -108,11 +113,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="subcategoria_id" value="{{ filter_params.get('subcategoria_id', '') }}">
                         <div class="custom-select-options" id="subcategoriaOptions">
                             <div class="custom-select-option" data-value="">Todas</div>
                             {% for subcategoria in subcategorias %}
-                                <div class="custom-select-option {% if filter_params.get('subcategoria_id') == subcategoria.id %}selected{% endif %}" data-value="{{ subcategoria.id }}">
+                                <div class="custom-select-option {% if filter_params.get('subcategoria_id') == subcategoria.id %}selected{% endif %} {% if subcategoria.estado == 'inactivo' %}inactive-option{% endif %}" data-value="{{ subcategoria.id }}">
                                     {{ subcategoria.nombre }}
+                                    {% if subcategoria.estado == 'inactivo' %}
+                                        <span class="status-dot-inactive" title="Subcategoría inactiva"></span>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -136,11 +145,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="seudocategoria_id" value="{{ filter_params.get('seudocategoria_id', '') }}">
                         <div class="custom-select-options" id="seudocategoriaOptions">
                             <div class="custom-select-option" data-value="">Todas</div>
                             {% for seudocategoria in seudocategorias %}
-                                <div class="custom-select-option {% if filter_params.get('seudocategoria_id') == seudocategoria.id %}selected{% endif %}" data-value="{{ seudocategoria.id }}">
+                                <div class="custom-select-option {% if filter_params.get('seudocategoria_id') == seudocategoria.id %}selected{% endif %} {% if seudocategoria.estado == 'inactivo' %}inactive-option{% endif %}" data-value="{{ seudocategoria.id }}">
                                     {{ seudocategoria.nombre }}
+                                    {% if seudocategoria.estado == 'inactivo' %}
+                                        <span class="status-dot-inactive" title="Seudocategoría inactiva"></span>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -164,8 +177,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="marca" value="{{ filter_params.get('marca', '') }}">
                         <div class="custom-select-options">
-                            <div class="custom-select-option" data-value="">Todas</div>
+                            <div class="custom-select-option selected" data-value="">Todas</div>
                             {% for marca in marcas %}
                                 <div class="custom-select-option {% if filter_params.get('marca') == marca %}selected{% endif %}" data-value="{{ marca }}">
                                     {{ marca }}
@@ -233,14 +247,15 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-gray-500 mb-1">Ordenar por</label>
-                        <div class="custom-select-container">
-                            <div class="custom-select" data-name="sort_by">
+                        <div class="custom-select-container" >
+                            <div class="custom-select" data-name="sort_by" onchange="handleCustomSelectChange(this)">
                                 <div class="custom-select-trigger">
                                     <span class="custom-select-value">Fecha de creación</span>
                                     <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </div>
+                                <input type="hidden" name="sort_by" value="{{ filter_params.get('sort_by', 'created_at') }}">
                                 <div class="custom-select-options">
                                     <div class="custom-select-option {% if filter_params.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}" data-value="created_at">Fecha de creación</div>
                                     <div class="custom-select-option {% if filter_params.get('sort_by') == 'nombre' %}selected{% endif %}" data-value="nombre">Nombre</div>
@@ -253,13 +268,14 @@
                     <div>
                         <label class="block text-xs text-gray-500 mb-1">Orden</label>
                         <div class="custom-select-container">
-                            <div class="custom-select" data-name="sort_order">
+                            <div class="custom-select" data-name="sort_order" onchange="handleCustomSelectChange(this)">
                                 <div class="custom-select-trigger">
                                     <span class="custom-select-value">Descendente</span>
                                     <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </div>
+                                <input type="hidden" name="sort_order" value="{{ filter_params.get('sort_order', 'desc') }}">
                                 <div class="custom-select-options">
                                     <div class="custom-select-option {% if filter_params.get('sort_order', 'desc') == 'desc' %}selected{% endif %}" data-value="desc">Descendente</div>
                                     <div class="custom-select-option {% if filter_params.get('sort_order') == 'asc' %}selected{% endif %}" data-value="asc">Ascendente</div>
@@ -401,6 +417,23 @@
         background-color: #eff6ff;
         color: #1d4ed8;
         font-weight: 600;
+    }
+
+    .custom-select-option.inactive-option {
+        color: #9ca3af; /* Gris más claro para el texto */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .status-dot-inactive {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: #ef4444; /* Rojo */
+        border-radius: 50%;
+        margin-left: 8px;
+        flex-shrink: 0;
     }
     
     /* Estilos para el scrollbar */

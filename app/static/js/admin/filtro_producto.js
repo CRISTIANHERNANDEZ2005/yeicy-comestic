@@ -1,3 +1,14 @@
+/**
+ * @file Módulo de Filtros de Productos (Admin).
+ * @description Gestiona la interactividad del panel de filtros de la lista de productos,
+ *              incluyendo la carga dinámica de categorías, la aplicación de filtros mediante AJAX
+ *              y la actualización de la tabla de resultados sin recargar la página.
+ *
+ * @funcionalidadesClave
+ * 1.  **Carga Dinámica de Categorías:** Actualiza los selectores de subcategoría, seudocategoría y marca en cascada.
+ * 2.  **Aplicación de Filtros AJAX:** Envía los filtros al backend y actualiza la tabla y la paginación con la respuesta.
+ * 3.  **Gestión de Estado de UI:** Muestra indicadores de carga y mensajes de "no resultados" de forma profesional.
+ */
 // Variable para almacenar el timeout del debounce
 // Se adjunta a window para evitar errores de redeclaración en un entorno SPA
 window.debounceTimeout = window.debounceTimeout || null;
@@ -103,31 +114,15 @@ function initCustomSelects() {
       valueDisplay.textContent = option.textContent;
       select.classList.remove("open");
 
-      let hiddenInput = document.querySelector(`input[name="${selectName}"]`);
-      if (!hiddenInput) {
-        hiddenInput = document.createElement("input");
-        hiddenInput.type = "hidden";
-        hiddenInput.name = selectName;
-        document.getElementById("filterForm").appendChild(hiddenInput);
-      }
+      // MEJORA PROFESIONAL: El input oculto ahora existe desde el principio en el HTML.
+      const hiddenInput = select.querySelector(`input[name="${selectName}"]`);
       hiddenInput.value = option.getAttribute("data-value");
 
-      const value = option.getAttribute("data-value");
-      if (selectName === "categoria_id") {
-        loadSubcategorias(value);
-        loadMarcas();
-        applyFilters();
-      } else if (selectName === "subcategoria_id") {
-        loadSeudocategorias(value);
-        loadMarcas();
-        applyFilters();
-      } else if (selectName === "seudocategoria_id") {
-        loadMarcas();
-        applyFilters();
-      } else if (
-        ["estado", "sort_by", "sort_order", "marca"].includes(selectName)
-      ) {
-        applyFilters();
+      // ---  Centralización de la lógica de cambio ---
+      // Se llama a la función global `handleCustomSelectChange` definida en `lista_productos.html`.
+      // Esta función se encarga de la lógica de dependencias de categorías y de llamar a `applyFilters`.
+      if (typeof window.handleCustomSelectChange === 'function') {
+        window.handleCustomSelectChange(select);
       }
     });
   });
@@ -153,100 +148,6 @@ function updateSelectOptions(selectName, options, defaultText = "Todas") {
 
   const hiddenInput = document.querySelector(`input[name="${selectName}"]`);
   if (hiddenInput) hiddenInput.value = "";
-}
-
-function loadSubcategorias(categoriaId) {
-  const subcategoriaSelect = document.querySelector(
-    '[data-name="subcategoria_id"]'
-  );
-  const subcategoriaValue = subcategoriaSelect.querySelector(
-    ".custom-select-value"
-  );
-
-  loadSeudocategorias("");
-
-  if (!categoriaId) {
-    updateSelectOptions("subcategoria_id", []);
-    return;
-  }
-
-  subcategoriaValue.innerHTML = '<span class="loading-indicator"></span>';
-
-  fetch(`/admin/api/categories/${categoriaId}/subcategories`)
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        updateSelectOptions("subcategoria_id", data.subcategorias);
-      } else {
-        console.error("Error al cargar subcategorías:", data.message);
-        subcategoriaValue.textContent = "Error";
-      }
-    })
-    .catch((error) => {
-      console.error("Error en la petición de subcategorías:", error);
-      subcategoriaValue.textContent = "Error";
-    });
-}
-
-function loadSeudocategorias(subcategoriaId) {
-  const seudoSelect = document.querySelector('[data-name="seudocategoria_id"]');
-  const seudoValue = seudoSelect.querySelector(".custom-select-value");
-
-  if (!subcategoriaId) {
-    updateSelectOptions("seudocategoria_id", []);
-    return;
-  }
-
-  seudoValue.innerHTML = '<span class="loading-indicator"></span>';
-
-  fetch(`/admin/api/subcategories/${subcategoriaId}/pseudocategories`)
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        updateSelectOptions("seudocategoria_id", data.seudocategorias);
-      } else {
-        console.error("Error al cargar seudocategorías:", data.message);
-        seudoValue.textContent = "Error";
-      }
-    })
-    .catch((error) => {
-      console.error("Error en la petición de seudocategorías:", error);
-      seudoValue.textContent = "Error";
-    });
-}
-
-function loadMarcas() {
-  const categoriaId =
-    document.querySelector('input[name="categoria_id"]')?.value || "";
-  const subcategoriaId =
-    document.querySelector('input[name="subcategoria_id"]')?.value || "";
-  const seudocategoriaId =
-    document.querySelector('input[name="seudocategoria_id"]')?.value || "";
-
-  const marcaSelect = document.querySelector('[data-name="marca"]');
-  const marcaValue = marcaSelect.querySelector(".custom-select-value");
-  marcaValue.innerHTML = '<span class="loading-indicator"></span>';
-
-  const params = new URLSearchParams({
-    categoria_id: categoriaId,
-    subcategoria_id: subcategoriaId,
-    seudocategoria_id: seudocategoriaId,
-  }).toString();
-
-  fetch(`/admin/api/brands?${params}`)
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        updateSelectOptions("marca", data.marcas);
-      } else {
-        console.error("Error al cargar marcas:", data.message);
-        marcaValue.textContent = "Error";
-      }
-    })
-    .catch((error) => {
-      console.error("Error en la petición de marcas:", error);
-      marcaValue.textContent = "Error";
-    });
 }
 
 function applyFilters(fromPagination = false) {
@@ -573,30 +474,49 @@ window.goToPage = function (page) {
   applyFilters(true); // Indicar que la llamada viene de la paginación
 };
 
+/**
+ * Resetea todos los filtros del formulario a su estado inicial.
+ * Limpia los valores de los inputs, resetea los selects personalizados
+ * y restaura la lista completa de opciones para categorías y marcas.
+ */
 function resetFilters() {
   const filterForm = document.getElementById("filterForm");
   if (filterForm) {
     filterForm.reset();
   }
 
+  // Resetear visualmente todos los custom selects a "Todas"
   document
     .querySelectorAll("#filtersPanel .custom-select")
     .forEach((select) => {
       const valueDisplay = select.querySelector(".custom-select-value");
       const optionElements = select.querySelectorAll(".custom-select-option");
       const selectName = select.getAttribute("data-name");
-
-      optionElements.forEach((opt) => opt.classList.remove("selected"));
-      optionElements[0].classList.add("selected");
-      valueDisplay.textContent = optionElements[0].textContent;
-
+      
       const hiddenInput = document.querySelector(`input[name="${selectName}"]`);
       if (hiddenInput) {
         hiddenInput.value = "";
       }
+      if (valueDisplay && optionElements.length > 0) {
+        valueDisplay.textContent = optionElements[0].textContent;
+      }
     });
 
-  applyFilters();
+  // --- MEJORA PROFESIONAL: Restaurar estado completo de los filtros ---
+  // Restaurar la visibilidad de todas las opciones de categoría.
+  if (typeof window.resetCategoryVisibility === 'function') {
+    window.resetCategoryVisibility(true, true, true);
+  }
+  // Recargar la lista completa de marcas desde la API.
+  if (typeof window.updateBrandOptions === 'function') {
+    window.updateBrandOptions().then(() => {
+      // Aplicar filtros solo después de que las marcas se hayan actualizado.
+      applyFilters();
+    });
+  } else {
+    // Fallback si la función no existe, aunque no debería ocurrir.
+    applyFilters();
+  }
 }
 
 function showNotification(title, message, type) {

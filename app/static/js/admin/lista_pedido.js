@@ -1722,7 +1722,7 @@ window.pedidosApp = {
       });
   },
   
-  // MEJORA PROFESIONAL: La función ahora acepta un parámetro `loadData` (por defecto true).
+  //  La función ahora acepta un parámetro `loadData` (por defecto true).
   // Esto permite limpiar los campos de los filtros sin necesariamente disparar una recarga
   // de datos, lo que es útil al cambiar de pestaña, donde la recarga se maneja por separado.
   clearFilters: function (loadData = true) {

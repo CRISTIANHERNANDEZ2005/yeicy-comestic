@@ -1630,10 +1630,25 @@ function applyRelatedProductsFiltersWithDebounce() {
 // Función para restablecer filtros de productos relacionados
 function resetRelatedProductsFilters() {
   document.getElementById("related-product-search").value = "";
-  document.getElementById("related-sort-by").value = "nombre";
-  document.getElementById("related-order").value = "asc";
-  document.getElementById("related-status").value = "";
+  document.getElementById("related-sort-by").value = "nombre"; // Valor por defecto
+  document.getElementById("related-order").value = "asc"; // Valor por defecto
+  document.getElementById("related-status").value = ""; // "Todos"
 
+  // MEJORA: Restablecer los filtros de categoría que faltaban
+  const subcategoryFilter = document.getElementById(
+    "related-subcategory-filter"
+  );
+  if (subcategoryFilter) subcategoryFilter.value = ""; // "Todas"
+
+  const pseudocategoryFilter = document.getElementById(
+    "related-pseudocategory-filter"
+  );
+  if (pseudocategoryFilter) {
+    pseudocategoryFilter.value = ""; // "Todas"
+    pseudocategoryFilter.disabled = true; // Deshabilitar ya que no hay subcategoría seleccionada
+  }
+
+  // Restablecer la paginación y recargar los productos con los filtros limpios
   relatedProductsCurrentPage = 1;
   fetchRelatedProductsAdvanced();
 }

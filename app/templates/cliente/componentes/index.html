@@ -30,9 +30,9 @@
           <p class="text-gray-600 mt-2">Los más populares entre nuestros clientes</p>
         </div>
         
-        {% if categoria_maquillaje and categorias|length > 0 %}
+        {% if categoria_destacada and categorias|length > 0 %}
         <a
-          href="{{ url_for('products.productos_por_categoria', slug_categoria=categoria_maquillaje.slug) }}"
+          href="{{ url_for('products.productos_por_categoria', slug_categoria=categoria_destacada.slug) }}"
           class="group inline-flex items-center px-5 py-3 bg-gradient-to-r from-pink-50 to-purple-50 rounded-xl border border-pink-100 hover:border-pink-300 transition-all duration-300 shadow-sm hover:shadow-md"
         >
           <span class="text-pink-600 font-medium group-hover:text-pink-700 transition-colors">Ver Todos</span>
@@ -167,6 +167,7 @@
 <script>
   window.PRODUCTS_DATA = {{ productos_data|tojson|safe }};
   window.USUARIO_AUTENTICADO = {{ usuario_autenticado|tojson|safe }};
+  window.RECOMENDACIONES_DATA = {{ productos_recomendados_data|tojson|safe }};
 
   document.addEventListener("DOMContentLoaded", function() {
     // MEJORA PROFESIONAL: Inicialización específica y robusta.
@@ -175,6 +176,12 @@
     const productCarouselContainer = document.getElementById('product-carousel-container');
     if (productCarouselContainer && typeof initializeProductCarousel === 'function') {
       initializeProductCarousel('product-carousel-container', window.PRODUCTS_DATA);
+    }
+
+    // MEJORA PROFESIONAL: Inicializar el carrusel de recomendaciones si el usuario está autenticado y hay datos.
+    const recomendacionesContainer = document.getElementById('recomendaciones-container');
+    if (recomendacionesContainer && window.USUARIO_AUTENTICADO && window.RECOMENDACIONES_DATA.length > 0) {
+      initializeRecomendacionesCarousel(window.RECOMENDACIONES_DATA);
     }
   });
 </script>

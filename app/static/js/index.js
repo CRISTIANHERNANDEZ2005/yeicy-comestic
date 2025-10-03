@@ -63,19 +63,6 @@ class SimpleCarousel {
 
     this.track.innerHTML = '';
     this.slides.forEach(slide => this.track.appendChild(slide));
-
-    // MEJORA PROFESIONAL: Animación de entrada para los productos.
-    // Una vez que las diapositivas están en el DOM, las animamos para una aparición suave.
-    const cards = this.track.querySelectorAll('.product-card');
-    cards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = `opacity 0.5s ease ${index * 0.05}s, transform 0.5s ease ${index * 0.05}s`;
-        setTimeout(() => {
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
-        }, 50); // Pequeño delay para asegurar que las transiciones se apliquen.
-    });
     this.currentIndex = 0; // Reset index on rebuild
     this.update();
   }
@@ -128,6 +115,29 @@ class SimpleCarousel {
 }
 
 /**
+ * MEJORA PROFESIONAL: Inicializa el carrusel de recomendaciones directamente con los datos del servidor.
+ * Esta función reemplaza la necesidad de una petición fetch, haciendo la carga instantánea.
+ * @param {Array} productos - Array de objetos de producto para las recomendaciones.
+ */
+function initializeRecomendacionesCarousel(productos) {
+  const container = document.getElementById("recomendaciones-container");
+  const loader = document.getElementById("recomendaciones-loader");
+  const noRecomendaciones = document.getElementById("no-recomendaciones");
+  const recomendacionesCarousel = new SimpleCarousel({
+    trackId: 'recomendaciones-track',
+    prevBtnId: 'recomendaciones-prev',
+    nextBtnId: 'recomendaciones-next',
+    indicatorsId: 'recomendaciones-indicators',
+  });
+
+  if (!container || !loader || !noRecomendaciones || !recomendacionesCarousel) return;
+
+  loader.style.display = "none";
+  recomendacionesCarousel.products = productos;
+  recomendacionesCarousel.updateSlides();
+}
+
+/**
  * @description Gestiona la interactividad de la página principal, incluyendo la carga
  *              dinámica de contenido exclusivo para usuarios autenticados y la gestión
  *              de modales para interacciones de usuarios no autenticados.
@@ -138,26 +148,12 @@ class SimpleCarousel {
 class HomePageManager {
   constructor() {
     this.likeAuthModalTimeout = null;
-    // MEJORA: Inicializar la propiedad del carrusel como null.
-    // Se creará solo si el usuario está autenticado.
-    this.recomendacionesCarousel = null;
     this.init();
   }
 
   init() {
     this.bindEvents();
     this.updateLikeBtnStyles();
-    // Inicia la carga de recomendaciones si el usuario está autenticado.
-    // La inicialización del carrusel se mueve aquí, dentro de la condición.
-    if (window.USUARIO_AUTENTICADO) {
-      this.recomendacionesCarousel = new SimpleCarousel({
-        trackId: 'recomendaciones-track',
-        prevBtnId: 'recomendaciones-prev',
-        nextBtnId: 'recomendaciones-next',
-        indicatorsId: 'recomendaciones-indicators',
-      });
-      this.initRecomendaciones();
-    }
   }
 
   bindEvents() {
@@ -233,51 +229,6 @@ class HomePageManager {
         icon.classList.add("w-6", "h-6", "md:w-5", "md:h-5");
       }
     });
-  }
-
-  /**
-   * Carga y renderiza productos recomendados para el usuario autenticado.
-   */
-  async initRecomendaciones() {
-    const container = document.getElementById("recomendaciones-container");
-    const loader = document.getElementById("recomendaciones-loader");
-    const noRecomendaciones = document.getElementById("no-recomendaciones");
-
-    if (!container || !loader || !noRecomendaciones || !this.recomendacionesCarousel) return;
-
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch('/api/productos/recomendados', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) throw new Error('Error al cargar recomendaciones desde la API.');
-      
-      const productos = await response.json();
-
-      if (productos && productos.length > 0) {
-        // MEJORA: Pasamos los productos al carrusel y él se encarga de la lógica responsiva.
-        // La animación de carga se gestionará dentro de `updateSlides`.
-        loader.style.transition = 'opacity 0.3s ease';
-        loader.style.opacity = '0';
-        setTimeout(() => loader.style.display = "none", 300);
-        this.recomendacionesCarousel.products = productos;
-        this.recomendacionesCarousel.updateSlides();
-
-      } else {
-        noRecomendaciones.style.display = 'block';
-      }
-    } catch (error) {
-      console.error("Error al cargar recomendaciones:", error);
-      loader.style.display = "none";
-      // MEJORA PROFESIONAL: Si hay un error, ocultar toda la sección de recomendaciones.
-      // Es una mejor experiencia de usuario que mostrar un mensaje de error persistente.
-      if (container) {
-        container.style.display = 'none';
-      }
-    }
   }
 }
 document.addEventListener("DOMContentLoaded", () => {

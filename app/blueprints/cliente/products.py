@@ -43,10 +43,19 @@ def index():
                   productos y el carrito.
     """
 
+    # --- MEJORA PROFESIONAL: Carga de Recomendaciones en el Servidor ---
+    # Se obtienen los productos recomendados directamente en la carga de la página
+    # para eliminar la petición AJAX y mejorar la velocidad de respuesta.
+    productos_recomendados_data = []
+    categoria_recomendados = CategoriasPrincipales.query.filter(
+        func.lower(CategoriasPrincipales.nombre) == 'insumos para uñas acrilicas',
+        CategoriasPrincipales.estado == EstadoEnum.ACTIVO
+    ).first()
+
     # --- Búsqueda de Categoría Principal ---
-    # Se busca la categoría "Maquillaje" para destacar sus productos en la página de inicio.
-    categoria_maquillaje = CategoriasPrincipales.query.filter(
-        func.lower(CategoriasPrincipales.nombre) == 'maquillaje',
+    # MEJORA PROFESIONAL: Se cambia la categoría destacada a "Insumos Para Uñas Acrilicas".
+    categoria_destacada = CategoriasPrincipales.query.filter(
+        func.lower(CategoriasPrincipales.nombre) == 'insumos para uñas acrilicas',
         CategoriasPrincipales.estado == EstadoEnum.ACTIVO
     ).first()
 
@@ -54,15 +63,15 @@ def index():
     categoria_actual_nombre = ''
 
     # Obtener productos de la categoría "Maquillaje"
-    if categoria_maquillaje:
-        categoria_actual_nombre = categoria_maquillaje.nombre
+    if categoria_destacada:
+        categoria_actual_nombre = categoria_destacada.nombre
         # --- Consulta Optimizada de Productos ---
         # Se obtienen los IDs de todas las seudocategorías activas bajo "Maquillaje"
         # para luego buscar productos que pertenezcan a ellas.
         seudocategoria_ids = db.session.query(Seudocategorias.id)\
             .join(Subcategorias)\
             .filter(
-                Subcategorias.categoria_principal_id == categoria_maquillaje.id,
+                Subcategorias.categoria_principal_id == categoria_destacada.id,
                 Subcategorias.estado == EstadoEnum.ACTIVO, # Asegurarse de que la subcategoría también esté activa
                 Seudocategorias.estado == EstadoEnum.ACTIVO
         ).all()
@@ -81,6 +90,27 @@ def index():
                 .limit(12)\
                 .all()
 
+    # Obtener productos recomendados de "Insumos Para Uñas Acrilicas"
+    if categoria_recomendados:
+        seudocategoria_ids_rec = db.session.query(Seudocategorias.id)\
+            .join(Subcategorias)\
+            .filter(
+                Subcategorias.categoria_principal_id == categoria_recomendados.id,
+                Subcategorias.estado == EstadoEnum.ACTIVO,
+                Seudocategorias.estado == EstadoEnum.ACTIVO
+        ).all()
+        
+        seudocategoria_ids_rec = [id[0] for id in seudocategoria_ids_rec]
+
+        if seudocategoria_ids_rec:
+            productos_recomendados = Productos.query\
+                .filter(
+                    Productos.seudocategoria_id.in_(seudocategoria_ids_rec),
+                    Productos.estado == EstadoEnum.ACTIVO,
+                    Productos._existencia > 0
+                ).order_by(func.random()).limit(12).all()
+            productos_recomendados_data = [producto_to_dict(p) for p in productos_recomendados]
+
     # --- Preparación de Datos para la Plantilla ---
     productos_data = [producto_to_dict(p) for p in productos]
 
@@ -96,11 +126,12 @@ def index():
         productos=productos,
         producto=productos[0] if productos else None,
         productos_data=productos_data,
+        productos_recomendados_data=productos_recomendados_data, # Inyectar recomendaciones
         total_productos=total_productos,
         cart_items=cart_items,
         total_price=total_price,
         categoria_actual=categoria_actual_nombre,
-        categoria_maquillaje=categoria_maquillaje,
+        categoria_destacada=categoria_destacada,
         title="YE & Ci Cosméticos"
     )
 
@@ -962,7 +993,6 @@ def get_price_range():
 @products_bp.route('/api/productos/recomendados')
 @jwt_required
 def get_recomendaciones(usuario):
-    import random
     """
     API: Devuelve productos recomendados para el usuario autenticado.
 
@@ -990,46 +1020,23 @@ def get_recomendaciones(usuario):
             liked_seudocategorias_ids = [sid[0] for sid in liked_seudocategorias]
 
             if liked_seudocategorias_ids:
-                # MEJORA PROFESIONAL: Optimización de consulta aleatoria.
-                # 1. Obtener solo los IDs de los productos candidatos. Es mucho más rápido.
-                possible_ids_query = db.session.query(Productos.id).filter(
+                # Buscar otros productos en esas seudocategorías, excluyendo los que ya le gustan
+                recomendaciones = Productos.query.filter(
                     Productos.seudocategoria_id.in_(liked_seudocategorias_ids),
                     Productos.id.notin_(liked_product_ids),
                     Productos.estado == EstadoEnum.ACTIVO,
                     Productos._existencia > 0
-                )
-                possible_ids = [pid[0] for pid in possible_ids_query.all()]
-
-                # 2. Seleccionar aleatoriamente los IDs en Python.
-                num_to_select = min(len(possible_ids), 12)
-                selected_ids = random.sample(possible_ids, num_to_select)
-
-                # 3. Obtener los objetos de producto completos con una consulta WHERE IN, que es muy rápida.
-                if selected_ids:
-                    recomendaciones = Productos.query.filter(Productos.id.in_(selected_ids)).all()
+                ).order_by(func.random()).limit(12).all()
 
         # Si no hay suficientes recomendaciones, rellenar con productos populares generales
         if len(recomendaciones) < 12:
             ids_existentes = [p.id for p in recomendaciones] + liked_product_ids
-            
-            # MEJORA PROFESIONAL: Misma optimización para productos populares.
-            # 1. Obtener IDs de candidatos.
-            possible_popular_ids_query = db.session.query(Productos.id).filter(
+            productos_populares = Productos.query.filter(
                 Productos.id.notin_(ids_existentes),
                 Productos.estado == EstadoEnum.ACTIVO,
                 Productos._existencia > 0
-            )
-            possible_popular_ids = [pid[0] for pid in possible_popular_ids_query.all()]
-
-            # 2. Seleccionar aleatoriamente.
-            num_to_fill = 12 - len(recomendaciones)
-            num_to_select = min(len(possible_popular_ids), num_to_fill)
-            selected_ids = random.sample(possible_popular_ids, num_to_select)
-
-            # 3. Obtener objetos de producto.
-            if selected_ids:
-                productos_adicionales = Productos.query.filter(Productos.id.in_(selected_ids)).all()
-                recomendaciones.extend(productos_adicionales)
+            ).order_by(func.random()).limit(12 - len(recomendaciones)).all()
+            recomendaciones.extend(productos_populares)
 
         return jsonify([producto_to_dict(p) for p in recomendaciones])
     except Exception as e:

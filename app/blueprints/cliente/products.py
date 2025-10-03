@@ -19,7 +19,7 @@ from app.models.domains.review_models import Reseñas, Likes
 from app.models.domains.search_models import BusquedaTermino
 from app.models.serializers import producto_to_dict, categoria_principal_to_dict, subcategoria_to_dict, seudocategoria_to_dict, busqueda_termino_to_dict
 from app.extensions import db
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, case
 from sqlalchemy.orm import joinedload
 from app.models.enums import EstadoEnum
 from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
@@ -39,82 +39,72 @@ def index():
     la página se renderizará sin productos destacados.
 
     Returns:
-        Response: La plantilla `index.html` renderizada con los datos de los
-                  productos y el carrito.
+        Response: La plantilla `index.html` renderizada con los datos de los productos y el carrito.
     """
+    # MEJORA PROFESIONAL: Consulta Unificada y Optimizada
+    # Se combinan las consultas para productos destacados y recomendados en una sola,
+    # reduciendo las llamadas a la base de datos y simplificando la lógica.
+    
+    # 1. Definir los nombres de las categorías de interés.
+    nombre_cat_destacada = 'insumos para uñas acrilicas'
+    nombre_cat_recomendada = 'insumos para uñas acrilicas'
 
-    # --- MEJORA PROFESIONAL: Carga de Recomendaciones en el Servidor ---
-    # Se obtienen los productos recomendados directamente en la carga de la página
-    # para eliminar la petición AJAX y mejorar la velocidad de respuesta.
-    productos_recomendados_data = []
-    categoria_recomendados = CategoriasPrincipales.query.filter(
-        func.lower(CategoriasPrincipales.nombre) == 'insumos para uñas acrilicas',
+    # 2. Construir una consulta única para obtener todos los productos relevantes.
+    #    - Se usa `joinedload` para cargar eficientemente la jerarquía de categorías y evitar el problema N+1.
+    #    - Se usa `case` para asignar una prioridad de ordenamiento: 1 para destacados, 2 para recomendados.
+    query = db.session.query(Productos).options(
+        joinedload(Productos.seudocategoria)
+        .joinedload(Seudocategorias.subcategoria)
+        .joinedload(Subcategorias.categoria_principal)
+    ).join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+    ).join(
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+    ).join(
+        CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
+    ).filter(
+        func.lower(CategoriasPrincipales.nombre).in_([nombre_cat_destacada, nombre_cat_recomendada]),
+        Productos.estado == EstadoEnum.ACTIVO,
+        Productos._existencia > 0,
+        Seudocategorias.estado == EstadoEnum.ACTIVO,
+        Subcategorias.estado == EstadoEnum.ACTIVO,
         CategoriasPrincipales.estado == EstadoEnum.ACTIVO
-    ).first()
+    ).order_by(
+        case(
+            (func.lower(CategoriasPrincipales.nombre) == nombre_cat_destacada, 1),
+            (func.lower(CategoriasPrincipales.nombre) == nombre_cat_recomendada, 2),
+            else_=3
+        ),
+        func.random() # Orden aleatorio dentro de cada grupo
+    )
 
-    # --- Búsqueda de Categoría Principal ---
-    # MEJORA PROFESIONAL: Se cambia la categoría destacada a "Insumos Para Uñas Acrilicas".
-    categoria_destacada = CategoriasPrincipales.query.filter(
-        func.lower(CategoriasPrincipales.nombre) == 'insumos para uñas acrilicas',
-        CategoriasPrincipales.estado == EstadoEnum.ACTIVO
-    ).first()
+    # 3. Ejecutar la consulta y separar los productos en sus respectivas listas.
+    all_products = query.all()
+    
+    productos_destacados = []
+    productos_recomendados = []
+    
+    # Usamos sets para evitar duplicados y limitar a 12 por categoría.
+    ids_destacados = set()
+    ids_recomendados = set()
 
-    productos = []
-    categoria_actual_nombre = ''
+    for p in all_products:
+        cat_nombre_lower = p.seudocategoria.subcategoria.categoria_principal.nombre.lower()
+        if cat_nombre_lower == nombre_cat_destacada and len(ids_destacados) < 12 and p.id not in ids_destacados:
+            productos_destacados.append(p)
+            ids_destacados.add(p.id)
+        elif cat_nombre_lower == nombre_cat_recomendada and len(ids_recomendados) < 12 and p.id not in ids_recomendados:
+            productos_recomendados.append(p)
+            ids_recomendados.add(p.id)
 
-    # Obtener productos de la categoría "Maquillaje"
-    if categoria_destacada:
-        categoria_actual_nombre = categoria_destacada.nombre
-        # --- Consulta Optimizada de Productos ---
-        # Se obtienen los IDs de todas las seudocategorías activas bajo "Maquillaje"
-        # para luego buscar productos que pertenezcan a ellas.
-        seudocategoria_ids = db.session.query(Seudocategorias.id)\
-            .join(Subcategorias)\
-            .filter(
-                Subcategorias.categoria_principal_id == categoria_destacada.id,
-                Subcategorias.estado == EstadoEnum.ACTIVO, # Asegurarse de que la subcategoría también esté activa
-                Seudocategorias.estado == EstadoEnum.ACTIVO
-        ).all()
+    # 4. Serializar los datos para la plantilla.
+    #    El `producto_to_dict` ahora será mucho más rápido gracias al `joinedload`.
+    productos_data = [producto_to_dict(p) for p in productos_destacados]
+    productos_recomendados_data = [producto_to_dict(p) for p in productos_recomendados]
 
-        seudocategoria_ids = [id[0] for id in seudocategoria_ids]
-
-        if seudocategoria_ids:
-            # Filtrar productos de esta categoría
-            productos = Productos.query\
-                .filter(
-                    Productos.seudocategoria_id.in_(seudocategoria_ids),
-                    Productos.estado == EstadoEnum.ACTIVO,
-                    Productos._existencia  > 0
-                )\
-                .order_by(func.random())\
-                .limit(12)\
-                .all()
-
-    # Obtener productos recomendados de "Insumos Para Uñas Acrilicas"
-    if categoria_recomendados:
-        seudocategoria_ids_rec = db.session.query(Seudocategorias.id)\
-            .join(Subcategorias)\
-            .filter(
-                Subcategorias.categoria_principal_id == categoria_recomendados.id,
-                Subcategorias.estado == EstadoEnum.ACTIVO,
-                Seudocategorias.estado == EstadoEnum.ACTIVO
-        ).all()
-        
-        seudocategoria_ids_rec = [id[0] for id in seudocategoria_ids_rec]
-
-        if seudocategoria_ids_rec:
-            productos_recomendados = Productos.query\
-                .filter(
-                    Productos.seudocategoria_id.in_(seudocategoria_ids_rec),
-                    Productos.estado == EstadoEnum.ACTIVO,
-                    Productos._existencia > 0
-                ).order_by(func.random()).limit(12).all()
-            productos_recomendados_data = [producto_to_dict(p) for p in productos_recomendados]
-
-    # --- Preparación de Datos para la Plantilla ---
-    productos_data = [producto_to_dict(p) for p in productos]
-
-    total_productos = len(productos)
+    # 5. Obtener la categoría destacada para el título de la página.
+    categoria_destacada = CategoriasPrincipales.query.filter(func.lower(CategoriasPrincipales.nombre) == nombre_cat_destacada).first()
+    categoria_actual_nombre = categoria_destacada.nombre if categoria_destacada else "Destacados"
 
     # Obtiene los datos del carrito para mostrarlos en el encabezado.
     cart_info = get_or_create_cart()
@@ -123,11 +113,10 @@ def index():
 
     return render_template(
         'cliente/componentes/index.html',
-        productos=productos,
-        producto=productos[0] if productos else None,
+        producto=productos_destacados[0] if productos_destacados else None,
         productos_data=productos_data,
         productos_recomendados_data=productos_recomendados_data, # Inyectar recomendaciones
-        total_productos=total_productos,
+        total_productos=len(productos_data),
         cart_items=cart_items,
         total_price=total_price,
         categoria_actual=categoria_actual_nombre,

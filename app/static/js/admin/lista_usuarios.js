@@ -1042,6 +1042,15 @@ if (!window.usuariosApp) {
                             >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
+                            <a 
+                              href="/admin/cliente/${cliente.id}/detalle"
+                              data-action="view-cliente" 
+                              data-id="${cliente.id}"
+                              class="action-btn text-gray-500 hover:text-gray-800 ml-2"
+                              title="Ver detalles del cliente"
+                            >
+                                <i class="fas fa-eye text-lg"></i>
+                            </a>
                         </td>
                     </tr>
                 `;
@@ -1084,6 +1093,11 @@ if (!window.usuariosApp) {
           break;
         case "edit-admin":
           this.editAdministrador(id);
+          break;
+        case "view-cliente":
+          if (id && window.loadAdminContent) {
+            window.loadAdminContent(`/admin/cliente/${id}/detalle`);
+          }
           break;
         case "change-page":
           if (type && page) this.changePage(type, parseInt(page));
@@ -1178,6 +1192,12 @@ if (!window.usuariosApp) {
                                 title="${admin.estado === 'inactivo' ? 'Para editar, el administrador debe estar activo.' : 'Editar administrador'}"
                             >
                                 <i class="fas fa-edit text-lg"></i>
+                            </button>
+                            <span 
+                                class="text-gray-400 ml-4 cursor-default"
+                                title="Ver detalles (Próximamente)"
+                            >
+                                <i class="fas fa-eye text-lg"></i>
                             </button>
                         </td>
                     </tr>

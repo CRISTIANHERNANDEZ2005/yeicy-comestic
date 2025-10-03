@@ -1,876 +1,974 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalles del Cliente - Profesional</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        /* Animaciones personalizadas */
-        .tab-active {
-            @apply border-b-2 border-blue-600 text-blue-600;
-        }
-        .card-hover {
-            @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02];
-        }
-        .table-row-hover {
-            @apply hover:bg-gray-50 transition-colors duration-200;
-        }
-        
-        /* Layout profesional para desktop */
-        @media (min-width: 1024px) {
-            .main-content-layout {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 2rem;
-            }
-            .left-column {
-                display: flex;
-                flex-direction: column;
-                gap: 2rem;
-            }
-            .right-column {
-                display: flex;
-                flex-direction: column;
-                gap: 2rem;
-            }
-            .full-width-section {
-                grid-column: 1 / -1;
-            }
-        }
-    </style>
-<base target="_blank">
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- Header Premium (igual que antes) -->
-    <header class="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white shadow-2xl relative overflow-hidden">
-        <div class="absolute inset-0">
-            <svg class="absolute left-0 top-0 h-full w-full" viewBox="0 0 1920 1080" preserveAspectRatio="none">
-                <path class="fill-current text-blue-800 opacity-20" d="M0,0 C500,200 1000,100 1920,500 L1920,1080 L0,1080 Z"></path>
-                <path class="fill-current text-cyan-700 opacity-10" d="M0,300 C500,100 1000,300 1920,200 L1920,1080 L0,1080 Z"></path>
-            </svg>
-        </div>
-        
-        <div class="container mx-auto px-4 py-8 relative z-10">
-            <div class="flex flex-col lg:flex-row justify-between items-center">
-                <div class="flex items-center space-x-6 mb-6 lg:mb-0">
-                    <div class="relative">
-                        <div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-2xl">
-                            <i class="fas fa-user text-4xl text-white"></i>
-                        </div>
-                        <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full border-4 border-slate-900 flex items-center justify-center">
-                            <div class="w-3 h-3 bg-green-300 rounded-full animate-pulse"></div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center lg:text-left">
-                        <h1 class="text-3xl lg:text-4xl font-bold mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">
-                            Carlos Eduardo Martínez Rodríguez
-                        </h1>
-                        <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-sm">
-                            <span class="flex items-center text-blue-200">
-                                <i class="fas fa-mobile-alt mr-2"></i>+57 310 123 4567
-                            </span>
-                            <span class="flex items-center text-blue-200">
-                                <i class="fas fa-calendar-alt mr-2"></i>Cliente desde Mar 2022
-                            </span>
-                            <span class="flex items-center text-green-400 font-medium">
-                                <i class="fas fa-circle mr-2 text-xs"></i>En línea
-                            </span>
-                        </div>
-                        <div class="mt-3 flex items-center justify-center lg:justify-start">
-                            <span class="bg-blue-800 bg-opacity-50 px-3 py-1 rounded-full text-xs font-mono">
-                                ID: #USR-2024-001
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-blue-200 text-sm">Total Invertido</p>
-                                <p class="text-2xl font-bold">$2.5M</p>
-                            </div>
-                            <i class="fas fa-dollar-sign text-3xl text-green-400"></i>
-                        </div>
-                    </div>
-                    
-                    <div class="bg-white bg-opacity-10 backdrop-blur-sm rounded-xl p-4 border border-white border-opacity-20">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-blue-200 text-sm">Pedidos</p>
-                                <p class="text-2xl font-bold">47</p>
-                            </div>
-                            <i class="fas fa-shopping-bag text-3xl text-blue-400"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Contenedor Principal -->
-    <div class="container mx-auto px-4 py-8">
-        
-        <!-- 📊 Tarjetas de Estadísticas Principales -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-gradient-to-br from-green-500 via-green-600 to-green-700 rounded-2xl p-6 text-white shadow-xl card-hover relative overflow-hidden">
-                <div class="absolute -top-4 -right-4 w-16 h-16 bg-white bg-opacity-20 rounded-full"></div>
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-green-100 text-sm font-medium">Total Ingresos</p>
-                        <i class="fas fa-dollar-sign text-2xl text-green-200"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2">$2,458,900</p>
-                    <div class="flex items-center text-green-200 text-sm">
-                        <i class="fas fa-arrow-up mr-1"></i>
-                        <span>+15.3% vs mes anterior</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-2xl p-6 text-white shadow-xl card-hover relative overflow-hidden">
-                <div class="absolute -top-4 -right-4 w-16 h-16 bg-white bg-opacity-20 rounded-full"></div>
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-blue-100 text-sm font-medium">Pedidos Completados</p>
-                        <i class="fas fa-box-check text-2xl text-blue-200"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2">47</p>
-                    <div class="flex items-center text-blue-200 text-sm">
-                        <i class="fas fa-shopping-cart mr-1"></i>
-                        <span>3 este mes</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-br from-purple-500 via-purple-600 to-purple-700 rounded-2xl p-6 text-white shadow-xl card-hover relative overflow-hidden">
-                <div class="absolute -top-4 -right-4 w-16 h-16 bg-white bg-opacity-20 rounded-full"></div>
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-purple-100 text-sm font-medium">Ticket Promedio</p>
-                        <i class="fas fa-chart-line text-2xl text-purple-200"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2">$52,319</p>
-                    <div class="flex items-center text-purple-200 text-sm">
-                        <i class="fas fa-calculator mr-1"></i>
-                        <span>Por pedido</span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-gradient-to-br from-orange-500 via-orange-600 to-orange-700 rounded-2xl p-6 text-white shadow-xl card-hover relative overflow-hidden">
-                <div class="absolute -top-4 -right-4 w-16 h-16 bg-white bg-opacity-20 rounded-full"></div>
-                <div class="relative z-10">
-                    <div class="flex items-center justify-between mb-3">
-                        <p class="text-orange-100 text-sm font-medium">Calificación</p>
-                        <i class="fas fa-star text-2xl text-orange-200"></i>
-                    </div>
-                    <p class="text-3xl font-bold mb-2">4.8/5.0</p>
-                    <div class="flex items-center text-orange-200 text-sm">
-                        <i class="fas fa-users mr-1"></i>
-                        <span>23 reseñas</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 📋 Layout Principal: Columnas + Sección Completa -->
-        <div class="main-content-layout">
-            
-            <!-- Columna Izquierda -->
-            <div class="left-column">
-                <!-- Perfil del Cliente -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-user-circle mr-3 text-blue-600"></i>Perfil del Cliente
-                    </h2>
-                    
-                    <div class="space-y-4">
-                        <div class="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100">
-                            <div class="flex items-center">
-                                <i class="fas fa-signature text-blue-600 mr-3 text-lg"></i>
-                                <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Nombre Completo</p>
-                                    <p class="font-semibold text-gray-800">Carlos Eduardo Martínez Rodríguez</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100">
-                            <div class="flex items-center">
-                                <i class="fas fa-mobile-alt text-green-600 mr-3 text-lg"></i>
-                                <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Teléfono</p>
-                                    <p class="font-semibold text-gray-800">+57 310 123 4567</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-100">
-                            <div class="flex items-center">
-                                <i class="fas fa-calendar-check text-purple-600 mr-3 text-lg"></i>
-                                <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Cliente desde</p>
-                                    <p class="font-semibold text-gray-800">15 de Marzo, 2022</p>
-                                    <p class="text-sm text-gray-600">(2 años y 6 meses)</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-xl border border-orange-100">
-                            <div class="flex items-center">
-                                <i class="fas fa-crown text-orange-600 mr-3 text-lg"></i>
-                                <div>
-                                    <p class="text-xs text-gray-500 uppercase tracking-wide">Tipo de Cliente</p>
-                                    <p class="font-semibold text-gray-800">Cliente VIP</p>
-                                    <p class="text-sm text-gray-600">Top 5% de clientes</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-6 pt-6 border-t border-gray-200">
-                        <h3 class="text-sm font-semibold text-gray-700 mb-3">Actividad Reciente</h3>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="text-center p-3 bg-gray-50 rounded-lg">
-                                <p class="text-2xl font-bold text-blue-600">12</p>
-                                <p class="text-xs text-gray-500">Días desde última compra</p>
-                            </div>
-                            <div class="text-center p-3 bg-gray-50 rounded-lg">
-                                <p class="text-2xl font-bold text-green-600">85%</p>
-                                <p class="text-xs text-gray-500">Tasa de finalización</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 📈 Gráfico de Preferencias -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                        <i class="fas fa-chart-pie mr-3 text-purple-600"></i>Categorías Preferidas
-                    </h2>
-                    <canvas id="categoriasChart" width="400" height="400"></canvas>
-                    
-                    <div class="mt-4 grid grid-cols-1 gap-2">
-                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 bg-blue-500 rounded mr-2"></div>
-                                <span class="text-sm text-gray-700">Tecnología</span>
-                            </div>
-                            <span class="text-sm font-semibold text-gray-800">45%</span>
-                        </div>
-                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 bg-green-500 rounded mr-2"></div>
-                                <span class="text-sm text-gray-700">Hogar</span>
-                            </div>
-                            <span class="text-sm font-semibold text-gray-800">20%</span>
-                        </div>
-                        <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                            <div class="flex items-center">
-                                <div class="w-4 h-4 bg-yellow-500 rounded mr-2"></div>
-                                <span class="text-sm text-gray-700">Deportes</span>
-                            </div>
-                            <span class="text-sm font-semibold text-gray-800">15%</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Columna Derecha -->
-            <div class="right-column">
-                <!-- 🔥 Tabs de Navegación -->
-                <div class="bg-white rounded-2xl shadow-xl border border-gray-100">
-                    <div class="border-b border-gray-200">
-                        <nav class="flex space-x-8 px-6" aria-label="Tabs">
-                            <button class="tab-active py-4 px-1 text-sm font-medium border-b-2 border-blue-600 text-blue-600" data-tab="pedidos">
-                                <i class="fas fa-history mr-2"></i>Historial de Pedidos
-                            </button>
-                            <button class="py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300" data-tab="productos-comprados">
-                                <i class="fas fa-shopping-bag mr-2"></i>Productos Comprados
-                            </button>
-                            <button class="py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300" data-tab="productos-frecuentes">
-                                <i class="fas fa-star mr-2"></i>Productos Más Comprados
-                            </button>
-                            <button class="py-4 px-1 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent hover:border-gray-300" data-tab="reseñas">
-                                <i class="fas fa-comments mr-2"></i>Reseñas
-                            </button>
-                        </nav>
-                    </div>
-                </div>
-
-                <!-- 📋 Contenido de Tabs -->
-                <div class="tab-content">
-                    
-                    <!-- Historial de Pedidos -->
-                    <div id="pedidos-content" class="tab-pane active">
-                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                                <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center">
-                                    <i class="fas fa-history mr-3 text-blue-600"></i>Historial de Pedidos
-                                </h2>
-                                <div class="flex flex-wrap gap-3">
-                                    <div class="flex bg-gray-100 rounded-lg p-1">
-                                        <button class="vista-btn active px-3 py-2 text-sm font-medium rounded-md transition-all" data-vista="tabla" data-target="pedidos">
-                                            <i class="fas fa-table mr-2"></i>Tabla
-                                        </button>
-                                        <button class="vista-btn px-3 py-2 text-sm font-medium rounded-md transition-all" data-vista="carta" data-target="pedidos">
-                                            <i class="fas fa-th-large mr-2"></i>Carta
-                                        </button>
-                                    </div>
-                                    <div class="flex flex-wrap gap-2">
-                                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-105">
-                                            <i class="fas fa-filter mr-2"></i>Todos (47)
-                                        </button>
-                                        <button class="bg-green-100 text-green-700 px-4 py-2 rounded-lg hover:bg-green-200 transition-all duration-300">
-                                            <i class="fas fa-check mr-2"></i>Completados (42)
-                                        </button>
-                                        <button class="bg-yellow-100 text-yellow-700 px-4 py-2 rounded-lg hover:bg-yellow-200 transition-all duration-300">
-                                            <i class="fas fa-clock mr-2"></i>En Proceso (3)
-                                        </button>
-                                        <button class="bg-red-100 text-red-700 px-4 py-2 rounded-lg hover:bg-red-200 transition-all duration-300">
-                                            <i class="fas fa-times mr-2"></i>Cancelados (2)
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Vista Tabla -->
-                            <div id="pedidos-tabla" class="vista-panel">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pedido</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Productos</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            <tr class="table-row-hover">
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="text-sm font-medium text-gray-900">#PED-2024-156</div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">25 Sep 2024</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                        <i class="fas fa-check-circle mr-1"></i>Completado
-                                                    </span>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">3 productos</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$3,250,000</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <button class="text-blue-600 hover:text-blue-800 font-medium">
-                                                        <i class="fas fa-eye mr-1"></i>Ver
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                            <tr class="table-row-hover">
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="text-sm font-medium text-gray-900">#PED-2024-157</div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">28 Sep 2024</td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
-                                                        <i class="fas fa-clock mr-1"></i>En Proceso
-                                                    </span>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">1 producto</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">$1,850,000</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <button class="text-blue-600 hover:text-blue-800 font-medium">
-                                                        <i class="fas fa-eye mr-1"></i>Ver
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Vista Carta -->
-                            <div id="pedidos-carta" class="vista-panel hidden">
-                                <div class="space-y-4">
-                                    <div class="border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all duration-300 hover:border-green-300 bg-gradient-to-r from-white to-green-50 card-hover">
-                                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
-                                            <div class="flex-1">
-                                                <div class="flex items-center mb-3">
-                                                    <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium flex items-center">
-                                                        <i class="fas fa-check-circle mr-2"></i>Completado
-                                                    </span>
-                                                    <span class="ml-3 text-gray-500 text-sm font-mono">#PED-2024-156</span>
-                                                    <span class="ml-3 text-gray-400 text-xs">25 de Septiembre, 2024</span>
-                                                </div>
-                                                <h3 class="font-semibold text-gray-800 text-lg mb-1">Laptop HP Pavilion + Accesorios Premium</h3>
-                                                <p class="text-sm text-gray-600 mb-2">3 productos • Entregado el 28 de Septiembre</p>
-                                            </div>
-                                            <div class="mt-4 md:mt-0 text-right">
-                                                <p class="text-2xl font-bold text-gray-800 mb-2">$3,250,000</p>
-                                                <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium">
-                                                    <i class="fas fa-eye mr-2"></i>Ver Detalles
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Productos Comprados -->
-                    <div id="productos-comprados-content" class="tab-pane hidden">
-                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                                <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center">
-                                    <i class="fas fa-shopping-bag mr-3 text-blue-600"></i>Productos Comprados
-                                </h2>
-                                <div class="flex gap-3">
-                                    <div class="flex bg-gray-100 rounded-lg p-1">
-                                        <button class="vista-btn active px-3 py-2 text-sm font-medium rounded-md transition-all" data-vista="tabla" data-target="productos-comprados">
-                                            <i class="fas fa-table mr-2"></i>Tabla
-                                        </button>
-                                        <button class="vista-btn px-3 py-2 text-sm font-medium rounded-md transition-all" data-vista="carta" data-target="productos-comprados">
-                                            <i class="fas fa-th-large mr-2"></i>Carta
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Vista Tabla Productos Comprados -->
-                            <div id="productos-comprados-tabla" class="vista-panel">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Veces Comprado</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Compra</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Gastado</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            <tr class="table-row-hover">
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="flex items-center">
-                                                        <img src="https://via.placeholder.com/40x40" alt="Producto" class="w-10 h-10 object-cover rounded-lg mr-3">
-                                                        <div>
-                                                            <div class="text-sm font-medium text-gray-900">Laptop HP Pavilion Gaming</div>
-                                                            <div class="text-sm text-gray-500">SKU: LTHP-001</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Tecnología</span>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">5 veces</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Hace 5 días</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">$16,250,000</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <button class="text-blue-600 hover:text-blue-800 font-medium">
-                                                        <i class="fas fa-eye mr-1"></i>Ver
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Vista Carta Productos Comprados -->
-                            <div id="productos-comprados-carta" class="vista-panel hidden">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                    <div class="border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-blue-300 group card-hover">
-                                        <div class="flex items-center mb-3">
-                                            <img src="https://via.placeholder.com/60x60" alt="Producto" class="w-16 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300">
-                                            <div class="ml-3 flex-1">
-                                                <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">Laptop HP Pavilion Gaming</h3>
-                                                <p class="text-sm text-gray-600">SKU: LTHP-001</p>
-                                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Tecnología</span>
-                                            </div>
-                                        </div>
-                                        <div class="grid grid-cols-2 gap-2 text-sm">
-                                            <div>
-                                                <p class="text-xs text-gray-500">Veces comprado</p>
-                                                <p class="font-semibold text-gray-800">5 veces</p>
-                                            </div>
-                                            <div>
-                                                <p class="text-xs text-gray-500">Última compra</p>
-                                                <p class="font-semibold text-gray-800">Hace 5 días</p>
-                                            </div>
-                                            <div class="col-span-2">
-                                                <p class="text-xs text-gray-500">Total gastado</p>
-                                                <p class="font-semibold text-green-600 text-lg">$16,250,000</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Productos Más Comprados -->
-                    <div id="productos-frecuentes-content" class="tab-pane hidden">
-                        <div class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100">
-                            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-                                <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center">
-                                    <i class="fas fa-star mr-3 text-yellow-500"></i>Productos Más Comprados
-                                </h2>
-                                <div class="flex gap-3">
-                                    <div class="flex bg-gray-100 rounded-lg p-1">
-                                        <button class="vista-btn active px-3 py-2 text-sm font-medium rounded-md transition-all" data-vista="tabla" data-target="productos-frecuentes">
-                                            <i class="fas fa-table mr-2"></i>Tabla
-                                        </button>
-                                        <button class="vista-btn px-3 py-2 text-sm font-medium rounded-md transition-all" data-vista="carta" data-target="productos-frecuentes">
-                                            <i class="fas fa-th-large mr-2"></i>Carta
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Vista Tabla Productos Más Comprados -->
-                            <div id="productos-frecuentes-tabla" class="vista-panel">
-                                <div class="overflow-x-auto">
-                                    <table class="min-w-full divide-y divide-gray-200">
-                                        <thead class="bg-gray-50">
-                                            <tr>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Compras</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Calificación</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Última Compra</th>
-                                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="bg-white divide-y divide-gray-200">
-                                            <tr class="table-row-hover">
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="flex items-center">
-                                                        <img src="https://via.placeholder.com/40x40" alt="Producto" class="w-10 h-10 object-cover rounded-lg mr-3">
-                                                        <div>
-                                                            <div class="text-sm font-medium text-gray-900">Laptop HP Pavilion Gaming</div>
-                                                            <div class="text-sm text-gray-500">Electrónica de alto rendimiento</div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs">Tecnología</span>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm font-semibold">5 veces</span>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap">
-                                                    <div class="flex items-center">
-                                                        <div class="flex text-yellow-400 text-sm mr-1">
-                                                            <i class="fas fa-star"></i>
-                                                            <i class="fas fa-star"></i>
-                                                            <i class="fas fa-star"></i>
-                                                            <i class="fas fa-star"></i>
-                                                            <i class="fas fa-star"></i>
-                                                        </div>
-                                                        <span class="text-sm text-gray-600">(4.8)</span>
-                                                    </div>
-                                                </td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">Hace 5 días</td>
-                                                <td class="px-6 py-4 whitespace-nowrap text-sm">
-                                                    <button class="text-blue-600 hover:text-blue-800 font-medium">
-                                                        <i class="fas fa-eye mr-1"></i>Ver
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <!-- Vista Carta Productos Más Comprados -->
-                            <div id="productos-frecuentes-carta" class="vista-panel hidden">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="flex items-center p-4 border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-yellow-300 group card-hover">
-                                        <img src="https://via.placeholder.com/80x80" alt="Producto" class="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300">
-                                        <div class="ml-4 flex-1">
-                                            <h3 class="font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors">Laptop HP Pavilion Gaming</h3>
-                                            <p class="text-sm text-gray-600 mb-1">Comprado 5 veces</p>
-                                            <p class="text-lg font-bold text-green-600">$3,250,000</p>
-                                            <div class="flex items-center mt-1">
-                                                <div class="flex text-yellow-400 text-sm mr-2">
-                                                    <i class="fas fa-star"></i>
-                                                    <i class="fas fa-star"></i>
-                                                    <i class="fas fa-star"></i>
-                                                    <i class="fas fa-star"></i>
-                                                    <i class="fas fa-star"></i>
-                                                </div>
-                                                <span class="text-xs text-gray-500">(4.8)</span>
-                                            </div>
-                                        </div>
-                                        <div class="text-right">
-                                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block">
-                                                Más vendido
-                                            </span>
-                                            <div class="text-xs text-gray-500">
-                                                <p>Última compra:</p>
-                                                <p>Hace 5 días</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Reseñas -->
-                    <div id="reseñas-content" class="tab-pane hidden">
-                        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
-                                <i class="fas fa-comments mr-3 text-blue-600"></i>Reseñas de Productos
-                            </h2>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-                                <div class="border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all duration-300 hover:border-yellow-300 group card-hover">
-                                    <div class="flex items-center mb-4">
-                                        <img src="https://via.placeholder.com/60x60" alt="Producto" class="w-16 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300">
-                                        <div class="ml-3">
-                                            <h3 class="font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors">Laptop HP Pavilion</h3>
-                                            <div class="flex text-yellow-500 text-sm mt-1">
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <i class="fas fa-star"></i>
-                                                <span class="ml-2 text-gray-600 text-xs">(5.0)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <p class="text-gray-600 text-sm mb-3">"Excelente producto, superó mis expectativas. La entrega fue rápida y el servicio impecable."</p>
-                                    <div class="flex items-center justify-between text-xs text-gray-500">
-                                        <span><i class="fas fa-thumbs-up mr-1"></i>Útil (15)</span>
-                                        <span>25 de Septiembre, 2024</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 📊 Sección Completa: Tendencia de Compras - Solo visible en Desktop -->
-            <div class="full-width-section hidden lg:block">
-                <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-xl font-bold text-gray-800 flex items-center">
-                            <i class="fas fa-chart-line mr-3 text-blue-600"></i>Tendencia de Compras
-                        </h2>
-                        <div class="flex gap-2">
-                            <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
-                                6M
-                            </button>
-                            <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                                1A
-                            </button>
-                            <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                                Todo
-                            </button>
-                        </div>
-                    </div>
-                    <canvas id="tendenciaChart" width="400" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- 📊 Tendencia de Compras - Versión Mobile (visible solo en móvil) -->
-        <div class="lg:hidden mt-8">
-            <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-xl font-bold text-gray-800 flex items-center">
-                        <i class="fas fa-chart-line mr-3 text-blue-600"></i>Tendencia de Compras
-                    </h2>
-                    <div class="flex gap-2">
-                        <button class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors">
-                            6M
-                        </button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                            1A
-                        </button>
-                        <button class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors">
-                            Todo
-                        </button>
-                    </div>
-                </div>
-                <canvas id="tendenciaChartMobile" width="400" height="200"></canvas>
-            </div>
-        </div>
+{% extends 'admin/page/base.html' %} {% block title %}Detalles del Cliente - {{
+usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
+<div class="container mx-auto px-4 py-8">
+  <!-- Header Profesional Mejorado -->
+  <header
+    class="gradient-bg text-white shadow-2xl relative overflow-hidden rounded-b-2xl mb-8"
+  >
+    <div class="absolute inset-0">
+      <svg
+        class="absolute left-0 top-0 h-full w-full"
+        viewBox="0 0 1920 1080"
+        preserveAspectRatio="none"
+      >
+        <path
+          class="fill-current text-blue-800 opacity-20"
+          d="M0,0 C500,200 1000,100 1920,500 L1920,1080 L0,1080 Z"
+        ></path>
+        <path
+          class="fill-current text-cyan-700 opacity-10"
+          d="M0,300 C500,100 1000,300 1920,200 L1920,1080 L0,1080 Z"
+        ></path>
+      </svg>
     </div>
 
-    <script>
-        // Sistema de Tabs
-        document.querySelectorAll('[data-tab]').forEach(tab => {
-            tab.addEventListener('click', function() {
-                // Remover active de todos los tabs
-                document.querySelectorAll('[data-tab]').forEach(t => {
-                    t.classList.remove('tab-active', 'text-blue-600', 'border-b-2', 'border-blue-600');
-                    t.classList.add('text-gray-500', 'border-transparent');
-                });
-                
-                // Agregar active al tab actual
-                this.classList.add('tab-active', 'text-blue-600', 'border-b-2', 'border-blue-600');
-                this.classList.remove('text-gray-500', 'border-transparent');
-                
-                // Ocultar todos los contenidos
-                document.querySelectorAll('.tab-pane').forEach(pane => {
-                    pane.classList.add('hidden');
-                });
-                
-                // Mostrar el contenido actual
-                const target = this.getAttribute('data-tab');
-                document.getElementById(target + '-content').classList.remove('hidden');
-            });
-        });
+    <div class="container mx-auto px-4 py-8 relative z-10">
+      <div class="mb-6">
+        <a href="/admin/lista-usuarios" class="spa-back-link text-blue-200 hover:text-white transition-colors duration-200 flex items-center text-sm font-medium">
+          <i class="fas fa-arrow-left mr-2"></i> Volver a Usuarios
+        </a>
+      </div>
 
-        // Sistema de Vista (Tabla/Carta)
-        document.querySelectorAll('.vista-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const vista = this.getAttribute('data-vista');
-                const target = this.getAttribute('data-target');
-                
-                // Remover active de todos los botones del mismo grupo
-                document.querySelectorAll(`[data-target="${target}"].vista-btn`).forEach(b => {
-                    b.classList.remove('active', 'bg-blue-600', 'text-white');
-                    b.classList.add('text-gray-700', 'hover:bg-gray-200');
-                });
-                
-                // Agregar active al botón actual
-                this.classList.add('active', 'bg-blue-600', 'text-white');
-                this.classList.remove('text-gray-700', 'hover:bg-gray-200');
-                
-                // Ocultar todas las vistas del mismo grupo
-                document.querySelectorAll(`#${target}-tabla, #${target}-carta`).forEach(panel => {
-                    panel.classList.add('hidden');
-                });
-                
-                // Mostrar la vista actual
-                document.getElementById(`${target}-${vista}`).classList.remove('hidden');
-            });
-        });
+      <div class="flex flex-col lg:flex-row justify-between items-center">
+        <div class="flex items-center space-x-6 mb-6 lg:mb-0">
+          <div class="relative">
+            <div
+              class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-2xl pulse-animation"
+            >
+              <i class="fas fa-user text-4xl text-white"></i>
+            </div>
+            <div
+              class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full border-4 border-slate-900 flex items-center justify-center"
+            >
+              <div
+                class="w-3 h-3 bg-green-300 rounded-full animate-pulse"
+              ></div>
+            </div>
+          </div>
 
-        // Gráficos
-        const ctx1 = document.getElementById('categoriasChart').getContext('2d');
-        new Chart(ctx1, {
-            type: 'doughnut',
-            data: {
-                labels: ['Tecnología', 'Hogar', 'Deportes', 'Moda', 'Otros'],
-                datasets: [{
-                    data: [45, 20, 15, 12, 8],
-                    backgroundColor: [
-                        '#3B82F6',
-                        '#10B981',
-                        '#F59E0B',
-                        '#EF4444',
-                        '#8B5CF6'
-                    ],
-                    borderWidth: 0,
-                    hoverOffset: 10
-                }]
-            },
-            options: {
-                responsive: true,
-                cutout: '60%',
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                }
-            }
-        });
+          <div class="text-center lg:text-left">
+            <h1
+              class="text-3xl lg:text-4xl font-bold mb-2 bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent"
+            >
+              {{ usuario.nombre }} {{ usuario.apellido }}
+            </h1>
+            <div
+              class="flex flex-wrap items-center justify-center lg:justify-start gap-4 text-sm"
+            >
+              <span class="flex items-center text-blue-200">
+                <i class="fas fa-mobile-alt mr-2"></i>{{ usuario.numero }}
+              </span>
+              <span class="flex items-center text-blue-200">
+                <i class="fas fa-calendar-alt mr-2"></i>Cliente desde {{
+                usuario.created_at.strftime('%b %Y') }}
+              </span>
+              <span class="flex items-center text-green-400 font-medium">
+                <i class="fas fa-circle mr-2 text-xs"></i>{{ 'En línea' if
+                usuario.is_online else 'Desconectado' }}
+              </span>
+            </div>
+            <div class="mt-3 flex items-center justify-center lg:justify-start">
+              <span
+                class="glass-effect px-3 py-1 rounded-full text-xs font-mono"
+              >
+                ID: #USR-{{ usuario.id[:8] }}
+              </span>
+            </div>
+          </div>
+        </div>
 
-        // Gráfico de Tendencia para Desktop
-        const ctx2 = document.getElementById('tendenciaChart').getContext('2d');
-        new Chart(ctx2, {
-            type: 'line',
-            data: {
-                labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'],
-                datasets: [{
-                    label: 'Compras ($)',
-                    data: [1200000, 1900000, 1500000, 2100000, 2400000, 2200000, 2800000, 2600000, 3200000],
-                    borderColor: '#3B82F6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4,
-                    fill: true,
-                    pointBackgroundColor: '#3B82F6',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 3,
-                    pointRadius: 6,
-                    pointHoverRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: function(value) {
-                                return '$' + (value / 1000000).toFixed(1) + 'M';
-                            }
-                        }
-                    }
-                }
-            }
-        });
+        <div class="grid grid-cols-2 gap-4">
+          <div class="glass-effect rounded-2xl p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-blue-200 text-sm">Total Invertido</p>
+                <p class="text-2xl font-bold">
+                  {{ total_invertido|format_currency_cop }}
+                </p>
+              </div>
+              <i class="fas fa-dollar-sign text-3xl text-green-400"></i>
+            </div>
+          </div>
 
-        // Gráfico de Tendencia para Mobile (opcional)
-        const ctx3 = document.getElementById('tendenciaChartMobile')?.getContext('2d');
-        if (ctx3) {
-            new Chart(ctx3, {
-                type: 'line',
-                data: {
-                    labels: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep'],
-                    datasets: [{
-                        label: 'Compras ($)',
-                        data: [1200000, 1900000, 1500000, 2100000, 2400000, 2200000, 2800000, 2600000, 3200000],
-                        borderColor: '#3B82F6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4,
-                        fill: true,
-                        pointBackgroundColor: '#3B82F6',
-                        pointBorderColor: '#ffffff',
-                        pointBorderWidth: 3,
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                callback: function(value) {
-                                    return '$' + (value / 1000000).toFixed(1) + 'M';
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    </script>
-</body>
-</html>
+          <div class="glass-effect rounded-2xl p-4">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="text-blue-200 text-sm">Pedidos</p>
+                <p class="text-2xl font-bold">{{ pedidos_count }}</p>
+              </div>
+              <i class="fas fa-shopping-bag text-3xl text-blue-400"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- 📋 Perfil del Cliente Mejorado -->
+    <div class="lg:col-span-1">
+      <div
+        class="profile-card rounded-2xl p-6 mb-6 border border-gray-100 card-hover"
+      >
+        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-user-circle mr-3 text-blue-600"></i>Perfil del
+          Cliente
+        </h2>
+
+        <div class="space-y-4">
+          <div
+            class="bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border border-blue-100 card-hover"
+          >
+            <div class="flex items-center">
+              <div
+                class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3"
+              >
+                <i class="fas fa-signature text-blue-600"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">
+                  Nombre Completo
+                </p>
+                <p class="font-semibold text-gray-800">
+                  {{ usuario.nombre }} {{ usuario.apellido }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl border border-green-100 card-hover"
+          >
+            <div class="flex items-center">
+              <div
+                class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3"
+              >
+                <i class="fas fa-mobile-alt text-green-600"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">
+                  Teléfono
+                </p>
+                <p class="font-semibold text-gray-800">{{ usuario.numero }}</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-100 card-hover"
+          >
+            <div class="flex items-center">
+              <div
+                class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3"
+              >
+                <i class="fas fa-calendar-check text-purple-600"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">
+                  Cliente desde
+                </p>
+                <p class="font-semibold text-gray-800">
+                  {{ usuario.created_at.strftime('%d de %B, %Y') }}
+                </p>
+                <p class="text-sm text-gray-600">({{ tiempo_como_cliente }})</p>
+              </div>
+            </div>
+          </div>
+
+          <div
+            class="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-xl border border-orange-100 card-hover"
+          >
+            <div class="flex items-center">
+              <div
+                class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mr-3"
+              >
+                <i class="fas fa-crown text-orange-600"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 uppercase tracking-wide">
+                  Tipo de Cliente
+                </p>
+                <p class="font-semibold text-gray-800">Cliente VIP</p>
+                <p class="text-sm text-gray-600">Top 5% de clientes</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-6 pt-6 border-t border-gray-200">
+          <h3 class="text-sm font-semibold text-gray-700 mb-3">
+            Actividad Reciente
+          </h3>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="text-center p-3 bg-blue-50 rounded-lg card-hover">
+              <p class="text-2xl font-bold text-blue-600">
+                {{ dias_ultima_compra }}
+              </p>
+              <p class="text-xs text-gray-500">Días desde última compra</p>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg card-hover">
+              <p class="text-2xl font-bold text-green-600">
+                {{ tasa_finalizacion }}%
+              </p>
+              <p class="text-xs text-gray-500">Tasa de finalización</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 📈 Gráfico de Preferencias -->
+      <div
+        class="profile-card rounded-2xl p-6 border border-gray-100 card-hover"
+      >
+        <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+          <i class="fas fa-chart-pie mr-3 text-purple-600"></i>Categorías
+          Preferidas
+        </h2>
+        <!-- MEJORA PROFESIONAL: Skeleton Loader para una carga más elegante -->
+        <div id="categorias-preferidas-skeleton">
+          <div class="flex items-center justify-center h-[200px]">
+            <div class="skeleton w-48 h-48 rounded-full"></div>
+          </div>
+          <div class="mt-4 space-y-2">
+            <div class="skeleton skeleton-text h-8 w-full"></div>
+            <div class="skeleton skeleton-text h-8 w-full"></div>
+            <div class="skeleton skeleton-text h-8 w-full"></div>
+          </div>
+        </div>
+
+        <div id="categorias-preferidas-content" class="hidden">
+          <div class="chart-container">
+            <canvas id="categoriasChart"></canvas>
+          </div>
+          <!-- MEJORA PROFESIONAL: Inyectar los datos directamente desde el backend
+               para evitar una llamada AJAX redundante y mejorar el rendimiento de carga. -->
+          <script>
+            // Pasamos los datos de las categorías preferidas desde Jinja2 a una variable JavaScript.
+            // El filtro `|tojson` se encarga de serializar el objeto Python a un JSON válido.
+            const categoriasPreferidasData = {{ categorias_preferidas|tojson }};
+          </script>
+
+          <div class="mt-4 grid grid-cols-1 gap-2">
+            {% for categoria in categorias_preferidas %}
+            <div
+              class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              <div class="flex items-center">
+                <div
+                  class="w-4 h-4 rounded mr-2"
+                  style="background-color: {{ categoria.color }}"
+                ></div>
+                <span class="text-sm text-gray-700">{{ categoria.nombre }}</span>
+              </div>
+              <span class="text-sm font-semibold text-gray-800"
+                >{{ categoria.porcentaje }}%</span
+              >
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 📦 Contenido Principal -->
+    <div class="lg:col-span-2">
+      <!-- 🔥 Tabs de Navegación Mejorados -->
+      <div
+        class="bg-white rounded-2xl shadow-xl mb-6 border border-gray-100 overflow-hidden"
+      >
+        <div class="border-b border-gray-200">
+          <nav class="flex flex-nowrap overflow-x-auto" aria-label="Tabs">
+            <button
+              class="nav-tab active flex items-center px-6 py-4 text-sm font-medium text-blue-600 bg-blue-50 transition-all"
+              data-tab="pedidos"
+            >
+              <i class="fas fa-history mr-2"></i>Historial de Pedidos
+            </button>
+            <button
+              class="nav-tab flex items-center px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all"
+              data-tab="productos-comprados"
+            >
+              <i class="fas fa-shopping-bag mr-2"></i>Productos Comprados
+            </button>
+            <button
+              class="nav-tab flex items-center px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all"
+              data-tab="productos-frecuentes"
+            >
+              <i class="fas fa-star mr-2"></i>Productos Más Comprados
+            </button>
+            <button
+              class="nav-tab flex items-center px-6 py-4 text-sm font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-50 transition-all"
+              data-tab="reseñas"
+            >
+              <i class="fas fa-comments mr-2"></i>Reseñas
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      <!-- 📋 Contenido de Tabs -->
+      <div class="tab-content">
+        <!-- Historial de Pedidos -->
+        <div id="pedidos-content" class="tab-pane active">
+          <!-- Controles de Vista Mejorados -->
+          <div
+            class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100 card-hover"
+          >
+            <div
+              class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
+            >
+              <h2
+                class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center"
+              >
+                <i class="fas fa-history mr-3 text-blue-600"></i>Historial de
+                Pedidos
+              </h2>
+              <div class="flex flex-wrap gap-3">
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    class="vista-btn active px-3 py-2 text-sm font-medium rounded-md bg-blue-600 text-white transition-all"
+                    data-vista="tabla"
+                    data-target="pedidos"
+                  >
+                    <i class="fas fa-table mr-2"></i>Tabla
+                  </button>
+                  <button
+                    class="vista-btn px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-200 transition-all"
+                    data-vista="carta"
+                    data-target="pedidos"
+                  >
+                    <i class="fas fa-th-large mr-2"></i>Carta
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Filtros Profesionales Mejorados -->
+            <div class="filter-card rounded-xl p-5 mb-6 shadow-md fade-in">
+              <div
+                class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4"
+              >
+                <h3
+                  class="text-lg font-semibold text-gray-800 mb-3 md:mb-0 flex items-center"
+                >
+                  <i class="fas fa-filter mr-2 text-blue-600"></i>Filtros
+                  Avanzados
+                </h3>
+                <button
+                  class="text-sm text-blue-600 hover:text-blue-800 flex items-center"
+                  id="reset-filters"
+                >
+                  <i class="fas fa-redo mr-1"></i>Restablecer Filtros
+                </button>
+              </div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Buscar Pedido</label
+                  >
+                  <div class="relative">
+                    <input
+                      type="text"
+                      id="search-pedido"
+                      placeholder="ID o producto..."
+                      class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <i
+                      class="fas fa-search absolute left-3 top-3 text-gray-400"
+                    ></i>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Estado</label
+                  >
+                  <select
+                    id="filter-estado"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Todos los estados</option>
+                    <option value="completado">Completado</option>
+                    <option value="en_proceso">En Proceso</option>
+                    <option value="cancelado">Cancelado</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Fecha Inicio</label
+                  >
+                  <input
+                    type="date"
+                    id="filter-fecha-inicio"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-1"
+                    >Fecha Fin</label
+                  >
+                  <input
+                    type="date"
+                    id="filter-fecha-fin"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div class="flex flex-wrap gap-3 mt-6">
+                <button
+                  class="filter-button active px-4 py-2 rounded-lg text-sm font-medium flex items-center bg-blue-600 text-white shadow-md"
+                  data-filter="todos"
+                >
+                  <i class="fas fa-list mr-2"></i>Todos ({{ pedidos_count }})
+                </button>
+                <button
+                  class="filter-button px-4 py-2 bg-white rounded-lg text-sm font-medium border border-gray-300 flex items-center hover:bg-gray-50 transition-all"
+                  data-filter="completado"
+                >
+                  <i class="fas fa-check-circle mr-2 text-green-600"></i
+                  >Completados ({{ pedidos_completados_count }})
+                </button>
+                <button
+                  class="filter-button px-4 py-2 bg-white rounded-lg text-sm font-medium border border-gray-300 flex items-center hover:bg-gray-50 transition-all"
+                  data-filter="en proceso"
+                >
+                  <i class="fas fa-clock mr-2 text-yellow-600"></i>En Proceso
+                  ({{ pedidos_en_proceso_count }})
+                </button>
+                <button
+                  class="filter-button px-4 py-2 bg-white rounded-lg text-sm font-medium border border-gray-300 flex items-center hover:bg-gray-50 transition-all"
+                  data-filter="cancelado"
+                >
+                  <i class="fas fa-times-circle mr-2 text-red-600"></i
+                  >Cancelados ({{ pedidos_cancelados_count }})
+                </button>
+                <button
+                  class="ml-auto px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium flex items-center hover:bg-blue-700"
+                  id="apply-filters"
+                >
+                  <i class="fas fa-search mr-2"></i>Aplicar Filtros
+                </button>
+              </div>
+            </div>
+
+            <!-- Vista Tabla Mejorada -->
+            <div id="pedidos-tabla" class="vista-panel">
+              <div class="table-container overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="table-header">
+                      <tr>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-blue-700"
+                        >
+                          Pedido <i class="fas fa-sort ml-1"></i>
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-blue-700"
+                        >
+                          Fecha <i class="fas fa-sort ml-1"></i>
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Estado
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Productos
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-blue-700"
+                        >
+                          Total <i class="fas fa-sort ml-1"></i>
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="pedidos-table-body">
+                      <!-- Las filas se cargarán dinámicamente con JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Paginación Mejorada -->
+              <div class="flex items-center justify-between mt-6">
+                <div class="text-sm text-gray-700">
+                  Mostrando
+                  <span class="font-medium" id="mostrando-inicio">1</span> a
+                  <span class="font-medium" id="mostrando-fin">10</span> de
+                  <span class="font-medium" id="total-resultados"
+                    >{{ pedidos_count }}</span
+                  >
+                  resultados
+                </div>
+                <div class="flex space-x-2" id="pagination">
+                  <!-- Los botones de paginación se cargarán dinámicamente -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista Carta Mejorada -->
+            <div id="pedidos-carta" class="vista-panel hidden">
+              <div class="grid grid-cols-1 gap-4" id="pedidos-carta-container">
+                <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Productos Comprados -->
+        <div id="productos-comprados-content" class="tab-pane hidden">
+          <div
+            class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100 card-hover"
+          >
+            <div
+              class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
+            >
+              <h2
+                class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center"
+              >
+                <i class="fas fa-shopping-bag mr-3 text-blue-600"></i>Productos
+                Comprados
+              </h2>
+              <div class="flex gap-3">
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    class="vista-btn active px-3 py-2 text-sm font-medium rounded-md bg-blue-600 text-white transition-all"
+                    data-vista="tabla"
+                    data-target="productos-comprados"
+                  >
+                    <i class="fas fa-table mr-2"></i>Tabla
+                  </button>
+                  <button
+                    class="vista-btn px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-200 transition-all"
+                    data-vista="carta"
+                    data-target="productos-comprados"
+                  >
+                    <i class="fas fa-th-large mr-2"></i>Carta
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista Tabla Productos Comprados Mejorada -->
+            <div id="productos-comprados-tabla" class="vista-panel">
+              <div class="table-container overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="table-header">
+                      <tr>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Producto
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Categoría
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-blue-700"
+                        >
+                          Veces Comprado <i class="fas fa-sort ml-1"></i>
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Última Compra
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-blue-700"
+                        >
+                          Total Gastado <i class="fas fa-sort ml-1"></i>
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="productos-comprados-table-body">
+                      <!-- Las filas se cargarán dinámicamente con JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista Carta Productos Comprados Mejorada -->
+            <div id="productos-comprados-carta" class="vista-panel hidden">
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                id="productos-comprados-carta-container"
+              >
+                <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Productos Más Comprados -->
+        <div id="productos-frecuentes-content" class="tab-pane hidden">
+          <div
+            class="bg-white rounded-2xl shadow-xl p-6 mb-6 border border-gray-100 card-hover"
+          >
+            <div
+              class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
+            >
+              <h2
+                class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center"
+              >
+                <i class="fas fa-star mr-3 text-yellow-500"></i>Productos Más
+                Comprados
+              </h2>
+              <div class="flex gap-3">
+                <div class="flex bg-gray-100 rounded-lg p-1">
+                  <button
+                    class="vista-btn active px-3 py-2 text-sm font-medium rounded-md bg-blue-600 text-white transition-all"
+                    data-vista="tabla"
+                    data-target="productos-frecuentes"
+                  >
+                    <i class="fas fa-table mr-2"></i>Tabla
+                  </button>
+                  <button
+                    class="vista-btn px-3 py-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-200 transition-all"
+                    data-vista="carta"
+                    data-target="productos-frecuentes"
+                  >
+                    <i class="fas fa-th-large mr-2"></i>Carta
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista Tabla Productos Más Comprados Mejorada -->
+            <div id="productos-frecuentes-tabla" class="vista-panel">
+              <div class="table-container overflow-hidden">
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="table-header">
+                      <tr>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Producto
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Categoría
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-blue-700"
+                        >
+                          Compras <i class="fas fa-sort ml-1"></i>
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Calificación
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Última Compra
+                        </th>
+                        <th
+                          class="px-6 py-4 text-left text-xs font-medium uppercase tracking-wider"
+                        >
+                          Acciones
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody id="productos-frecuentes-table-body">
+                      <!-- Las filas se cargarán dinámicamente con JavaScript -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Vista Carta Productos Más Comprados Mejorada -->
+            <div id="productos-frecuentes-carta" class="vista-panel hidden">
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 gap-4"
+                id="productos-frecuentes-carta-container"
+              >
+                <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reseñas -->
+        <div id="reseñas-content" class="tab-pane hidden">
+          <div
+            class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 card-hover"
+          >
+            <h2 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+              <i class="fas fa-comments mr-3 text-blue-600"></i>Reseñas de
+              Productos
+            </h2>
+            <div
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+              id="reseñas-container"
+            >
+              <!-- Las tarjetas de reseñas se cargarán dinámicamente con JavaScript -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📊 Gráfico de Tendencia Mejorado -->
+  <div
+    class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100 card-hover mt-8"
+  >
+    <div
+      class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6"
+    >
+      <h2
+        class="text-xl font-bold text-gray-800 flex items-center mb-4 md:mb-0"
+      >
+        <i class="fas fa-chart-line mr-3 text-blue-600"></i>Tendencia de Compras
+      </h2>
+      <div class="flex flex-wrap gap-2">
+        <button
+          class="periodo-btn px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-md"
+          data-periodo="6M"
+        >
+          6M
+        </button>
+        <button
+          class="periodo-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          data-periodo="1A"
+        >
+          1A
+        </button>
+        <button
+          class="periodo-btn px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+          data-periodo="todo"
+        >
+          Todo
+        </button>
+      </div>
+    </div>
+    <!-- MEJORA PROFESIONAL: Contenedor para gestionar la transición de opacidad -->
+    <div class="relative chart-container">
+      <!-- Skeleton Loader mejorado para el gráfico de tendencia -->
+      <div id="tendencia-chart-skeleton" class="absolute inset-0 flex items-center justify-center transition-opacity duration-300">
+        <div class="w-full h-full p-4">
+          <div class="skeleton w-1/4 h-4 mb-8"></div>
+          <div class="flex items-end h-full pb-8 space-x-4">
+            <div class="skeleton w-1/12 h-1/3"></div>
+            <div class="skeleton w-1/12 h-1/2"></div>
+            <div class="skeleton w-1/12 h-3/4"></div>
+            <div class="skeleton w-1/12 h-1/2"></div>
+            <div class="skeleton w-1/12 h-2/3"></div>
+            <div class="skeleton w-1/12 h-full"></div>
+          </div>
+        </div>
+      </div>
+      <canvas id="tendenciaChart" class="transition-opacity duration-300 opacity-0"></canvas>
+    </div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  /* Animaciones personalizadas */
+  .tab-active {
+    @apply border-b-2 border-blue-600 text-blue-600 bg-blue-50;
+  }
+  .card-hover {
+    @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-blue-300;
+  }
+  .table-row-hover {
+    @apply hover:bg-blue-50 transition-colors duration-200;
+  }
+  .gradient-bg {
+    background: linear-gradient(
+      135deg,
+      #1e3a8a 0%,
+      #1e40af 25%,
+      #3b82f6 50%,
+      #60a5fa 75%,
+      #93c5fd 100%
+    );
+  }
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  .stat-card {
+    background: linear-gradient(135deg, var(--tw-gradient-stops));
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  .profile-card {
+    background: linear-gradient(to bottom right, #ffffff, #f9fafb);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+      0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  .nav-tab {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+  .nav-tab::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    transition: width 0.3s ease;
+  }
+  .nav-tab.active::after {
+    width: 100%;
+  }
+  .pulse-animation {
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+  }
+  .chart-container {
+    position: relative;
+    height: 300px;
+    width: 100%;
+  }
+  @media (max-width: 768px) {
+    .chart-container {
+      height: 200px;
+    }
+  }
+  /* Estilos para filtros mejorados */
+  .filter-card {
+    background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
+    border-left: 4px solid #3b82f6;
+  }
+  .filter-button {
+    transition: all 0.2s ease;
+  }
+  .filter-button:hover {
+    transform: translateY(-2px);
+  }
+  .filter-button.active {
+    background-color: #2563eb; /* Un color sólido para el estado activo */
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-color: transparent; /* Ocultar el borde cuando está activo */
+  }
+  /* Estilos para tablas mejoradas */
+  .table-container {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  .table-header {
+    background: linear-gradient(to right, #1e40af, #3b82f6);
+    color: white;
+  }
+  .table-row:nth-child(even) {
+    background-color: #f8fafc;
+  }
+  .table-row:hover {
+    background-color: #dbeafe !important;
+    transform: scale(1.01);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+    position: relative;
+  }
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .status-completed {
+    background-color: #dcfce7;
+    color: #166534;
+  }
+  .status-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+  .status-cancelled {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  /* Animación para las tarjetas */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  /* Estilos para Skeleton Loader */
+  .skeleton {
+    background-color: #e2e8f0;
+    border-radius: 0.25rem;
+    animation: pulse-bg 1.5s infinite;
+  }
+
+  .skeleton-text {
+    height: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .skeleton-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 9999px;
+  }
+
+  .skeleton-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+  }
+
+  @keyframes pulse-bg {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+</style>
+<!-- Scripts personalizados -->
+<script src="{{ url_for('static', filename='js/admin/detalle_usuario.js') }}"></script>
+{% endblock %}

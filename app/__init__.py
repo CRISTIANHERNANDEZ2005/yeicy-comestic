@@ -186,7 +186,8 @@ def create_app(config_class=Config):
     from app.blueprints.admin.pedido.api import admin_api_bp
     from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
     from app.blueprints.admin.usuarios.user_routes import user_bp
-
+    from app.blueprints.admin.usuarios.detalle_usuario import detalle_cliente
+    
     # Blueprints del cliente
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -209,6 +210,8 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_ventas_bp, url_prefix='/admin')
     app.register_blueprint(admin_api_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(detalle_cliente)
+
 
     # --- RUTAS PRINCIPALES DE LA APLICACIÓN ---
     @app.route('/perfil')
@@ -398,6 +401,8 @@ def create_app(config_class=Config):
         final_formatted_string = formatted_string_with_placeholder.replace('___SPANISH_MONTH___', spanish_month_name)
         return final_formatted_string
     app.jinja_env.filters['datetimeformat'] = datetimeformat_filter
+    
+    app.jinja_env.filters['format_currency_cop'] = format_currency_cop
 
     # --- MANEJADOR DE ERRORES ---
     @app.errorhandler(404)

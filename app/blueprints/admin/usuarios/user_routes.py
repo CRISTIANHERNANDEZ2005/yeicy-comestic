@@ -45,7 +45,7 @@ def usuario_to_dict_lista(usuario):
 user_bp = Blueprint('users', __name__)
 
 # Vista principal para renderizar el template
-@user_bp.route('/admin//lista-usuarios', methods=['GET'])
+@user_bp.route('/admin/lista-usuarios', methods=['GET'])
 @admin_jwt_required
 def usuarios_view(admin_user):
     """

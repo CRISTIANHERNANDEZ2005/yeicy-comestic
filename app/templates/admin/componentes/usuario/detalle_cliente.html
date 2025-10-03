@@ -506,28 +506,33 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
                   </table>
                 </div>
               </div>
-
-              <!-- Paginación Mejorada -->
-              <div class="flex items-center justify-between mt-6">
-                <div class="text-sm text-gray-700">
-                  Mostrando
-                  <span class="font-medium" id="mostrando-inicio">1</span> a
-                  <span class="font-medium" id="mostrando-fin">10</span> de
-                  <span class="font-medium" id="total-resultados"
-                    >{{ pedidos_count }}</span
-                  >
-                  resultados
-                </div>
-                <div class="flex space-x-2" id="pagination">
-                  <!-- Los botones de paginación se cargarán dinámicamente -->
-                </div>
-              </div>
             </div>
 
             <!-- Vista Carta Mejorada -->
-            <div id="pedidos-carta" class="vista-panel hidden">
-              <div class="grid grid-cols-1 gap-4" id="pedidos-carta-container">
+            <div id="pedidos-carta" class="vista-panel hidden vista-scroll-container">
+              <div
+                class="grid grid-cols-1 gap-4"
+                id="pedidos-carta-container"
+              >
                 <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
+              </div>
+            </div>
+
+            <!-- Paginación Mejorada (Ahora es compartida) -->
+            <div
+              class="flex items-center justify-between mt-6"
+              id="pagination-container"
+            >
+              <div class="text-sm text-gray-700">
+                Mostrando <span class="font-medium" id="mostrando-fin">10</span>
+                de
+                <span class="font-medium" id="total-resultados">{{
+                  pedidos_count
+                }}</span>
+                resultados
+              </div>
+              <div class="flex space-x-2" id="pagination">
+                <!-- Los botones de paginación se cargarán dinámicamente -->
               </div>
             </div>
           </div>
@@ -568,7 +573,10 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
 
             <!-- Vista Tabla Productos Comprados Mejorada -->
-            <div id="productos-comprados-tabla" class="vista-panel">
+            <div
+              id="productos-comprados-tabla"
+              class="vista-panel"
+            >
               <div class="table-container overflow-hidden">
                 <div class="overflow-x-auto">
                   <table class="min-w-full divide-y divide-gray-200">
@@ -613,16 +621,23 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
                 </div>
               </div>
             </div>
-
             <!-- Vista Carta Productos Comprados Mejorada -->
-            <div id="productos-comprados-carta" class="vista-panel hidden">
+            <div
+              id="productos-comprados-carta"
+              class="vista-panel hidden vista-scroll-container"
+            >
               <div
-                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6"
                 id="productos-comprados-carta-container"
               >
                 <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
               </div>
             </div>
+            <!-- Paginación para Productos Comprados (oculta por defecto) -->
+            <div
+              class="flex items-center justify-between mt-6 hidden"
+              id="pagination-container-productos-comprados"
+            ></div>
           </div>
         </div>
 
@@ -661,7 +676,10 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
 
             <!-- Vista Tabla Productos Más Comprados Mejorada -->
-            <div id="productos-frecuentes-tabla" class="vista-panel">
+            <div
+              id="productos-frecuentes-tabla"
+              class="vista-panel"
+            >
               <div class="table-container overflow-hidden">
                 <div class="overflow-x-auto">
                   <table class="min-w-full divide-y divide-gray-200">
@@ -706,9 +724,11 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
                 </div>
               </div>
             </div>
-
             <!-- Vista Carta Productos Más Comprados Mejorada -->
-            <div id="productos-frecuentes-carta" class="vista-panel hidden">
+            <div
+              id="productos-frecuentes-carta"
+              class="vista-panel hidden vista-scroll-container"
+            >
               <div
                 class="grid grid-cols-1 md:grid-cols-2 gap-4"
                 id="productos-frecuentes-carta-container"
@@ -716,6 +736,11 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
                 <!-- Las tarjetas se cargarán dinámicamente con JavaScript -->
               </div>
             </div>
+            <!-- Paginación para Productos Frecuentes (oculta por defecto) -->
+            <div
+              class="flex items-center justify-between mt-6 hidden"
+              id="pagination-container-productos-frecuentes"
+            ></div>
           </div>
         </div>
 
@@ -728,11 +753,16 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
               <i class="fas fa-comments mr-3 text-blue-600"></i>Reseñas de
               Productos
             </h2>
-            <div
-              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-              id="reseñas-container"
-            >
-              <!-- Las tarjetas de reseñas se cargarán dinámicamente con JavaScript -->
+            <div class="vista-scroll-container">
+              <div
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                id="reseñas-container"
+              >
+                <!-- Las tarjetas de reseñas se cargarán dinámicamente con JavaScript -->
+              </div>
+            </div>
+            <!-- Paginación para Reseñas (oculta por defecto) -->
+            <div class="flex items-center justify-between mt-6 hidden" id="pagination-container-reseñas">
             </div>
           </div>
         </div>

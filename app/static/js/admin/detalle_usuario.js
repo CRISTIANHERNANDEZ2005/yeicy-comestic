@@ -256,8 +256,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     console.log('[loadPedidos] Datos recibidos:', data);
+                    //  La lógica de paginación se mueve aquí para que funcione en ambas vistas.
+                    renderPagination(data.pagination, 'pedidos');
+                    const paginationContainer = document.getElementById('pagination-container');
+                    paginationContainer.classList.toggle('hidden', !data.pedidos || data.pedidos.length === 0 || data.pagination.pages <= 1);
+
                     if (view === 'tabla') {
-                        renderPedidosTabla(data.pedidos, data.pagination);
+                        renderPedidosTabla(data.pedidos);
                     } else {
                         renderPedidosCarta(data.pedidos);
                     }
@@ -301,7 +306,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para renderizar pedidos en vista tabla
-    function renderPedidosTabla(pedidos, pagination) {
+    function renderPedidosTabla(pedidos) {
         const tbody = document.getElementById('pedidos-table-body');
         tbody.innerHTML = '';
         
@@ -364,9 +369,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             tbody.appendChild(tr);
         });
-        
-        // Actualizar paginación
-        renderPagination(pagination, 'pedidos');
     }
 
     // Función para renderizar pedidos en vista carta
@@ -453,9 +455,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mostrar indicador de carga
         if (view === 'tabla') {
-            renderSkeletonTabla('productos-comprados-table-body', 6, 5);
+            renderSkeletonTabla('productos-comprados-table-body', 6, 4);
         } else {
-            renderSkeletonCarta('productos-comprados-carta-container', 'producto-comprado', 6);
+            renderSkeletonCarta('productos-comprados-carta-container', 'producto-comprado', 4);
         }
         
         // Realizar petición fetch
@@ -463,8 +465,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    //  La lógica de paginación se mueve aquí.
+                    const paginationContainer = document.getElementById('pagination-container-productos-comprados');
+                    renderPagination(data.pagination, 'productos-comprados', paginationContainer);
+                    paginationContainer.classList.toggle('hidden', !data.productos || data.productos.length === 0 || data.pagination.pages <= 1);
+
                     if (view === 'tabla') {
-                        renderProductosCompradosTabla(data.productos, data.pagination);
+                        renderProductosCompradosTabla(data.productos);
                     } else {
                         renderProductosCompradosCarta(data.productos);
                     }
@@ -508,7 +515,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para renderizar productos comprados en vista tabla
-    function renderProductosCompradosTabla(productos, pagination) {
+    function renderProductosCompradosTabla(productos) {
         const tbody = document.getElementById('productos-comprados-table-body');
         tbody.innerHTML = '';
         
@@ -552,9 +559,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             tbody.appendChild(tr);
         });
-        
-        // Actualizar paginación
-        renderPagination(pagination, 'productos-comprados');
+
     }
 
     // Función para renderizar productos comprados en vista carta
@@ -573,30 +578,37 @@ document.addEventListener('DOMContentLoaded', function() {
         
         productos.forEach(producto => {
             const card = document.createElement('div');
-            card.className = 'border border-gray-200 rounded-xl p-4 hover:shadow-lg transition-all duration-300 hover:border-blue-300 group card-hover bg-gradient-to-br from-white to-blue-50 fade-in';
+            card.className = 'border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-blue-300 group card-hover bg-white fade-in overflow-hidden flex flex-col';
             
             card.innerHTML = `
-                <div class="flex items-center mb-3">
-                    <img src="${producto.imagen_url || 'https://via.placeholder.com/60x60'}" alt="Producto" class="w-16 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md">
-                    <div class="ml-3 flex-1">
-                        <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${producto.nombre}</h3>
-                        <p class="text-sm text-gray-600">Marca: ${producto.marca || 'N/A'}</p>
-                        <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs mt-1 inline-block">${producto.categoria || 'N/A'}</span>
+                <div class="p-5 flex-grow">
+                    <div class="flex items-start mb-4">
+                        <img src="${producto.imagen_url || 'https://via.placeholder.com/60x60'}" alt="Producto" class="w-16 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md">
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${producto.nombre}</h3>
+                            <p class="text-sm text-gray-500">Marca: ${producto.marca || 'N/A'}</p>
+                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs mt-2 inline-block">${producto.categoria || 'N/A'}</span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                            <p class="text-xs text-gray-500">Veces comprado</p>
+                            <p class="font-semibold text-gray-800">${producto.veces_comprado} veces</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500">Última compra</p>
+                            <p class="font-semibold text-gray-800">${formatDate(producto.ultima_compra)}</p>
+                        </div>
+                        <div class="col-span-2 mt-2">
+                            <p class="text-xs text-gray-500">Total gastado en este producto</p>
+                            <p class="font-bold text-green-600 text-xl">${formatCurrency(producto.total_gastado)}</p>
+                        </div>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    <div>
-                        <p class="text-xs text-gray-500">Veces comprado</p>
-                        <p class="font-semibold text-gray-800">${producto.veces_comprado} veces</p>
-                    </div>
-                    <div>
-                        <p class="text-xs text-gray-500">Última compra</p>
-                        <p class="font-semibold text-gray-800">${formatDate(producto.ultima_compra)}</p>
-                    </div>
-                    <div class="col-span-2">
-                        <p class="text-xs text-gray-500">Total gastado</p>
-                        <p class="font-semibold text-green-600 text-lg">${formatCurrency(producto.total_gastado)}</p>
-                    </div>
+                <div class="bg-gray-50 px-5 py-3 border-t border-gray-200">
+                    <button class="w-full text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center text-sm" onclick="verDetalleProducto('${producto.id}')">
+                        <i class="fas fa-eye mr-2"></i>Ver Detalles del Producto
+                    </button>
                 </div>
             `;
             
@@ -628,8 +640,13 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
+                    //  La lógica de paginación se mueve aquí.
+                    const paginationContainer = document.getElementById('pagination-container-productos-frecuentes');
+                    renderPagination(data.pagination, 'productos-frecuentes', paginationContainer);
+                    paginationContainer.classList.toggle('hidden', !data.productos || data.productos.length === 0 || data.pagination.pages <= 1);
+
                     if (view === 'tabla') {
-                        renderProductosFrecuentesTabla(data.productos, data.pagination);
+                        renderProductosFrecuentesTabla(data.productos);
                     } else {
                         renderProductosFrecuentesCarta(data.productos);
                     }
@@ -673,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para renderizar productos frecuentes en vista tabla
-    function renderProductosFrecuentesTabla(productos, pagination) {
+    function renderProductosFrecuentesTabla(productos) {
         const tbody = document.getElementById('productos-frecuentes-table-body');
         tbody.innerHTML = '';
         
@@ -738,9 +755,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             tbody.appendChild(tr);
         });
-        
-        // Actualizar paginación
-        renderPagination(pagination, 'productos-frecuentes');
     }
 
     // Función para renderizar productos frecuentes en vista carta
@@ -820,7 +834,11 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    renderReseñas(data.reseñas, data.pagination);
+                    // MEJORA PROFESIONAL: La lógica de paginación se mueve aquí.
+                    const paginationContainer = document.getElementById('pagination-container-reseñas');
+                    renderPagination(data.pagination, 'reseñas', paginationContainer);
+                    paginationContainer.classList.toggle('hidden', !data.reseñas || data.reseñas.length === 0 || data.pagination.pages <= 1);
+                    renderReseñas(data.reseñas);
                 } else {
                     console.error('Error al cargar reseñas:', data.message);
                     document.getElementById('reseñas-container').innerHTML = `
@@ -841,7 +859,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para renderizar reseñas
-    function renderReseñas(reseñas, pagination) {
+    function renderReseñas(reseñas) {
         const container = document.getElementById('reseñas-container');
         container.innerHTML = '';
         
@@ -855,47 +873,70 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         reseñas.forEach(resena => {
-            // Generar estrellas de calificación
-            let starsHtml = '';
-            for (let i = 1; i <= 5; i++) {
-                if (i <= resena.calificacion) {
-                    starsHtml += '<i class="fas fa-star"></i>';
-                } else {
-                    starsHtml += '<i class="far fa-star"></i>';
-                }
-            }
-            
             const card = document.createElement('div');
-            card.className = 'border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all duration-300 hover:border-yellow-300 group card-hover bg-gradient-to-br from-white to-yellow-50 fade-in';
+            card.className = 'border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-blue-300 group card-hover bg-white fade-in overflow-hidden flex flex-col';
             
             card.innerHTML = `
-                <div class="flex items-center mb-4">
-                    <img src="${resena.producto.imagen_url || 'https://via.placeholder.com/60x60'}" alt="Producto" class="w-16 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md">
-                    <div class="ml-3">
-                        <h3 class="font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors">${resena.producto.nombre}</h3>
-                        <div class="flex text-yellow-500 text-sm mt-1">
-                            ${starsHtml}
-                            <span class="ml-2 text-gray-600 text-xs">(${resena.calificacion})</span>
+                <div class="p-5 flex-grow">
+                    <div class="flex items-start mb-4">
+                        <img src="${resena.producto.imagen_url || 'https://via.placeholder.com/60x60'}" alt="Producto" class="w-16 h-16 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md">
+                        <div class="ml-4 flex-1">
+                            <h3 class="font-semibold text-gray-800 group-hover:text-blue-600 transition-colors">${resena.producto.nombre}</h3>
+                            <p class="text-sm text-gray-500">Marca: ${resena.producto.marca || 'N/A'}</p>
+                            <div class="flex text-yellow-400 text-sm mt-2">
+                                ${renderStars(resena.calificacion)}
+                                <span class="ml-2 text-gray-600 text-xs">(${resena.calificacion})</span>
+                            </div>
                         </div>
                     </div>
+                    <div class="mb-4">
+                        <h4 class="font-semibold text-gray-700 text-base mb-1">${resena.titulo || 'Reseña'}</h4>
+                        <p class="text-gray-600 text-sm italic">"${resena.texto}"</p>
+                    </div>
+                    <div class="flex justify-between items-center text-xs text-gray-500 border-t pt-3">
+                        <div class="flex items-center" title="Votos útiles">
+                            <i class="fas fa-thumbs-up mr-1"></i>
+                            <span>${resena.votos_utiles_count || 0}</span>
+                        </div>
+                        <div class="flex items-center" title="Vistas de la reseña">
+                            <i class="fas fa-eye mr-1"></i>
+                            <span>${resena.visitas || 0}</span>
+                        </div>
+                        <span>${formatDate(resena.created_at)}</span>
+                    </div>
                 </div>
-                <p class="text-gray-600 text-sm mb-3">"${resena.texto}"</p>
-                <div class="flex items-center justify-between text-xs text-gray-500">
-                    <span><i class="fas fa-thumbs-up mr-1"></i>Útil (${resena.votos_utiles_count || 0})</span>
-                    <span>${formatDate(resena.created_at)}</span>
+                <div class="bg-gray-50 px-5 py-3 border-t border-gray-200">
+                    <a href="/admin/producto/${resena.producto.slug}" class="w-full text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center text-sm action-link">
+                        <span class="action-link-text">
+                            <i class="fas fa-external-link-alt mr-2"></i>Ver Detalles del Producto
+                        </span>
+                        <i class="fas fa-arrow-right action-link-arrow"></i>
+                    </a>
                 </div>
             `;
             
             container.appendChild(card);
         });
-        
-        // Actualizar paginación
-        renderPagination(pagination, 'reseñas');
+    }
+
+    // Función para renderizar estrellas
+    function renderStars(rating) {
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= rating) {
+                starsHtml += '<i class="fas fa-star"></i>';
+            } else if (i - 0.5 <= rating) {
+                starsHtml += '<i class="fas fa-star-half-alt"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star"></i>';
+            }
+        }
+        return starsHtml;
     }
 
     // Función para renderizar paginación
-    function renderPagination(pagination, tab) {
-        const paginationContainer = document.getElementById('pagination');
+    function renderPagination(pagination, tab, container = null) {
+        const paginationContainer = container || document.getElementById('pagination');
         paginationContainer.innerHTML = '';
         
         if (!pagination) return;
@@ -903,13 +944,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const { page, pages, per_page, total, has_prev, has_next } = pagination;
         
         // Actualizar información de resultados
-        const start = (page - 1) * per_page + 1;
-        const end = Math.min(page * per_page, total);
-        document.getElementById('mostrando-inicio').textContent = start;
-        document.getElementById('mostrando-fin').textContent = end;
-        document.getElementById('total-resultados').textContent = total;
-        
-        // Botón anterior
+        const infoContainer = paginationContainer.previousElementSibling; // El div con el texto "Mostrando..."
+        if (infoContainer && infoContainer.classList.contains('text-sm')) {
+            const end = Math.min(page * per_page, total);
+            const finElement = infoContainer.querySelector('#mostrando-fin');
+            const totalElement = infoContainer.querySelector('#total-resultados');
+            if(finElement) finElement.textContent = end;
+            if(totalElement) totalElement.textContent = total;
+        } else if (container) { // Si es un contenedor de paginación sin texto, lo creamos
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'text-sm text-gray-700';
+            const end = Math.min(page * per_page, total);
+            infoDiv.innerHTML = `
+                Mostrando <span class="font-medium">${end}</span> de <span class="font-medium">${total}</span> resultados
+            `;
+            container.appendChild(infoDiv);
+        }
+
+        const buttonsDiv = document.createElement('div');
+        buttonsDiv.className = 'flex space-x-2';
+
+
+        // Botón Anterior
         const prevBtn = document.createElement('button');
         prevBtn.className = `px-3 py-1 rounded-md ${has_prev ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 disabled:opacity-50'}`;
         prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
@@ -923,7 +979,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'reseñas') loadReseñas();
             });
         }
-        paginationContainer.appendChild(prevBtn);
+        buttonsDiv.appendChild(prevBtn);
         
         // Números de página
         const maxVisiblePages = 5;
@@ -945,14 +1001,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'productos-frecuentes') loadProductosFrecuentes();
                 else if (tab === 'reseñas') loadReseñas();
             });
-            paginationContainer.appendChild(firstBtn);
+            buttonsDiv.appendChild(firstBtn);
             
             if (startPage > 2) {
                 const ellipsisBtn = document.createElement('button');
-                ellipsisBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+                ellipsisBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700';
                 ellipsisBtn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
                 ellipsisBtn.disabled = true;
-                paginationContainer.appendChild(ellipsisBtn);
+                buttonsDiv.appendChild(ellipsisBtn);
             }
         }
         
@@ -967,16 +1023,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'productos-frecuentes') loadProductosFrecuentes();
                 else if (tab === 'reseñas') loadReseñas();
             });
-            paginationContainer.appendChild(pageBtn);
+            buttonsDiv.appendChild(pageBtn);
         }
         
         if (endPage < pages) {
             if (endPage < pages - 1) {
                 const ellipsisBtn = document.createElement('button');
-                ellipsisBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+                ellipsisBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700';
                 ellipsisBtn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
                 ellipsisBtn.disabled = true;
-                paginationContainer.appendChild(ellipsisBtn);
+                buttonsDiv.appendChild(ellipsisBtn);
             }
             
             const lastBtn = document.createElement('button');
@@ -989,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'productos-frecuentes') loadProductosFrecuentes();
                 else if (tab === 'reseñas') loadReseñas();
             });
-            paginationContainer.appendChild(lastBtn);
+            buttonsDiv.appendChild(lastBtn);
         }
         
         // Botón siguiente
@@ -1006,7 +1062,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'reseñas') loadReseñas();
             });
         }
-        paginationContainer.appendChild(nextBtn);
+        buttonsDiv.appendChild(nextBtn);
+
+        paginationContainer.appendChild(buttonsDiv);
     }
 
     // Función para cargar gráfico de categorías
@@ -1200,6 +1258,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Función para formatear fecha
     function formatDate(dateString) {
+        if (!dateString) return 'N/A';
         const date = new Date(dateString);
         return date.toLocaleDateString('es-ES', {
             day: '2-digit',

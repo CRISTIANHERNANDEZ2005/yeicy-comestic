@@ -555,6 +555,7 @@ def resena_to_dict(resena, current_user_id=None):
             'nombre': resena.producto.nombre,
             'slug': resena.producto.slug,
             'imagen_url': resena.producto.imagen_url,
+            'marca': resena.producto.marca,
             'precio': resena.producto.precio,
             'categoria_principal_slug': categoria_principal_slug_url,
             'subcategoria_slug': subcategoria_slug_url,

@@ -181,3 +181,29 @@
     opacity: 0.6;
   }
 }
+
+/*  Contenedor para las vistas de carta con scroll */
+.vista-scroll-container {
+  max-height: 800px; /* Altura máxima antes de que aparezca el scroll */
+  overflow-y: auto; /* Scroll vertical automático */
+  padding-right: 8px; /* Espacio para la barra de scroll */
+  padding-bottom: 8px; /* Espacio al final de la lista */
+}
+
+/* Estilos para el enlace de acción en las tarjetas */
+.action-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.action-link-arrow {
+  position: absolute;
+  right: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.action-link:hover .action-link-text { transform: translateX(-8px); }
+.action-link:hover .action-link-arrow { opacity: 1; transform: translateX(0); }
+.action-link .action-link-text { transition: transform 0.3s ease; display: inline-block; }

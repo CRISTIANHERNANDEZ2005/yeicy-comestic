@@ -587,15 +587,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="grid grid-cols-2 gap-2 text-sm">
                     <div>
                         <p class="text-xs text-gray-500">Veces comprado</p>
-                        <p class="font-semibold text-gray-800">{producto.veces_comprado} veces</p>
+                        <p class="font-semibold text-gray-800">${producto.veces_comprado} veces</p>
                     </div>
                     <div>
                         <p class="text-xs text-gray-500">Última compra</p>
-                        <p class="font-semibold text-gray-800">{formatDate(producto.ultima_compra)}</p>
+                        <p class="font-semibold text-gray-800">${formatDate(producto.ultima_compra)}</p>
                     </div>
                     <div class="col-span-2">
                         <p class="text-xs text-gray-500">Total gastado</p>
-                        <p class="font-semibold text-green-600 text-lg">{formatCurrency(producto.total_gastado)}</p>
+                        <p class="font-semibold text-green-600 text-lg">${formatCurrency(producto.total_gastado)}</p>
                     </div>
                 </div>
             `;
@@ -778,7 +778,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <div class="ml-4 flex-1">
                     <h3 class="font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors">${producto.nombre}</h3>
                     <p class="text-sm text-gray-600 mb-1">Comprado ${producto.veces_comprado} veces</p>
-                    <p class="text-lg font-bold text-green-600">$${formatCurrency(producto.precio)}</p>
+                    <p class="text-lg font-bold text-green-600">${formatCurrency(producto.precio)}</p>
                     <div class="flex items-center mt-1">
                         <div class="flex text-yellow-400 text-sm mr-2">
                             ${starsHtml}

@@ -827,7 +827,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (f.orden) url += `&orden=${encodeURIComponent(f.orden)}`;
         
         // Mostrar indicador de carga
-        renderSkeletonCarta('reseñas-container', 'reseña', 6);
+        renderSkeletonCarta('reseñas-container', 'reseña', 2);
         
         // Realizar petición fetch
         fetch(url)

@@ -40,13 +40,12 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             >
               <i class="fas fa-user text-4xl text-white"></i>
             </div>
-            <div
-              class="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full border-4 border-slate-900 flex items-center justify-center"
-            >
-              <div
-                class="w-3 h-3 bg-green-300 rounded-full animate-pulse"
-              ></div>
-            </div>
+            <!-- MEJORA PROFESIONAL: Indicador de estado en línea condicional en el avatar -->
+            {% if usuario.is_online %}
+              <div class="avatar-status-indicator">
+                <div class="avatar-status-dot"></div>
+              </div>
+            {% endif %}
           </div>
 
           <div class="text-center lg:text-left">
@@ -65,16 +64,13 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
                 <i class="fas fa-calendar-alt mr-2"></i>Cliente desde {{
                 usuario.created_at.strftime('%b %Y') }}
               </span>
-              <span class="flex items-center text-green-400 font-medium">
-                <i class="fas fa-circle mr-2 text-xs"></i>{{ 'En línea' if
-                usuario.is_online else 'Desconectado' }}
-              </span>
+             
             </div>
-            <div class="mt-3 flex items-center justify-center lg:justify-start">
-              <span
-                class="glass-effect px-3 py-1 rounded-full text-xs font-mono"
-              >
-                ID: #USR-{{ usuario.id[:8] }}
+            <!-- MEJORA PROFESIONAL: Indicador de estado dinámico y estilizado -->
+            <div class="mt-4 flex items-center justify-center lg:justify-start">
+              <span class="status-indicator {{ 'status-online' if usuario.is_online else 'status-offline' }}">
+                <i class="fas fa-circle status-icon"></i>
+                {{ 'En línea' if usuario.is_online else 'Desconectado' }}
               </span>
             </div>
           </div>

@@ -28,4 +28,5 @@ Flask-WTF # Extensión para manejar formularios web de forma segura (incluye pro
 Flask-JWT-Extended # Extensión para facilitar el uso de JSON Web Tokens (JWT) en Flask.
 pytz # Librería para trabajar con zonas horarias de forma precisa.
 pdfkit # Wrapper para la herramienta wkhtmltopdf, utilizado para generar PDFs desde HTML (facturas).
-gunicorn 
+gunicorn
+gevent # Servidor WSGI asíncrono para Gunicorn, mejora el rendimiento.

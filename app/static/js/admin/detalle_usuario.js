@@ -1325,12 +1325,12 @@ document.addEventListener('DOMContentLoaded', function() {
      */
     function getSkeletonCardHTML(tab) {
         // El tipo de tarjeta se basa en la pestaña actual.
-        switch (tab) {
-            case 'pedido':
+        switch (tab) { // CORRECCIÓN: Usar los nombres correctos de las pestañas.
+            case 'pedidos':
                 return `
-                    <div class="skeleton-card">
-                        <div class="flex justify-between items-center mb-3">
-                            <div class="skeleton skeleton-text w-24 h-8 rounded-full"></div>
+                    <div class="skeleton-card-pedido">
+                        <div class="flex justify-between items-start mb-4">
+                            <div class="skeleton skeleton-text w-28 h-7 rounded-full"></div>
                             <div class="skeleton skeleton-text w-20"></div>
                         </div>
                         <div class="skeleton skeleton-text w-3/4 mb-2"></div>
@@ -1351,7 +1351,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             case 'productos-frecuentes':
-            case 'reseña':
+            case 'reseñas':
                 return `
                     <div class="skeleton-card">
                         <div class="flex items-center mb-4">

@@ -172,6 +172,14 @@
   padding: 1.25rem;
 }
 
+/* MEJORA: Estilos específicos para la tarjeta de esqueleto de pedido */
+.skeleton-card-pedido {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  animation: pulse-bg 1.5s infinite;
+}
+
 @keyframes pulse-bg {
   0%,
   100% {

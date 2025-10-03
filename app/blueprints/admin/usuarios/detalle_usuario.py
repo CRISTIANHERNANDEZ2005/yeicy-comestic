@@ -47,7 +47,22 @@ def detalle_usuario(admin_user, user_id):
             Pedido.estado_pedido == EstadoPedido.COMPLETADO
         ).scalar() or 0
         
-        pedidos_count = Pedido.query.filter_by(usuario_id=user_id).count()
+        # MEJORA PROFESIONAL: Se consolidan múltiples consultas de conteo en una sola.
+        # En lugar de hacer 4 llamadas a la base de datos para contar pedidos por estado,
+        # se realiza una única consulta que agrupa por estado y cuenta todos a la vez.
+        # Esto reduce la sobrecarga de la red y la base de datos, mejorando el rendimiento.
+        counts_by_status = db.session.query(
+            Pedido.estado_pedido, func.count(Pedido.id)
+        ).filter(
+            Pedido.usuario_id == user_id
+        ).group_by(
+            Pedido.estado_pedido
+        ).all()
+        
+        pedidos_completados_count = sum(count for estado, count in counts_by_status if estado == EstadoPedido.COMPLETADO)
+        pedidos_en_proceso_count = sum(count for estado, count in counts_by_status if estado == EstadoPedido.EN_PROCESO)
+        pedidos_cancelados_count = sum(count for estado, count in counts_by_status if estado == EstadoPedido.CANCELADO)
+        pedidos_count = pedidos_completados_count + pedidos_en_proceso_count + pedidos_cancelados_count
         
         # Calcular tiempo como cliente
         tiempo_como_cliente = ""
@@ -74,14 +89,9 @@ def detalle_usuario(admin_user, user_id):
             dias_ultima_compra = (datetime.utcnow() - ultimo_pedido.created_at).days
         
         # Calcular tasa de finalización
-        pedidos_completados = Pedido.query.filter(
-            Pedido.usuario_id == user_id,
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO
-        ).count()
-        
         tasa_finalizacion = 0
         if pedidos_count > 0:
-            tasa_finalizacion = int((pedidos_completados / pedidos_count) * 100)
+            tasa_finalizacion = int((pedidos_completados_count / pedidos_count) * 100)
         
         # Obtener categorías preferidas
         categorias_preferidas = []
@@ -125,22 +135,6 @@ def detalle_usuario(admin_user, user_id):
                 })
         except Exception as e:
             current_app.logger.error(f"Error al obtener categorías preferidas: {str(e)}")
-        
-        # Contar pedidos por estado
-        pedidos_completados_count = Pedido.query.filter(
-            Pedido.usuario_id == user_id,
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO
-        ).count()
-        
-        pedidos_en_proceso_count = Pedido.query.filter(
-            Pedido.usuario_id == user_id,
-            Pedido.estado_pedido == EstadoPedido.EN_PROCESO
-        ).count()
-        
-        pedidos_cancelados_count = Pedido.query.filter(
-            Pedido.usuario_id == user_id,
-            Pedido.estado_pedido == EstadoPedido.CANCELADO
-        ).count()
         
         return render_template(
             'admin/componentes/usuario/detalle_cliente.html',
@@ -629,41 +623,39 @@ def get_usuario_categorias_preferidas(admin_user, user_id):
         JSON: Un objeto con la lista de categorías preferidas.
     """
     try:
-        # Consulta para obtener las categorías más compradas por el usuario
+        # MEJORA PROFESIONAL: La consulta ahora agrupa directamente por el nombre de la subcategoría
+        # y realiza todos los joins necesarios para obtener los datos en una sola llamada,
+        # evitando el problema N+1 que ocurría al buscar el nombre de la categoría en un bucle.
         query = db.session.query(
-            Productos.seudocategoria_id,
+            Subcategorias.nombre.label('nombre_categoria'),
             func.count(PedidoProducto.producto_id).label('total_compras')
         ).join(
-            PedidoProducto, Productos.id == PedidoProducto.producto_id
-        ).join(
             Pedido, Pedido.id == PedidoProducto.pedido_id
+        ).join(
+            Productos, Productos.id == PedidoProducto.producto_id
+        ).join(
+            Seudocategorias, Seudocategorias.id == Productos.seudocategoria_id
+        ).join(
+            Subcategorias, Subcategorias.id == Seudocategorias.subcategoria_id
         ).filter(
             Pedido.usuario_id == user_id,
             Pedido.estado_pedido == EstadoPedido.COMPLETADO
         ).group_by(
-            Productos.seudocategoria_id
+            Subcategorias.nombre
         ).order_by(
-            desc('total_compras')
+            desc('total_compras') # Usar el alias de la columna para ordenar
         ).limit(5).all()
         
         total_compras_general = sum(item.total_compras for item in query)
-        
         colores = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6']
-        
         categorias = []
         for i, item in enumerate(query):
             porcentaje = 0
             if total_compras_general > 0:
                 porcentaje = int((item.total_compras / total_compras_general) * 100)
             
-            # Obtener nombre de la categoría
-            seudocategoria = Productos.query.filter_by(id=item.seudocategoria_id).first()
-            nombre_categoria = "Otras"
-            if seudocategoria and seudocategoria.subcategoria:
-                nombre_categoria = seudocategoria.subcategoria.nombre
-            
             categorias.append({
-                'nombre': nombre_categoria,
+                'nombre': item.nombre_categoria, # El nombre correcto ahora viene de la consulta.
                 'porcentaje': porcentaje,
                 'color': colores[i % len(colores)]
             })

@@ -519,20 +519,12 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
 
             <!-- Paginación Mejorada (Ahora es compartida) -->
-            <div
-              class="flex items-center justify-between mt-6"
-              id="pagination-container"
-            >
-              <div class="text-sm text-gray-700">
-                Mostrando <span class="font-medium" id="mostrando-fin">10</span>
-                de
-                <span class="font-medium" id="total-resultados">{{
-                  pedidos_count
-                }}</span>
-                resultados
+            <div class="flex items-center justify-between mt-6" id="pagination-container-pedidos" style="display: none;">
+              <div class="text-sm text-gray-700" id="pagination-info-pedidos">
+                  <!-- El texto "Mostrando X de Y" se renderizará aquí -->
               </div>
-              <div class="flex space-x-2" id="pagination">
-                <!-- Los botones de paginación se cargarán dinámicamente -->
+              <div id="pagination-buttons-pedidos">
+                  <!-- Los botones de paginación se renderizarán aquí -->
               </div>
             </div>
           </div>
@@ -635,9 +627,13 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
             <!-- Paginación para Productos Comprados (oculta por defecto) -->
             <div
-              class="flex items-center justify-between mt-6 hidden"
+              class="flex items-center justify-between mt-6"
               id="pagination-container-productos-comprados"
-            ></div>
+              style="display: none;"
+            >
+              <div class="text-sm text-gray-700" id="pagination-info-productos-comprados"></div>
+              <div id="pagination-buttons-productos-comprados"></div>
+            </div>
           </div>
         </div>
 
@@ -738,9 +734,13 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
             <!-- Paginación para Productos Frecuentes (oculta por defecto) -->
             <div
-              class="flex items-center justify-between mt-6 hidden"
+              class="flex items-center justify-between mt-6"
               id="pagination-container-productos-frecuentes"
-            ></div>
+              style="display: none;"
+            >
+              <div class="text-sm text-gray-700" id="pagination-info-productos-frecuentes"></div>
+              <div id="pagination-buttons-productos-frecuentes"></div>
+            </div>
           </div>
         </div>
 
@@ -762,7 +762,13 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
               </div>
             </div>
             <!-- Paginación para Reseñas (oculta por defecto) -->
-            <div class="flex items-center justify-between mt-6 hidden" id="pagination-container-reseñas">
+            <div 
+              class="flex items-center justify-between mt-6" 
+              id="pagination-container-reseñas"
+              style="display: none;"
+            >
+              <div class="text-sm text-gray-700" id="pagination-info-reseñas"></div>
+              <div id="pagination-buttons-reseñas"></div>
             </div>
           </div>
         </div>

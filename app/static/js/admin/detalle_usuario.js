@@ -244,11 +244,11 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`[loadPedidos] Realizando petición a: ${url}`);
         
         // Mostrar indicador de carga
-        if (view === 'tabla') {
-            renderSkeletonTabla('pedidos-table-body', 6, 5);
-        } else {
-            renderSkeletonCarta('pedidos-carta-container', 'pedido', 3);
-        }
+        // MEJORA PROFESIONAL: Implementar esqueletos de carga (skeletons) para una mejor UX.
+        // En lugar de un contenedor vacío, el usuario ve una estructura que simula el contenido final.
+        const skeletonRows = 5;
+        const skeletonCols = 6;
+        renderSkeleton(view, 'pedidos', skeletonRows, skeletonCols);
         
         // Realizar petición fetch
         fetch(url)
@@ -257,8 +257,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (data.success) {
                     console.log('[loadPedidos] Datos recibidos:', data);
                     //  La lógica de paginación se mueve aquí para que funcione en ambas vistas.
+                    // MEJORA PROFESIONAL: Se obtiene el contenedor principal de paginación.
+                    // La función `renderPagination` se encargará de poblar los hijos correctos.
+                    const paginationContainer = document.getElementById(`pagination-container-pedidos`);
                     renderPagination(data.pagination, 'pedidos');
-                    const paginationContainer = document.getElementById('pagination-container');
                     paginationContainer.classList.toggle('hidden', !data.pedidos || data.pedidos.length === 0 || data.pagination.pages <= 1);
 
                     if (view === 'tabla') {
@@ -454,11 +456,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (f.orden) url += `&orden=${encodeURIComponent(f.orden)}`;
         
         // Mostrar indicador de carga
-        if (view === 'tabla') {
-            renderSkeletonTabla('productos-comprados-table-body', 6, 4);
-        } else {
-            renderSkeletonCarta('productos-comprados-carta-container', 'producto-comprado', 4);
-        }
+        const skeletonRows = 4;
+        const skeletonCols = 6;
+        renderSkeleton(view, 'productos-comprados', skeletonRows, skeletonCols);
         
         // Realizar petición fetch
         fetch(url)
@@ -466,8 +466,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     //  La lógica de paginación se mueve aquí.
-                    const paginationContainer = document.getElementById('pagination-container-productos-comprados');
-                    renderPagination(data.pagination, 'productos-comprados', paginationContainer);
+                    const paginationContainer = document.getElementById(`pagination-container-productos-comprados`);
+                    renderPagination(data.pagination, 'productos-comprados');
                     paginationContainer.classList.toggle('hidden', !data.productos || data.productos.length === 0 || data.pagination.pages <= 1);
 
                     if (view === 'tabla') {
@@ -629,11 +629,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (f.orden) url += `&orden=${encodeURIComponent(f.orden)}`;
         
         // Mostrar indicador de carga
-        if (view === 'tabla') {
-            renderSkeletonTabla('productos-frecuentes-table-body', 6, 5);
-        } else {
-            renderSkeletonCarta('productos-frecuentes-carta-container', 'producto-frecuente', 4);
-        }
+        const skeletonRows = 5;
+        const skeletonCols = 6;
+        renderSkeleton(view, 'productos-frecuentes', skeletonRows, skeletonCols);
         
         // Realizar petición fetch
         fetch(url)
@@ -641,8 +639,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     //  La lógica de paginación se mueve aquí.
-                    const paginationContainer = document.getElementById('pagination-container-productos-frecuentes');
-                    renderPagination(data.pagination, 'productos-frecuentes', paginationContainer);
+                    const paginationContainer = document.getElementById(`pagination-container-productos-frecuentes`);
+                    renderPagination(data.pagination, 'productos-frecuentes');
                     paginationContainer.classList.toggle('hidden', !data.productos || data.productos.length === 0 || data.pagination.pages <= 1);
 
                     if (view === 'tabla') {
@@ -827,7 +825,9 @@ document.addEventListener('DOMContentLoaded', function() {
         if (f.orden) url += `&orden=${encodeURIComponent(f.orden)}`;
         
         // Mostrar indicador de carga
-        renderSkeletonCarta('reseñas-container', 'reseña', 2);
+        const skeletonRows = 2;
+        const skeletonCols = 1; // Las reseñas son una sola columna de tarjetas
+        renderSkeleton('carta', 'reseñas', skeletonRows, skeletonCols);
         
         // Realizar petición fetch
         fetch(url)
@@ -835,8 +835,8 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(data => {
                 if (data.success) {
                     // MEJORA PROFESIONAL: La lógica de paginación se mueve aquí.
-                    const paginationContainer = document.getElementById('pagination-container-reseñas');
-                    renderPagination(data.pagination, 'reseñas', paginationContainer);
+                    const paginationContainer = document.getElementById(`pagination-container-reseñas`);
+                    renderPagination(data.pagination, 'reseñas');
                     paginationContainer.classList.toggle('hidden', !data.reseñas || data.reseñas.length === 0 || data.pagination.pages <= 1);
                     renderReseñas(data.reseñas);
                 } else {
@@ -935,39 +935,40 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para renderizar paginación
-    function renderPagination(pagination, tab, container = null) {
-        const paginationContainer = container || document.getElementById('pagination');
-        paginationContainer.innerHTML = '';
-        
-        if (!pagination) return;
+    function renderPagination(pagination, tab) {
+        // MEJORA PROFESIONAL: Se obtienen los contenedores específicos para la información y los botones.
+        // Esto desacopla la lógica de la estructura exacta del HTML.
+        const infoContainer = document.getElementById(`pagination-info-${tab}`);
+        const buttonsContainer = document.getElementById(`pagination-buttons-${tab}`);
+        const mainContainer = document.getElementById(`pagination-container-${tab}`);
+
+        if (!infoContainer || !buttonsContainer || !mainContainer) {
+            console.error(`Contenedores de paginación no encontrados para la pestaña: ${tab}`);
+            return;
+        }
+
+        // Mostrar el contenedor principal
+        mainContainer.style.display = 'flex';
+
+        // Limpiar contenedores
+        infoContainer.innerHTML = '<span class="text-gray-500 italic">Cargando...</span>';
+        buttonsContainer.innerHTML = '';
         
         const { page, pages, per_page, total, has_prev, has_next } = pagination;
         
         // Actualizar información de resultados
-        const infoContainer = paginationContainer.previousElementSibling; // El div con el texto "Mostrando..."
-        if (infoContainer && infoContainer.classList.contains('text-sm')) {
-            const end = Math.min(page * per_page, total);
-            const finElement = infoContainer.querySelector('#mostrando-fin');
-            const totalElement = infoContainer.querySelector('#total-resultados');
-            if(finElement) finElement.textContent = end;
-            if(totalElement) totalElement.textContent = total;
-        } else if (container) { // Si es un contenedor de paginación sin texto, lo creamos
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'text-sm text-gray-700';
-            const end = Math.min(page * per_page, total);
-            infoDiv.innerHTML = `
-                Mostrando <span class="font-medium">${end}</span> de <span class="font-medium">${total}</span> resultados
-            `;
-            container.appendChild(infoDiv);
-        }
+        const start = (page - 1) * per_page + 1;
+        const end = Math.min(page * per_page, total);
+        // MEJORA PROFESIONAL: Se ajusta el formato del texto para que coincida con el requerido: "Mostrando Y de Z".
+        infoContainer.innerHTML = `
+            Mostrando <span class="font-medium">${end}</span> de <span class="font-medium">${total}</span> resultados
+        `;
 
-        const buttonsDiv = document.createElement('div');
-        buttonsDiv.className = 'flex space-x-2';
-
-
+        // MEJORA PROFESIONAL: Se añade espaciado entre los botones para una mejor apariencia.
+        buttonsContainer.className = 'flex items-center space-x-2';
         // Botón Anterior
         const prevBtn = document.createElement('button');
-        prevBtn.className = `px-3 py-1 rounded-md ${has_prev ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 disabled:opacity-50'}`;
+        prevBtn.className = `px-3 py-1 rounded-md transition-colors ${has_prev ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`;
         prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
         prevBtn.disabled = !has_prev;
         if (has_prev) {
@@ -979,7 +980,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'reseñas') loadReseñas();
             });
         }
-        buttonsDiv.appendChild(prevBtn);
+        buttonsContainer.appendChild(prevBtn);
         
         // Números de página
         const maxVisiblePages = 5;
@@ -992,7 +993,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (startPage > 1) {
             const firstBtn = document.createElement('button');
-            firstBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+            firstBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors';
             firstBtn.textContent = '1';
             firstBtn.addEventListener('click', () => {
                 currentPage[tab] = 1;
@@ -1001,20 +1002,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'productos-frecuentes') loadProductosFrecuentes();
                 else if (tab === 'reseñas') loadReseñas();
             });
-            buttonsDiv.appendChild(firstBtn);
+            buttonsContainer.appendChild(firstBtn);
             
             if (startPage > 2) {
                 const ellipsisBtn = document.createElement('button');
-                ellipsisBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700';
+                ellipsisBtn.className = 'px-3 py-1 rounded-md text-gray-500';
                 ellipsisBtn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
                 ellipsisBtn.disabled = true;
-                buttonsDiv.appendChild(ellipsisBtn);
+                buttonsContainer.appendChild(ellipsisBtn);
             }
         }
         
         for (let i = startPage; i <= endPage; i++) {
             const pageBtn = document.createElement('button');
-            pageBtn.className = `px-3 py-1 rounded-md ${i === page ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+            pageBtn.className = `px-3 py-1 rounded-md transition-colors ${i === page ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
             pageBtn.textContent = i;
             pageBtn.addEventListener('click', () => {
                 currentPage[tab] = i;
@@ -1023,20 +1024,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'productos-frecuentes') loadProductosFrecuentes();
                 else if (tab === 'reseñas') loadReseñas();
             });
-            buttonsDiv.appendChild(pageBtn);
+            buttonsContainer.appendChild(pageBtn);
         }
         
         if (endPage < pages) {
             if (endPage < pages - 1) {
                 const ellipsisBtn = document.createElement('button');
-                ellipsisBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700';
+                ellipsisBtn.className = 'px-3 py-1 rounded-md text-gray-500';
                 ellipsisBtn.innerHTML = '<i class="fas fa-ellipsis-h"></i>';
                 ellipsisBtn.disabled = true;
-                buttonsDiv.appendChild(ellipsisBtn);
+                buttonsContainer.appendChild(ellipsisBtn);
             }
             
             const lastBtn = document.createElement('button');
-            lastBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300';
+            lastBtn.className = 'px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors';
             lastBtn.textContent = pages;
             lastBtn.addEventListener('click', () => {
                 currentPage[tab] = pages;
@@ -1045,12 +1046,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'productos-frecuentes') loadProductosFrecuentes();
                 else if (tab === 'reseñas') loadReseñas();
             });
-            buttonsDiv.appendChild(lastBtn);
+            buttonsContainer.appendChild(lastBtn);
         }
         
         // Botón siguiente
         const nextBtn = document.createElement('button');
-        nextBtn.className = `px-3 py-1 rounded-md ${has_next ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 disabled:opacity-50'}`;
+        nextBtn.className = `px-3 py-1 rounded-md transition-colors ${has_next ? 'bg-gray-200 text-gray-700 hover:bg-gray-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`;
         nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
         nextBtn.disabled = !has_next;
         if (has_next) {
@@ -1062,18 +1063,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 else if (tab === 'reseñas') loadReseñas();
             });
         }
-        buttonsDiv.appendChild(nextBtn);
-
-        paginationContainer.appendChild(buttonsDiv);
+        buttonsContainer.appendChild(nextBtn);
     }
 
     // Función para cargar gráfico de categorías
     function loadCategoriasChart() {
-        // MEJORA PROFESIONAL: Ocultar el esqueleto y mostrar el contenido real.
+        // MEJORA PROFESIONAL: Gestionar la visibilidad del esqueleto y el contenido.
         const skeleton = document.getElementById('categorias-preferidas-skeleton');
         const content = document.getElementById('categorias-preferidas-content');
         if (skeleton) skeleton.classList.add('hidden');
         if (content) content.classList.remove('hidden');
+
         // MEJORA PROFESIONAL: Los datos ahora se inyectan directamente en el HTML.
         // Ya no es necesario hacer una petición fetch, lo que mejora el rendimiento.
         // La variable `categoriasPreferidasData` se define en `detalle_cliente.html`.
@@ -1287,51 +1287,45 @@ document.addEventListener('DOMContentLoaded', function() {
         window.open(`/admin/productos/${productoId}`, '_blank');
     }
 
-    // --- MEJORA PROFESIONAL: Funciones para renderizar Skeletons ---
+    // --- MEJORA PROFESIONAL: Función unificada para renderizar Skeletons ---
 
     /**
-     * Renderiza un esqueleto de carga para una tabla.
-     * @param {string} tbodyId - El ID del tbody de la tabla.
-     * @param {number} columns - El número de columnas de la tabla.
-     * @param {number} rows - El número de filas de esqueleto a generar.
+     * Renderiza un esqueleto de carga para una tabla o una vista de tarjetas.
+     * @param {string} view - La vista actual ('tabla' o 'carta').
+     * @param {string} tab - La pestaña actual (ej. 'pedidos', 'productos-comprados').
+     * @param {number} rows - El número de filas/tarjetas de esqueleto a generar.
+     * @param {number} cols - El número de columnas (solo para tablas).
      */
-    function renderSkeletonTabla(tbodyId, columns, rows) {
-        const tbody = document.getElementById(tbodyId);
-        if (!tbody) return;
-        let skeletonHTML = '';
-        for (let i = 0; i < rows; i++) {
-            skeletonHTML += '<tr class="table-row">';
-            for (let j = 0; j < columns; j++) {
-                skeletonHTML += '<td class="px-6 py-4 whitespace-nowrap"><div class="skeleton skeleton-text w-3/4"></div></td>';
-            }
-            skeletonHTML += '</tr>';
-        }
-        tbody.innerHTML = skeletonHTML;
-    }
-
-    /**
-     * Renderiza un esqueleto de carga para una vista de tarjetas.
-     * @param {string} containerId - El ID del contenedor de las tarjetas.
-     * @param {string} cardType - El tipo de tarjeta a renderizar ('pedido', 'producto-comprado', etc.).
-     * @param {number} count - El número de tarjetas de esqueleto a generar.
-     */
-    function renderSkeletonCarta(containerId, cardType, count) {
+    function renderSkeleton(view, tab, rows, cols) {
+        const containerId = (view === 'tabla') ? `${tab}-table-body` : `${tab}-carta-container`;
         const container = document.getElementById(containerId);
         if (!container) return;
+
         let skeletonHTML = '';
-        for (let i = 0; i < count; i++) {
-            skeletonHTML += getSkeletonCardHTML(cardType);
+        if (view === 'tabla') {
+            for (let i = 0; i < rows; i++) {
+                skeletonHTML += '<tr class="table-row">';
+                for (let j = 0; j < cols; j++) {
+                    skeletonHTML += '<td class="px-6 py-4 whitespace-nowrap"><div class="skeleton skeleton-text w-3/4"></div></td>';
+                }
+                skeletonHTML += '</tr>';
+            }
+        } else { // 'carta'
+            for (let i = 0; i < rows; i++) {
+                skeletonHTML += getSkeletonCardHTML(tab);
+            }
         }
         container.innerHTML = skeletonHTML;
     }
 
     /**
      * Devuelve el HTML para un tipo específico de tarjeta de esqueleto.
-     * @param {string} cardType - El tipo de tarjeta.
+     * @param {string} tab - La pestaña actual, que determina el tipo de tarjeta.
      * @returns {string} El HTML de la tarjeta de esqueleto.
      */
-    function getSkeletonCardHTML(cardType) {
-        switch (cardType) {
+    function getSkeletonCardHTML(tab) {
+        // El tipo de tarjeta se basa en la pestaña actual.
+        switch (tab) {
             case 'pedido':
                 return `
                     <div class="skeleton-card">
@@ -1343,7 +1337,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="skeleton skeleton-text w-1/4"></div>
                     </div>
                 `;
-            case 'producto-comprado':
+            case 'productos-comprados':
                 return `
                     <div class="skeleton-card">
                         <div class="flex items-center mb-3">
@@ -1356,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         <div class="skeleton skeleton-text w-full"></div>
                     </div>
                 `;
-            case 'producto-frecuente':
+            case 'productos-frecuentes':
             case 'reseña':
                 return `
                     <div class="skeleton-card">

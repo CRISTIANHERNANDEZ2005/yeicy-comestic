@@ -63,6 +63,19 @@ class SimpleCarousel {
 
     this.track.innerHTML = '';
     this.slides.forEach(slide => this.track.appendChild(slide));
+
+    // MEJORA PROFESIONAL: Animación de entrada para los productos.
+    // Una vez que las diapositivas están en el DOM, las animamos para una aparición suave.
+    const cards = this.track.querySelectorAll('.product-card');
+    cards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = `opacity 0.5s ease ${index * 0.05}s, transform 0.5s ease ${index * 0.05}s`;
+        setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, 50); // Pequeño delay para asegurar que las transiciones se apliquen.
+    });
     this.currentIndex = 0; // Reset index on rebuild
     this.update();
   }
@@ -244,10 +257,12 @@ class HomePageManager {
       
       const productos = await response.json();
 
-      loader.style.display = "none";
-
       if (productos && productos.length > 0) {
         // MEJORA: Pasamos los productos al carrusel y él se encarga de la lógica responsiva.
+        // La animación de carga se gestionará dentro de `updateSlides`.
+        loader.style.transition = 'opacity 0.3s ease';
+        loader.style.opacity = '0';
+        setTimeout(() => loader.style.display = "none", 300);
         this.recomendacionesCarousel.products = productos;
         this.recomendacionesCarousel.updateSlides();
 
@@ -256,6 +271,7 @@ class HomePageManager {
       }
     } catch (error) {
       console.error("Error al cargar recomendaciones:", error);
+      loader.style.display = "none";
       // MEJORA PROFESIONAL: Si hay un error, ocultar toda la sección de recomendaciones.
       // Es una mejor experiencia de usuario que mostrar un mensaje de error persistente.
       if (container) {

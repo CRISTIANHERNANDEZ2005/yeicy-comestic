@@ -78,7 +78,9 @@
       </div>
     </div>
   </div>
-</div>{% if usuario_autenticado %}
+</div>
+
+{% if usuario_autenticado %}
 <!-- Sección mejorada: Recomendado para Ti -->
 <div class="bg-gradient-to-br from-pink-50 to-purple-50 py-16 shadow-inner">
   <div class="container mx-auto px-4">
@@ -159,6 +161,7 @@
   </div>
 </div>
 {% endif %}
+
 <script src="{{ url_for('static', filename='js/index.js') }}"></script>
 <!-- Datos de productos para JavaScript -->
 <script>

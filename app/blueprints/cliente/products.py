@@ -962,6 +962,7 @@ def get_price_range():
 @products_bp.route('/api/productos/recomendados')
 @jwt_required
 def get_recomendaciones(usuario):
+    import random
     """
     API: Devuelve productos recomendados para el usuario autenticado.
 
@@ -989,23 +990,46 @@ def get_recomendaciones(usuario):
             liked_seudocategorias_ids = [sid[0] for sid in liked_seudocategorias]
 
             if liked_seudocategorias_ids:
-                # Buscar otros productos en esas seudocategorías, excluyendo los que ya le gustan
-                recomendaciones = Productos.query.filter(
+                # MEJORA PROFESIONAL: Optimización de consulta aleatoria.
+                # 1. Obtener solo los IDs de los productos candidatos. Es mucho más rápido.
+                possible_ids_query = db.session.query(Productos.id).filter(
                     Productos.seudocategoria_id.in_(liked_seudocategorias_ids),
                     Productos.id.notin_(liked_product_ids),
                     Productos.estado == EstadoEnum.ACTIVO,
                     Productos._existencia > 0
-                ).order_by(func.random()).limit(12).all()
+                )
+                possible_ids = [pid[0] for pid in possible_ids_query.all()]
+
+                # 2. Seleccionar aleatoriamente los IDs en Python.
+                num_to_select = min(len(possible_ids), 12)
+                selected_ids = random.sample(possible_ids, num_to_select)
+
+                # 3. Obtener los objetos de producto completos con una consulta WHERE IN, que es muy rápida.
+                if selected_ids:
+                    recomendaciones = Productos.query.filter(Productos.id.in_(selected_ids)).all()
 
         # Si no hay suficientes recomendaciones, rellenar con productos populares generales
         if len(recomendaciones) < 12:
             ids_existentes = [p.id for p in recomendaciones] + liked_product_ids
-            productos_populares = Productos.query.filter(
+            
+            # MEJORA PROFESIONAL: Misma optimización para productos populares.
+            # 1. Obtener IDs de candidatos.
+            possible_popular_ids_query = db.session.query(Productos.id).filter(
                 Productos.id.notin_(ids_existentes),
                 Productos.estado == EstadoEnum.ACTIVO,
                 Productos._existencia > 0
-            ).order_by(func.random()).limit(12 - len(recomendaciones)).all()
-            recomendaciones.extend(productos_populares)
+            )
+            possible_popular_ids = [pid[0] for pid in possible_popular_ids_query.all()]
+
+            # 2. Seleccionar aleatoriamente.
+            num_to_fill = 12 - len(recomendaciones)
+            num_to_select = min(len(possible_popular_ids), num_to_fill)
+            selected_ids = random.sample(possible_popular_ids, num_to_select)
+
+            # 3. Obtener objetos de producto.
+            if selected_ids:
+                productos_adicionales = Productos.query.filter(Productos.id.in_(selected_ids)).all()
+                recomendaciones.extend(productos_adicionales)
 
         return jsonify([producto_to_dict(p) for p in recomendaciones])
     except Exception as e:

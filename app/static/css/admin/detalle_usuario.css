@@ -180,6 +180,16 @@
   animation: pulse-bg 1.5s infinite;
 }
 
+/* MEJORA: Estilos para el esqueleto de la tarjeta de reseña */
+.skeleton-card-reseña {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem; /* rounded-xl */
+  animation: pulse-bg 1.5s infinite;
+  /* Los estilos de padding y otros se manejan con Tailwind en el JS, 
+     pero mantenemos la base aquí para la animación. */
+}
+
+
 @keyframes pulse-bg {
   0%,
   100% {

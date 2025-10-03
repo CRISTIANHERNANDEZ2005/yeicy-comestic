@@ -825,6 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (f.orden) url += `&orden=${encodeURIComponent(f.orden)}`;
         
         // Mostrar indicador de carga
+        console.log("[loadReseñas] Iniciando carga. Llamando a renderSkeleton para la pestaña 'reseñas'.");
         const skeletonRows = 2;
         const skeletonCols = 1; // Las reseñas son una sola columna de tarjetas
         renderSkeleton('carta', 'reseñas', skeletonRows, skeletonCols);
@@ -1297,9 +1298,18 @@ document.addEventListener('DOMContentLoaded', function() {
      * @param {number} cols - El número de columnas (solo para tablas).
      */
     function renderSkeleton(view, tab, rows, cols) {
-        const containerId = (view === 'tabla') ? `${tab}-table-body` : `${tab}-carta-container`;
+        // MEJORA PROFESIONAL: Corregir el ID del contenedor para las reseñas.
+        // El contenedor de reseñas tiene un ID específico ('reseñas-container') que no sigue el patrón general.
+        let containerId;
+        if (tab === 'reseñas') {
+            containerId = 'reseñas-container';
+        } else {
+            containerId = (view === 'tabla') ? `${tab}-table-body` : `${tab}-carta-container`;
+        }
+
         const container = document.getElementById(containerId);
-        if (!container) return;
+        console.log(`[renderSkeleton] Intentando renderizar esqueleto en el contenedor: #${containerId}`);
+        if (!container) { console.error(`[renderSkeleton] Contenedor #${containerId} no encontrado.`); return; }
 
         let skeletonHTML = '';
         if (view === 'tabla') {
@@ -1351,15 +1361,36 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                 `;
             case 'productos-frecuentes':
-            case 'reseñas':
                 return `
                     <div class="skeleton-card">
                         <div class="flex items-center mb-4">
                             <div class="skeleton w-16 h-16 rounded-lg mr-3"></div>
-                            <div class="flex-1"><div class="skeleton skeleton-text w-full"></div></div>
+                            <div class="flex-1">
+                                <div class="skeleton skeleton-text w-full mb-2"></div>
+                                <div class="skeleton skeleton-text w-1/2"></div>
+                            </div>
                         </div>
                         <div class="skeleton skeleton-text w-full mb-2"></div>
                         <div class="skeleton skeleton-text w-3/4"></div>
+                    </div>
+                `;
+            // MEJORA: Esqueleto específico y más detallado para las tarjetas de reseñas.
+            case 'reseñas':
+                return `
+                    <div class="skeleton-card-reseña p-5">
+                        <div class="flex items-start mb-4">
+                            <div class="skeleton w-16 h-16 rounded-lg mr-4"></div>
+                            <div class="flex-1">
+                                <div class="skeleton skeleton-text w-3/4 mb-2"></div>
+                                <div class="skeleton skeleton-text w-1/2 mb-3"></div>
+                                <div class="skeleton skeleton-text w-24 h-4"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="skeleton skeleton-text w-1/2 h-5 mb-3"></div>
+                            <div class="skeleton skeleton-text w-full"></div>
+                            <div class="skeleton skeleton-text w-5/6"></div>
+                        </div>
                     </div>
                 `;
             default: return '';

@@ -821,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const f = filters['reseñas'];
         
         // Construir URL con parámetros
-        let url = `/api/usuarios/${usuarioId}/reseñas?page=${page}`;
+        let url = `/api/usuarios/${usuarioId}/reviews?page=${page}`;
         if (f.search) url += `&search=${encodeURIComponent(f.search)}`;
         if (f.calificacion) url += `&calificacion=${encodeURIComponent(f.calificacion)}`;
         if (f.orden) url += `&orden=${encodeURIComponent(f.orden)}`;

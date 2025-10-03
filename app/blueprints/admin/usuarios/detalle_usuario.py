@@ -534,7 +534,7 @@ def get_usuario_productos_frecuentes(admin_user, user_id):
         return jsonify({'success': False, 'message': 'Error al obtener los productos frecuentes del usuario'}), 500
 
 # API para obtener reseñas de un usuario
-@detalle_cliente.route('/api/usuarios/<string:user_id>/reseñas', methods=['GET'])
+@detalle_cliente.route('/api/usuarios/<string:user_id>/reviews', methods=['GET'])
 @admin_jwt_required
 def get_usuario_reseñas(admin_user, user_id):
     """

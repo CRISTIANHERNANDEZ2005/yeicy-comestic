@@ -553,12 +553,7 @@ window.pedidosApp = {
     }
 
     const toggleInput = document.getElementById(`toggle-pedido-${pedidoId}`);
-    if (toggleInput && !toggleInput.checked) {
-      window.toast.warning(
-        "No se puede cambiar el estado de un pedido inactivo. Por favor, actívelo primero."
-      );
-      return;
-    }
+   
 
     this.pedidoParaConfirmar = pedidoId;
     this.nuevoEstadoParaConfirmar = nuevoEstado;
@@ -1093,54 +1088,48 @@ window.pedidosApp = {
     if (pedido.estado_pedido === "en proceso") { // Pedidos en proceso
       // El botón de editar siempre está disponible para pedidos "en proceso"
       return `
+                <button class="action-button complete text-green-600 hover:text-green-800" 
+                        title="Marcar como completado" 
+                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <button class="action-button cancel text-red-600 hover:text-red-800" 
+                        title="Cancelar pedido" 
+                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                    <i class="fas fa-times-circle"></i>
+                </button>
                 <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
                         title="Editar pedido" 
                         onclick="pedidosApp.editPedido('${pedido.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
-                ${pedido.estado === 'activo' ? `
-                <button class="action-button complete text-green-600 hover:text-green-800" 
-                        title="Marcar como completado" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-                <button class="action-button cancel text-red-600 hover:text-red-800" 
-                        title="Cancelar pedido" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-                ` : ''}
             `;
     } else if (pedido.estado_pedido === "completado") { // Pedidos completados
-      if (pedido.estado === 'activo') {
-        return `
-                <button class="action-button process text-blue-600 hover:text-blue-800" 
-                        title="Poner en proceso" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="action-button cancel text-red-600 hover:text-red-800" 
-                        title="Cancelar pedido" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-                `;
-      }
+      return `
+              <button class="action-button process text-blue-600 hover:text-blue-800" 
+                      title="Poner en proceso" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                  <i class="fas fa-sync-alt"></i>
+              </button>
+              <button class="action-button cancel text-red-600 hover:text-red-800" 
+                      title="Cancelar pedido" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                  <i class="fas fa-times-circle"></i>
+              </button>
+              `;
     } else if (pedido.estado_pedido === "cancelado") { // Pedidos cancelados
-      if (pedido.estado === 'activo') {
-        return `
-                <button class="action-button process text-blue-600 hover:text-blue-800" 
-                        title="Poner en proceso" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="action-button complete text-green-600 hover:text-green-800" 
-                        title="Marcar como completado" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-                `;
-      }
+      return `
+              <button class="action-button process text-blue-600 hover:text-blue-800" 
+                      title="Poner en proceso" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                  <i class="fas fa-sync-alt"></i>
+              </button>
+              <button class="action-button complete text-green-600 hover:text-green-800" 
+                      title="Marcar como completado" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                  <i class="fas fa-check-circle"></i>
+              </button>
+              `;
     }
     return "";
   },
@@ -1367,7 +1356,7 @@ window.pedidosApp = {
     }
 
     let accionesHtml = "";
-    if (pedido.estado_pedido === "en proceso" && pedido.estado === "activo") {
+    if (pedido.estado_pedido === "en proceso") {
       accionesHtml = `
                 <button class="modal-action-btn success" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1382,10 +1371,7 @@ window.pedidosApp = {
                     Cancelar Pedido
                 </button>
             `;
-    } else if (
-      pedido.estado_pedido === "completado" &&
-      pedido.estado === "activo"
-    ) {
+    } else if (pedido.estado_pedido === "completado") {
       accionesHtml = `
                 <button class="modal-action-btn primary" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1400,10 +1386,7 @@ window.pedidosApp = {
                     Cancelar Pedido
                 </button>
             `;
-    } else if (
-      pedido.estado_pedido === "cancelado" &&
-      pedido.estado === "activo"
-    ) {
+    } else if (pedido.estado_pedido === "cancelado") {
       accionesHtml = `
                 <button class="modal-action-btn primary" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

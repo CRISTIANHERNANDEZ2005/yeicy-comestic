@@ -753,13 +753,6 @@ def update_pedido_estado(admin_user, pedido_id):
         if not pedido:
             return jsonify({'success': False, 'message': 'Pedido no encontrado'}), 404
 
-        if pedido.estado == EstadoEnum.INACTIVO:
-            return jsonify({
-                'success': False,
-                'message': 'No se puede cambiar el estado de un pedido inactivo',
-                'inactive_order': True
-            }), 400
-
         data = request.get_json()
         if not data or 'estado' not in data:
             return jsonify({'success': False, 'message': 'Datos incompletos'}), 400

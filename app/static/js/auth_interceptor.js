@@ -178,14 +178,19 @@ function setAuthToken(token) {
   }
 }
 
-// Función para cerrar sesión
-
-async function logout(isDeactivated = false) {
-  console.log("Iniciando proceso de logout...");
-  // MEJORA PROFESIONAL: El mensaje ahora se maneja con la modal de cuenta inactiva,
-  // por lo que la lógica del `logoutMessage` ya no es necesaria.
-
-
+/**
+ * MEJORA PROFESIONAL: Función de Cierre de Sesión con Confirmación.
+ * @param {boolean} force - Si es `true`, cierra la sesión directamente. Si es `false` o no se define, muestra la modal de confirmación.
+ * @param {boolean} isDeactivated - Indica si el logout es forzado por cuenta inactiva.
+ */
+async function logout(force = false, isDeactivated = false) {
+  // Si no se está forzando el logout, mostrar la modal de confirmación primero.
+  if (!force && window.openLogoutModal && typeof window.openLogoutModal === 'function') {
+    console.log("Solicitud de logout recibida. Abriendo modal de confirmación...");
+    window.openLogoutModal();
+    return; // Detener la ejecución aquí. La modal se encargará del resto.
+  }
+  
   // 1. Limpiar estado del cliente PRIMERO.
   try {
     // Limpiar el carrito local.
@@ -222,8 +227,28 @@ async function logout(isDeactivated = false) {
   }
 
   // 3. Redirigir.
-  console.log("Redirigiendo a la página principal...");
-  window.location.replace("/");
+  // MEJORA: Añadir un pequeño retardo antes de redirigir para que el usuario
+  // pueda ver el mensaje de "Cerrando sesión...".
+  setTimeout(() => {
+    console.log("Redirigiendo a la página principal...");
+    window.location.replace("/");
+  }, 500); // 500ms de retardo
+}
+
+/**
+ * MEJORA PROFESIONAL: Wrapper público para el cierre de sesión.
+ * Esta es la función que se debe llamar desde la UI. En lugar de cerrar la sesión
+ * directamente, abre la modal de confirmación. La modal se encargará de llamar
+ * a la función `_performLogout` si el usuario confirma la acción.
+ * Esto centraliza el flujo y asegura que la confirmación siempre se muestre.
+ */
+function safeLogout() {
+  if (window.openLogoutModal && typeof window.openLogoutModal === 'function') {
+    window.openLogoutModal();
+  } else {
+    console.error("La función openLogoutModal no está definida. Realizando logout directo como fallback.");
+    logout(true); // Forzar logout si la modal no existe.
+  }
 }
 
 // Sincronizar logout entre pestañas.
@@ -239,7 +264,7 @@ window.auth = {
   isAuthenticated,
   getAuthToken,
   setAuthToken,
-  logout,
+  logout, // Dejamos la función original, pero ahora es más inteligente.
 };
 
 // Restaurar sesión automáticamente si hay token válido y la cookie no está vacía.
@@ -280,7 +305,7 @@ async function restoreSession() {
           if (typeof showInactiveAccountModal === 'function') {
             showInactiveAccountModal();
             const okBtn = document.getElementById('inactive-account-ok-btn');
-            if (okBtn) okBtn.onclick = () => logout(true);
+            if (okBtn) okBtn.onclick = () => logout(true, true);
           }
           return;
         }

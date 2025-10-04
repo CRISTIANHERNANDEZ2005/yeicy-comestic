@@ -553,7 +553,6 @@ window.pedidosApp = {
     }
 
     const toggleInput = document.getElementById(`toggle-pedido-${pedidoId}`);
-   
 
     this.pedidoParaConfirmar = pedidoId;
     this.nuevoEstadoParaConfirmar = nuevoEstado;

@@ -7,7 +7,7 @@ if (typeof ToastNotification === 'undefined') {
             if (!this.container) {
                 this.container = document.createElement('div');
                 this.container.id = 'notification-container';
-                this.container.className = 'fixed top-4 right-4 z-[9999] w-full max-w-xs space-y-3';
+                this.container.className = 'fixed top-4 right-4 z-notification w-full max-w-xs space-y-3';
                 document.body.appendChild(this.container);
             }
             this.injectSVGIcons();

@@ -398,75 +398,98 @@ def update_pedido(admin_user, pedido_id):
         if not usuario:
             return jsonify({'success': False, 'message': 'Usuario no encontrado'}), 404
 
-        if pedido.usuario_id != usuario_id:
-            pedido.usuario_id = usuario_id
+        # --- MEJORA PROFESIONAL: Lógica Transaccional Atómica ---
+        # Todos los cambios se preparan y se confirman en una sola transacción.
+        # Si algo falla (ej. falta de stock), se revierte todo automáticamente.
+        
+        # 1. Mapear productos y cantidades originales y nuevas.
+        old_items = {str(p.producto_id): p.cantidad for p in pedido.productos}
+        new_items = {str(p['id']): p['cantidad'] for p in productos_payload}
+        all_product_ids = set(old_items.keys()) | set(new_items.keys())
+        
+        # 2. Calcular diferencias de stock y verificar disponibilidad.
+        stock_changes = {}
+        for prod_id in all_product_ids:
+            old_qty = old_items.get(prod_id, 0)
+            new_qty = new_items.get(prod_id, 0)
+            diff = new_qty - old_qty
+            if diff != 0:
+                stock_changes[prod_id] = diff
 
-        # 1. Guardar las cantidades originales y devolver el stock
-        productos_originales = {p.producto_id: p.cantidad for p in pedido.productos}
-        for item in pedido.productos:
-            item.producto.existencia += item.cantidad
+        # Verificar stock ANTES de aplicar cualquier cambio.
+        for prod_id, diff in stock_changes.items():
+            if diff > 0: # Si se añaden productos o se aumenta la cantidad.
+                producto = Productos.query.get(prod_id)
+                if not producto or producto.existencia < diff:
+                    raise ValueError(f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado adicional: {diff}')
 
-        # 2. Eliminar los productos antiguos del pedido
+        # 3. Aplicar cambios de stock.
+        for prod_id, diff in stock_changes.items():
+            producto = Productos.query.get(prod_id)
+            if producto:
+                producto.existencia -= diff
+
+        # 4. Actualizar PedidoProducto y calcular nuevo total.
         PedidoProducto.query.filter_by(pedido_id=pedido.id).delete()
-
-        total_pedido = 0
-        productos_a_procesar = []
-
-        # 3. Validar y procesar nuevos productos
-        for item in productos_payload:
-            producto_id = item.get('id')
-            cantidad = item.get('cantidad')
-
-            if not producto_id or not isinstance(cantidad, int) or cantidad <= 0:
-                # Revertir el stock si hay un error
-                for prod_id, cant in productos_originales.items():
-                    producto_a_revertir = Productos.query.get(prod_id)
-                    if producto_a_revertir:
-                        producto_a_revertir.existencia -= cant
-                db.session.commit()
-                return jsonify({'success': False, 'message': f'Datos de producto inválidos: {item}'}), 400
-
-            producto = Productos.query.get(producto_id)
-            if not producto:
-                return jsonify({'success': False, 'message': f'Producto con ID {producto_id} no encontrado'}), 404
-
-            # Validar stock disponible (ahora es correcto)
-            if producto.existencia < cantidad:
-                # Revertir el stock si no hay suficiente
-                for prod_id, cant in productos_originales.items():
-                    producto_a_revertir = Productos.query.get(prod_id)
-                    if producto_a_revertir:
-                        producto_a_revertir.existencia -= cant
-                db.session.commit()
-                return jsonify({
-                    'success': False,
-                    'message': f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado: {cantidad}'
-                }), 400
-
-            subtotal = producto.precio * cantidad
-            total_pedido += subtotal
-
-            productos_a_procesar.append({
-                'producto_obj': producto,
-                'cantidad': cantidad,
-                'precio_unitario': producto.precio
-            })
-
-        # 4. Actualizar el pedido y el stock
-        pedido.total = total_pedido
-        pedido.updated_at = datetime.utcnow()
-
-        for item in productos_a_procesar:
+        db.session.flush() # Limpiar la relación para evitar conflictos.
+        
+        new_total = 0
+        for item_payload in productos_payload:
+            producto = Productos.query.get(item_payload['id'])
+            cantidad = item_payload['cantidad']
+            precio_unitario = producto.precio # Usar el precio actual del producto.
+            
             pedido_producto = PedidoProducto(
                 pedido_id=pedido.id,
-                producto_id=item['producto_obj'].id,
-                cantidad=item['cantidad'],
-                precio_unitario=item['precio_unitario']
+                producto_id=producto.id,
+                cantidad=cantidad,
+                precio_unitario=precio_unitario
             )
             db.session.add(pedido_producto)
+            new_total += cantidad * precio_unitario
+
+        # 5. Actualizar el pedido principal.
+        # --- MEJORA PROFESIONAL: Actualizar fechas si el cliente cambia ---
+        if str(pedido.usuario_id) != str(usuario_id):
+            current_app.logger.info(f"Cliente del pedido {pedido.id} cambiado de {pedido.usuario_id} a {usuario_id}. Actualizando fechas.")
             
-            # Restar el nuevo stock
-            item['producto_obj'].existencia -= item['cantidad']
+            now_utc = datetime.utcnow()
+            
+            pedido.created_at = now_utc
+            
+            if pedido.seguimiento_historial:
+                for entry in pedido.seguimiento_historial:
+                    entry['timestamp'] = now_utc.isoformat() + "Z"
+                # Marcar el campo JSON como modificado para que SQLAlchemy lo guarde.
+                flag_modified(pedido, "seguimiento_historial")
+            
+            # Asignar el nuevo usuario.
+            pedido.usuario_id = usuario_id
+        
+        pedido.total = new_total
+        pedido.updated_at = datetime.utcnow()
+
+        # --- MEJORA PROFESIONAL: Notificar al cliente si el pedido está activo ---
+        # Si el pedido está activo, es visible para el cliente. Por lo tanto, cualquier
+        # modificación debe ser notificada para mantener la transparencia.
+        if pedido.estado == EstadoEnum.ACTIVO:
+            if pedido.seguimiento_historial is None:
+                pedido.seguimiento_historial = []
+
+            # Crear una nueva entrada en el historial para notificar la actualización.
+            # Se usa el estado de seguimiento actual para no alterar el flujo logístico.
+            nota_actualizacion = "Hemos actualizado los detalles de tu pedido."
+            
+            new_history_entry = {
+                'estado': pedido.seguimiento_estado.value,
+                'notas': nota_actualizacion,
+                'timestamp': datetime.utcnow().isoformat() + "Z",
+                'notified_to_client': False  # Marcar para que el sistema envíe la notificación.
+            }
+            pedido.seguimiento_historial.append(new_history_entry)
+            flag_modified(pedido, "seguimiento_historial")
+            current_app.logger.info(f"Pedido {pedido.id} actualizado y marcado para notificación al cliente (estado: activo).")
+
 
         db.session.commit()
 
@@ -478,6 +501,9 @@ def update_pedido(admin_user, pedido_id):
             'pedido_id': pedido.id
         }), 200
 
+    except ValueError as ve:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(ve)}), 400
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"Error al actualizar pedido: {e}", exc_info=True)

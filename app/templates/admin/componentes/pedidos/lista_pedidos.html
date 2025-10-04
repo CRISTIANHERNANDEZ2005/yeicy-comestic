@@ -121,13 +121,13 @@
                                                     <button class="action-button view text-blue-600 hover:text-blue-800" title="Ver detalles" onclick="pedidosApp.viewPedido('{{ pedido.id }}')">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    {% if pedido.estado != 'inactivo' %}
-                                                        {% if pedido.estado_pedido == 'en proceso' %}
-                                                        <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
-                                                                title="Editar pedido" 
-                                                                onclick="pedidosApp.editPedido('{{ pedido.id }}')">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
+                                                    {% if pedido.estado_pedido == 'en proceso' %}
+                                                    <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
+                                                            title="Editar pedido" 
+                                                            onclick="pedidosApp.editPedido('{{ pedido.id }}')">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                        {% if pedido.estado != 'inactivo' %}
                                                         <button class="action-button complete text-green-600 hover:text-green-800" 
                                                                     title="Marcar como completado" 
                                                                     onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
@@ -138,7 +138,9 @@
                                                                     onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
                                                             <i class="fas fa-times-circle"></i>
                                                         </button>
-                                                        {% elif pedido.estado_pedido == 'completado' %}
+                                                        {% endif %}
+                                                    {% elif pedido.estado_pedido == 'completado' %}
+                                                        {% if pedido.estado != 'inactivo' %}
                                                             <button class="action-button process text-blue-600 hover:text-blue-800" 
                                                                     title="Poner en proceso" 
                                                                     onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
@@ -149,7 +151,9 @@
                                                                     onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
                                                                 <i class="fas fa-times-circle"></i>
                                                             </button>
-                                                        {% elif pedido.estado_pedido == 'cancelado' %}
+                                                        {% endif %}
+                                                    {% elif pedido.estado_pedido == 'cancelado' %}
+                                                        {% if pedido.estado != 'inactivo' %}
                                                             <button class="action-button process text-blue-600 hover:text-blue-800" 
                                                                     title="Poner en proceso" 
                                                                     onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">

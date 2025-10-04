@@ -1043,11 +1043,7 @@ window.pedidosApp = {
                                 }')">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                ${
-                                  !isInactive
-                                    ? this.renderActionButtons(pedido)
-                                    : ""
-                                }
+                                ${this.renderActionButtons(pedido)}
                             </div>
                         </td>
                     </tr>
@@ -1088,13 +1084,16 @@ window.pedidosApp = {
   },
 
   renderActionButtons: function (pedido) {
-    if (pedido.estado_pedido === "en proceso") {
+    let buttons = '';
+    if (pedido.estado_pedido === "en proceso") { // Pedidos en proceso
+      // El botón de editar siempre está disponible para pedidos "en proceso"
       return `
                 <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
                         title="Editar pedido" 
                         onclick="pedidosApp.editPedido('${pedido.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
+                ${pedido.estado === 'activo' ? `
                 <button class="action-button complete text-green-600 hover:text-green-800" 
                         title="Marcar como completado" 
                         onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
@@ -1105,9 +1104,11 @@ window.pedidosApp = {
                         onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
                     <i class="fas fa-times-circle"></i>
                 </button>
+                ` : ''}
             `;
-    } else if (pedido.estado_pedido === "completado") {
-      return `
+    } else if (pedido.estado_pedido === "completado") { // Pedidos completados
+      if (pedido.estado === 'activo') {
+        return `
                 <button class="action-button process text-blue-600 hover:text-blue-800" 
                         title="Poner en proceso" 
                         onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
@@ -1118,9 +1119,11 @@ window.pedidosApp = {
                         onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
                     <i class="fas fa-times-circle"></i>
                 </button>
-            `;
-    } else if (pedido.estado_pedido === "cancelado") {
-      return `
+                `;
+      }
+    } else if (pedido.estado_pedido === "cancelado") { // Pedidos cancelados
+      if (pedido.estado === 'activo') {
+        return `
                 <button class="action-button process text-blue-600 hover:text-blue-800" 
                         title="Poner en proceso" 
                         onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
@@ -1131,7 +1134,8 @@ window.pedidosApp = {
                         onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
                     <i class="fas fa-check-circle"></i>
                 </button>
-            `;
+                `;
+      }
     }
     return "";
   },

@@ -384,12 +384,6 @@ def update_pedido(admin_user, pedido_id):
                 'message': 'Pedido no encontrado'
             }), 404
 
-        if pedido.estado_pedido != EstadoPedido.EN_PROCESO:
-            return jsonify({
-                'success': False,
-                'message': 'Solo se pueden editar pedidos en proceso'
-            }), 400
-
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'No se recibieron datos'}), 400

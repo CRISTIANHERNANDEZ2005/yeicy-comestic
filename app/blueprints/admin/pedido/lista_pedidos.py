@@ -450,16 +450,23 @@ def update_pedido(admin_user, pedido_id):
 
         # 5. Actualizar el pedido principal.
         # --- MEJORA PROFESIONAL: Actualizar fechas si el cliente cambia ---
+        # MEJORA PROFESIONAL: Usar la hora de Colombia para evitar desfases de día.
+        # Se obtiene la hora actual en UTC y se convierte a la zona horaria de Colombia.
+        # Esto garantiza que si un admin edita a las 10 PM, la fecha refleje ese día.
+        import pytz
+        from datetime import timezone
+        colombia_tz = pytz.timezone('America/Bogota')
+        now_colombia = datetime.now(colombia_tz)
+
         if str(pedido.usuario_id) != str(usuario_id):
             current_app.logger.info(f"Cliente del pedido {pedido.id} cambiado de {pedido.usuario_id} a {usuario_id}. Actualizando fechas.")
             
-            now_utc = datetime.utcnow()
-            
-            pedido.created_at = now_utc
+            new_timestamp_utc = now_colombia.astimezone(timezone.utc)
+            pedido.created_at = new_timestamp_utc
             
             if pedido.seguimiento_historial:
                 for entry in pedido.seguimiento_historial:
-                    entry['timestamp'] = now_utc.isoformat() + "Z"
+                    entry['timestamp'] = new_timestamp_utc.isoformat() + "Z"
                 # Marcar el campo JSON como modificado para que SQLAlchemy lo guarde.
                 flag_modified(pedido, "seguimiento_historial")
             
@@ -467,7 +474,7 @@ def update_pedido(admin_user, pedido_id):
             pedido.usuario_id = usuario_id
         
         pedido.total = new_total
-        pedido.updated_at = datetime.utcnow()
+        pedido.updated_at = now_colombia.astimezone(timezone.utc)
 
         # --- MEJORA PROFESIONAL: Notificar al cliente si el pedido está activo ---
         # Si el pedido está activo, es visible para el cliente. Por lo tanto, cualquier

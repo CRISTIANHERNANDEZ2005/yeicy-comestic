@@ -182,127 +182,130 @@ window.pedidosApp = {
   },
 
   // MEJORA: Función unificada para actualizar la línea de tiempo con estados y timestamps.
-    updateTimeline: function (pedido) {
-        let historial = pedido.seguimiento_historial || [];
-        const ultimoEstado = pedido.seguimiento_estado || "recibido";
+  updateTimeline: function (pedido) {
+    let historial = pedido.seguimiento_historial || [];
+    const ultimoEstado = pedido.seguimiento_estado || "recibido";
 
-        // MEJORA PROFESIONAL: Asegurar que el estado 'recibido' siempre tenga un timestamp.
-        // Si no está en el historial (para pedidos antiguos), se usa la fecha de creación del pedido.
-        // Esto da robustez y consistencia a la línea de tiempo.
-        const tieneEstadoRecibido = historial.some((e) => e.estado === "recibido");
+    // MEJORA PROFESIONAL: Asegurar que el estado 'recibido' siempre tenga un timestamp.
+    // Si no está en el historial (para pedidos antiguos), se usa la fecha de creación del pedido.
+    // Esto da robustez y consistencia a la línea de tiempo.
+    const tieneEstadoRecibido = historial.some((e) => e.estado === "recibido");
 
-        if (!tieneEstadoRecibido) {
-            // Se crea una copia para no mutar el objeto original directamente.
-            historial = [
-                {
-                    estado: "recibido",
-                    notas: "Pedido recibido en el sistema", // Nota genérica para retrocompatibilidad
-                    timestamp: pedido.created_at,
-                },
-                ...historial,
-            ];
+    if (!tieneEstadoRecibido) {
+      // Se crea una copia para no mutar el objeto original directamente.
+      historial = [
+        {
+          estado: "recibido",
+          notas: "Pedido recibido en el sistema", // Nota genérica para retrocompatibilidad
+          timestamp: pedido.created_at,
+        },
+        ...historial,
+      ];
+    }
+
+    // MEJORA PROFESIONAL: Crear un mapa con la última entrada del historial para cada estado.
+    // Esto permite acceder tanto a la nota como al timestamp más reciente de cada etapa.
+    const statusHistoryMap = {};
+    historial.forEach((entry) => {
+      statusHistoryMap[entry.estado] = entry;
+    });
+
+    const timelineItems = document.querySelectorAll(".timeline-item");
+    const estadosOrden = [
+      "recibido",
+      "en preparacion",
+      "en camino",
+      "entregado",
+    ];
+    const ultimoEstadoIndex = estadosOrden.indexOf(ultimoEstado);
+
+    timelineItems.forEach((item) => {
+      const estado = item.getAttribute("data-estado");
+      const esEstadoCancelado = estado === "cancelado";
+      const timestampEl = document.getElementById(
+        `${estado.replace(/ /g, "-")}-timestamp`
+      );
+      const notasEl = document.getElementById(
+        `${estado.replace(/ /g, "-")}-notas`
+      );
+      const dot = item.querySelector(".timeline-dot");
+
+      // Resetea estilos y contenido
+      item.classList.remove("active", "completed");
+      if (dot) {
+        dot.classList.remove("bg-blue-500", "bg-green-500", "bg-red-500");
+        dot.classList.add("bg-gray-200");
+      }
+      if (timestampEl) {
+        timestampEl.textContent = "--:--";
+      }
+      if (notasEl) {
+        // El estado 'recibido' tiene un texto por defecto diferente.
+        if (estado === "recibido" && !esEstadoCancelado) {
+          notasEl.textContent =
+            "El pedido ha sido recibido en nuestro sistema.";
+        } else {
+          notasEl.textContent = "Pendiente de actualización.";
         }
+      }
 
-        // MEJORA PROFESIONAL: Crear un mapa con la última entrada del historial para cada estado.
-        // Esto permite acceder tanto a la nota como al timestamp más reciente de cada etapa.
-        const statusHistoryMap = {};
-        historial.forEach((entry) => {
-            statusHistoryMap[entry.estado] = entry;
-        });
+      // MEJORA: Actualiza el timestamp y la nota si el estado está en el historial.
+      if (statusHistoryMap[estado]) {
+        const entry = statusHistoryMap[estado];
+        if (timestampEl) {
+          const date = new Date(entry.timestamp);
+          const dateOptions = {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            timeZone: "America/Bogota",
+          };
+          const timeOptions = {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: true,
+            timeZone: "America/Bogota",
+          };
+          timestampEl.textContent = `${date.toLocaleDateString(
+            "es-CO",
+            dateOptions
+          )} ${date.toLocaleTimeString("es-CO", timeOptions)}`;
+        }
+        if (notasEl && entry.notas) {
+          notasEl.textContent = entry.notas;
+        }
+      }
 
-        const timelineItems = document.querySelectorAll(".timeline-item");
-        const estadosOrden = [
-            "recibido",
-            "en preparacion",
-            "en camino",
-            "entregado"
-        ];
-        const ultimoEstadoIndex = estadosOrden.indexOf(ultimoEstado);
-
-        timelineItems.forEach((item) => {
-            const estado = item.getAttribute("data-estado");
-            const esEstadoCancelado = estado === "cancelado";
-            const timestampEl = document.getElementById(
-                `${estado.replace(/ /g, "-")}-timestamp`
-            );
-            const notasEl = document.getElementById(
-                `${estado.replace(/ /g, "-")}-notas`
-            );
-            const dot = item.querySelector(".timeline-dot");
-
-            // Resetea estilos y contenido
-            item.classList.remove("active", "completed");
-            if (dot) {
-                dot.classList.remove("bg-blue-500", "bg-green-500", "bg-red-500");
-                dot.classList.add("bg-gray-200");
-            }
-            if (timestampEl) {
-                timestampEl.textContent = "--:--";
-            }
-            if (notasEl) {
-                // El estado 'recibido' tiene un texto por defecto diferente.
-                if (estado === "recibido" && !esEstadoCancelado) {
-                    notasEl.textContent =
-                        "El pedido ha sido recibido en nuestro sistema.";
-                } else {
-                    notasEl.textContent = "Pendiente de actualización.";
-                }
-            }
-
-            // MEJORA: Actualiza el timestamp y la nota si el estado está en el historial.
-            if (statusHistoryMap[estado]) {
-                const entry = statusHistoryMap[estado];
-                if (timestampEl) {
-                    const date = new Date(entry.timestamp);
-                    const dateOptions = {
-                        day: "2-digit",
-                        month: "short",
-                        year: "numeric",
-                        timeZone: "America/Bogota",
-                    };
-                    const timeOptions = {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                        timeZone: "America/Bogota",
-                    };
-                    timestampEl.textContent = `${date.toLocaleDateString(
-                        "es-CO",
-                        dateOptions
-                    )} ${date.toLocaleTimeString("es-CO", timeOptions)}`;
-                }
-                if (notasEl && entry.notas) {
-                    notasEl.textContent = entry.notas;
-                }
-            }
-
-            // Actualiza el estado visual (activo/completado)
-            if (ultimoEstado === "cancelado") {
-                // Si el pedido está cancelado, el item 'cancelado' es el activo.
-                if (esEstadoCancelado) {
+      // Actualiza el estado visual (activo/completado)
+      if (ultimoEstado === "cancelado") {
+        // Si el pedido está cancelado, el item 'cancelado' es el activo.
+        if (esEstadoCancelado) {
+          item.classList.add("active");
+          if (dot) dot.classList.add("bg-red-500");
+        }
+        // MEJORA PROFESIONAL: Solo marcar como completados los estados que realmente ocurrieron.
+        else if (statusHistoryMap[estado]) {
+          item.classList.add("completed");
+          if (dot) dot.classList.add("bg-green-500");
+        }
+      } else {
+        const itemIndex = estadosOrden.indexOf(estado);
+        if (itemIndex !== -1) {
+          // Si el estado es anterior al último, o si el pedido ya fue entregado, se marca como completado.
+          if (
+            statusHistoryMap[estado] &&
+            (itemIndex < ultimoEstadoIndex || ultimoEstado === "entregado")
+          ) {
+            item.classList.add("completed");
+            if (dot) dot.classList.add("bg-green-500");
+          } else if (itemIndex === ultimoEstadoIndex) {
                     item.classList.add("active");
-                    if (dot) dot.classList.add("bg-red-500");
-                } 
-                // MEJORA PROFESIONAL: Solo marcar como completados los estados que realmente ocurrieron.
-                else if (statusHistoryMap[estado]) {
-                    item.classList.add("completed");
-                    if (dot) dot.classList.add("bg-green-500");
-                }
-            } else {
-                const itemIndex = estadosOrden.indexOf(estado);
-                if (itemIndex !== -1) {
-                    // Si el estado es anterior al último, o si el pedido ya fue entregado, se marca como completado.
-                    if (statusHistoryMap[estado] && (itemIndex < ultimoEstadoIndex || ultimoEstado === "entregado")) {
-                        item.classList.add("completed");
-                        if (dot) dot.classList.add("bg-green-500");
-                    } else if (itemIndex === ultimoEstadoIndex) {
-                        item.classList.add("active");
-                        if (dot) dot.classList.add("bg-blue-500");
-                    }
-                }
-            }
-        });
-    },
+            if (dot) dot.classList.add("bg-blue-500");
+          }
+        }
+      }
+    });
+  },
 
   // Actualizar el timeline de seguimiento
   // Seleccionar estado de seguimiento

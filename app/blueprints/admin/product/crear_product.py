@@ -11,6 +11,7 @@ Funcionalidades Clave:
 - **Gestión de Imágenes**: Sube la imagen del producto al servicio de Cloudinary de forma segura.
 - **APIs Auxiliares**: Ofrece endpoints para poblar dinámicamente los selectores de categorías, subcategorías y seudocategorías, mejorando la usabilidad del formulario.
 """
+from app.utils.cloudinary_utils import upload_image_and_get_url
 from flask import Blueprint, render_template, request, abort, current_app, jsonify, redirect, url_for, flash
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
@@ -124,24 +125,8 @@ def create_product(admin_user):
             # --- 4. Subida de la Imagen a Cloudinary ---
             imagen_url = None
             try:
-                # MEJORA PROFESIONAL AVANZADA: Usar "Eager Transformations" para crear versiones optimizadas al instante.
-                # Esto garantiza un rendimiento superior y consistencia en la calidad de la imagen.
-                # Se genera un public_id único basado en el slug para evitar colisiones y facilitar la gestión.
-                from slugify import slugify
-                import uuid
-                public_id = f"{slugify(nombre)}-{str(uuid.uuid4())[:8]}"
-
-                upload_options = {
-                    'folder': "yeicy-cosmetic/products",
-                    'public_id': public_id,
-                    'eager': [ # Crear esta versión optimizada inmediatamente
-                        {'width': 800, 'height': 800, 'crop': 'limit'}, # Redimensiona sin cortar para encajar en 800x800
-                        {'quality': 'auto:good'}, # Calidad automática optimizada
-                        {'fetch_format': 'auto'}  # Formato de archivo automático (WebP, AVIF, etc.)
-                    ]
-                }
-                upload_result = cloudinary.uploader.upload(imagen_file, **upload_options)
-                imagen_url = upload_result['eager'][0].get('secure_url') # Usar la URL de la versión optimizada "eager"
+                # Lógica de subida profesional con deduplicación centralizada.
+                imagen_url = upload_image_and_get_url(imagen_file)
                 if not imagen_url:
                     raise Exception("La subida a Cloudinary no devolvió una URL.")
             except Exception as e:

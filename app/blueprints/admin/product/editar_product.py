@@ -11,6 +11,7 @@ Funcionalidades Clave:
 - **Protección de Lógica de Negocio**: Impide la edición de productos que se encuentren en estado 'inactivo'.
 """
 from flask import Blueprint, render_template, request, abort, current_app, jsonify, redirect, url_for, flash
+from app.utils.cloudinary_utils import upload_image_and_get_url
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
@@ -190,23 +191,8 @@ def update_product_api(admin_user, product_slug):
         if imagen_file:
             # A. Si se sube un archivo nuevo, se procesa.
             try:
-                # MEJORA PROFESIONAL AVANZADA: Usar "Eager Transformations" para crear versiones optimizadas al instante.
-                # Se genera un public_id único para la nueva imagen.
-                import uuid
-                public_id = f"{product.slug}-{str(uuid.uuid4())[:8]}"
-
-                upload_options = {
-                    'folder': "yeicy-cosmetic/products",
-                    'public_id': public_id,
-                    'eager': [ # Crear esta versión optimizada inmediatamente
-                        {'width': 800, 'height': 800, 'crop': 'limit'}, # Redimensiona sin cortar para encajar en 800x800
-                        {'quality': 'auto:good'}, # Calidad automática optimizada
-                        {'fetch_format': 'auto'}  # Formato de archivo automático (WebP, AVIF, etc.)
-                    ]
-                }
-                upload_result = cloudinary.uploader.upload(imagen_file, **upload_options)
-                # Usar la URL de la versión optimizada "eager"
-                imagen_url_final = upload_result['eager'][0].get('secure_url')
+                # Lógica de subida profesional con deduplicación centralizada.
+                imagen_url_final = upload_image_and_get_url(imagen_file)
                 if not imagen_url_final:
                     raise Exception("La subida a Cloudinary no devolvió una URL.")
             except Exception as e:

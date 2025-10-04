@@ -24,7 +24,7 @@ from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
 from sqlalchemy import or_, and_, func, desc, case
 from sqlalchemy.orm import joinedload, attributes
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, timezone
 from flask_wtf.csrf import generate_csrf
 
 admin_ventas_bp = Blueprint('admin_ventas', __name__)
@@ -564,9 +564,31 @@ def update_venta(admin_user, venta_id):
                 new_total += cantidad * precio_unitario
 
             # 5. Actualizar el pedido principal
+            # Si se cambia el cliente, actualizar las fechas clave.
+            # Esto asegura que el nuevo cliente vea una línea de tiempo consistente
+            # a partir de la fecha de la actualización, no de la venta original.
+            # MEJORA PROFESIONAL: Usar la hora de Colombia para evitar desfases de día.
+            # Se obtiene la hora actual en UTC y se convierte a la zona horaria de Colombia.
+            # Esto garantiza que si un admin edita a las 10 PM, la fecha refleje ese día.
+            import pytz
+            colombia_tz = pytz.timezone('America/Bogota')
+            now_colombia = datetime.now(colombia_tz)
+
+            if str(venta.usuario_id) != str(new_usuario_id):
+                current_app.logger.info(f"Cliente de la venta {venta.id} cambiado de {venta.usuario_id} a {new_usuario_id}. Actualizando fechas.")
+                new_timestamp_utc = now_colombia.astimezone(timezone.utc)
+                
+                # Actualizar la fecha de creación de la venta para el nuevo cliente.
+                venta.created_at = new_timestamp_utc
+                
+                # Actualizar las fechas del historial de seguimiento.
+                if venta.seguimiento_historial:
+                    for entry in venta.seguimiento_historial:
+                        entry['timestamp'] = new_timestamp_utc.isoformat()
+
             venta.total = new_total
             venta.usuario_id = new_usuario_id
-            venta.updated_at = datetime.utcnow()
+            venta.updated_at = now_colombia.astimezone(timezone.utc)
 
             # 6. MEJORA PROFESIONAL: Añadir entrada al historial y notificar si está activo.
             # Si el historial no existe, se inicializa.
@@ -580,7 +602,7 @@ def update_venta(admin_user, venta_id):
             historial_entry = {
                 'estado': venta.seguimiento_estado.value, # Usar el estado de seguimiento actual (ej. 'entregado')
                 'notas': "Tu pedido esta actualizado y completado",
-                'timestamp': datetime.utcnow().isoformat() + "Z",
+                'timestamp': now_colombia.isoformat(),
                 'notified_to_client': not notificar_cliente # notificar si es True (False para que el sistema lo envíe)
             }
             venta.seguimiento_historial.append(historial_entry)

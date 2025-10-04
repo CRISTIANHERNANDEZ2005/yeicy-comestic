@@ -78,11 +78,15 @@ const VentasPageModule = (() => {
 
   // Función para formatear fecha
   function formatDate(dateString) {
+    // MEJORA PROFESIONAL: Forzar la zona horaria de Colombia.
+    // Esto asegura que la fecha mostrada en la tabla sea siempre la correcta
+    // para el negocio, sin importar la configuración del navegador del administrador.
     const date = new Date(dateString);
     return date.toLocaleDateString("es-CO", {
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "America/Bogota",
     });
   }
 

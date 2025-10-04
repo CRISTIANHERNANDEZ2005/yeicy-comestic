@@ -1,14 +1,15 @@
 """
 Módulo de Gestión de Ventas (Admin).
 
-Este blueprint se encarga de la administración y análisis de las ventas, que son
-pedidos con estado 'completado'. Proporciona una interfaz para listar, filtrar,
-crear y analizar las ventas, así como para generar facturas.
+Este blueprint se encarga de la administración y análisis de las ventas (pedidos
+con estado 'completado'). Proporciona una interfaz para listar, filtrar, crear,
+editar y analizar las ventas, así como para generar facturas.
 
 Funcionalidades Clave:
 - **Vista de Listado de Ventas**: Renderiza la tabla de ventas con paginación y filtros avanzados (ID, cliente, fecha, monto).
 - **API de Filtrado en Tiempo Real**: Un endpoint para que el frontend filtre, ordene y pagine la lista de ventas dinámicamente.
 - **Creación de Ventas Directas**: Un endpoint para crear una venta (un pedido ya completado) directamente desde el panel, descontando el stock y registrando la transacción.
+- **Edición de Ventas**: Un endpoint robusto y transaccional para editar ventas, ajustando el stock de forma inteligente y notificando al cliente de manera condicional.
 - **API de Estadísticas**: Un endpoint robusto para calcular métricas clave de negocio (ingresos, utilidad, margen, ticket promedio) y generar datos para gráficos de tendencias.
 - **Gestión de Estado**: Permite marcar ventas como 'activas' o 'inactivas' para control administrativo.
 - **Generación de Facturas**: Un endpoint para renderizar una vista de factura imprimible para una venta específica.
@@ -21,8 +22,8 @@ from app.models.domains.product_models import Productos
 from app.models.enums import EstadoPedido, EstadoEnum, EstadoSeguimiento
 from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
-from sqlalchemy import or_, and_, func, desc
-from sqlalchemy.orm import joinedload
+from sqlalchemy import or_, and_, func, desc, case
+from sqlalchemy.orm import joinedload, attributes
 from datetime import datetime, timedelta, date
 from flask_wtf.csrf import generate_csrf
 
@@ -469,6 +470,133 @@ def get_venta_detalle(admin_user, venta_id):
             'success': False,
             'message': 'Error al obtener detalle de la venta'
         }), 500
+
+@admin_ventas_bp.route('/api/ventas/<string:venta_id>', methods=['PUT'])
+@admin_jwt_required
+def update_venta(admin_user, venta_id):
+    """
+    API para actualizar una venta existente.
+
+    Esta función permite editar una venta (un pedido completado), ajustando
+    el cliente, los productos y las cantidades. La lógica es compleja y
+    transaccional para garantizar la integridad de los datos y el stock.
+
+    MEJORA PROFESIONAL: Al actualizar, se añade una entrada al historial de seguimiento. Si la venta está 'activa', se marca para notificar al cliente del cambio. Si está 'inactiva', el cambio se registra silenciosamente.
+    Lógica de Actualización:
+    1.  Inicia una transacción de base de datos.
+    2.  Calcula la diferencia de stock entre el estado original y el nuevo.
+    3.  Verifica si hay suficiente stock para los productos añadidos o incrementados.
+    4.  Revierte el stock de los productos eliminados o reducidos.
+    5.  Actualiza los `PedidoProducto` (elimina, actualiza, crea).
+    6.  Recalcula y actualiza el `total` del `Pedido`.
+    7.  Actualiza el `usuario_id` si ha cambiado.
+    8.  Añade una entrada al historial de seguimiento, notificando al cliente si la venta está activa.
+    8.  Confirma la transacción. Si algo falla, se revierte todo.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        venta_id (str): El ID de la venta a actualizar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No se recibieron datos'}), 400
+
+        venta = Pedido.query.options(joinedload(Pedido.productos)).get(venta_id)
+        if not venta or venta.estado_pedido != EstadoPedido.COMPLETADO:
+            return jsonify({'success': False, 'message': 'Venta no encontrada'}), 404
+
+        new_usuario_id = data.get('usuario_id')
+        new_productos_payload = data.get('productos', [])
+
+        if not new_usuario_id or not new_productos_payload:
+            return jsonify({'success': False, 'message': 'Faltan datos: se requiere usuario_id y productos'}), 400
+
+        # --- Lógica Transaccional ---
+        with db.session.begin_nested():
+            # 1. Mapear productos y cantidades originales y nuevas
+            old_items = {str(p.producto_id): p.cantidad for p in venta.productos}
+            new_items = {str(p['id']): p['cantidad'] for p in new_productos_payload}
+            all_product_ids = set(old_items.keys()) | set(new_items.keys())
+            
+            # 2. Calcular diferencias de stock y verificar disponibilidad
+            stock_changes = {}
+            for prod_id in all_product_ids:
+                old_qty = old_items.get(prod_id, 0)
+                new_qty = new_items.get(prod_id, 0)
+                diff = new_qty - old_qty
+                if diff != 0:
+                    stock_changes[prod_id] = diff
+
+            # Verificar stock antes de aplicar cambios
+            for prod_id, diff in stock_changes.items():
+                if diff > 0: # Si se añaden productos
+                    producto = Productos.query.get(prod_id)
+                    if not producto or producto.existencia < diff:
+                        raise ValueError(f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado adicional: {diff}')
+
+            # 3. Aplicar cambios de stock
+            for prod_id, diff in stock_changes.items():
+                producto = Productos.query.get(prod_id)
+                if producto:
+                    producto.existencia -= diff
+
+            # 4. Actualizar PedidoProducto y calcular nuevo total
+            venta.productos.clear()
+            db.session.flush() # Limpiar la relación
+            
+            new_total = 0
+            for item_payload in new_productos_payload:
+                producto = Productos.query.get(item_payload['id'])
+                cantidad = item_payload['cantidad']
+                precio_unitario = producto.precio # Usar el precio actual del producto
+                
+                pedido_producto = PedidoProducto(
+                    pedido_id=venta.id,
+                    producto_id=producto.id,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario
+                )
+                db.session.add(pedido_producto)
+                new_total += cantidad * precio_unitario
+
+            # 5. Actualizar el pedido principal
+            venta.total = new_total
+            venta.usuario_id = new_usuario_id
+            venta.updated_at = datetime.utcnow()
+
+            # 6. MEJORA PROFESIONAL: Añadir entrada al historial y notificar si está activo.
+            # Si el historial no existe, se inicializa.
+            if venta.seguimiento_historial is None:
+                venta.seguimiento_historial = []
+
+            # Determinar si se debe notificar al cliente.
+            notificar_cliente = venta.estado == EstadoEnum.ACTIVO.value
+
+            # Crear la nueva entrada en el historial.
+            historial_entry = {
+                'estado': venta.seguimiento_estado.value, # Usar el estado de seguimiento actual (ej. 'entregado')
+                'notas': "Tu pedido esta actualizado y completado",
+                'timestamp': datetime.utcnow().isoformat() + "Z",
+                'notified_to_client': not notificar_cliente # notificar si es True (False para que el sistema lo envíe)
+            }
+            venta.seguimiento_historial.append(historial_entry)
+            attributes.flag_modified(venta, "seguimiento_historial")
+
+        db.session.commit()
+        current_app.logger.info(f"Venta {venta_id} actualizada por administrador {admin_user.id}")
+        return jsonify({'success': True, 'message': 'Venta actualizada exitosamente', 'pedido_id': venta.id}), 200
+
+    except ValueError as ve:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(ve)}), 400
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al actualizar la venta {venta_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno al actualizar la venta'}), 500
 
 @admin_ventas_bp.route('/api/ventas/<string:venta_id>/estado', methods=['POST'])
 @admin_jwt_required

@@ -389,6 +389,9 @@ const VentasPageModule = (() => {
                         }" data-tooltip="Ver detalles de esta venta">
                             <i class="fas fa-eye"></i>
                         </button>
+                        <button class="action-btn edit tooltip" data-id="${venta.id}" data-tooltip="Editar esta venta">
+                            <i class="fas fa-edit"></i>
+                        </button>
                         <button class="action-btn toggle ${
                           venta.estado === "activo" ? "active" : "inactive"
                         } tooltip" 
@@ -421,6 +424,13 @@ const VentasPageModule = (() => {
       btn.addEventListener("click", function () {
         const ventaId = this.getAttribute("data-id");
         showVentaDetail(ventaId);
+      });
+    });
+
+    document.querySelectorAll(".action-btn.edit").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const ventaId = this.getAttribute("data-id");
+        editVenta(ventaId);
       });
     });
 
@@ -798,6 +808,26 @@ const VentasPageModule = (() => {
     }
   }
 
+  // Función para editar una venta
+  async function editVenta(ventaId) {
+    try {
+      const response = await fetch(`/admin/api/ventas/${ventaId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        const venta = data.venta;
+        // Usar el módulo crearVentaApp para abrir el modal en modo edición
+        if (typeof crearVentaApp !== 'undefined') {
+          crearVentaApp.openModalForEdit(venta);
+        }
+      } else {
+        window.toast.error("Error al cargar los datos de la venta para editar.");
+      }
+    } catch (error) {
+      console.error("Error al editar venta:", error);
+      window.toast.error("Error al cargar los datos de la venta para editar.");
+    }
+  }
   // Función para cambiar el estado de una venta
   async function toggleVentaStatus(ventaId, newStatus) {
     try {
@@ -1344,7 +1374,11 @@ document.addEventListener("content-loaded", runVentasInitialization);
 //    que es disparado por el SPA al final de su propia inicialización.
 //    Esto unifica el punto de entrada y evita la necesidad de `DOMContentLoaded`.
 if (document.readyState === 'loading') {
+    // En una SPA, es mejor depender de un solo evento de inicialización.
+    // El evento 'content-loaded' ya se encarga de esto.
     document.addEventListener('DOMContentLoaded', runVentasInitialization);
 } else {
+    // La llamada inicial también debe ser manejada por el evento 'content-loaded'
+    // para evitar la doble ejecución al cargar la página por primera vez.
     runVentasInitialization();
 }

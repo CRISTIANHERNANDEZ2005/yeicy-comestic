@@ -168,13 +168,13 @@ window.crearVentaApp = {
     this.editingVentaId = pedido.id;
 
     this.venta.usuario_id = pedido.usuario.id;
-    this.elements.selectedCustomerId.value = pedido.usuario.id;
-    this.elements.selectedCustomerName.textContent = pedido.usuario
-      ? pedido.usuario.nombre + " " + pedido.usuario.apellido
-      : "N/A";
-    this.elements.selectedCustomer.classList.remove("hidden");
+    this.elements.selectedCustomerId.value = this.venta.usuario_id;
+    this.elements.selectedCustomerName.textContent = `${pedido.usuario.nombre} ${pedido.usuario.apellido}`;
+    this.elements.selectedCustomer.classList.remove("hidden"); // Mostrar el cliente seleccionado
+    this.elements.customerSearchInput.classList.add("hidden"); // Ocultar el input de búsqueda
 
     this.venta.productos = [];
+    // El endpoint de detalle de venta devuelve `pedido.productos`
     if (pedido.productos && pedido.productos.length > 0) {
       pedido.productos.forEach((item) => {
         this.venta.productos.push({
@@ -190,8 +190,8 @@ window.crearVentaApp = {
     this.renderPedidoItems();
     this.updateTotal();
 
-    this.elements.pedidoModalTitle.textContent = "Editar Venta";
-    this.elements.savePedidoBtn.textContent = "Actualizar Venta";
+    this.elements.pedidoModalTitle.textContent = `Editar Venta #${pedido.id.substring(0, 8)}...`;
+    this.elements.savePedidoBtn.textContent = "Guardar Cambios";
 
     this.elements.modal.classList.remove("hidden");
   },
@@ -278,6 +278,7 @@ window.crearVentaApp = {
     this.venta.usuario_id = null;
     this.elements.selectedCustomerId.value = "";
     this.elements.selectedCustomer.classList.add("hidden");
+    this.elements.customerSearchInput.classList.remove("hidden"); // Mostrar el input de búsqueda de nuevo
   },
 
   searchProducts: function () {
@@ -413,7 +414,7 @@ window.crearVentaApp = {
                           producto.existencia
                         }" value="${producto.cantidad}" 
                                class="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-                               data-index="${index}" onchange="crearPedidoApp.updateCantidad(${index}, this.value)">
+                               data-index="${index}" onchange="window.crearVentaApp.updateCantidad(${index}, this.value)">
                     </td>
                     <td class="px-4 py-3">
                         $ ${subtotal.toLocaleString()}
@@ -496,7 +497,7 @@ window.crearVentaApp = {
     let successMessage = "Venta creada exitosamente";
 
     if (this.isEditMode) {
-      url = `/admin/api/ventas/${this.editingVentaId}`; // URL para editar ventas (si se implementa)
+      url = `/admin/api/ventas/${this.editingVentaId}`;
       method = "PUT";
       successMessage = "Venta actualizada exitosamente";
     }
@@ -545,6 +546,7 @@ window.crearVentaApp = {
     this.elements.customerSearchInput.value = "";
     this.elements.productSearchInput.value = "";
     this.elements.selectedCustomer.classList.add("hidden");
+    this.elements.customerSearchInput.classList.remove("hidden"); // Asegurarse de que el input de búsqueda sea visible
     this.renderPedidoItems();
     this.updateTotal();
   },

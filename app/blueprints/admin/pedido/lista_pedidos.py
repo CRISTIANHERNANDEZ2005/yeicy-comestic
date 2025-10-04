@@ -549,13 +549,6 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                 'message': 'Pedido no encontrado'
             }), 404
 
-        if pedido.estado == EstadoEnum.INACTIVO:
-            return jsonify({
-                'success': False,
-                'message': 'No se puede cambiar el estado de un pedido inactivo',
-                'inactive_order': True
-            }), 400
-
         data = request.get_json()
         nuevo_seguimiento_str = data.get('seguimiento_estado')
         notas = data.get('notas', '').strip()
@@ -631,6 +624,10 @@ def update_pedido_seguimiento(admin_user, pedido_id):
             if pedido.seguimiento_historial is None:
                 pedido.seguimiento_historial = []
 
+            # MEJORA PROFESIONAL: Determinar si se debe notificar al cliente.
+            # Si el pedido está inactivo, no se notifica. La notificación se enviará al activarlo.
+            debe_notificar = pedido.estado == EstadoEnum.ACTIVO.value
+
             timestamp_actual = datetime.utcnow().isoformat() + "Z"
 
             # MEJORA PROFESIONAL: Si el estado es 'cancelado', no rellenar estados intermedios.
@@ -640,7 +637,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                     'estado': nuevo_seguimiento_enum.value,
                     'notas': notas,
                     'timestamp': timestamp_actual,
-                    'notified_to_client': False
+                    'notified_to_client': not debe_notificar
                 }
                 pedido.seguimiento_historial.append(new_history_entry)
             else:
@@ -664,7 +661,7 @@ def update_pedido_seguimiento(admin_user, pedido_id):
                             'estado': estado_secuencia.value,
                             'notas': notas, # Usar las notas proporcionadas por el admin.
                             'timestamp': timestamp_actual,
-                            'notified_to_client': False # Marcar para que el cliente sea notificado.
+                            'notified_to_client': not debe_notificar # Marcar para notificar solo si está activo.
                         }
                         pedido.seguimiento_historial.append(new_history_entry)
                         # Una vez que llegamos al estado seleccionado, no rellenamos más.
@@ -818,6 +815,8 @@ def update_pedido_estado(admin_user, pedido_id):
             # Esto asegura que el cliente vea un historial completo y profesional, incluso si los
             # pasos intermedios se omitieron en el panel de administración.
             if nuevo_estado == EstadoPedido.COMPLETADO:
+                current_app.logger.info(f"Pedido {pedido_id}: Moviendo a COMPLETADO. Se sincronizará el historial de seguimiento.")
+
                 pedido.seguimiento_estado = EstadoSeguimiento.ENTREGADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.ENTREGADO.value
@@ -841,27 +840,45 @@ def update_pedido_estado(admin_user, pedido_id):
                 # Añadir solo los estados que faltan en el historial.
                 for estado_secuencia, nota_secuencia in secuencia_completa:
                     if estado_secuencia.value not in estados_existentes:
+                        # MEJORA PROFESIONAL: Al rellenar, marcar los estados intermedios como ya notificados
+                        # para no abrumar al cliente. La notificación real será la del estado final.
                         new_history_entry = {
                             'estado': estado_secuencia.value,
                             'notas': nota_secuencia,
                             'timestamp': datetime.utcnow().isoformat() + "Z",
-                            'notified_to_client': False
+                            'notified_to_client': True # Marcar intermedios como ya notificados.
                         }
                         pedido.seguimiento_historial.append(new_history_entry)
+                        current_app.logger.debug(f"Pedido {pedido_id}: Rellenando historial con estado '{estado_secuencia.value}' (notified=True).")
+
+                # MEJORA PROFESIONAL: Asegurar que SIEMPRE se añada una nueva entrada para el estado final
+                # con la notificación activada, incluso si ya existía una entrada previa.
+                # Esto es clave para reactivaciones.
+                final_history_entry = {
+                    'estado': EstadoSeguimiento.ENTREGADO.value,
+                    'notas': nota_por_defecto,
+                    'timestamp': datetime.utcnow().isoformat() + "Z",
+                    'notified_to_client': False # ¡Clave para la notificación!
+                }
+                pedido.seguimiento_historial.append(final_history_entry)
+                current_app.logger.info(f"Pedido {pedido_id}: Añadiendo entrada final de historial para '{EstadoSeguimiento.ENTREGADO.value}' (notified=False).")
                 
                 # Marcar el historial como modificado para que SQLAlchemy detecte el cambio.
                 flag_modified(pedido, "seguimiento_historial")
                 pedido.notas_seguimiento = nota_por_defecto
 
             elif nuevo_estado == EstadoPedido.CANCELADO:
+                current_app.logger.info(f"Pedido {pedido_id}: Moviendo a CANCELADO. Se añadirá entrada al historial.")
                 pedido.seguimiento_estado = EstadoSeguimiento.CANCELADO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.CANCELADO.value
                 nota_por_defecto = "Tu pedido ha sido cancelado."
                 
-                # Si se cancela, añadir solo la entrada de cancelación.
+                # MEJORA PROFESIONAL: Siempre añadir una nueva entrada para el cambio de estado,
+                # marcada para notificación, en lugar de depender de la lógica de relleno.
                 if pedido.seguimiento_historial is None:
                     pedido.seguimiento_historial = []
+                
                 new_history_entry = {
                     'estado': nuevo_seguimiento,
                     'notas': nota_por_defecto,
@@ -869,18 +886,23 @@ def update_pedido_estado(admin_user, pedido_id):
                     'notified_to_client': False
                 }
                 pedido.seguimiento_historial.append(new_history_entry)
+                current_app.logger.info(f"Pedido {pedido_id}: Añadiendo entrada de historial para '{nuevo_seguimiento}' (notified=False).")
+                
                 flag_modified(pedido, "seguimiento_historial")
                 pedido.notas_seguimiento = nota_por_defecto
 
             elif nuevo_estado == EstadoPedido.EN_PROCESO:
+                current_app.logger.info(f"Pedido {pedido_id}: Moviendo a EN PROCESO. Se añadirá entrada al historial.")
                 pedido.seguimiento_estado = EstadoSeguimiento.RECIBIDO
                 seguimiento_cambiado = True
                 nuevo_seguimiento = EstadoSeguimiento.RECIBIDO.value
                 nota_por_defecto = "Tu pedido fue recibido y está siendo procesado."
                 
-                # Si se mueve a "en proceso", añadir solo la entrada de recibido.
+                # MEJORA PROFESIONAL: Siempre añadir una nueva entrada para el cambio de estado,
+                # marcada para notificación.
                 if pedido.seguimiento_historial is None:
                     pedido.seguimiento_historial = []
+                
                 new_history_entry = {
                     'estado': nuevo_seguimiento,
                     'notas': nota_por_defecto,
@@ -888,11 +910,16 @@ def update_pedido_estado(admin_user, pedido_id):
                     'notified_to_client': False
                 }
                 pedido.seguimiento_historial.append(new_history_entry)
+                current_app.logger.info(f"Pedido {pedido_id}: Añadiendo entrada de historial para '{nuevo_seguimiento}' (notified=False).")
+                
                 flag_modified(pedido, "seguimiento_historial")
                 pedido.notas_seguimiento = nota_por_defecto
 
             pedido.estado_pedido = nuevo_estado
             pedido.updated_at = datetime.utcnow()
+
+            # LOG DE DEPURACIÓN: Imprimir el historial final antes de hacer commit.
+            current_app.logger.debug(f"Pedido {pedido_id}: Historial de seguimiento final antes de commit: {pedido.seguimiento_historial}")
             
             db.session.commit()
 
@@ -927,7 +954,6 @@ def update_pedido_estado(admin_user, pedido_id):
         db.session.rollback()
         current_app.logger.error(f"Error al cambiar estado del pedido {pedido_id}: {e}", exc_info=True)
         return jsonify({'success': False, 'message': 'Error al cambiar el estado del pedido'}), 500
-
 
 @admin_lista_pedidos_bp.route('/api/pedidos/filter', methods=['GET'])
 @admin_jwt_required
@@ -1110,35 +1136,22 @@ def update_pedido_estado_activo(admin_user, pedido_id):
         pedido.estado = nuevo_estado
         pedido.updated_at = datetime.utcnow()
 
-        # Si el pedido se está activando y está "en proceso", generar una nueva notificación.
-        # No se notifica para pedidos completados o cancelados que se reactivan, ya que sería confuso para el cliente.
-        if old_status == 'inactivo' and nuevo_estado == 'activo' and pedido.estado_pedido == EstadoPedido.EN_PROCESO:
-            # En lugar de re-marcar una entrada antigua, creamos una nueva para notificar la reactivación.
-            # Esto es más claro para el cliente y evita problemas de notificaciones "perdidas".
-            if pedido.seguimiento_historial is None:
-                pedido.seguimiento_historial = []
-            
-            # Mensaje de notificación contextual al reactivar.
-            # Se genera una nota específica basada en el estado de seguimiento actual del pedido.
-            current_tracking_status = pedido.seguimiento_estado
-            
-            reactivation_notes = {
-                EstadoSeguimiento.RECIBIDO: "Tu pedido fue recibio y está siendo procesado.",
-                EstadoSeguimiento.EN_PREPARACION: "Tu pedido ha sido reactivado y continúa en preparación.",
-                EstadoSeguimiento.EN_CAMINO: "Tu pedido ha sido reactivado y ya se encuentra en camino.",
-            }
-            
-            nota_reactivacion = reactivation_notes.get(current_tracking_status, "Tu pedido fue recibio y está siendo procesado.")
-
-            new_history_entry = {
-                'estado': pedido.seguimiento_estado.value, # Usar el estado de seguimiento actual
-                'notas': nota_reactivacion,
-                'timestamp': datetime.utcnow().isoformat() + "Z",
-                'notified_to_client': False
-            }
-            pedido.seguimiento_historial.append(new_history_entry)
-            flag_modified(pedido, "seguimiento_historial")
-            current_app.logger.info(f"Pedido {pedido_id} reactivado y marcado para notificación al cliente.")
+        # MEJORA PROFESIONAL: Al activar un pedido, marcar la última entrada del historial para notificación.
+        # Esto envía al cliente el estado más reciente que se configuró mientras estaba inactivo.
+        if old_status == 'inactivo' and nuevo_estado == 'activo':
+            if pedido.seguimiento_historial and len(pedido.seguimiento_historial) > 0:
+                # Obtener la última entrada del historial.
+                ultima_entrada = pedido.seguimiento_historial[-1]
+                
+                # Si la última entrada no ha sido notificada (porque se añadió mientras estaba inactivo),
+                # la marcamos para que se notifique ahora.
+                if ultima_entrada.get('notified_to_client', False) is True:
+                    ultima_entrada['notified_to_client'] = False
+                    flag_modified(pedido, "seguimiento_historial")
+                    current_app.logger.info(
+                        f"Pedido {pedido_id} reactivado. Marcando la última entrada de seguimiento "
+                        f"('{ultima_entrada['estado']}') para notificación al cliente."
+                    )
 
         current_app.logger.info(
             f"Pedido {pedido_id} cambiado de estado (activo/inactivo) de {old_status} a {nuevo_estado} "

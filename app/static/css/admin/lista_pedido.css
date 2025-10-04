@@ -688,3 +688,10 @@ tr[data-estado="inactivo"] td {
   font-size: 14px;
   color: #4b5563;
 }
+
+/* Estilo para controles de seguimiento en pedidos inactivos */
+.inactive-order-controls {
+  opacity: 0.75;
+  border: 1px dashed #cbd5e1; /* border-gray-300 */
+  border-radius: 0.75rem; /* rounded-xl */
+}

@@ -944,21 +944,23 @@ window.pedidosApp = {
 
     // Llenar el select con los nuevos pedidos.
     if (pedidos && pedidos.length > 0) {
-      // MEJORA PROFESIONAL: Filtrar para mostrar solo pedidos activos en el selector de seguimiento.
+      // MEJORA PROFESIONAL: Mostrar todos los pedidos, pero indicar visualmente si están inactivos.
       pedidos.forEach((pedido) => {
-        if (pedido.estado === "activo") {
-          const option = document.createElement("option");
-          option.value = pedido.id;
-          option.setAttribute(
-            "data-estado",
-            pedido.seguimiento_estado || "recibido"
-          );
-          option.setAttribute("data-notas", pedido.notas_seguimiento || "");
-          option.textContent = `#${pedido.id.substring(0, 8)}... - ${
-            pedido.usuario_nombre || "N/A"
-          } - $ ${pedido.total.toLocaleString()}`;
-          pedidoSelect.appendChild(option);
-        }
+        const option = document.createElement("option");
+        option.value = pedido.id;
+        option.setAttribute(
+          "data-estado",
+          pedido.seguimiento_estado || "recibido"
+        );
+        option.setAttribute("data-notas", pedido.notas_seguimiento || "");
+
+        // Añadir etiqueta "(Inactivo)" si corresponde para claridad del admin.
+        const estadoLabel =
+          pedido.estado === "inactivo" ? " (Inactivo)" : "";
+        option.textContent = `#${pedido.id.substring(0, 8)}... - ${
+          pedido.usuario_nombre || "N/A"
+        } - $ ${pedido.total.toLocaleString()}${estadoLabel}`;
+        pedidoSelect.appendChild(option);
       });
     } else {
       // Si no hay pedidos en la lista, nos aseguramos de que la sección de seguimiento esté cerrada.
@@ -1497,30 +1499,27 @@ window.pedidosApp = {
     const seguimientoButtons = document.getElementById("seguimientoButtons");
     if (seguimientoButtons) {
       // MEJORA PROFESIONAL: Deshabilitar controles si el pedido está inactivo.
+      // ACTUALIZACIÓN: Ya no se deshabilita, solo se aplica un estilo visual.
       const isInactive = pedido.estado === "inactivo";
       seguimientoButtons.innerHTML = this.generateSeguimientoButtons(
         pedido.seguimiento_estado || "recibido",
         isInactive
       );
 
+      // MEJORA: Aplicar una clase para dar una pista visual si el pedido está inactivo,
+      // pero sin deshabilitar la funcionalidad.
       const seguimientoModalContainer = document.getElementById(
         "seguimientoModalContainer"
       );
       if (seguimientoModalContainer) {
         if (isInactive) {
-          seguimientoModalContainer.classList.add(
-            "opacity-50",
-            "pointer-events-none"
-          );
+          seguimientoModalContainer.classList.add("inactive-order-controls");
           seguimientoModalContainer.setAttribute(
             "title",
             "Activa el pedido para gestionar su seguimiento."
           );
         } else {
-          seguimientoModalContainer.classList.remove(
-            "opacity-50",
-            "pointer-events-none"
-          );
+          seguimientoModalContainer.classList.remove("inactive-order-controls");
           seguimientoModalContainer.removeAttribute("title");
         }
       }
@@ -1570,8 +1569,7 @@ window.pedidosApp = {
 
     estados.forEach((estado) => {
       const isActive = currentEstado === estado.value;
-      // MEJORA PROFESIONAL: Permitir cambiar el estado desde 'entregado' o 'cancelado',
-      // pero manteniendo la restricción para pedidos inactivos.
+      // ACTUALIZACIÓN: La restricción 'isInactive' se elimina para permitir la edición.
       const disabled = isInactive;
       const isFinalState =
         currentEstado === "entregado" || currentEstado === "cancelado";
@@ -1581,15 +1579,13 @@ window.pedidosApp = {
 
       buttonsHtml += `
                 <button class="seguimiento-btn ${isActive ? "active" : ""} ${
-        disabled ? "disabled" : ""
-      } ${
         isRevertAction ? "revert-action" : ""
       } seguimiento-btn-${formattedValue}"
                         data-estado="${estado.value}" 
                         onclick="pedidosApp.selectSeguimientoEstadoModal('${
                           estado.value
                         }')"
-                        ${disabled ? "disabled" : ""}>
+                        >
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.getIconPath(
                           estado.icon

@@ -190,31 +190,57 @@ def update_product_api(admin_user, product_slug):
         if imagen_file:
             # A. Si se sube un archivo nuevo, se procesa.
             try:
-                upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
-                imagen_url_final = upload_result.get('secure_url')
+                # MEJORA PROFESIONAL AVANZADA: Usar "Eager Transformations" para crear versiones optimizadas al instante.
+                # Se genera un public_id único para la nueva imagen.
+                import uuid
+                public_id = f"{product.slug}-{str(uuid.uuid4())[:8]}"
+
+                upload_options = {
+                    'folder': "yeicy-cosmetic/products",
+                    'public_id': public_id,
+                    'eager': [ # Crear esta versión optimizada inmediatamente
+                        {'width': 800, 'height': 800, 'crop': 'limit'}, # Redimensiona sin cortar para encajar en 800x800
+                        {'quality': 'auto:good'}, # Calidad automática optimizada
+                        {'fetch_format': 'auto'}  # Formato de archivo automático (WebP, AVIF, etc.)
+                    ]
+                }
+                upload_result = cloudinary.uploader.upload(imagen_file, **upload_options)
+                # Usar la URL de la versión optimizada "eager"
+                imagen_url_final = upload_result['eager'][0].get('secure_url')
                 if not imagen_url_final:
                     raise Exception("La subida a Cloudinary no devolvió una URL.")
             except Exception as e:
                 current_app.logger.error(f"Error al subir nueva imagen a Cloudinary para producto {product.slug}: {e}", exc_info=True)
                 return jsonify({'success': False, 'message': 'Error al subir la nueva imagen.'}), 500
 
-            # B. PRÁCTICA PROFESIONAL: Eliminar la imagen antigua de Cloudinary para no acumular archivos basura.
-            if product.imagen_url:
-                try:
-                    # Extraer el public_id de la URL antigua.
-                    # El public_id incluye el nombre de la carpeta.
-                    start_index = product.imagen_url.find('yeicy-cosmetic/products/')
-                    if start_index != -1:
-                        end_index = product.imagen_url.rfind('.')
-                        public_id = product.imagen_url[start_index:end_index]
-                        cloudinary.api.delete_resources([public_id])
-                        current_app.logger.info(f"Imagen antigua '{public_id}' eliminada de Cloudinary para producto {product.slug}.")
-                except Exception as e:
-                    # No es un error crítico si no se puede borrar la imagen vieja, solo se registra.
-                    current_app.logger.error(f"No se pudo eliminar la imagen antigua '{product.imagen_url}' de Cloudinary: {e}", exc_info=True)
+            # B. PRÁCTICA PROFESIONAL: Eliminar la imagen antigua de Cloudinary solo si no está en uso por otros productos.
+            old_image_url = product.imagen_url
+            if old_image_url:
+                # Contar cuántos productos usan la imagen antigua.
+                # Si el conteo es 1, significa que solo este producto la usa y es seguro borrarla.
+                image_usage_count = Productos.query.filter_by(imagen_url=old_image_url).count()
+
+                if image_usage_count <= 1:
+                    try:
+                        # Extraer el public_id de la URL antigua.
+                        # El public_id incluye el nombre de la carpeta.
+                        start_index = old_image_url.find('yeicy-cosmetic/products/')
+                        if start_index != -1:
+                            end_index = old_image_url.rfind('.')
+                            public_id = old_image_url[start_index:end_index]
+                            cloudinary.api.delete_resources([public_id])
+                            current_app.logger.info(f"Imagen antigua '{public_id}' eliminada de Cloudinary para producto {product.slug} (no estaba en uso por otros productos).")
+                    except Exception as e:
+                        # No es un error crítico si no se puede borrar la imagen vieja, solo se registra.
+                        current_app.logger.error(f"No se pudo eliminar la imagen antigua '{old_image_url}' de Cloudinary: {e}", exc_info=True)
+                else:
+                    current_app.logger.info(
+                        f"La imagen antigua '{old_image_url}' no se eliminará de Cloudinary porque está siendo utilizada por {image_usage_count} productos."
+                    )
 
         # --- 6. Actualización de los campos del producto ---
         product.nombre = nombre
+        # El slug se actualiza antes si el nombre cambia
         product.marca = marca
         product.descripcion = descripcion
         product.imagen_url = imagen_url_final

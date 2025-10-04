@@ -124,9 +124,24 @@ def create_product(admin_user):
             # --- 4. Subida de la Imagen a Cloudinary ---
             imagen_url = None
             try:
-                # El folder ayuda a organizar las imágenes en Cloudinary
-                upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
-                imagen_url = upload_result.get('secure_url')
+                # MEJORA PROFESIONAL AVANZADA: Usar "Eager Transformations" para crear versiones optimizadas al instante.
+                # Esto garantiza un rendimiento superior y consistencia en la calidad de la imagen.
+                # Se genera un public_id único basado en el slug para evitar colisiones y facilitar la gestión.
+                from slugify import slugify
+                import uuid
+                public_id = f"{slugify(nombre)}-{str(uuid.uuid4())[:8]}"
+
+                upload_options = {
+                    'folder': "yeicy-cosmetic/products",
+                    'public_id': public_id,
+                    'eager': [ # Crear esta versión optimizada inmediatamente
+                        {'width': 800, 'height': 800, 'crop': 'limit'}, # Redimensiona sin cortar para encajar en 800x800
+                        {'quality': 'auto:good'}, # Calidad automática optimizada
+                        {'fetch_format': 'auto'}  # Formato de archivo automático (WebP, AVIF, etc.)
+                    ]
+                }
+                upload_result = cloudinary.uploader.upload(imagen_file, **upload_options)
+                imagen_url = upload_result['eager'][0].get('secure_url') # Usar la URL de la versión optimizada "eager"
                 if not imagen_url:
                     raise Exception("La subida a Cloudinary no devolvió una URL.")
             except Exception as e:

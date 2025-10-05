@@ -672,7 +672,16 @@ window.toggleProductStatus = function (productId, isActive) {
               }
             }
           }
-          window.toast.success(data.message);
+          
+          // MEJORA PROFESIONAL: Recargar la tabla con los filtros actuales.
+          // Esto asegura que si un producto ya no cumple con el filtro de estado
+          // (ej. se activa un producto mientras se filtra por 'inactivos'),
+          // desaparecerá de la lista, proporcionando una experiencia de usuario consistente.
+          // Se usa un pequeño delay para que el usuario pueda ver la notificación de éxito.
+          window.toast.success(data.message, 1500); // Aumentamos la duración del toast
+          setTimeout(() => {
+              applyFilters(false); // false para resetear a la página 1 si es necesario
+          }, 500);
         }
       } else {
         toggle.checked = originalChecked;

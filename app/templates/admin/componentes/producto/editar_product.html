@@ -5,7 +5,12 @@ de Administración {% endblock %} {% block content %}
   <div class="mb-8 fade-in">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between">
       <div>
-        <h2 class="text-3xl font-bold text-gray-800">Editar Producto</h2>
+        <h2 class="text-3xl font-bold text-gray-800 flex items-center">
+          <span>Editar: <span id="header-product-name">{{ product.nombre }}</span></span>
+          {% if product.estado == 'inactivo' %}
+            <span id="inactive-badge" class="ml-4 px-3 py-1 text-sm font-semibold rounded-full bg-gray-200 text-gray-700 shadow-sm">Inactivo</span>
+          {% endif %}
+        </h2>
         <p class="text-gray-600 mt-1">
           Modifica los detalles de este producto existente
         </p>

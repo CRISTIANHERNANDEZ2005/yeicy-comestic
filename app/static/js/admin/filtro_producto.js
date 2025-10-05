@@ -254,11 +254,9 @@ function updateProductsTable(products, pagination) {
                        <div class="ml-4">
                            <div class="flex items-center">
                                <div class="text-sm font-semibold ${isInactive ? 'text-gray-600' : 'text-gray-900'}">${product.nombre}</div>
-                               ${
-                                 isInactive
+                               ${isInactive
                                    ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>`
-                                   : `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>`
-                               }
+                                   : ''}
                            </div>
                            <div class="text-sm text-gray-500">${
                              product.marca || "Sin marca"

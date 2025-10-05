@@ -3,6 +3,7 @@ function initializeEditarProductForm() {
   const form = document.getElementById("product-form");
   // Si el formulario no existe, significa que no estamos en la página de edición de productos, salimos.
   if (!form) {
+    // console.log("Formulario de edición no encontrado. Saliendo de initializeEditarProductForm.");
     return;
   }
 
@@ -22,6 +23,7 @@ function initializeEditarProductForm() {
     "#close-preview, #close-preview-btn"
   );
   const submitBtn = document.getElementById("submit-btn");
+  const headerProductName = document.getElementById("header-product-name");
   const submitText = document.getElementById("submit-text");
 
   // --- Elementos para la nueva UI de imagen ---
@@ -68,6 +70,7 @@ function initializeEditarProductForm() {
     !previewModal ||
     closePreviewBtns.length === 0 ||
     !submitBtn ||
+    !headerProductName ||
     !submitText ||
     !statusBasic ||
     !statusCategory ||
@@ -523,6 +526,11 @@ function initializeEditarProductForm() {
 
   document.getElementById("nombre").oninput = updateFormStatus;
   document.getElementById("descripcion").oninput = updateFormStatus;
+
+  // MEJORA PROFESIONAL: Actualizar el nombre en el encabezado en tiempo real.
+  document.getElementById("nombre").addEventListener('input', (e) => {
+    headerProductName.textContent = e.target.value || 'Producto sin nombre';
+  });
 
   function openModal(modal) {
     modal.classList.remove("hidden");

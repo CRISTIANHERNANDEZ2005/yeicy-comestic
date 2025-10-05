@@ -93,9 +93,7 @@
                                         <div class="ml-4">
                                             <div class="flex items-center">
                                                 <div class="text-sm font-semibold {% if product.estado == 'inactivo' %}text-gray-600{% else %}text-gray-900{% endif %}">{{ product.nombre }}</div>
-                                                {% if product.estado == 'activo' %}
-                                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
-                                                {% else %}
+                                                {% if product.estado == 'inactivo' %}
                                                     <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
                                                 {% endif %}
                                             </div>

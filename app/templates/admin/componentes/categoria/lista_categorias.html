@@ -163,7 +163,7 @@ de Administración {% endblock %} {% block content %}
         <!-- Contenedor para las categorías -->
         <div id="categoriesContainer" class="space-y-4">
           {% if categorias %} {% for category in categorias %}
-          <div class="category-card">
+          <div class="category-card {% if category.estado == 'inactivo' %}bg-gray-100 opacity-75{% endif %}">
             <div class="category-header">
               <div class="category-info">
                 <button
@@ -173,7 +173,12 @@ de Administración {% endblock %} {% block content %}
                   <i class="fas fa-chevron-right"></i>
                 </button>
                 <div class="category-details">
-                  <h4>{{ category.nombre }}</h4>
+                  <h4 class="flex items-center">
+                    <span>{{ category.nombre }}</span>
+                    {% if category.estado == 'inactivo' %}
+                      <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                    {% endif %}
+                  </h4>
                   <p>{{ category.descripcion }}</p>
                   <div class="category-meta">
                     <span class="inline-flex items-center mr-3">
@@ -220,8 +225,8 @@ de Administración {% endblock %} {% block content %}
 
               <div class="space-y-3 ml-4">
                 {% if category.subcategorias %} {% for subcategory in
-                category.subcategorias %}
-                <div class="subcategory-card">
+                category.subcategorias %} 
+                <div class="subcategory-card {% if subcategory.estado == 'inactivo' %}bg-gray-100 opacity-75{% endif %}">
                   <div class="subcategory-header">
                     <div class="subcategory-info">
                       <button
@@ -231,7 +236,12 @@ de Administración {% endblock %} {% block content %}
                         <i class="fas fa-chevron-right"></i>
                       </button>
                       <div class="subcategory-details">
-                        <h6>{{ subcategory.nombre }}</h6>
+                        <h6 class="flex items-center">
+                          <span>{{ subcategory.nombre }}</span>
+                          {% if subcategory.estado == 'inactivo' %}
+                            <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                          {% endif %}
+                        </h6>
                         <p class="text-xs text-gray-500">
                           {{ subcategory.descripcion }}
                         </p>
@@ -275,11 +285,14 @@ de Administración {% endblock %} {% block content %}
 
                     <div class="space-y-2 ml-4">
                       {% if subcategory.seudocategorias %} {% for pseudocategory
-                      in subcategory.seudocategorias %}
-                      <div class="pseudocategory-card">
+                      in subcategory.seudocategorias %} 
+                      <div class="pseudocategory-card {% if pseudocategory.estado == 'inactivo' %}bg-gray-100 opacity-75{% endif %}">
                         <div class="pseudocategory-info">
-                          <h6 class="font-medium text-gray-800 text-sm">
-                            {{ pseudocategory.nombre }}
+                          <h6 class="font-medium text-gray-800 text-sm flex items-center">
+                            <span>{{ pseudocategory.nombre }}</span>
+                            {% if pseudocategory.estado == 'inactivo' %}
+                              <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                            {% endif %}
                           </h6>
                           <p class="text-xs text-gray-500">
                             {{ pseudocategory.descripcion }}

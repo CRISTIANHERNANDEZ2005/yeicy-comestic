@@ -84,14 +84,21 @@
                     </thead>
                                         <tbody id="products-tbody" class="bg-white divide-y divide-gray-200">
                         {% for product in products %}
-                            <tr class="hover:bg-blue-50 transition-colors duration-200" data-product-id="{{ product.id }}">
+                            <tr class="transition-colors duration-200 {% if product.estado == 'inactivo' %}bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200{% else %}hover:bg-blue-50{% endif %}" data-product-id="{{ product.id }}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden shadow-sm border border-gray-200">
                                             <img class="h-12 w-12 object-cover" src="{{ product.imagen_url }}" alt="{{ product.nombre }}">
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-semibold text-gray-900">{{ product.nombre }}</div>
+                                            <div class="flex items-center">
+                                                <div class="text-sm font-semibold {% if product.estado == 'inactivo' %}text-gray-600{% else %}text-gray-900{% endif %}">{{ product.nombre }}</div>
+                                                {% if product.estado == 'activo' %}
+                                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
+                                                {% else %}
+                                                    <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                                                {% endif %}
+                                            </div>
                                             <div class="text-sm text-gray-500">{{ product.marca or 'Sin marca' }}</div>
                                         </div>
                                     </div>

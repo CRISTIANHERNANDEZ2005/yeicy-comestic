@@ -20,8 +20,13 @@
             <tbody id="mainCategoriesTableBody">
                 {% if categories %}
                     {% for category in categories %}
-                        <tr>
-                            <td>{{ category.nombre }}</td>
+                        <tr class="transition-colors duration-200 {% if category.estado == 'inactivo' %}bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200{% else %}hover:bg-gray-50{% endif %}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>{{ category.nombre }}</span>
+                                    {% if category.estado == 'inactivo' %}<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>{% endif %}
+                                </div>
+                            </td>
                             <td>{{ category.subcategorias | length }}</td>
                             <td data-category-id="{{ category.id }}" data-category-type="main">
                                 <div class="flex items-center">
@@ -90,8 +95,13 @@
             <tbody id="subCategoriesTableBody" class="initial-load">
                 {% if subcategories %}
                     {% for subcategory in subcategories %}
-                        <tr>
-                            <td>{{ subcategory.nombre }}</td>
+                        <tr class="transition-colors duration-200 {% if subcategory.estado == 'inactivo' %}bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200{% else %}hover:bg-gray-50{% endif %}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>{{ subcategory.nombre }}</span>
+                                    {% if subcategory.estado == 'inactivo' %}<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>{% endif %}
+                                </div>
+                            </td>
                             <td>{{ subcategory.categoria_principal_nombre }}</td>
                             <td>{{ subcategory.seudocategorias | length }}</td>
                             <td data-category-id="{{ subcategory.id }}" data-category-type="sub">
@@ -158,8 +168,13 @@
             <tbody id="pseudoCategoriesTableBody" class="initial-load">
                 {% if pseudocategories %}
                     {% for pseudo in pseudocategories %}
-                        <tr>
-                            <td>{{ pseudo.nombre }}</td>
+                        <tr class="transition-colors duration-200 {% if pseudo.estado == 'inactivo' %}bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200{% else %}hover:bg-gray-50{% endif %}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>{{ pseudo.nombre }}</span>
+                                    {% if pseudo.estado == 'inactivo' %}<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>{% endif %}
+                                </div>
+                            </td>
                             <td>{{ pseudo.subcategoria_nombre }}</td>
                             <td>{{ pseudo.categoria_principal_nombre }}</td>
                             <td data-category-id="{{ pseudo.id }}" data-category-type="pseudo">

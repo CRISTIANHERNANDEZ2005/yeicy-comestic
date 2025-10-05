@@ -349,8 +349,12 @@ window.categoriesApp = {
           : 0;
         // Usar el total de productos ya calculado por el backend
         const totalProducts = category.total_productos || 0;
+        const isInactive = category.estado === 'inactivo';
+        const cardClass = isInactive ? 'bg-gray-100 opacity-75' : '';
+        const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
         html += `
-                    <div class="category-card">
+                    <div class="category-card ${cardClass}">
                         <div class="category-header">
                             <div class="category-info">
                                 <button class="category-toggle" data-target="sub-${
@@ -359,7 +363,10 @@ window.categoriesApp = {
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                                 <div class="category-details">
-                                    <h4>${category.nombre}</h4>
+                                    <h4 class="flex items-center">
+                                      <span>${category.nombre}</span>
+                                      ${nameBadge}
+                                    </h4>
                                     <p>${category.descripcion}</p>
                                     <div class="category-meta">
                                         <span class="inline-flex items-center mr-3">
@@ -438,8 +445,12 @@ window.categoriesApp = {
           : 0;
         // Usar el total de productos ya calculado por el backend
         const totalProducts = subcategory.total_productos || 0;
+        const isInactive = subcategory.estado === 'inactivo';
+        const cardClass = isInactive ? 'bg-gray-100 opacity-75' : '';
+        const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
         html += `
-                    <div class="subcategory-card">
+                    <div class="subcategory-card ${cardClass}">
                         <div class="subcategory-header">
                             <div class="subcategory-info">
                                 <button class="subcategory-toggle" data-target="pseudo-${
@@ -448,7 +459,10 @@ window.categoriesApp = {
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                                 <div class="subcategory-details">
-                                    <h6>${subcategory.nombre}</h6>
+                                    <h6 class="flex items-center">
+                                      <span>${subcategory.nombre}</span>
+                                      ${nameBadge}
+                                    </h6>
                                     <p class="text-xs text-gray-500">${
                                       subcategory.descripcion
                                     }</p>
@@ -511,12 +525,17 @@ window.categoriesApp = {
       pseudocategories.forEach((pseudocategory) => {
         // Usar el total de productos ya calculado por el backend
         const totalProducts = pseudocategory.total_productos || 0;
+        const isInactive = pseudocategory.estado === 'inactivo';
+        const cardClass = isInactive ? 'bg-gray-100 opacity-75' : '';
+        const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
         html += `
-                    <div class="pseudocategory-card">
+                    <div class="pseudocategory-card ${cardClass}">
                         <div class="pseudocategory-info">
-                            <h6 class="font-medium text-gray-800 text-sm">${
-                              pseudocategory.nombre
-                            }</h6>
+                            <h6 class="font-medium text-gray-800 text-sm flex items-center">
+                              <span>${pseudocategory.nombre}</span>
+                              ${nameBadge}
+                            </h6>
                             <p class="text-xs text-gray-500">${
                               pseudocategory.descripcion
                             }</p>
@@ -719,9 +738,18 @@ window.categoriesApp = {
     if (this.currentView === "main") {
       if (data.categorias && data.categorias.length > 0) {
         data.categorias.forEach((category) => {
+          const isInactive = category.estado === 'inactivo';
+          const rowClass = isInactive ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' : 'hover:bg-gray-50';
+          const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
           html += `
-                        <tr>
-                            <td>${category.nombre}</td>
+                        <tr class="transition-colors duration-200 ${rowClass}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>${category.nombre}</span>
+                                    ${nameBadge}
+                                </div>
+                            </td>
                             <td>${
                               category.subcategorias
                                 ? category.subcategorias.length
@@ -790,9 +818,18 @@ window.categoriesApp = {
     } else if (this.currentView === "sub") {
       if (data.subcategorias && data.subcategorias.length > 0) {
         data.subcategorias.forEach((subcategory) => {
+          const isInactive = subcategory.estado === 'inactivo';
+          const rowClass = isInactive ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' : 'hover:bg-gray-50';
+          const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
           html += `
-                        <tr>
-                            <td>${subcategory.nombre}</td>
+                        <tr class="transition-colors duration-200 ${rowClass}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>${subcategory.nombre}</span>
+                                    ${nameBadge}
+                                </div>
+                            </td>
                             <td>${
                               subcategory.categoria_principal_nombre || "-"
                             }</td>
@@ -860,9 +897,18 @@ window.categoriesApp = {
     } else if (this.currentView === "pseudo") {
       if (data.seudocategorias && data.seudocategorias.length > 0) {
         data.seudocategorias.forEach((pseudocategory) => {
+          const isInactive = pseudocategory.estado === 'inactivo';
+          const rowClass = isInactive ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' : 'hover:bg-gray-50';
+          const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
           html += `
-                        <tr>
-                            <td>${pseudocategory.nombre}</td>
+                        <tr class="transition-colors duration-200 ${rowClass}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>${pseudocategory.nombre}</span>
+                                    ${nameBadge}
+                                </div>
+                            </td>
                             <td>${
                               pseudocategory.subcategoria_nombre || "-"
                             }</td>

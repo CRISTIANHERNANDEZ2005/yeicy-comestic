@@ -229,6 +229,11 @@ function updateProductsTable(products, pagination) {
 
   tbody.innerHTML = products
     .map((product) => {
+      const isInactive = product.estado === 'inactivo';
+      const rowClass = isInactive 
+          ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' 
+          : 'hover:bg-blue-50';
+
       const editActionHtml = `
               <a href="/admin/producto/editar/${product.slug}" class="spa-edit-product-link edit-product-btn inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto">
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -238,9 +243,7 @@ function updateProductsTable(products, pagination) {
 
               
       return `
-           <tr class="hover:bg-blue-50 transition-colors duration-200" data-product-id="${
-             product.id
-           }">
+           <tr class="transition-colors duration-200 ${rowClass}" data-product-id="${product.id}">
                <td class="px-6 py-4 whitespace-nowrap">
                    <div class="flex items-center">
                        <div class="flex-shrink-0 h-12 w-12 rounded-lg overflow-hidden shadow-sm border border-gray-200">
@@ -249,9 +252,14 @@ function updateProductsTable(products, pagination) {
                            }" alt="${product.nombre}">
                        </div>
                        <div class="ml-4">
-                           <div class="text-sm font-semibold text-gray-900">${
-                             product.nombre
-                           }</div>
+                           <div class="flex items-center">
+                               <div class="text-sm font-semibold ${isInactive ? 'text-gray-600' : 'text-gray-900'}">${product.nombre}</div>
+                               ${
+                                 isInactive
+                                   ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>`
+                                   : `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>`
+                               }
+                           </div>
                            <div class="text-sm text-gray-500">${
                              product.marca || "Sin marca"
                            }</div>

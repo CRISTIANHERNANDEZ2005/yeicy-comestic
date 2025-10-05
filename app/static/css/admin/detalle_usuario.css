@@ -402,3 +402,75 @@
   text-transform: capitalize;
   letter-spacing: 0.025em;
 }
+
+/* --- MEJORA PROFESIONAL: Rediseño del Timeline de Seguimiento en la Modal --- */
+.modal-timeline-container {
+  position: relative;
+  padding-left: 1.5rem; /* Espacio para la línea */
+}
+
+.modal-timeline-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+.modal-timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem; /* Espacio entre items */
+}
+
+.modal-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.modal-timeline-icon {
+  position: absolute;
+  left: -0.75rem; /* Centrado sobre la línea */
+  top: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background-color: #f9fafb; /* bg-gray-50, el fondo de la modal */
+  border: 2px solid #e5e7eb; /* gray-200 */
+  transition: all 0.3s ease;
+}
+
+.modal-timeline-item.completed .modal-timeline-icon {
+  background-color: #dcfce7; /* green-100 */
+  border-color: #22c55e; /* green-500 */
+  color: #16a34a; /* green-600 */
+}
+
+.modal-timeline-item.active .modal-timeline-icon {
+  background-color: #dbeafe; /* blue-100 */
+  border-color: #3b82f6; /* blue-500 */
+  color: #2563eb; /* blue-600 */
+  transform: scale(1.2);
+}
+
+.modal-timeline-item.cancelled .modal-timeline-icon {
+  background-color: #fee2e2; /* red-100 */
+  border-color: #ef4444; /* red-500 */
+  color: #b91c1c; /* red-700 */
+}
+
+.modal-timeline-content {
+  background-color: white;
+  border-radius: 0.75rem; /* rounded-xl */
+  padding: 1rem;
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  transition: all 0.3s ease;
+}
+
+.modal-timeline-item.active .modal-timeline-content {
+  border-color: #93c5fd; /* blue-300 */
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.1);
+}

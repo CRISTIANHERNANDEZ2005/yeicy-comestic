@@ -15,7 +15,7 @@ from app.utils.cloudinary_utils import upload_image_and_get_url
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
-from app.models.serializers import producto_to_dict
+from app.models.serializers import admin_producto_to_dict
 import cloudinary.uploader
 import cloudinary.api
 from app.extensions import db
@@ -48,12 +48,10 @@ def edit_product_page(admin_user, product_slug):
     if not product:
         abort(404, description="Producto no encontrado")
 
-    # Regla de negocio: no se pueden editar productos inactivos.
-    if product.estado == 'inactivo':
-        flash('No se puede editar un producto que está inactivo.', 'warning')
-        return redirect(url_for('admin_products.get_all_products'))
-
-    product_data = producto_to_dict(product)
+    # MEJORA PROFESIONAL: Usar el serializador de administrador.
+    # `producto_to_dict` devuelve None si el producto está inactivo, causando el error.
+    # `admin_producto_to_dict` serializa el producto sin importar su estado.
+    product_data = admin_producto_to_dict(product)
 
     # Extrae los IDs de la jerarquía de categorías para la preselección en los <select> del frontend.
     selected_seudocategoria_id = product.seudocategoria.id if product.seudocategoria else None
@@ -92,9 +90,6 @@ def update_product_api(admin_user, product_slug):
     product = Productos.query.filter_by(slug=product_slug).first()
     if not product:
         return jsonify({'success': False, 'message': 'Producto no encontrado'}), 404
-
-    if product.estado == 'inactivo':
-        return jsonify({'success': False, 'message': 'No se puede editar un producto que está inactivo.'}), 403
 
     try:
         # --- 1. Obtención de datos del formulario (multipart/form-data) ---
@@ -232,7 +227,16 @@ def update_product_api(admin_user, product_slug):
         product.imagen_url = imagen_url_final
         product.precio = precio
         product.costo = costo
-        product.existencia = int(existencia_str)
+        
+        # MEJORA PROFESIONAL: Evitar el cambio de estado automático.
+        # Se asigna directamente a `_existencia` para no disparar el setter de la propiedad `existencia`,
+        # que cambia el estado a 'activo' si la existencia es > 0.
+        # De esta forma, el estado del producto se mantiene como estaba al momento de la edición.
+        new_existencia = int(existencia_str)
+        product._existencia = new_existencia
+        if new_existencia == 0:
+            product.estado = 'inactivo' # Se mantiene la regla de negocio de desactivar si el stock es 0.
+
         product.stock_minimo = int(stock_minimo_str)
         product.stock_maximo = int(stock_maximo_str)
         product.seudocategoria_id = seudocategoria_id

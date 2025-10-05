@@ -229,23 +229,14 @@ function updateProductsTable(products, pagination) {
 
   tbody.innerHTML = products
     .map((product) => {
-      let editActionHtml = "";
-      if (product.estado === "activo") {
-        editActionHtml = `
-                <a href="/admin/producto/editar/${product.slug}" class="spa-edit-product-link edit-product-btn inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                </a>`;
-      } else {
-        editActionHtml = `
-                <button type="button" class="edit-product-btn-inactive inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-400 cursor-not-allowed transition-all duration-300 shadow-md" title="Para editar, el producto debe estar activo">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                </button>`;
-      }
+      const editActionHtml = `
+              <a href="/admin/producto/editar/${product.slug}" class="spa-edit-product-link edit-product-btn inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                  </svg>
+              </a>`;
 
+              
       return `
            <tr class="hover:bg-blue-50 transition-colors duration-200" data-product-id="${
              product.id
@@ -674,11 +665,9 @@ window.toggleProductStatus = function (productId, isActive) {
               const actionCell = row.querySelector("td:last-child");
               if (actionCell && slug) {
                 let editActionHtml = "";
-                if (data.new_status === "activo") {
-                  editActionHtml = `<a href="/admin/producto/editar/${slug}" class="spa-edit-product-link edit-product-btn inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></a>`;
-                } else {
-                  editActionHtml = `<button type="button" class="edit-product-btn-inactive inline-flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 text-gray-400 cursor-not-allowed transition-all duration-300 shadow-md" title="Para editar, el producto debe estar activo"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></button>`;
-                }
+                // MEJORA: Generar siempre el botón de edición habilitado, independientemente del estado.
+                // Esto corrige el bug donde el botón se desactivaba al cambiar el estado a inactivo.
+                editActionHtml = `<a href="/admin/producto/editar/${slug}" class="spa-edit-product-link edit-product-btn inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 hover:bg-indigo-200 text-indigo-600 hover:text-indigo-800 transition-all duration-300 transform hover:scale-110 shadow-md" title="Editar producto"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg></a>`;
                 actionCell.innerHTML = editActionHtml + detailLink.outerHTML;
               }
             }
@@ -1075,13 +1064,6 @@ function setupFilterEventListeners() {
     // Add this new event listener for the edit button
     tableBody.addEventListener("click", function (e) {
       const editButton = e.target.closest(".edit-product-btn-inactive");
-      if (editButton) {
-        e.preventDefault();
-        e.stopPropagation(); // Stop other listeners from being called
-        window.toast.info(
-          "Para editar un producto, primero debe estar activo."
-        );
-      }
     });
   }
 

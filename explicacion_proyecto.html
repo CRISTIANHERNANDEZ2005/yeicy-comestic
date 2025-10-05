@@ -1,0 +1,1437 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Profesional del Proyecto - YE&CY Cosmetic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #1e293b;
+            --secondary: #334155;
+            --accent: #3b82f6;
+            --accent-light: #60a5fa;
+            --light: #f8fafc;
+            --text: #1e293b;
+            --text-light: #475569;
+            --border: #e2e8f0;
+            --shadow: rgba(0, 0, 0, 0.1);
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text);
+            background-color: var(--light);
+        }
+        
+        .font-display {
+            font-family: 'Playfair Display', serif;
+        }
+        
+        /* Animaciones personalizadas */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(30px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-out;
+        }
+        
+        .slide-in {
+            animation: slideInRight 0.5s ease-out;
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Estilos para las secciones */
+        .section-content {
+            display: none;
+        }
+        
+        .section-content.active {
+            display: block;
+        }
+        
+        /* Estilos para la navegación */
+        .nav-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .nav-item {
+            position: relative;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border-radius: 0.5rem;
+        }
+        
+        .nav-item:hover {
+            color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.05);
+        }
+        
+        .nav-item.active {
+            color: var(--accent);
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 3px;
+            background: var(--accent);
+            border-radius: 3px 3px 0 0;
+        }
+        
+        /* Estilos para las tarjetas */
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        .card-accent {
+            border-left: 4px solid var(--accent);
+        }
+        
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        
+        /* Estilos para las palabras clave */
+        .keyword {
+            color: var(--accent);
+            font-weight: 600;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .keyword::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background-color: var(--accent);
+            opacity: 0.3;
+        }
+        
+        /* Estilos para los detalles expandibles */
+        .details-container {
+            margin-top: 1.5rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        
+        .details-header {
+            padding: 1rem;
+            background-color: var(--light);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: background-color 0.2s ease;
+        }
+        
+        .details-header:hover {
+            background-color: #f1f5f9;
+        }
+        
+        .details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        
+        .details-content.open {
+            max-height: 1000px;
+        }
+        
+        .details-body {
+            padding: 1rem;
+            border-top: 1px solid var(--border);
+        }
+        
+        /* Estilos para botones */
+        .btn {
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary {
+            background-color: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background-color: white;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--light);
+        }
+        
+        /* Estilos para el encabezado */
+        .header {
+            text-align: center;
+            padding: 3rem 0;
+            position: relative;
+        }
+        
+        .header-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            z-index: -1;
+        }
+        
+        .header-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+        
+        .header-subtitle {
+            font-size: 1.125rem;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto 2rem;
+        }
+        
+        /* Estilos para el indicador de sección */
+        .section-indicator {
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-indicator-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: var(--accent);
+            margin-right: 0.75rem;
+        }
+        
+        .section-indicator-text {
+            font-weight: 600;
+            color: var(--text);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-size: 0.875rem;
+        }
+        
+        /* Estilos para listas */
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            position: relative;
+            padding-left: 1.5rem;
+            margin-bottom: 0.75rem;
+        }
+        
+        .feature-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.625rem;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: var(--accent);
+        }
+        
+        /* Estilos para código */
+        code {
+            background-color: rgba(59, 130, 246, 0.1);
+            color: var(--accent);
+            padding: 0.125rem 0.375rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-family: 'Courier New', monospace;
+        }
+        
+        /* Estilos para la impresión */
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .no-print {
+                display: none;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .section-content {
+                display: block !important;
+            }
+            
+            .card {
+                break-inside: avoid;
+            }
+        }
+        
+        /* Estilos responsivos */
+        @media (max-width: 768px) {
+            .header-title {
+                font-size: 2rem;
+            }
+            
+            .nav-item {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+            
+            .card {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="max-w-6xl mx-auto">
+        <!-- Encabezado Principal -->
+        <header class="header fade-in">
+            <div class="header-bg"></div>
+            <div class="container mx-auto px-4">
+                <div class="inline-flex items-center justify-center mb-6">
+                    <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-lg">
+                        <i class="fas fa-flask text-2xl" style="color: var(--accent);"></i>
+                    </div>
+                </div>
+                <h1 class="header-title font-display">Análisis del Proyecto</h1>
+                <p class="header-subtitle">
+                    Documentación técnica de la plataforma E-Commerce <span style="font-weight: 600; color: var(--accent);">YE&CY Cosmetic</span>.
+                </p>
+            </div>
+        </header>
+
+        <!-- Navegación Principal -->
+        <nav class="nav-container no-print">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-center">
+                    <div class="flex space-x-2">
+                        <button onclick="showSection('tienda-online')" class="nav-item active" id="nav-tienda-online">
+                            <i class="fas fa-store mr-2"></i>Tienda Online
+                        </button>
+                        <button onclick="showSection('analisis-tecnico')" class="nav-item" id="nav-analisis-tecnico">
+                            <i class="fas fa-code mr-2"></i>Análisis Técnico
+                        </button>
+                        <button onclick="showSection('panel-admin')" class="nav-item" id="nav-panel-admin">
+                            <i class="fas fa-cog mr-2"></i>Panel de Administración
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Contenido Principal -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- Sección: Tienda Online -->
+            <section id="tienda-online" class="section-content active fade-in">
+                <div class="section-indicator">
+                    <div class="section-indicator-dot"></div>
+                    <div class="section-indicator-text">Tienda Online (Cliente)</div>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Análisis de la arquitectura y funcionalidades de cara al cliente</h2>
+                <p class="text-gray-600 mb-8">Exploramos en detalle la estructura y componentes que conforman la experiencia de compra del cliente final.</p>
+
+                <!-- Card: Visión General -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                        <h3 class="card-title">Visión General de la Arquitectura</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed">
+                        La tienda online está construida como una aplicación web dinámica utilizando el framework <span class="keyword">Flask</span> en el backend y una combinación de <span class="keyword">Jinja2</span> para la renderización inicial de páginas y <span class="keyword">JavaScript vainilla</span> para la interactividad en tiempo real. Esta arquitectura híbrida nos permite tener lo mejor de dos mundos: la robustez y seguridad del renderizado en el servidor y la agilidad de una aplicación de página única (SPA) para funcionalidades clave como el carrito, los favoritos y las reseñas.
+                    </p>
+                </div>
+
+                <!-- Card: Autenticación -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-shield-alt"></i>
+                        </div>
+                        <h3 class="card-title">1. Autenticación y Gestión de Sesión: Un Enfoque Híbrido y Seguro</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La autenticación es la piedra angular de la experiencia personalizada. Hemos implementado un sistema robusto que combina la seguridad de las sesiones del lado del servidor con la flexibilidad de los <span class="keyword">JSON Web Tokens (JWT)</span> para el cliente.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/cliente/auth.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Registro y Login:</b> Los endpoints <code>/register</code> y <code>/login</code> reciben los datos del usuario. Para la seguridad, la contraseña nunca se guarda en texto plano; utilizamos la librería <span class="keyword">Bcrypt</span> para generar un hash seguro que se almacena en la base de datos. Al iniciar sesión, comparamos el hash de la contraseña proporcionada con el almacenado.</li>
+                                <li><b>Generación de JWT:</b> Tras un inicio de sesión exitoso, no solo creamos una sesión segura en el servidor con <span class="keyword">Flask-Login</span>, sino que también generamos un JWT. Este token es una credencial digital firmada que contiene la identidad del usuario (<code>user_id</code>) y una fecha de expiración.</li>
+                                <li><b>Middleware de Sesión:</b> La función <code>restore_session_from_jwt</code> en <code>auth.py</code> es crucial. Se ejecuta antes de cada petición y busca el JWT en las cookies del navegador. Si encuentra un token válido, "restaura" la sesión del usuario, permitiéndole continuar navegando como autenticado sin necesidad de volver a iniciar sesión en cada visita.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend (<code>app/static/js/auth_interceptor.js</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Interceptor de fetch:</b> Este script es el cerebro de la comunicación del cliente con el backend. Sobrescribe la función <code>fetch</code> global de JavaScript para "interceptar" todas las llamadas a nuestra API.</li>
+                                <li><b>Inyección Automática de Token:</b> Antes de enviar una petición a rutas protegidas (como <code>/api/favoritos</code>), el interceptor añade automáticamente el encabezado <code>Authorization: Bearer &lt;token&gt;</code>, tomando el JWT que guardamos en <code>localStorage</code> o cookies.</li>
+                                <li><b>Manejo de Sesión Expirada (Error 401):</b> Si el backend responde con un error <span style="color: #ef4444;">401 (No Autorizado)</span> porque el token ha expirado, el interceptor lo detecta, limpia la sesión del cliente (borra el token y los datos de usuario) y lo redirige elegantemente a la página principal para que inicie sesión de nuevo. Esto evita que el usuario se encuentre con errores inesperados.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-auth')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-auth-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-auth">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué usar un enfoque híbrido de sesiones de Flask y JWT? ¿No es redundante?</p>
+                                    <p class="mt-1">R: No es redundancia, es especialización. <span class="keyword">Flask-Login</span> gestiona de forma segura el estado en el servidor, ideal para renderizar plantillas con datos de `current_user`. El <span class="keyword">JWT</span>, por otro lado, nos da un token de API sin estado, perfecto para las interacciones dinámicas del frontend (SPA) y para una futura aplicación móvil. El middleware `restore_session_from_jwt` es el puente que unifica ambas, ofreciendo una experiencia de usuario fluida y una arquitectura flexible.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Es seguro almacenar el JWT en `localStorage`?</p>
+                                    <p class="mt-1">R: Es una decisión de trade-off. `localStorage` es vulnerable a ataques XSS. Sin embargo, para la tienda del cliente, donde el riesgo es menor, nos da gran simplicidad. Para el <span style="color: #10b981;">Panel de Administración</span>, donde la seguridad es crítica, mitigamos este riesgo usando <span style="color: #ef4444;">cookies HttpOnly</span>, que son inaccesibles para JavaScript. Esta diferenciación es una decisión de diseño de seguridad consciente.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Carrito -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <h3 class="card-title">2. Carrito de Compras: Persistente e Inteligente</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        El carrito es una de las funcionalidades más complejas y la hemos diseñado para que sea <span class="keyword">persistente</span> y funcione tanto para usuarios anónimos como autenticados.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/cliente/cart.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Gestión de Identidad:</b> La función <code>get_or_create_cart</code> distingue entre un usuario logueado (usando su <code>user_id</code>) y un visitante anónimo. Para este último, genera un identificador único (<code>session_id</code>) que se guarda en la sesión del navegador, permitiendo que su carrito persista si cierra y vuelve a abrir la página.</li>
+                                <li><b>Operaciones CRUD:</b> Los endpoints de la API (<code>/api/add_to_cart</code>, <code>/api/sync_cart</code>) manejan la lógica de añadir, actualizar y eliminar productos. Una de las validaciones más importantes ocurre aquí: antes de añadir un producto, el backend verifica el stock disponible en la base de datos (<code>Productos._existencia</code>). Si la cantidad solicitada excede el stock, devuelve una advertencia clara.</li>
+                                <li><b>Sincronización al Iniciar Sesión:</b> El endpoint <code>/api/sync_cart</code> es una mejora profesional clave. Cuando un usuario que tenía productos en el carrito como anónimo inicia sesión, el frontend envía el contenido de su carrito local a este endpoint. El backend entonces <span class="keyword">fusiona de forma inteligente</span> ese carrito con cualquier artículo que el usuario ya tuviera guardado en la base de datos, creando una experiencia de compra sin interrupciones.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Estado Local:</b> El carrito del usuario se gestiona en el <code>localStorage</code> del navegador. Esto hace que la UI sea extremadamente rápida, ya que las actualizaciones de cantidad son instantáneas.</li>
+                                <li><b>Comunicación con la API:</b> Cada vez que se modifica el carrito, el frontend envía una petición <code>fetch</code> al backend para mantener la base de datos sincronizada. La respuesta del backend (que incluye el carrito actualizado y posibles advertencias de stock) se utiliza para refrescar la UI del modal del carrito y el contador global.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-cart')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-cart-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-cart">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo se evita que un usuario añada al carrito más productos de los que hay en stock?</p>
+                                    <p class="mt-1">R: El <span class="keyword">backend es la única fuente de verdad</span>. Aunque el frontend actualiza la cantidad localmente para una UI rápida, cada operación (añadir, incrementar) envía una petición a la API. En el backend, antes de confirmar cualquier cambio en la base de datos, se realiza una consulta para verificar `Productos.existencia`. Si el stock es insuficiente, la API devuelve un error con un mensaje claro, y el frontend revierte el cambio y notifica al usuario. Esto garantiza la integridad del inventario.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué ocurre si un usuario tiene el mismo producto en su carrito anónimo y en su cuenta guardada?</p>
+                                    <p class="mt-1">R: La lógica de fusión en <code>/api/sync_cart</code> es inteligente. Al iniciar sesión, el backend recorre los productos del carrito local (anónimo). Si un producto ya existe en el carrito de la base de datos del usuario, <span class="keyword">suma las cantidades</span> (siempre validando contra el stock total). Si el producto es nuevo, simplemente lo añade. Esto asegura que no se pierda ninguna selección y se eviten duplicados.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Favoritos -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                        <h3 class="card-title">3. Favoritos: La Lista de Deseos Personal</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La funcionalidad de favoritos permite a los usuarios guardar productos que les interesan, fomentando el <span class="keyword">retorno y la conversión</span>.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/cliente/favorites.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Protección de Rutas:</b> Todos los endpoints de favoritos están protegidos por el decorador <code>@jwt_required</code>. Esto asegura que solo un usuario autenticado pueda gestionar su lista.</li>
+                                <li><b>Lógica de "Toggle":</b> El endpoint <code>POST /api/favoritos</code> implementa una lógica de "toggle". Si un producto ya es favorito, lo elimina; si no lo es, lo agrega. Esto se gestiona con una eliminación lógica (soft delete), simplemente cambiando el estado del <code>Like</code> a inactivo, lo que nos permite mantener un historial.</li>
+                                <li><b>Consultas Optimizadas:</b> Al listar los favoritos, utilizamos <code>joinedload</code> de SQLAlchemy. Esta técnica carga previamente los datos del producto asociado en una sola consulta, evitando el <span style="color: #ef4444;">problema "N+1"</span> y mejorando drásticamente el rendimiento.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Experiencia de Usuario Fluida:</b> Al hacer clic en el ícono de "corazón" de un producto, se dispara una petición asíncrona al backend. La UI se actualiza inmediatamente para reflejar el nuevo estado (corazón lleno o vacío) basándose en la respuesta de la API, sin necesidad de recargar la página.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-favorites')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-favorites-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-favorites">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué usar una lógica de "toggle" y una eliminación lógica (soft delete) para los favoritos?</p>
+                                    <p class="mt-1">R: La lógica de "toggle" en un solo endpoint (<code>POST /api/favoritos</code>) simplifica el frontend; solo necesita llamar a una API sin preocuparse del estado actual. Usamos una eliminación lógica (cambiando `estado` a `inactivo`) en lugar de un `DELETE` físico porque nos da <span class="keyword">datos históricos valiosos</span>. Podemos analizar qué productos son frecuentemente añadidos y eliminados de favoritos, lo que puede indicar problemas con el precio, la descripción o las imágenes del producto.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué es exactamente el problema "N+1" que `joinedload` resuelve?</p>
+                                    <p class="mt-1">R: Imagina que un usuario tiene 20 productos favoritos. Sin `joinedload`, SQLAlchemy primero haría 1 consulta para obtener los 20 `Likes`. Luego, para mostrar el nombre e imagen de cada producto, haría 20 consultas adicionales (una por cada producto). Esto suma 1+20 = 21 consultas. Con `joinedload('producto')`, le decimos a SQLAlchemy: "cuando obtengas los likes, trae también los datos de los productos asociados en la misma consulta". El resultado es <span style="color: #ef4444;">una única y eficiente consulta a la base de datos</span>, reduciendo drásticamente la latencia.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Reseñas -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-star"></i>
+                        </div>
+                        <h3 class="card-title">4. Reseñas de Productos: Fomentando la Confianza</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        Las reseñas son vitales para la <span class="keyword">prueba social</span> y la confianza del cliente.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/cliente/reviews.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Acceso Público y Privado:</b> Cualquier visitante puede leer las reseñas (<code>GET /api/productos/.../reviews</code>), pero solo un usuario autenticado (<code>@jwt_required</code>) puede crear, actualizar o eliminar su propia reseña.</li>
+                                <li><b>Actualización de Calificación Promedio:</b> Después de cada operación (crear, actualizar, eliminar), el backend recalcula y actualiza la calificación promedio del producto (<code>producto.actualizar_promedio_calificaciones</code>). Este valor se almacena directamente en la tabla de productos para que pueda ser consultado de forma muy eficiente en las páginas de listado.</li>
+                                <li><b>Votos de Utilidad:</b> Hemos implementado un sistema donde los usuarios pueden votar si una reseña fue útil. El endpoint <code>POST /api/reviews/&lt;id&gt;/vote</code> gestiona estos votos y actualiza un contador (<code>votos_utiles_count</code>) en la reseña, permitiéndonos ordenar las reseñas por "más útiles".</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-reviews')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-reviews-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-reviews">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué almacenar la `calificacion_promedio_almacenada` en la tabla de `Productos` en lugar de calcularla en tiempo real?</p>
+                                    <p class="mt-1">R: Esto es una <span class="keyword">optimización de rendimiento crucial</span> llamada "desnormalización". Calcular el promedio en tiempo real (`SELECT AVG(calificacion) ...`) puede ser lento, especialmente en páginas que listan docenas de productos. Almacenando el promedio directamente en el producto, la consulta para obtener una lista de productos con sus calificaciones es increíblemente rápida. El "costo" es que debemos asegurarnos de actualizar este valor cada vez que una reseña se crea, edita o elimina, pero el beneficio en la velocidad de lectura para los usuarios es enorme.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo funciona el sistema de votos de utilidad y por qué es importante?</p>
+                                    <p class="mt-1">R: Cuando un usuario vota, se crea o elimina un registro en la tabla `ReseñaVoto`. Después, se llama al método `actualizar_votos_count` en la reseña, que ejecuta una subconsulta para contar los votos directamente en la base de datos y actualiza el campo `votos_utiles_count`. Esto es importante porque permite a los futuros compradores <span class="keyword">ordenar las reseñas por "más útiles"</span>, encontrando rápidamente la información más relevante y aumentando la confianza para realizar la compra.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Pedidos y Facturación -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <h3 class="card-title">5. Gestión de Pedidos y Facturación</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        Una vez que el cliente finaliza su compra, el sistema gestiona la creación del pedido y proporciona las herramientas para su <span class="keyword">seguimiento</span>.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/cliente/cart.py</code> y <code>app/blueprints/cliente/order.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Creación de Pedidos:</b> El endpoint <code>/api/create_order</code> convierte el carrito de compras en un <code>Pedido</code> formal. En este paso crucial, se vuelve a validar el stock de cada producto y se descuenta del inventario. El pedido se crea con un estado inicial (<code>EN_PROCESO</code> e <code>INACTIVO</code>) y se genera la primera entrada en su historial de seguimiento.</li>
+                                <li><b>Generación de Factura:</b> La ruta <code>/print_invoice/&lt;order_id&gt;</code> renderiza una plantilla HTML (<code>pedido_template.html</code>) con todos los detalles del pedido, formateada como una factura profesional. El cliente puede imprimirla o guardarla como PDF directamente desde su navegador.</li>
+                                <li><b>Seguimiento del Pedido:</b> El cliente puede ver el estado de su pedido en su perfil. El backend expone los datos del historial de seguimiento, que el administrador actualiza desde su panel (ej. "En preparación", "En camino", "Entregado").</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend (<code>app/templates/cliente/ui/detalle_pedido.html</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Línea de Tiempo Dinámica:</b> En la página de detalle del pedido, hemos implementado una mejora profesional. En lugar de mostrar una lista estática, un script de JavaScript toma los datos del historial de seguimiento del pedido (inyectados desde el backend) y renderiza una <span class="keyword">línea de tiempo visual e interactiva</span>. Esto le muestra al cliente de forma clara y profesional cada etapa por la que ha pasado su compra.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-orders')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-orders-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-orders">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo se "descarga" o se genera la factura de un pedido?</p>
+                                    <p class="mt-1">R: El proceso es una colaboración elegante entre backend y frontend. El <span class="keyword">Backend</span> tiene una ruta (<code>/print_invoice/&lt;order_id&gt;</code>) que no devuelve JSON, sino que renderiza una plantilla HTML (`pedido_template.html`) con todos los datos de la venta, estilizada profesionalmente como una factura. El <span class="keyword">Frontend</span>, al hacer clic en "Imprimir Factura", simplemente abre esta URL en una nueva pestaña. El navegador del usuario se encarga del resto: al presionar `Ctrl+P` o usar la función de impresión, el navegador convierte esa página HTML en un PDF perfecto, que el usuario puede guardar o imprimir.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué el estado del pedido tiene dos campos (`estado_pedido` y `estado`)?</p>
+                                    <p class="mt-1">R: Es una separación de conceptos para mayor control. <code>estado_pedido</code> (`EN_PROCESO`, `COMPLETADO`, `CANCELADO`) define el <span class="keyword">estado de negocio</span> del pedido y controla la lógica principal (ej. si se puede editar o no). En cambio, <code>estado</code> (`ACTIVO`, `INACTIVO`) es un <span class="keyword">estado administrativo</span>. Un administrador puede marcar un pedido como `INACTIVO` para ocultarlo temporalmente de las vistas del cliente sin alterar su estado de negocio, lo cual es útil para revisiones internas o disputas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Conclusión Tienda -->
+                <div class="card" style="background: linear-gradient(to right, #f8fafc, #e2e8f0);">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Conclusión Profesional (Tienda Online)</h3>
+                    <p class="text-gray-700 leading-relaxed space-y-4">
+                        <span>La sección de cliente de YE&CY Cosmetic es mucho más que una simple tienda online. Es una plataforma web <span class="keyword">robusta, segura y centrada en el usuario</span>, construida sobre principios de desarrollo modernos.</span>
+                        <span>La arquitectura híbrida con Flask y JavaScript nos brinda un rendimiento óptimo y una experiencia de usuario ágil. La gestión de sesiones mediante JWT y un interceptor de API centraliza la lógica de autenticación, haciendo el código más limpio y seguro. Funcionalidades como el carrito persistente y sincronizado, la gestión de favoritos en tiempo real y un sistema de reseñas interactivo no solo son técnicamente sólidas, sino que están diseñadas para fomentar la participación del usuario y maximizar la conversión.</span>
+                        <span>En resumen, hemos sentado una <span class="keyword">base tecnológica sólida y escalable</span>, preparada para crecer y adaptarse a futuras necesidades del negocio, siempre con la calidad y la experiencia del usuario como máxima prioridad.</span>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Separador y Salto de Página para PDF -->
+            <div class="page-break my-16"></div>
+
+            <!-- Sección: Análisis Técnico Profundo -->
+            <section id="analisis-tecnico" class="section-content space-y-8">
+                <div class="section-indicator">
+                    <div class="section-indicator-dot"></div>
+                    <div class="section-indicator-text">Análisis Técnico Profundo</div>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Para Desarrolladores</h2>
+                <p class="text-gray-600 mb-8">Una inmersión en la arquitectura, herramientas y patrones de diseño del proyecto.</p>
+
+                <!-- Card: Stack Tecnológico -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h3 class="card-title">1. Stack Tecnológico y Dependencias Clave</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La elección de tecnologías se centró en la robustez, la madurez del ecosistema y la productividad del desarrollador.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b>Backend:</b> <span class="keyword">Python 3</span> con el micro-framework <span class="keyword">Flask</span>. Su minimalismo y flexibilidad nos permiten construir una estructura a medida sin sacrificar potencia.</li>
+                        <li><b>Base de Datos:</b> <span class="keyword">PostgreSQL</span>, un sistema de gestión de bases de datos relacional de código abierto potente y fiable, ideal para la integridad de datos que un e-commerce requiere.</li>
+                        <li><b>ORM:</b> <span class="keyword">SQLAlchemy</span>, que proporciona un mapeo objeto-relacional de alto nivel, permitiéndonos interactuar con la base de datos usando objetos de Python en lugar de SQL crudo. <span class="keyword">Flask-Migrate</span> (usando Alembic) gestiona las migraciones de esquema de la base de datos.</li>
+                        <li><b>Frontend:</b> <span class="keyword">JavaScript Vainilla (ES6+)</span> para la lógica de cliente, <span class="keyword">TailwindCSS</span> para un diseño de UI moderno y responsivo, y <span class="keyword">Jinja2</span> como motor de plantillas del lado del servidor.</li>
+                        <li><b>Autenticación:</b> Un sistema híbrido con <span class="keyword">Flask-Login</span> para sesiones tradicionales y <span class="keyword">PyJWT</span> para la generación y validación de JSON Web Tokens para las APIs.</li>
+                        <li><b>Seguridad de Contraseñas:</b> <span class="keyword">Bcrypt</span>, una librería estándar en la industria para el hasheo seguro de contraseñas.</li>
+                        <li><b>Servicios Externos:</b> <span class="keyword">Cloudinary</span> para el almacenamiento, optimización y entrega de imágenes de productos a través de su CDN.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-stack')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-stack-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-stack">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué Flask en lugar de un framework más "completo" como Django?</p>
+                                    <p class="mt-1">R: El minimalismo de Flask es una característica, no una limitación. Nos da <span class="keyword">control total sobre la arquitectura</span> y las dependencias, permitiéndonos elegir la mejor herramienta para cada tarea (SQLAlchemy para ORM, PyJWT para tokens) sin estar atados a una estructura monolítica. Esto conduce a una aplicación más ligera, a medida y, a menudo, más performante.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué PostgreSQL sobre MySQL o SQLite?</p>
+                                    <p class="mt-1">R: PostgreSQL es reconocido por su <span class="keyword">robustez, integridad de datos</span> (fuerte cumplimiento de ACID) y capacidades avanzadas. Para un e-commerce donde la integridad transaccional es primordial, PostgreSQL es el estándar de la industria. SQLite es excelente para desarrollo pero no para concurrencia en producción, y PostgreSQL a menudo supera a MySQL en escenarios de consultas complejas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Arquitectura y Estructura -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-sitemap"></i>
+                        </div>
+                        <h3 class="card-title">2. Arquitectura y Estructura de Archivos</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        El proyecto sigue patrones de diseño establecidos para garantizar la modularidad y mantenibilidad.
+                    </p>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Patrón Application Factory (<code>app/__init__.py</code>)</h4>
+                            <p class="text-gray-700 mt-1">La función <code>create_app()</code> es el corazón del proyecto. Nos permite crear instancias de la aplicación Flask con diferentes configuraciones. Esto es fundamental para las pruebas (donde podemos usar una base de datos en memoria) y para desplegar en diferentes entornos (desarrollo, producción) simplemente cambiando una variable de entorno.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Blueprints para Modularidad (<code>app/blueprints/</code>)</h4>
+                            <p class="text-gray-700 mt-1">En lugar de tener todas las rutas en un solo archivo, la aplicación se divide en <span class="keyword">Blueprints</span>. Cada blueprint encapsula una funcionalidad (ej. `auth`, `products`, `admin_dashboard`). Esto mantiene el código organizado, desacoplado y más fácil de gestionar a medida que el proyecto crece.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Archivos y Directorios Clave</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><code>config.py</code>: Define clases de configuración para diferentes entornos. Carga variables sensibles desde el archivo <code>.env</code>.</li>
+                                <li><code>app/models/</code>: Contiene todos los modelos de la base de datos de SQLAlchemy. La subcarpeta <code>domains/</code> agrupa los modelos por contexto de negocio (productos, usuarios, pedidos).</li>
+                                <li><code>app/utils/</code>: Hogar de funciones de utilidad reutilizables, como los decoradores personalizados para la validación de JWT.</li>
+                                <li><code>app/static/js/</code>: Aquí reside la lógica del frontend. Archivos como <code>auth_interceptor.js</code> y <code>admin_auth_interceptor.js</code> son cruciales, ya que centralizan la lógica de comunicación con la API.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-architecture')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-architecture-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-architecture">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cuál es el principal beneficio del patrón Application Factory (`create_app`)?</p>
+                                    <p class="mt-1">R: El beneficio principal es la <span class="keyword">flexibilidad en la configuración y la capacidad de prueba</span>. Al crear la instancia de la aplicación dentro de una función, podemos pasarle diferentes objetos de configuración. Esto nos permite ejecutar nuestro conjunto de pruebas con una configuración aislada (por ejemplo, una base de datos en memoria) sin afectar el entorno de desarrollo o producción. Es una piedra angular del desarrollo profesional con Flask.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué los modelos están en una subcarpeta `domains/`?</p>
+                                    <p class="mt-1">R: Es una influencia del <span class="keyword">Domain-Driven Design (DDD)</span>. Agrupar modelos por su dominio de negocio (ej. `user_models`, `product_models`) hace que el código base sea más fácil de navegar y entender a medida que crece. En lugar de una lista plana de más de 20 modelos, tenemos clústeres lógicos, lo que mejora la mantenibilidad y ayuda a los nuevos desarrolladores a captar la lógica de negocio más rápidamente.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Control de Versiones (Git y GitHub) -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fab fa-git-alt"></i>
+                        </div>
+                        <h3 class="card-title">3. Control de Versiones (Git y GitHub)</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        El control de versiones es la columna vertebral del desarrollo colaborativo y la mantenibilidad. Utilizamos Git como sistema de control de versiones y GitHub como plataforma para alojar el repositorio.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b>Repositorio Centralizado:</b> GitHub actúa como el punto central de verdad para todo el código fuente, permitiendo a los desarrolladores clonar, enviar cambios (push) y proponer la integración de nuevas funcionalidades (Pull Requests).</li>
+                        <li><b>Historial de Cambios:</b> Cada `commit` en Git crea una instantánea del proyecto, proporcionando un historial completo que permite revertir cambios, auditar modificaciones y entender la evolución del código a lo largo del tiempo.</li>
+                        <li><b>Archivo <code>.gitignore</code>:</b> Este archivo es una pieza de <span class="keyword">seguridad y limpieza crucial</span>. Le indica a Git qué archivos y directorios debe ignorar y nunca subir al repositorio. Esto incluye archivos de entorno virtual (`venv/`), archivos de configuración sensibles (`.env`) y caché de Python (`__pycache__/`), previniendo la exposición de secretos y manteniendo el repositorio limpio.</li>
+                        <li><b>Integración Continua / Despliegue Continuo (CI/CD):</b> GitHub se integra de forma nativa con servicios como Vercel. Un `push` a la rama principal (`main`) puede configurarse para disparar automáticamente un nuevo despliegue, agilizando el ciclo de vida del desarrollo desde el código hasta la producción.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-git')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-git-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-git">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué es tan importante el archivo `.gitignore`?</p>
+                                    <p class="mt-1">R: Es una <span style="color: #ef4444;">línea de defensa fundamental para la seguridad</span>. Sin él, secretos como las contraseñas de la base de datos y las claves de API (almacenadas en `.env`) podrían subirse accidentalmente al repositorio, exponiendo toda la aplicación a ataques. También mantiene el repositorio <span class="keyword">limpio y enfocado</span> solo en el código fuente, ignorando archivos específicos del entorno de cada desarrollador.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué es un "Pull Request" y por qué se usaría?</p>
+                                    <p class="mt-1">R: Un Pull Request (PR) es una solicitud para fusionar los cambios de una rama (ej. `feature/nuevo-metodo-pago`) en otra (ej. `develop` o `main`). Es el <span class="keyword">mecanismo central de revisión de código</span> en GitHub. Permite que otros desarrolladores revisen los cambios, dejen comentarios y aprueben la integración antes de que el nuevo código llegue a la rama principal. Esto mejora la calidad del código, reduce errores y fomenta la colaboración.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Configuración y Entorno -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-cogs"></i>
+                        </div>
+                        <h3 class="card-title">4. Configuración y Variables de Entorno</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La configuración es flexible y segura, separando el código de los datos de configuración.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b>Archivo <code>.env</code>:</b> Este archivo (que nunca debe subirse a Git) almacena todas las credenciales y secretos.</li>
+                        <li><b><code>FLASK_ENV</code>:</b> Controla el modo de ejecución. En <code>development</code>, Flask activa el modo debug y el recargado automático. En <code>production</code>, estas características se desactivan por seguridad y rendimiento.</li>
+                        <li><b><code>SECRET_KEY</code>:</b> Una cadena larga y aleatoria usada por Flask para firmar criptográficamente las cookies de sesión y los tokens. Es vital para la seguridad.</li>
+                        <li><b><code>DATABASE_URL</code>:</b> La cadena de conexión a la base de datos PostgreSQL. Sigue el formato estándar <code>postgresql://user:password@host:port/dbname</code>.</li>
+                        <li><b><code>CLOUDINARY_URL</code>:</b> Almacena las credenciales de la API de Cloudinary. La librería oficial la lee automáticamente para configurar el servicio.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-config')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-config-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-config">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué separar la configuración en clases en `config.py` en lugar de solo leer desde `.env`?</p>
+                                    <p class="mt-1">R: Proporciona una forma estructurada y segura de gestionar los ajustes. La clase base `Config` define todas las variables posibles, asegurando consistencia. Las subclases como `DevelopmentConfig` y `ProductionConfig` pueden sobrescribir valores específicos (ej. `DEBUG=True` vs. `DEBUG=False`). El archivo `.env` almacena los <span class="keyword">secretos</span>, pero `config.py` proporciona la <span class="keyword">estructura y la lógica</span>, permitiendo valores por defecto y conversiones de tipo.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cuál es el riesgo de subir el archivo `.env` a Git?</p>
+                                    <p class="mt-1">R: Subir el archivo `.env` es una <span style="color: #ef4444;">vulnerabilidad de seguridad mayor</span>. Expondría todas nuestras credenciales (contraseñas de base de datos, claves de API, `SECRET_KEY`) a cualquiera con acceso al repositorio. Por eso, el archivo `.env` está incluido en `.gitignore` para prevenir su subida accidental. En producción, estas variables se configuran como "secretos de entorno" en la plataforma de hosting.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Capa de Modelo -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-database"></i>
+                        </div>
+                        <h3 class="card-title">5. Capa de Modelo y Base de Datos</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La capa de modelo (<code>app/models/</code>) es un ejemplo de diseño robusto y orientado a objetos.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b>Mixins para Reutilización:</b> Clases como <code>TimestampMixin</code> (que añade automáticamente los campos `created_at` y `updated_at`) y <code>UUIDPrimaryKeyMixin</code> se heredan en otros modelos. Esto sigue el principio <span class="keyword">DRY (Don't Repeat Yourself)</span> y mantiene los modelos limpios.</li>
+                        <li><b>Value Objects para Validación:</b> En lugar de usar tipos primitivos (string, int) directamente, hemos creado clases como <code>NumeroTelefono</code> y <code>Password</code>. Estas clases encapsulan la lógica de validación (ej. "un teléfono debe tener 10 dígitos", "una contraseña debe ser fuerte"). Si se intenta crear un objeto con datos inválidos, se lanza una excepción inmediatamente, garantizando que solo datos válidos lleguen a la base de datos.</li>
+                        <li><b>Propiedades y Setters Seguros:</b> En el modelo <code>Usuarios</code>, el campo `contraseña` es una propiedad. El `setter` (`@contraseña.setter`) intercepta la asignación, valida la fortaleza de la contraseña usando el Value Object `Password`, y luego la hashea con Bcrypt antes de guardarla. Esto hace que el hasheo sea <span class="keyword">automático y transparente</span>, reduciendo la posibilidad de errores.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-model')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-model-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-model">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué problema resuelven los "Value Objects"? ¿No es más fácil validar en la ruta?</p>
+                                    <p class="mt-1">R: Validar en la ruta es bueno, pero validar en el modelo es <span class="keyword">más seguro y robusto</span>. Un Value Object como `NumeroTelefono` garantiza que <span style="color: #ef4444;">nunca</span> pueda existir en la aplicación un objeto de teléfono con un formato inválido. Esto centraliza la lógica de validación y la hace reutilizable. Si en el futuro se añade otra forma de crear usuarios (ej. un script de importación), la validación ya está garantizada a nivel de modelo, sin tener que duplicar la lógica.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué usar un `setter` para hashear la contraseña en lugar de hacerlo en la ruta de registro?</p>
+                                    <p class="mt-1">R: Encapsular el hasheo en el `setter` del modelo sigue el principio de <span class="keyword">"Separación de Responsabilidades"</span>. La responsabilidad del modelo `Usuarios` es gestionar los datos del usuario, incluyendo la seguridad de su contraseña. Al hacerlo en el `setter`, el hasheo se vuelve <span class="keyword">implícito y automático</span>. Cualquier parte del código que asigne un valor a `usuario.contraseña` (ya sea en el registro, en el reseteo de contraseña o en el panel de admin) activará el hasheo sin que el desarrollador tenga que recordarlo. Esto reduce drásticamente el riesgo de almacenar accidentalmente una contraseña en texto plano.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Autenticación y Seguridad -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <h3 class="card-title">6. Autenticación y Decoradores JWT</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La seguridad de las APIs se centraliza en decoradores personalizados.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b><code>@jwt_required</code> (Cliente):</b> Este decorador, definido en <code>app/utils/jwt_utils.py</code>, se aplica a las rutas de la API del cliente. Busca el token JWT en el encabezado `Authorization`. Si el token es válido, decodifica el `user_id`, recupera el objeto `Usuarios` de la base de datos y lo <span class="keyword">inyecta como primer argumento</span> en la función de la ruta. Esto da a cada endpoint protegido acceso directo al usuario que realiza la petición.</li>
+                        <li><b><code>@admin_jwt_required</code> (Admin):</b> Similar al anterior, pero diseñado para el panel de administración. La diferencia clave es que está configurado para buscar el JWT en una <span style="color: #ef4444;">cookie HttpOnly</span>, no en el encabezado. Esto es fundamental para la seguridad del panel.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-jwt')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-jwt-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-jwt">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué la diferencia entre `localStorage` para clientes y `HttpOnly cookies` para administradores?</p>
+                                    <p class="mt-1">R: Es una decisión de <span class="keyword">seguridad escalonada</span>. Una sesión de administrador tiene permisos críticos. Un ataque XSS que robe este token sería catastrófico. Las `HttpOnly cookies` son <span style="color: #ef4444;">invisibles para JavaScript</span>, lo que anula este vector de ataque. Para el cliente, el riesgo es menor (acceso a su propio perfil), y usar `localStorage` simplifica la gestión del token en el frontend. Se prioriza la máxima seguridad donde más importa.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo funciona la inyección del objeto `usuario` en la ruta?</p>
+                                    <p class="mt-1">R: El decorador personalizado es un <span class="keyword">wrapper</span>. Internamente, define una nueva función que primero ejecuta la lógica de validación del token. Si el token es válido, usa el `user_id` del payload para hacer una consulta a la base de datos (`Usuarios.query.get(user_id)`). Luego, llama a la función original de la ruta, pasando el objeto `usuario` recuperado como primer argumento. Esto <span class="keyword">abstrae la lógica de autenticación</span> y recuperación de usuario, manteniendo las rutas limpias y enfocadas en su lógica de negocio.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Ciclo de Vida de una Petición -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h3 class="card-title">7. Ciclo de Vida de una Petición y Contexto Global</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        Flask nos permite ejecutar código en puntos clave del ciclo de vida de una petición para realizar tareas globales.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b><code>@app.before_request</code>:</b> La función `before_request_tasks` en <code>app/__init__.py</code> se ejecuta <span class="keyword">antes de cada petición</span>. Su tarea principal es intentar restaurar la sesión del usuario desde un JWT en las cookies y actualizar el `last_seen` del administrador para el seguimiento de actividad en tiempo real.</li>
+                        <li><b><code>@app.context_processor</code>:</b> Funciones como `inject_global_data` se ejecutan antes de renderizar cualquier plantilla. Inyectan variables globales en el contexto de Jinja2. Por ejemplo, `inject_global_data` calcula el contenido del carrito y obtiene las categorías de productos, haciendo que `cart_items` y `categorias` estén disponibles en <span class="keyword">todas las plantillas</span> sin tener que pasarlas manualmente desde cada ruta.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-lifecycle')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-lifecycle-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-lifecycle">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cuál es la ventaja de usar un `context_processor` para el carrito y las categorías?</p>
+                                    <p class="mt-1">R: Sigue el principio <span class="keyword">DRY (Don't Repeat Yourself)</span>. Sin un `context_processor`, tendríamos que añadir la lógica para obtener el carrito y las categorías en <span style="color: #ef4444;">cada una de las rutas</span> que renderizan una plantilla con la barra de navegación. Esto sería repetitivo y propenso a errores. El `context_processor` centraliza esta lógica en un solo lugar, asegurando que `cart_items` y `categorias` estén siempre disponibles en cualquier plantilla, manteniendo las rutas más limpias y enfocadas.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué se actualiza el `last_seen` en `before_request`?</p>
+                                    <p class="mt-1">R: El decorador `@app.before_request` se ejecuta en cada petición. Actualizar `last_seen` aquí nos permite tener un <span class="keyword">seguimiento en tiempo real</span> de la actividad del administrador. Cada vez que el admin navega por el panel, su `last_seen` se actualiza. Esto permite que la funcionalidad "En línea" sea precisa, mostrando quién está activo en los últimos minutos. Es una forma eficiente de implementar el seguimiento de actividad sin necesidad de soluciones más complejas como WebSockets para esta tarea específica.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Despliegue y Servicios en la Nube -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <h3 class="card-title">8. Despliegue y Servicios en la Nube</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-4">
+                        La arquitectura del proyecto está optimizada para un despliegue moderno, eficiente y escalable en plataformas de nube.
+                    </p>
+                    <ul class="feature-list text-gray-700">
+                        <li><b>Hosting (<span class="keyword">Vercel</span>):</b> La aplicación está preparada para ser desplegada en Vercel. Vercel se integra perfectamente con el patrón Application Factory y el estándar WSGI de Python. Su modelo serverless permite que la aplicación escale automáticamente según la demanda, optimizando costos y rendimiento. Además, su integración con repositorios Git facilita un flujo de trabajo de CI/CD (Integración Continua / Despliegue Continuo) muy ágil.</li>
+                        <li><b>Base de Datos (<span class="keyword">Compatible con Neon</span>):</b> Aunque la configuración apunta a un PostgreSQL genérico a través de `DATABASE_URL`, es totalmente compatible con proveedores de bases de datos serverless como <span class="keyword">Neon</span>. Neon separa el almacenamiento y el cómputo, permitiendo que la base de datos "se duerma" cuando no hay tráfico y se reactive instantáneamente, lo que resulta en un ahorro de costos significativo para aplicaciones con tráfico variable.</li>
+                        <li><b>Gestión de Imágenes (<span class="keyword">Cloudinary</span>):</b> Como se mencionó, el uso de Cloudinary es una decisión estratégica clave. Desacopla el almacenamiento de imágenes de nuestro servidor de aplicación. Cloudinary no solo almacena los archivos, sino que también los optimiza (comprimiéndolos, ajustando su formato) y los sirve a través de una Red de Distribución de Contenido (CDN) global. Esto se traduce en tiempos de carga de página mucho más rápidos para los usuarios finales, sin importar su ubicación geográfica.</li>
+                    </ul>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-deployment')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-deployment-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-deployment">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué elegir una arquitectura serverless (Vercel/Neon) para este proyecto?</p>
+                                    <p class="mt-1">R: La arquitectura serverless ofrece <span class="keyword">escalabilidad automática y optimización de costos</span>. En un e-commerce, el tráfico puede ser impredecible (picos durante promociones, valles en la noche). Con un servidor tradicional, pagaríamos por capacidad inactiva. Con Vercel y Neon, solo pagamos por los recursos que realmente consumimos. La aplicación puede manejar miles de usuarios simultáneos durante un "Black Friday" y luego reducir su consumo a casi cero, todo de forma automática. Es el modelo más eficiente para un negocio en crecimiento.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo se gestionan las variables de entorno (como `DATABASE_URL`) en Vercel?</p>
+                                    <p class="mt-1">R: Vercel tiene una sección de "Environment Variables" en la configuración de cada proyecto. En lugar de usar un archivo `.env` (que nunca debe subirse a Git), estas variables sensibles se configuran directamente en la plataforma de Vercel. Durante el proceso de despliegue, Vercel inyecta estas variables de forma segura en el entorno de ejecución de la aplicación, permitiendo que `os.getenv()` las lea como si estuvieran en un archivo `.env` local.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Conclusión Técnica -->
+                <div class="card" style="background: linear-gradient(to right, #f8fafc, #e2e8f0);">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Conclusión Técnica</h3>
+                    <p class="text-gray-700 leading-relaxed space-y-4">
+                        <span>El proyecto YE&CY Cosmetic está construido sobre una base de <span class="keyword">patrones de diseño probados y buenas prácticas de seguridad</span>. La arquitectura modular con Blueprints, el uso de un Application Factory, y la separación estricta entre la configuración y el código lo hacen <span class="keyword">escalable y fácil de mantener</span>.</span>
+                        <span>Decisiones clave como el uso de Value Objects para la validación a nivel de modelo, el hasheo automático de contraseñas mediante setters, y la estrategia de seguridad diferenciada con JWTs (localStorage para clientes, HttpOnly cookies para admins) demuestran un enfoque profesional y consciente de la seguridad. La optimización para un despliegue en la nube con servicios como <span class="keyword">Vercel, Neon y Cloudinary</span> asegura un rendimiento y escalabilidad de primer nivel.</span>
+                        <span>En conjunto, la estructura del proyecto está optimizada para la productividad del desarrollador y preparada para un despliegue robusto en entornos de producción.</span>
+                    </p>
+                </div>
+            </section>
+
+            <!-- Separador y Salto de Página para PDF -->
+            <div class="page-break my-16"></div>
+
+            <!-- Sección: Panel de Administración -->
+            <section id="panel-admin" class="section-content space-y-8">
+                <div class="section-indicator">
+                    <div class="section-indicator-dot"></div>
+                    <div class="section-indicator-text">Panel de Administración</div>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Sistema de Gestión</h2>
+                <p class="text-gray-600 mb-8">Análisis de la arquitectura y funcionalidades del sistema de gestión.</p>
+
+                <!-- Card: Visión General Admin -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                        <h3 class="card-title">Visión General de la Arquitectura</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed space-y-3">
+                       <span>El panel de administración está diseñado como una <span class="keyword">Aplicación de Página Única (SPA - Single Page Application)</span>. A diferencia de la tienda del cliente, que utiliza un modelo híbrido, aquí priorizamos una experiencia de usuario extremadamente rápida y fluida para el administrador.</span>
+                       <span><b>Backend (Flask):</b> Actúa principalmente como una <span class="keyword">API RESTful</span>. Su trabajo es servir datos en formato JSON, procesar peticiones de negocio (crear, actualizar, eliminar) y gestionar la autenticación. No se encarga de renderizar páginas completas después de la carga inicial.</span>
+                       <span><b>Frontend (JavaScript Vainilla):</b> Una vez que la página principal del panel (<code>layout_admin.html</code>) se carga, JavaScript toma el control total. Cada clic que filtra una tabla, abre un modal o cambia un estado, se traduce en una llamada <code>fetch</code> a la API del backend. La respuesta JSON se utiliza para actualizar dinámicamente solo las partes necesarias de la página, sin recargas completas.</span>
+                       <span>Este enfoque SPA es ideal para un panel de control, ya que las tareas administrativas se benefician enormemente de la inmediatez y la capacidad de respuesta.</span>
+                    </p>
+                </div>
+
+                <!-- Card: Autenticación Admin -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h3 class="card-title">1. Autenticación y Seguridad: Un Bastión Fortificado</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/admin/auth_admin.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Login Exclusivo:</b> El endpoint <code>/admin/login</code> valida las credenciales (cédula y contraseña) contra la tabla <code>Admins</code>.</li>
+                                <li><b>JWT en Cookies HttpOnly:</b> Aquí radica una diferencia de seguridad fundamental. Tras un login exitoso, el token JWT del administrador no se envía en el cuerpo de la respuesta JSON. En su lugar, se establece en una <span style="color: #ef4444;">cookie HttpOnly</span>. Una cookie HttpOnly no puede ser accedida por JavaScript, anulando por completo el riesgo de que un ataque <span style="color: #ef4444;">XSS</span> pueda robar el token.</li>
+                                <li><b>Protección de Rutas:</b> Todas las APIs del panel están protegidas por el decorador <code>@admin_jwt_required</code>, que verifica la validez del JWT en la cookie HttpOnly.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend (<code>app/static/js/admin/admin_auth_interceptor.js</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Interceptor de `fetch`:</b> No necesita añadir el token (la cookie se envía automáticamente), pero es crucial para manejar las respuestas de error.</li>
+                                <li><b>Manejo de Sesión Expirada (401):</b> Si el backend responde con un <span style="color: #ef4444;">401</span>, el interceptor lo detecta y redirige automáticamente al administrador a la página de login.</li>
+                                <li><b>Manejo de Cuenta Desactivada (403):</b> Si un administrador intenta acceder pero su cuenta ha sido desactivada, el backend devuelve un <span style="color: #ef4444;">403</span>. El interceptor lo captura, muestra un modal informativo y fuerza el cierre de sesión.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-admin-auth')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-admin-auth-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-admin-auth">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué se usan `HttpOnly cookies` para el JWT del admin, pero `localStorage` para el cliente?</p>
+                                    <p class="mt-1">R: Es una decisión de <span class="keyword">seguridad escalonada</span>. Una sesión de administrador tiene permisos críticos (modificar productos, ver ventas). Un ataque XSS que robe este token sería catastrófico. Las `HttpOnly cookies` son <span style="color: #ef4444;">invisibles para JavaScript</span>, lo que anula este vector de ataque. Para el cliente, el riesgo es menor (acceso a su propio perfil y pedidos), y usar `localStorage` simplifica la gestión del token en el frontend. Se prioriza la máxima seguridad donde más importa.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: Si el token está en una cookie HttpOnly, ¿cómo sabe el decorador `@admin_jwt_required` que debe buscarlo ahí?</p>
+                                    <p class="mt-1">R: El decorador de `flask-jwt-extended` es configurable. Lo usamos como <code>@jwt_required(locations=["cookies"])</code>. Esto le indica a la librería que, en lugar de buscar un encabezado `Authorization: Bearer ...`, debe buscar el JWT en las cookies que el navegador envía automáticamente con cada petición al mismo dominio. El frontend no tiene que hacer nada especial.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Gestión de Productos -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <h3 class="card-title">2. Gestión de Productos: Control Total del Inventario</h3>
+                    </div>
+                    <div class="space-y-4 leading-relaxed">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/admin/product/</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>API de Filtrado Dinámico:</b> El endpoint <code>/api/products/filter</code> permite al frontend solicitar la lista de productos con múltiples criterios combinados: nombre, estado, jerarquía de categorías, marca, precio, y filtros especiales como "agotados" o "nuevos".</li>
+                                <li><b>APIs de Dependencia:</b> Para hacer los filtros más inteligentes, hemos creado APIs auxiliares. Por ejemplo, cuando el administrador selecciona una categoría principal, el frontend llama a <code>/api/products/category-dependencies</code>, que devuelve las subcategorías y marcas que pertenecen únicamente a esa categoría.</li>
+                                <li><b>Gestión de Estado:</b> Un simple endpoint <code>POST</code> permite activar o desactivar un producto con un solo clic desde la tabla.</li>
+                                <li><b>Generación y Validación de `slug`:</b> Al crear o editar un producto, el backend genera automáticamente un `slug` (una versión del nombre amigable para URLs, ej. "Crema Hidratante" -> "crema-hidratante"). Antes de guardar, se verifica que este `slug` sea único en la base de datos para evitar URLs duplicadas, lo cual es crucial para el SEO.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend (<code>app/static/js/admin/lista_product.js</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Tabla Interactiva:</b> Cada vez que el administrador interactúa con los filtros, el JavaScript realiza una llamada a la API, recibe la nueva lista de productos en JSON y vuelve a renderizar solo las filas de la tabla, resultando en una experiencia instantánea.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-products')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-products-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-products">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cuál es la ventaja de un único endpoint de filtrado (`/api/products/filter`) en lugar de tener, por ejemplo, `/api/products/by-category`, `/api/products/by-name`, etc.?</p>
+                                    <p class="mt-1">R: <span class="keyword">Simplifica radicalmente el frontend</span>. El JavaScript del panel no necesita una lógica compleja para decidir a qué endpoint llamar. Simplemente construye un objeto o una cadena de consulta con todos los filtros activos (`?name=crema&category=cuidado-facial&status=activo`) y lo envía siempre al mismo lugar. El backend se encarga de la complejidad de interpretar y combinar estos filtros. Esto hace que el código del cliente sea más limpio, mantenible y fácil de extender con nuevos filtros.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué es un `slug` y por qué es tan importante?</p>
+                                    <p class="mt-1">R: Un `slug` es una versión del nombre de un producto formateada para ser parte de una URL (ej. "Crema de Noche" se convierte en "crema-de-noche"). Es <span class="keyword">vital por dos razones</span>: <b>1) SEO:</b> Incluir palabras clave en la URL ayuda a los motores de búsqueda a entender de qué trata la página. <b>2) Usabilidad:</b> URLs como `/productos/cuidado-facial/crema-de-noche` son mucho más legibles y memorables para los usuarios que `/productos/1a2b3c4d`. El backend utiliza la librería `slugify` para generarlo y se asegura de que sea <span style="color: #ef4444;">único</span> para cada producto, evitando conflictos.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué implica marcar un producto como "Inactivo"?</p>
+                                    <p class="mt-1">R: Marcar un producto como "inactivo" es una <span class="keyword">eliminación lógica (soft delete)</span>. El producto <span style="color: #ef4444;">desaparece inmediatamente de la vista del cliente</span>: no se mostrará en la página de inicio, en las listas de categorías, ni en los resultados de búsqueda. Sin embargo, el registro del producto <span style="color: #10b981;">permanece intacto en la base de datos</span> y en el panel de administración. Esto es crucial porque nos permite conservar todo su historial de ventas, reseñas y datos asociados para análisis futuros. El administrador puede reactivarlo en cualquier momento con un solo clic, restaurando su visibilidad en la tienda.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo funcionan las "APIs de Dependencia" y por qué mejoran la usabilidad?</p>
+                                    <p class="mt-1">R: Cuando el admin selecciona una categoría principal, como "Maquillaje", el frontend hace una llamada a <code>/api/products/category-dependencies?category=maquillaje</code>. El backend devuelve una lista de subcategorías (`Labios`, `Ojos`) y marcas (`Maybelline`, `L'Oréal`) que <span class="keyword">pertenecen exclusivamente</span> a "Maquillaje". Esto evita que el admin vea opciones irrelevantes (como marcas de cuidado de la piel), haciendo el formulario de filtros mucho más rápido, intuitivo y menos propenso a errores.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Gestión de Categorías -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-tags"></i>
+                        </div>
+                        <h3 class="card-title">3. Gestión de Categorías: La Arquitectura del Catálogo</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/admin/categoria/lista_categorias.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Vista Dual (Jerárquica y Tabular):</b> El backend soporta dos modos de visualización. Para la vista jerárquica, una única consulta optimizada con `joinedload` trae todas las categorías y sus descendientes. Para las vistas de tabla, endpoints específicos como <code>/api/categorias/principales</code> o <code>/api/categorias/sub</code> devuelven listas paginadas y filtrables para cada nivel.</li>
+                                <li><b>APIs de Filtrado Específicas:</b> Cada nivel de categoría tiene su propia API de filtrado. Por ejemplo, al filtrar subcategorías, se puede pasar un `main_category_id` para ver solo las que pertenecen a una categoría principal específica. Esto es fundamental para la usabilidad del panel.</li>
+                                <li><b>Validación de Unicidad y Lógica de Negocio:</b> Al crear o editar cualquier categoría, el backend impone una <span class="keyword">restricción de unicidad en el `slug`</span>. Esto es vital para prevenir URLs duplicadas y problemas de SEO. Además, la lógica de estado en cascada se maneja aquí: si se desactiva una categoría principal, el backend se asegura de que sus hijos no sean visibles en la tienda.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend (<code>app/static/js/admin/lista_categoria.js</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Navegación por Pestañas (Tabs):</b> El frontend utiliza un sistema de pestañas para cambiar entre la vista jerárquica ("Todas") y las vistas de tabla individuales ("Principales", "Subcategorías", etc.). Al cambiar de pestaña, el JavaScript realiza una llamada a la API correspondiente y renderiza la vista adecuada sin recargar la página.</li>
+                                <li><b>Interactividad Jerárquica:</b> En la vista jerárquica, los botones de despliegue (`<i class="fas fa-chevron-right"></i>`) simplemente alternan la visibilidad de los contenedores de subcategorías y seudocategorías anidados, proporcionando una exploración rápida e intuitiva de la estructura del catálogo.</li>
+                                <li><b>Modales de Formulario Dinámicos:</b> Al hacer clic en "Agregar" o "Editar", se abre un modal. El JavaScript adapta dinámicamente los campos de este modal según el nivel de la categoría (ej. muestra un selector de "Categoría Principal" si se está creando una subcategoría).</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-categories')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-categories-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-categories">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué es tan importante la validación de unicidad del `slug` de la categoría?</p>
+                                    <p class="mt-1">R: El `slug` es la parte de la URL que identifica a la categoría (ej. `/productos/cuidado-facial`). Si tuviéramos dos categorías con el mismo slug, se crearía una ambigüedad irresoluble. ¿A cuál de las dos debería llevar la URL? Esto rompería la navegación y sería un desastre para el <span class="keyword">SEO</span>, ya que los motores de búsqueda no sabrían qué página indexar. La validación en el backend previene este problema de raíz, garantizando que cada URL sea única y apunte a un solo recurso.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué sucede si una categoría principal se marca como "Inactiva"?</p>
+                                    <p class="mt-1">R: La lógica es jerárquica. Si una categoría principal se desactiva, <span style="color: #ef4444;">desaparece del menú de navegación de la tienda</span>. Además, todas sus subcategorías, seudocategorías y los productos que pertenecen exclusivamente a ellas también se vuelven inaccesibles para el cliente, aunque sus estados individuales sigan siendo "activos". Es una forma rápida y segura de ocultar una sección entera del catálogo sin tener que desactivar cientos de productos uno por uno. Al reactivar la categoría principal, toda la estructura vuelve a ser visible.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Gestión de Pedidos y Ventas -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-shopping-bag"></i>
+                        </div>
+                        <h3 class="card-title">4. Gestión de Pedidos y Ventas: El Flujo de Negocio</h3>
+                    </div>
+                    <p class="text-gray-700 leading-relaxed mb-6">
+                        Este es el corazón operativo de la plataforma. A continuación, se detalla el ciclo de vida completo de una orden, desde su creación por el cliente hasta su conversión en una venta analizable por el administrador, explicando la interacción entre el frontend y el backend en cada paso.
+                    </p>
+                    <div class="space-y-8">
+                        <!-- Fase 1 -->
+                        <div class="p-4 border-l-4 border-blue-200 bg-blue-50/50 rounded-r-lg">
+                            <h4 class="text-lg font-semibold text-blue-800">Fase 1: Creación del Pedido (Cliente)</h4>
+                            <p class="text-blue-700 mt-2 leading-relaxed">
+                                <b>Frontend (Cliente):</b> Tras finalizar su selección, el cliente hace clic en "Finalizar Compra". El frontend recopila los datos del carrito y la información del usuario.
+                                <br>
+                                <b>Backend (API):</b> Se realiza una llamada <code>POST</code> al endpoint <code>/api/create_order</code>. El backend ejecuta una lógica crítica:
+                                <ul class="feature-list mt-2">
+                                    <li>Realiza una <span class="keyword">validación final de stock</span> para cada producto.</li>
+                                    <li>Crea un registro en la tabla <code>Pedido</code> con <code>estado_pedido = EN_PROCESO</code> y <code>estado = INACTIVO</code> (esperando revisión del admin).</li>
+                                    <li>Crea la primera entrada en el <code>seguimiento_historial</code> con el estado "Recibido".</li>
+                                    <li><span style="color: #ef4444;">Descuenta el stock</span> de la tabla <code>Productos</code> de forma atómica.</li>
+                                    <li>Devuelve una respuesta de éxito, redirigiendo al cliente a la página de detalle de su nuevo pedido.</li>
+                                </ul>
+                            </p>
+                        </div>
+                        <!-- Fase 2 -->
+                        <div class="p-4 border-l-4 border-blue-200 bg-blue-50/50 rounded-r-lg">
+                            <h4 class="text-lg font-semibold text-blue-800">Fase 2: Gestión y Seguimiento (Admin)</h4>
+                            <p class="text-blue-700 mt-2 leading-relaxed">
+                                <b>Frontend (Admin SPA):</b> El nuevo pedido aparece en la pestaña "En Proceso". El administrador puede activarlo, editarlo o actualizar su estado logístico. Cada acción es una llamada a una API específica, actualizando la UI sin recargas.
+                                <br>
+                                <b>Backend (API):</b>
+                                <ul class="feature-list mt-2">
+                                    <li><b>Activación (<code>/api/pedidos/.../estado-activo</code>):</b> El admin activa el pedido. El backend cambia <code>estado = ACTIVO</code>, haciéndolo visible para el cliente y disparando la primera notificación.</li>
+                                    <li><b>Actualización de Seguimiento (<code>/api/pedidos/.../seguimiento</code>):</b> El admin cambia el estado a "En preparación" o "En camino". El backend añade una nueva entrada al <code>seguimiento_historial</code> y notifica al cliente.</li>
+                                    <li><b>Sincronización de Estados:</b> Si el admin marca el seguimiento como "Entregado", el backend <span class="keyword">automáticamente cambia</span> el <code>estado_pedido</code> a <code>COMPLETADO</code>. El pedido se convierte en una "Venta".</li>
+                                    <li><b>Cancelación:</b> Si el pedido se cancela, el backend cambia el <code>estado_pedido</code> a <code>CANCELADO</code> y, de forma transaccional, <span style="color: #ef4444;">revierte el stock</span> al inventario.</li>
+                                </ul>
+                            </p>
+                        </div>
+                        <!-- Fase 3 -->
+                        <div class="p-4 border-l-4 border-blue-200 bg-blue-50/50 rounded-r-lg">
+                            <h4 class="text-lg font-semibold text-blue-800">Fase 3: Visualización y Notificaciones (Cliente)</h4>
+                            <p class="text-blue-700 mt-2 leading-relaxed">
+                                <b>Frontend (Cliente):</b>
+                                <ul class="feature-list mt-2">
+                                    <li><b>Línea de Tiempo Visual:</b> En la página de detalle del pedido, un script de JavaScript lee el `seguimiento_historial` y <span class="keyword">renderiza una línea de tiempo interactiva</span>, mostrando al cliente cada paso del proceso de forma profesional.</li>
+                                    <li><b>Notificaciones en Tiempo Real:</b> El cliente recibe alertas instantáneas (toasts) sobre cada cambio de estado gracias a una conexión <span class="keyword">Server-Sent Events (SSE)</span>, que mantiene un canal de comunicación abierto con el servidor.</li>
+                                </ul>
+                            </p>
+                        </div>
+                        <!-- Fase 4 -->
+                        <div class="p-4 border-l-4 border-blue-200 bg-blue-50/50 rounded-r-lg">
+                            <h4 class="text-lg font-semibold text-blue-800">Fase 4: Conversión a Venta y Análisis (Admin)</h4>
+                            <p class="text-blue-700 mt-2 leading-relaxed">
+                                <b>Frontend (Admin SPA):</b> Una vez que un pedido es `COMPLETADO`, desaparece de la pestaña "En Proceso" y aparece en la sección de "Ventas". Aquí, el administrador puede analizar el rendimiento del negocio.
+                                <br>
+                                <b>Backend (API):</b>
+                                <ul class="feature-list mt-2">
+                                    <li><b>Dashboard de Estadísticas (<code>/api/ventas/estadisticas</code>):</b> Este potente endpoint recibe filtros de fecha y otros criterios, y calcula en tiempo real métricas clave como <span class="keyword">ingresos, utilidad, margen y ticket promedio</span>, además de generar los datos para los gráficos de tendencias.</li>
+                                    <li><b>Creación de Venta Directa:</b> El admin puede registrar una venta externa. La API crea un pedido directamente en estado `COMPLETADO` y descuenta el stock, simplificando la contabilidad.</li>
+                                </ul>
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-orders-admin')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-orders-admin-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-orders-admin">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cuál es la diferencia entre `estado_pedido` y `seguimiento_estado`?</p>
+                                    <p class="mt-1">R: Es una separación clave entre el <span class="keyword">estado de negocio</span> y el <span class="keyword">estado logístico</span>. `estado_pedido` (`EN_PROCESO`, `COMPLETADO`, `CANCELADO`) controla la lógica principal y en qué pestaña del panel aparece el pedido. `seguimiento_estado` (`recibido`, `en preparacion`, `en camino`, `entregado`) es el detalle para el cliente. El sistema los sincroniza: si el admin actualiza el seguimiento a "entregado", el backend automáticamente cambia el `estado_pedido` a "COMPLETADO".</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo se notifica al cliente de un cambio? ¿Qué pasa si el pedido está "inactivo"?</p>
+                                    <p class="mt-1">R: Cada vez que el admin actualiza el seguimiento, el backend añade una entrada al `seguimiento_historial` con una bandera `notified_to_client: false`. Un proceso en segundo plano (o una conexión SSE) detecta estas banderas y envía la notificación. Si el pedido está "inactivo", la bandera se establece en `true` por defecto. Cuando el admin lo reactiva, el sistema busca la última entrada, cambia su bandera a `false` y envía la notificación pendiente. Esto asegura que el cliente solo reciba alertas relevantes.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué significa que la edición de un pedido es "transaccional"?</p>
+                                    <p class="mt-1">R: Significa que todas las operaciones de base de datos involucradas en la edición (devolver stock de productos eliminados, verificar y descontar stock de productos nuevos, actualizar el total del pedido) se agrupan en una <span class="keyword">unidad atómica</span>. Si cualquiera de estas operaciones falla (por ejemplo, no hay suficiente stock para un nuevo producto), todas las operaciones anteriores se <span style="color: #ef4444;">revierten automáticamente</span>. Esto garantiza que la base de datos nunca quede en un estado inconsistente (ej. haber devuelto stock sin descontar el nuevo). Es una garantía de integridad del inventario.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo se calculan las estadísticas del dashboard (ingresos, utilidad) de forma eficiente?</p>
+                                    <p class="mt-1">R: En lugar de hacer múltiples consultas separadas, el backend construye una <span class="keyword">subconsulta</span> con todos los filtros aplicados (fecha, cliente, etc.). Luego, las funciones de agregación de SQL (`SUM`, `COUNT`) se ejecutan sobre el resultado de esa subconsulta. Esto asegura que todas las métricas (ingresos, utilidad, ticket promedio) se calculen sobre el mismo conjunto de datos filtrados y es mucho más eficiente que consultar la tabla de pedidos una y otra vez para cada estadística.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Gestión de Usuarios -->
+                <div class="card card-accent slide-in">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <h3 class="card-title">5. Gestión de Usuarios: Clientes y Administradores</h3>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Backend (<code>app/blueprints/admin/usuarios/user_routes.py</code>)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>APIs de Listado y Filtrado:</b> Endpoints separados para listar clientes (`/api/usuarios`) y administradores (`/api/admins`) con paginación, búsqueda y filtros por estado.</li>
+                                <li><b>Sistema "En Línea" (`last_seen`):</b> Un middleware de Flask (`before_request` en `app/__init__.py`) intercepta cada petición de un usuario autenticado y actualiza un campo `last_seen` en la base de datos. Las APIs de listado usan este timestamp para ordenar los resultados, mostrando primero a los usuarios activos en los últimos 5 minutos.</li>
+                                <li><b>Gestión de Estado (Activo/Inactivo):</b> Las APIs <code>PUT /api/usuarios/&lt;id&gt;/status</code> y <code>PUT /api/admins/&lt;id&gt;/status</code> manejan la activación y desactivación de cuentas. Esto es una <span class="keyword">eliminación lógica (soft delete)</span>.</li>
+                                <li><b>Implicaciones del Estado "Inactivo":</b> Una cuenta inactiva <span style="color: #ef4444;">no puede iniciar sesión</span>. El sistema rechaza cualquier intento de autenticación. Sin embargo, el registro del usuario y todo su historial (pedidos, reseñas, etc.) se <span style="color: #10b981;">conservan intactos</span> en la base de datos, manteniendo la integridad de los datos históricos del negocio.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-gray-800 mb-2">Frontend (Panel de Administración)</h4>
+                            <ul class="feature-list text-gray-700">
+                                <li><b>Tablas Dinámicas:</b> La interfaz de usuario utiliza JavaScript para llamar a las APIs de listado y renderizar las tablas de clientes y administradores. Los filtros y la paginación se manejan de forma asíncrona, sin recargar la página.</li>
+                                <li><b>Indicadores Visuales de Estado:</b> Cada fila de usuario muestra claramente su estado. Un punto verde indica que está "En línea", mientras que un badge de "Activo" o "Inactivo" refleja el estado de su cuenta.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Preguntas Frecuentes para Desarrolladores -->
+                    <div class="details-container">
+                        <div class="details-header" onclick="toggleDetails('faq-users')">
+                            <h5 class="font-semibold text-gray-800">Preguntas Frecuentes para Desarrolladores</h5>
+                            <i class="fas fa-chevron-down text-gray-500 transition-transform" id="faq-users-icon"></i>
+                        </div>
+                        <div class="details-content" id="faq-users">
+                            <div class="details-body text-gray-700 space-y-4">
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo funciona el estado "En línea" y por qué es útil?</p>
+                                    <p class="mt-1">R: En cada petición que realiza un usuario o administrador autenticado, un middleware en el backend (`before_request` en `app/__init__.py`) actualiza un campo `last_seen` en su registro de la base de datos con la fecha y hora actual. En el panel, al listar los usuarios, se compara ese `last_seen` con la hora actual. Si la diferencia es menor a 5 minutos, se muestra un indicador "En línea". Esto es útil para saber quién está trabajando activamente en la plataforma, facilitando la coordinación del equipo y el soporte al cliente.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Qué implicaciones tiene desactivar la cuenta de un cliente o un administrador?</p>
+                                    <p class="mt-1">R: La implicación principal es de seguridad y acceso: <span style="color: #ef4444;">una cuenta inactiva no puede iniciar sesión</span>. Para un <span class="keyword">cliente</span>, esto puede ser una medida temporal por actividad sospechosa. Para un <span class="keyword">administrador</span>, es el procedimiento estándar al dejar la empresa. Es importante destacar que, al igual que con los productos, es una eliminación lógica. Todos los datos del usuario (historial de pedidos, reseñas, etc.) se conservan en el sistema para mantener la integridad de los registros históricos del negocio.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Por qué se genera una contraseña automáticamente al crear un usuario desde el panel?</p>
+                                    <p class="mt-1">R: Es una <span class="keyword">mejora de usabilidad</span> para el administrador. Permite registrar rápidamente a un cliente que, por ejemplo, hizo una compra por teléfono y no tiene una cuenta. El administrador puede crear la cuenta con una contraseña simple y temporal (ej. "Nombre+Numero") y comunicársela al cliente, quien podrá usarla para iniciar sesión y luego cambiarla por una más segura desde su perfil. Esto agiliza el proceso de registro manual.</p>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-gray-800">P: ¿Cómo se asegura la eficiencia al ordenar por "En línea"?</p>
+                                    <p class="mt-1">R: La consulta en la base de datos (`user_routes.py`) utiliza una expresión `CASE` de SQL. Esto crea una columna de prioridad virtual: los usuarios en línea obtienen una prioridad alta (ej. 0), los desconectados una prioridad media (ej. 1) y los inactivos una prioridad baja (ej. 2). Al ordenar por esta columna de prioridad, la base de datos puede organizar los resultados de manera muy eficiente, especialmente si hay un <span class="keyword">índice en la columna `last_seen`</span>, lo que evita escaneos completos de la tabla.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card: Conclusión Admin -->
+                <div class="card" style="background: linear-gradient(to right, #f8fafc, #e2e8f0);">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3">Conclusión Profesional (Panel de Administración)</h3>
+                    <p class="text-gray-700 leading-relaxed space-y-4">
+                        <span>El Panel de Administración de YE&CY Cosmetic es una herramienta de gestión empresarial de nivel profesional, construida sobre una arquitectura de <span class="keyword">API RESTful</span> y una interfaz de usuario <span class="keyword">SPA</span>. La separación clara entre el backend y el frontend nos permite tener un sistema modular, mantenible y altamente performante.</span>
+                        <span>La seguridad es una piedra angular, evidenciada por el uso de <span class="keyword">cookies HttpOnly</span> para JWTs de administrador. Funcionalidades avanzadas como las APIs de filtrado dinámico, la gestión transaccional del stock en los pedidos y el dashboard de métricas en tiempo real no solo demuestran solidez técnica, sino que proporcionan un valor de negocio tangible.</span>
+                        <span>En definitiva, hemos construido una plataforma de administración que no solo es funcional, sino que está diseñada para optimizar la eficiencia operativa, garantizar la seguridad de los datos y escalar junto con el crecimiento del negocio.</span>
+                    </p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Función para mostrar una sección específica
+        function showSection(sectionId) {
+            // Ocultar todas las secciones
+            const sections = document.querySelectorAll('.section-content');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Mostrar la sección seleccionada
+            const selectedSection = document.getElementById(sectionId);
+            selectedSection.classList.add('active');
+            
+            // Actualizar la navegación activa
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const activeNavItem = document.getElementById(`nav-${sectionId}`);
+            activeNavItem.classList.add('active');
+            
+            // REQUERIMIENTO: No hacer ningún scroll al cambiar de sección.
+            // La vista debe permanecer en la misma posición.
+        }
+        
+        // Función para alternar la visibilidad de los detalles
+        function toggleDetails(detailsId) {
+            const details = document.getElementById(detailsId);
+            const icon = document.getElementById(`${detailsId}-icon`);
+            
+            if (details.classList.contains('open')) {
+                details.classList.remove('open');
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                details.classList.add('open');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+        
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostrar la primera sección por defecto
+            showSection('tienda-online');
+            
+            // Animar elementos al hacer scroll
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('fade-in');
+                    }
+                });
+            }, observerOptions);
+            
+            document.querySelectorAll('.card').forEach(card => {
+                observer.observe(card);
+            });
+        });
+    </script>
+</body>
+
+</html>

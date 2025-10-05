@@ -1348,77 +1348,75 @@ document.addEventListener('DOMContentLoaded', function() {
         modalTitle.textContent = `Detalles del Pedido`;
         modalId.textContent = `#${pedido.id}`;
 
-        // --- MEJORA PROFESIONAL: Lógica para el historial de seguimiento (sin duplicados) ---
+        // --- MEJORA PROFESIONAL: Lógica para el historial de seguimiento con diseño de Timeline ---
         let historialHtml = '';
         if (pedido.seguimiento_historial && pedido.seguimiento_historial.length > 0) {
             const historialOrdenado = pedido.seguimiento_historial.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
             const ultimoEstado = pedido.estado_pedido === 'completado' ? 'entregado' : pedido.seguimiento_estado;
 
-            // 1. Crear un mapa con la última entrada para cada estado (elimina duplicados).
+            // 1. Crear un mapa con la última entrada para cada estado para evitar duplicados.
             const latestEntries = {};
             historialOrdenado.forEach(item => {
                 latestEntries[item.estado] = item;
             });
 
-            // 2. Definir el orden de visualización y los iconos.
+            // 2. Definir el orden de visualización y los íconos para cada estado.
             const estadosOrden = ['recibido', 'en preparacion', 'en camino', 'entregado'];
             const estadoIconos = {
                 'recibido': 'fa-inbox',
                 'en preparacion': 'fa-box-open',
                 'en camino': 'fa-truck',
                 'entregado': 'fa-check-circle',
-                'cancelado': 'fa-ban' // Usamos 'fa-ban' para un look más profesional.
+                'cancelado': 'fa-ban'
             };
             
-            // 3. Construir el HTML.
-            // MEJORA PROFESIONAL: Si el pedido está cancelado, se construye una línea de tiempo diferente.
+            // 3. Construir el HTML de la línea de tiempo.
+            // Si el pedido está cancelado, se construye una línea de tiempo especial.
             if (pedido.estado_pedido === 'cancelado' && latestEntries['cancelado']) {
-                // Mostrar solo los estados que ocurrieron ANTES de la cancelación.
+                // Mostrar solo los estados que ocurrieron antes de la cancelación.
                 historialHtml = estadosOrden.map((estado) => {
                     const entry = latestEntries[estado];
-                    // Solo renderizar si el estado existió en el historial.
                     if (!entry) return '';
                     return `
                         <div class="modal-timeline-item completed">
                             <div class="modal-timeline-icon"><i class="fas ${estadoIconos[estado]}"></i></div>
                             <div class="modal-timeline-content">
                                 <p class="font-semibold text-gray-800">${entry.estado.charAt(0).toUpperCase() + entry.estado.slice(1)}</p>
-                                <p class="text-sm text-gray-500 mt-1">${entry.notas}</p>
+                                <p class="text-sm text-gray-500 mt-1">${entry.notas || ''}</p>
                                 <p class="text-xs text-gray-400 mt-2">${formatDate(entry.timestamp, true)}</p>
                             </div>
                         </div>
                     `;
                 }).join('');
 
-                // Añadir el estado de cancelación al final, destacándolo.
+                // Añadir el estado de cancelación al final, destacándolo como activo y con estilo de 'cancelado'.
                 const cancelEntry = latestEntries['cancelado'];
                 historialHtml += `
                     <div class="modal-timeline-item cancelled active">
                         <div class="modal-timeline-icon"><i class="fas ${estadoIconos['cancelado']}"></i></div>
                         <div class="modal-timeline-content">
                             <p class="font-semibold text-red-700">Pedido Cancelado</p>
-                            <p class="text-sm text-gray-500 mt-1">${cancelEntry.notas}</p>
+                            <p class="text-sm text-gray-500 mt-1">${cancelEntry.notas || ''}</p>
                             <p class="text-xs text-gray-400 mt-2">${formatDate(cancelEntry.timestamp, true)}</p>
                         </div>
                     </div>
                 `;
             } else {
-                // Lógica original para pedidos en proceso o completados.
+                // Lógica para pedidos en proceso o completados.
                 historialHtml = estadosOrden.map((estado, index) => {
                     const entry = latestEntries[estado];
-                    if (!entry) return ''; // No mostrar si este estado nunca ocurrió
+                    if (!entry) return ''; // No mostrar si el estado nunca ocurrió.
 
                     const iconClass = estadoIconos[estado] || 'fa-question-circle';
                     const isCompleted = estadosOrden.indexOf(ultimoEstado) > index;
                     const isActive = ultimoEstado === estado;
                     const itemClass = isActive ? 'active' : (isCompleted ? 'completed' : '');
 
-                    return `
-                        <div class="modal-timeline-item ${itemClass}">
+                    return ` <div class="modal-timeline-item ${itemClass}">
                         <div class="modal-timeline-icon"><i class="fas ${iconClass}"></i></div>
                         <div class="modal-timeline-content">
                             <p class="font-semibold text-gray-800">${entry.estado.charAt(0).toUpperCase() + entry.estado.slice(1)}</p>
-                            <p class="text-sm text-gray-500 mt-1">${entry.notas}</p>
+                            <p class="text-sm text-gray-500 mt-1">${entry.notas || ''}</p>
                             <p class="text-xs text-gray-400 mt-2">${formatDate(entry.timestamp, true)}</p>
                         </div>
                     </div>
@@ -1427,7 +1425,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
         } else {
-            historialHtml = '<p class="text-sm text-gray-500">No hay historial de seguimiento disponible.</p>';
+            historialHtml = '<div class="text-center text-gray-500 p-4 bg-gray-100 rounded-lg">No hay historial de seguimiento disponible para este pedido.</div>';
         }
 
         // --- MEJORA PROFESIONAL: Lógica para el badge de estado ---
@@ -1500,7 +1498,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             <h3 class="text-xl font-bold text-gray-800 mt-8 mb-4">Historial de Seguimiento</h3>
             <div class="modal-timeline-container">
-                ${historialHtml ? '<div class="modal-timeline-line"></div>' : ''}
+                ${(pedido.seguimiento_historial && pedido.seguimiento_historial.length > 0) ? '<div class="modal-timeline-line"></div>' : ''}
                 ${historialHtml}
             </div>
         `;

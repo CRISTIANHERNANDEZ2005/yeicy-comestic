@@ -13,6 +13,12 @@
 // Se adjunta a window para evitar errores de redeclaración en un entorno SPA
 window.debounceTimeout = window.debounceTimeout || null;
 
+// MEJORA PROFESIONAL: Almacén para los controladores de eventos específicos de este módulo.
+// Esto nos permitirá limpiarlos de forma segura cuando el contenido cambie.
+const productModuleListeners = {
+  listeners: [],
+};
+
 function formatCurrency(value) {
   if (value === null || value === undefined || isNaN(value)) {
     return "$ 0";
@@ -121,9 +127,9 @@ function initCustomSelects() {
       // ---  Centralización de la lógica de cambio ---
       // Se llama a la función global `handleCustomSelectChange` definida en `lista_productos.html`.
       // Esta función se encarga de la lógica de dependencias de categorías y de llamar a `applyFilters`.
-      if (typeof window.handleCustomSelectChange === 'function') {
-        window.handleCustomSelectChange(select);
-      }
+      // MEJORA: La función ahora está en este mismo archivo.
+      handleCustomSelectChange(select);
+      
     });
   });
 }
@@ -480,43 +486,37 @@ window.goToPage = function (page) {
  * y restaura la lista completa de opciones para categorías y marcas.
  */
 function resetFilters() {
+  console.log("🔄 [resetFilters] Iniciando reseteo de filtros...");
   const filterForm = document.getElementById("filterForm");
   if (filterForm) {
-    filterForm.reset();
+    // MEJORA PROFESIONAL: Evitar form.reset() que puede causar recursión.
+    // Limpiar cada campo explícitamente es más seguro.
+    filterForm.querySelectorAll('input[type="text"], input[type="number"], input[type="hidden"]').forEach(input => {
+        if (input.name !== 'page' && input.name !== 'per_page') {
+            input.value = '';
+        }
+    });
+    filterForm.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
   }
 
   // Resetear visualmente todos los custom selects a "Todas"
   document
     .querySelectorAll("#filtersPanel .custom-select")
     .forEach((select) => {
-      const valueDisplay = select.querySelector(".custom-select-value");
-      const optionElements = select.querySelectorAll(".custom-select-option");
-      const selectName = select.getAttribute("data-name");
-      
-      const hiddenInput = document.querySelector(`input[name="${selectName}"]`);
-      if (hiddenInput) {
-        hiddenInput.value = "";
-      }
-      if (valueDisplay && optionElements.length > 0) {
-        valueDisplay.textContent = optionElements[0].textContent;
-      }
+      // setCustomSelectValue se encarga de la lógica de reseteo visual y de valor.
+      setCustomSelectValue(select, "");
     });
 
   // --- MEJORA PROFESIONAL: Restaurar estado completo de los filtros ---
-  // Restaurar la visibilidad de todas las opciones de categoría.
-  if (typeof window.resetCategoryVisibility === 'function') {
-    window.resetCategoryVisibility(true, true, true);
-  }
-  // Recargar la lista completa de marcas desde la API.
-  if (typeof window.updateBrandOptions === 'function') {
-    window.updateBrandOptions().then(() => {
-      // Aplicar filtros solo después de que las marcas se hayan actualizado.
-      applyFilters();
-    });
-  } else {
-    // Fallback si la función no existe, aunque no debería ocurrir.
-    applyFilters();
-  }
+  // Restaurar la visibilidad de todas las opciones de los filtros de categoría.
+  console.log("🔄 [resetFilters] Restaurando visibilidad de categorías...");
+  resetCategoryVisibility(true, true, true);
+  // Recargar la lista completa de marcas.
+  console.log("🔄 [resetFilters] Actualizando opciones de marcas...");
+  updateBrandOptions();
+  console.log("✅ [resetFilters] Reseteo de filtros completado.");
 }
 
 function showNotification(title, message, type) {
@@ -722,74 +722,355 @@ document.addEventListener("keydown", function (event) {
   }
 });
 
+/**
+ * =====================================================================================
+ * LÓGICA DE DEPENDENCIAS DE CATEGORÍAS (Movida desde lista_productos.html)
+ * =====================================================================================
+ */
+
+/**
+ * Punto de entrada para manejar cambios en los selectores de filtros.
+ * @param {HTMLElement} selectDiv - El elemento .custom-select que cambió.
+ */
+function handleCustomSelectChange(selectDiv) {
+    const name = selectDiv.dataset.name;
+    const value = document.querySelector(`input[name="${name}"]`).value;
+
+    if (['categoria_id', 'subcategoria_id', 'seudocategoria_id'].includes(name)) {
+        updateCategoryDependencies(name, value);
+    } else if (name === 'marca') {
+        updateDependenciesForBrand(value);
+    } else {
+        applyFilters();
+    }
+}
+
+/**
+ * Actualiza los selectores de categorías dependientes y las marcas.
+ * @param {string} level - El nivel de la categoría que cambió ('categoria_id', 'subcategoria_id', 'seudocategoria_id').
+ * @param {string} id - El ID de la categoría seleccionada.
+ */
+async function updateCategoryDependencies(level, id, applyFiltersAfter = true) {
+    const mainCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="categoria_id"]');
+    const subCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="subcategoria_id"]');
+    const pseudoCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="seudocategoria_id"]');
+    const brandSelect = document.querySelector('#filtersPanel .custom-select[data-name="marca"]');
+
+    if (!id) {
+        if (level === 'categoria_id') {
+            resetCategoryVisibility(false, true, true);
+            setCustomSelectValue(subCatSelect, "");
+            setCustomSelectValue(pseudoCatSelect, "");
+        } else if (level === 'subcategoria_id') {
+            resetCategoryVisibility(false, false, true);
+            setCustomSelectValue(pseudoCatSelect, "");
+        }
+        await updateBrandOptions();
+        if (applyFiltersAfter) {
+            applyFilters();
+        }
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/api/products/category-dependencies?level=${level}&id=${id}`);
+        if (!response.ok) throw new Error('Error en la respuesta de la API');
+        
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        if (data.main_category_id && level !== 'categoria_id') {
+            setCustomSelectValue(mainCatSelect, data.main_category_id);
+        }
+        if (data.sub_category_id && level !== 'subcategoria_id') {
+            setCustomSelectValue(subCatSelect, data.sub_category_id);
+        }
+
+        if (level === 'categoria_id') {
+            filterOptions(subCatSelect, data.sub_category_ids);
+            filterOptions(pseudoCatSelect, data.pseudo_category_ids);
+        } else if (level === 'subcategoria_id') {
+            resetCategoryVisibility(true, false, false);
+            filterOptions(pseudoCatSelect, data.pseudo_category_ids);
+        } else if (level === 'seudocategoria_id') {
+            resetCategoryVisibility(true, true, false);
+        }
+
+        await updateBrandOptions(data.brands);
+
+        if (level === 'categoria_id') {
+            const subCatValue = subCatSelect.querySelector('input[type="hidden"]').value;
+            if (subCatValue && !data.sub_category_ids.includes(subCatValue)) {
+                setCustomSelectValue(subCatSelect, "");
+                setCustomSelectValue(pseudoCatSelect, "");
+            }
+        }
+        if (level === 'categoria_id' || level === 'subcategoria_id') {
+            const pseudoCatValue = pseudoCatSelect.querySelector('input[type="hidden"]').value;
+            if (pseudoCatValue && !data.pseudo_category_ids.includes(pseudoCatValue)) {
+                setCustomSelectValue(pseudoCatSelect, "");
+            }
+        }
+
+        const brandValue = brandSelect.querySelector('input[type="hidden"]').value;
+        if (brandValue && !data.brands.includes(brandValue)) {
+            setCustomSelectValue(brandSelect, "");
+        }
+
+        if (applyFiltersAfter) {
+            applyFilters();
+        }
+
+    } catch (error) {
+        console.error('Error al actualizar dependencias de categorías:', error);
+        window.toast.error('No se pudieron actualizar los filtros de categoría.');
+    }
+}
+
+/**
+ * Actualiza los selectores de categorías cuando se selecciona una marca.
+ * @param {string} brandName - El nombre de la marca seleccionada.
+ */
+async function updateDependenciesForBrand(brandName) {
+    const mainCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="categoria_id"]');
+    const subCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="subcategoria_id"]');
+    const pseudoCatSelect = document.querySelector('#filtersPanel .custom-select[data-name="seudocategoria_id"]');
+
+    if (!brandName) {
+        resetCategoryVisibility(true, true, true);
+        applyFilters();
+        return;
+    }
+
+    try {
+        const response = await fetch(`/admin/api/products/category-dependencies?level=marca&id=${encodeURIComponent(brandName)}`);
+        if (!response.ok) throw new Error('Error en la respuesta de la API de marcas');
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        filterOptions(mainCatSelect, data.main_category_ids);
+        filterOptions(subCatSelect, data.sub_category_ids);
+        filterOptions(pseudoCatSelect, data.pseudo_category_ids);
+
+        const mainCatValue = mainCatSelect.querySelector('input[type="hidden"]').value;
+        if (mainCatValue && !data.main_category_ids.includes(mainCatValue)) setCustomSelectValue(mainCatSelect, "");
+
+        const subCatValue = subCatSelect.querySelector('input[type="hidden"]').value;
+        if (subCatValue && !data.sub_category_ids.includes(subCatValue)) setCustomSelectValue(subCatSelect, "");
+
+        const pseudoCatValue = pseudoCatSelect.querySelector('input[type="hidden"]').value;
+        if (pseudoCatValue && !data.pseudo_category_ids.includes(pseudoCatValue)) setCustomSelectValue(pseudoCatSelect, "");
+
+        applyFilters();
+    } catch (error) {
+        console.error('Error al actualizar dependencias para la marca:', error);
+        window.toast.error('No se pudieron actualizar los filtros para la marca seleccionada.');
+    }
+}
+
+/**
+ * Filtra las opciones de un custom select para mostrar solo las que están en una lista de IDs.
+ * @param {HTMLElement} selectElement - El elemento .custom-select.
+ * @param {string[]} allowedIds - Array de IDs que se deben mostrar.
+ */
+function filterOptions(selectElement, allowedIds) {
+    if (!selectElement) return;
+    const options = selectElement.querySelectorAll('.custom-select-option');
+    options.forEach(option => {
+        const value = option.dataset.value;
+        if (value === "") {
+            option.style.display = 'block';
+        } else if (value) {
+            option.style.display = allowedIds.includes(value) ? 'block' : 'none';
+        }
+    });
+}
+
+/**
+ * Restablece la visibilidad de las opciones en los selectores de categoría.
+ * @param {boolean} main - ¿Restablecer categorías principales?
+ * @param {boolean} sub - ¿Restablecer subcategorías?
+ * @param {boolean} pseudo - ¿Restablecer seudocategorías?
+ */
+function resetCategoryVisibility(main, sub, pseudo) {
+    if (main) {
+        document.querySelectorAll('#filtersPanel .custom-select[data-name="categoria_id"] .custom-select-option').forEach(opt => opt.style.display = 'block');
+    }
+    if (sub) {
+        document.querySelectorAll('#filtersPanel .custom-select[data-name="subcategoria_id"] .custom-select-option').forEach(opt => opt.style.display = 'block');
+    }
+    if (pseudo) {
+        document.querySelectorAll('#filtersPanel .custom-select[data-name="seudocategoria_id"] .custom-select-option').forEach(opt => opt.style.display = 'block');
+    }
+}
+
+/**
+ * Actualiza las opciones del selector de marcas.
+ * @param {string[]} brands - Array con los nombres de las marcas a mostrar.
+ */
+async function updateBrandOptions(brands) {
+    const brandSelect = document.querySelector('#filtersPanel .custom-select[data-name="marca"]');
+    if (!brandSelect) return;
+    const optionsContainer = brandSelect.querySelector('.custom-select-options');
+    const hiddenInput = brandSelect.querySelector('input[type="hidden"]');
+    const currentBrandValue = hiddenInput ? hiddenInput.value : '';
+
+    let brandsToShow = brands;
+
+    if (!brands) {
+        const response = await fetch('/admin/api/products/category-dependencies');
+        const data = await response.json();
+        if (data.success) {
+            brandsToShow = data.brands;
+        } else {
+            brandsToShow = [];
+        }
+    }
+
+    let newOptionsHtml = '<div class="custom-select-option" data-value="">Todas</div>';
+    if (brandsToShow) {
+        brandsToShow.forEach(brand => {
+            newOptionsHtml += `<div class="custom-select-option" data-value="${brand}">${brand}</div>`;
+        });
+    }
+
+    optionsContainer.innerHTML = newOptionsHtml;
+    setCustomSelectValue(brandSelect, currentBrandValue);
+}
+
+/**
+ * Establece el valor de un custom select programáticamente.
+ * @param {HTMLElement} selectElement - El elemento .custom-select.
+ * @param {string} value - El valor a seleccionar.
+ */
+function setCustomSelectValue(selectElement, value) {
+    if (!selectElement) return;
+    const hiddenInput = selectElement.querySelector('input[type="hidden"]');
+    if (!hiddenInput) return;
+    const valueDisplay = selectElement.querySelector('.custom-select-value');
+    const options = selectElement.querySelectorAll('.custom-select-option');
+
+    hiddenInput.value = value;
+
+    let found = false;
+    options.forEach(option => {
+        if (option.dataset.value === value) {
+            option.classList.add('selected');
+            valueDisplay.textContent = option.textContent.trim();
+            found = true;
+        } else {
+            option.classList.remove('selected');
+        }
+    });
+
+    if (!found) {
+        const allOption = selectElement.querySelector('.custom-select-option[data-value=""]');
+        if (allOption) {
+            allOption.classList.add('selected');
+            valueDisplay.textContent = allOption.textContent.trim();
+        }
+    }
+}
+
+/**
+ * =====================================================================================
+ * FIN DE LA LÓGICA DE DEPENDENCIAS
+ * =====================================================================================
+ */
+
 function setupFilterEventListeners() {
   // --- MEJORA PROFESIONAL: Delegación de eventos para la paginación ---
   // Este listener se adjunta a un contenedor estático y maneja los clics en los
   // enlaces de paginación, incluso si se recrean dinámicamente.
+  // MEJORA PROFESIONAL: Declarar todas las variables de elementos al principio de la función.
   const paginationContainer = document.querySelector(
     ".mt-8.flex.flex-col.items-center"
   );
+  const resetPanelButton = document.getElementById("reset-panel-button");
+  const resetMainButton = document.getElementById("reset-main-button");
+  const perPageSelect = document.getElementById("perPageSelect");
+  const tableBody = document.getElementById("products-tbody");
+  const nameInput = document.querySelector(
+    '#filtersPanel input[name="nombre"]'
+  );
+  const minPriceInput = document.querySelector(
+    '#filtersPanel input[name="min_price"]'
+  );
+  const maxPriceInput = document.querySelector(
+    '#filtersPanel input[name="max_price"]'
+  );
+  const agotadosCheckbox = document.getElementById("agotados");
+  const nuevosCheckbox = document.getElementById("nuevos");
+  const toggleButtons = document.querySelectorAll('#toggle-filters-button, #close-filters-panel-button');
+  const overlay = document.getElementById("overlay");
+
+  // Handler unificado para los botones de reseteo
+  const resetFiltersHandler = () => {
+    console.log("🖱️ Click detectado en botón 'Limpiar Filtros'. Ejecutando handler...");
+    resetFilters();
+    applyFilters();
+  };
+
+  // Asignación de listeners
+  if (resetPanelButton) {
+    // MEJORA: Limpiar listeners anteriores para evitar duplicados en SPA
+    resetPanelButton.removeEventListener("click", resetFiltersHandler);
+    resetPanelButton.addEventListener("click", resetFiltersHandler);
+    productModuleListeners.listeners.push({ element: resetPanelButton, type: 'click', handler: resetFiltersHandler, name: 'resetPanel' });
+  }
+
+  if (resetMainButton && !resetMainButton.closest("#filtersPanel")) {
+    // MEJORA: Limpiar listeners anteriores
+    resetMainButton.removeEventListener("click", resetFiltersHandler);
+    resetMainButton.addEventListener("click", resetFiltersHandler);
+    productModuleListeners.listeners.push({ element: resetMainButton, type: 'click', handler: resetFiltersHandler, name: 'resetMain' });
+  }
+
   if (paginationContainer) {
-    paginationContainer.addEventListener("click", function (e) {
+    const paginationHandler = function (e) {
       const target = e.target.closest(".pagination-link");
       if (target && !target.classList.contains("cursor-not-allowed")) {
         e.preventDefault();
         const page = target.dataset.page;
-        if (page) {
-          window.goToPage(page);
-        }
+        if (page) window.goToPage(page);
       }
-    });
+    };
+    paginationContainer.removeEventListener("click", paginationHandler);
+    paginationContainer.addEventListener("click", paginationHandler);
+    productModuleListeners.listeners.push({ element: paginationContainer, type: 'click', handler: paginationHandler, name: 'pagination' });
   }
 
-  // "Limpiar Filtros" button in panel
-  const resetPanelButton = document.querySelector(
-    '#filtersPanel button[onclick="resetFilters()"]'
-  );
-  if (resetPanelButton) {
-    resetPanelButton.onclick = null; // Remove inline handler
-    resetPanelButton.addEventListener("click", resetFilters);
-  }
-
-  // Main "Limpiar Filtros" button
-  const resetMainButton = document.querySelector(
-    'button[onclick="resetFilters()"]'
-  );
-  if (resetMainButton && !resetMainButton.closest("#filtersPanel")) {
-    resetMainButton.onclick = null; // Remove inline handler
-    resetMainButton.addEventListener("click", resetFilters);
-  }
-
-  // Per page select
-  const perPageSelect = document.getElementById("perPageSelect");
   if (perPageSelect) {
     // Evitar duplicar listeners en SPA
-    if (!perPageSelect.hasAttribute("data-listener-attached")) {
-      perPageSelect.addEventListener("change", function () {
-        let perPageInput = document.querySelector('input[name="per_page"]');
-        if (!perPageInput) {
-          perPageInput = document.createElement("input");
-          perPageInput.type = "hidden";
-          perPageInput.name = "per_page";
-          document.getElementById("filterForm").appendChild(perPageInput);
-        }
-        perPageInput.value = this.value;
-        window.goToPage(1); // Reset to page 1
-      });
-      perPageSelect.setAttribute("data-listener-attached", "true");
-    }
+    const perPageHandler = function () {
+      let perPageInput = document.querySelector('input[name="per_page"]');
+      if (!perPageInput) {
+        perPageInput = document.createElement("input");
+        perPageInput.type = "hidden";
+        perPageInput.name = "per_page";
+        document.getElementById("filterForm").appendChild(perPageInput);
+      }
+      perPageInput.value = this.value;
+      window.goToPage(1); // Reset to page 1
+    };
+    perPageSelect.removeEventListener("change", perPageHandler); // Limpiar
+    perPageSelect.addEventListener("change", perPageHandler);
+    productModuleListeners.listeners.push({ element: perPageSelect, type: 'change', handler: perPageHandler, name: 'perPage' });
   }
 
   // Product status toggle (delegation)
-  const tableBody = document.getElementById("products-tbody");
   if (tableBody) {
-    tableBody.addEventListener("change", function (e) {
+    const tableChangeHandler = function (e) {
       if (e.target.classList.contains("toggle-product-status")) {
         const productId = e.target.dataset.productId;
         const isActive = e.target.checked;
         window.toggleProductStatus(productId, isActive);
       }
-    });
+    };
+    tableBody.removeEventListener("change", tableChangeHandler);
+    tableBody.addEventListener("change", tableChangeHandler);
+    productModuleListeners.listeners.push({ element: tableBody, type: 'change', handler: tableChangeHandler, name: 'toggleStatus' });
 
     // Add this new event listener for the edit button
     tableBody.addEventListener("click", function (e) {
@@ -805,61 +1086,149 @@ function setupFilterEventListeners() {
   }
 
   // Name input
-  const nameInput = document.querySelector(
-    '#filtersPanel input[name="nombre"]'
-  );
   if (nameInput) {
     nameInput.onkeyup = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    nameInput.removeEventListener("keyup", debounceFilter);
     nameInput.addEventListener("keyup", debounceFilter);
   }
 
   // Price inputs
-  const minPriceInput = document.querySelector(
-    '#filtersPanel input[name="min_price"]'
-  );
   if (minPriceInput) {
     minPriceInput.onchange = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    minPriceInput.removeEventListener("change", applyFilters);
     minPriceInput.addEventListener("change", applyFilters);
   }
-  const maxPriceInput = document.querySelector(
-    '#filtersPanel input[name="max_price"]'
-  );
   if (maxPriceInput) {
     maxPriceInput.onchange = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    maxPriceInput.removeEventListener("change", applyFilters);
     maxPriceInput.addEventListener("change", applyFilters);
   }
 
   // Checkboxes (agotados, nuevos)
-  const agotadosCheckbox = document.getElementById("agotados");
   if (agotadosCheckbox) {
     agotadosCheckbox.onchange = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    agotadosCheckbox.removeEventListener("change", applyFilters);
     agotadosCheckbox.addEventListener("change", applyFilters);
   }
-  const nuevosCheckbox = document.getElementById("nuevos");
   if (nuevosCheckbox) {
     nuevosCheckbox.onchange = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    nuevosCheckbox.removeEventListener("change", applyFilters);
     nuevosCheckbox.addEventListener("change", applyFilters);
   }
 
   // Toggle filters button (floating and close)
-  const toggleButtons = document.querySelectorAll(
-    'button[onclick="toggleFilters()"]'
-  );
   toggleButtons.forEach((button) => {
-    button.onclick = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    button.removeEventListener("click", toggleFilters);
     button.addEventListener("click", toggleFilters);
+    productModuleListeners.listeners.push({ element: button, type: 'click', handler: toggleFilters, name: `toggleFilters-${button.id}` });
   });
 
   // Overlay click
-  const overlay = document.getElementById("overlay");
   if (overlay) {
-    overlay.onclick = null; // Remove inline handler
+    // MEJORA: Limpiar listeners anteriores
+    overlay.removeEventListener("click", toggleFilters);
     overlay.addEventListener("click", toggleFilters);
+    productModuleListeners.listeners.push({ element: overlay, type: 'click', handler: toggleFilters, name: 'overlay' });
   }
 
   // Initial call to initCustomSelects for custom selects
   initCustomSelects();
 }
+/**
+ * =====================================================================================
+ * GESTIÓN DEL CICLO DE VIDA DE LA SPA
+ * =====================================================================================
+ */
 
-document.addEventListener("DOMContentLoaded", setupFilterEventListeners);
-document.addEventListener("content-loaded", setupFilterEventListeners);
+const ProductListPageModule = (() => {
+    let isInitialized = false;
+    // MEJORA: Mover el handler aquí para que sea persistente a través de las llamadas a init/destroy
+    let resetFiltersHandler = null;
+
+    function init() {
+        // Guardia de contexto: si no estamos en la página de productos, no hacer nada.
+        if (!document.getElementById('filterForm')) {
+            // console.log("Not on the product list page. Skipping initialization.");
+            return;
+        }
+
+        if (isInitialized) {
+            // console.log("Product list module already initialized. Skipping.");
+            return;
+        }
+        console.log("🚀 Initializing Product List Page Module...");
+
+        // MEJORA: Definir el handler aquí para que la función `destroy` tenga acceso a la misma referencia.
+        resetFiltersHandler = () => {
+            console.log("🖱️ Click detectado en botón 'Limpiar Filtros'. Ejecutando handler...");
+            resetFilters();
+            applyFilters();
+        };
+
+        // Adjuntar listeners para los botones de reseteo
+        const resetPanelButton = document.getElementById("reset-panel-button");
+        if (resetPanelButton) {
+            console.log("   -> Attaching listener to reset-panel-button");
+            resetPanelButton.addEventListener("click", resetFiltersHandler);
+        }
+
+        const resetMainButton = document.getElementById("reset-main-button");
+        if (resetMainButton) {
+            console.log("   -> Attaching listener to reset-main-button");
+            resetMainButton.addEventListener("click", resetFiltersHandler);
+        }
+
+        // Configurar el resto de los event listeners
+        setupFilterEventListeners();
+
+        isInitialized = true;
+    }
+
+    function destroy() {
+        if (!isInitialized) {
+            return;
+        }
+        console.log("🔥 Destroying Product List Page Module...");
+
+        // MEJORA: Limpieza explícita de los listeners de reseteo
+        const resetPanelButton = document.getElementById("reset-panel-button");
+        if (resetPanelButton && resetFiltersHandler) {
+            console.log("   -> Removing listener from reset-panel-button");
+            resetPanelButton.removeEventListener("click", resetFiltersHandler);
+        }
+        const resetMainButton = document.getElementById("reset-main-button");
+        if (resetMainButton && resetFiltersHandler) {
+            console.log("   -> Removing listener from reset-main-button");
+            resetMainButton.removeEventListener("click", resetFiltersHandler);
+        }
+
+        productModuleListeners.listeners.forEach(({ element, type, handler, name }) => {
+            if (element) {
+                // console.log(`   -> Removing listener '${name}' from element.`);
+                element.removeEventListener(type, handler);
+            }
+        });
+        productModuleListeners.listeners = [];
+        isInitialized = false;
+    }
+
+    // Escuchar el evento de la SPA para inicializar el módulo.
+    document.addEventListener('content-loaded', (event) => {
+        // MEJORA PROFESIONAL: Usar requestAnimationFrame para garantizar que el DOM esté listo.
+        // Esto soluciona la condición de carrera donde el script se ejecuta antes de que el HTML esté parseado.
+        requestAnimationFrame(init);
+    });
+
+    // Escuchar el evento para limpiar el módulo antes de que el contenido se vaya.
+    document.addEventListener('content-will-load', destroy);
+
+    // Para la carga inicial de la página (no SPA).
+    document.addEventListener('DOMContentLoaded', init);
+
+})();

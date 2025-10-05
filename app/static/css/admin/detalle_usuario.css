@@ -360,3 +360,45 @@
   border-radius: 9999px; /* rounded-full */
   animation: pulse-dot 1.5s infinite; /* Reutilizamos la animación de pulso */
 }
+
+/* --- MEJORA PROFESIONAL: Estilos para la Modal de Detalles de Pedido --- */
+.z-modal-top {
+  z-index: 1000; /* Asegura que la modal esté por encima de todo, incluido el sidebar */
+}
+
+/* Animación de entrada para la modal */
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-scale-in {
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
+}
+
+/* Aplicar animación al abrir */
+#detalle-pedido-modal.flex {
+  animation: modal-fade-in 0.3s ease-out forwards;
+}
+#detalle-pedido-modal.flex #detalle-pedido-modal-content {
+  animation: modal-scale-in 0.3s ease-out forwards;
+}
+
+/* Estilos para el scrollbar dentro de la modal */
+#modal-pedido-body::-webkit-scrollbar { width: 8px; }
+#modal-pedido-body::-webkit-scrollbar-track { background: #f1f5f9; }
+#modal-pedido-body::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
+#modal-pedido-body::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
+
+/* --- MEJORA PROFESIONAL: Estilos para el badge de estado en la modal --- */
+/* Reutilizamos los estilos de los badges de estado de la tabla de pedidos para consistencia */
+.modal-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 1rem; /* Un poco más de padding para que se vea mejor */
+  border-radius: 9999px;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600; /* font-semibold */
+  text-transform: capitalize;
+  letter-spacing: 0.025em;
+}

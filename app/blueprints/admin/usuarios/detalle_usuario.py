@@ -10,6 +10,7 @@ from app.models.serializers import (
     producto_to_dict,
     resena_to_dict,
     format_currency_cop,
+    pedido_detalle_to_dict,
     subcategoria_to_dict,
 )
 from app.models.enums import EstadoPedido
@@ -277,6 +278,38 @@ def get_usuario_pedidos(admin_user, user_id):
     except Exception as e:
         current_app.logger.error(f"Error al obtener pedidos del usuario {user_id}: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al obtener los pedidos del usuario'}), 500
+
+# --- MEJORA PROFESIONAL: Endpoint para obtener detalles de un pedido específico ---
+@detalle_cliente.route('/api/pedidos/<string:pedido_id>/detalle', methods=['GET'])
+@admin_jwt_required
+def get_pedido_detalle(admin_user, pedido_id):
+    """
+    API: Obtiene los detalles completos de un pedido específico.
+
+    Esta función es crucial para poblar la modal de detalles del pedido.
+    Utiliza `joinedload` para cargar de forma eficiente el pedido, su usuario
+    y todos los productos asociados en una sola consulta, evitando el problema N+1.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        pedido_id (str): El ID del pedido a consultar.
+
+    Returns:
+        JSON: Un objeto con los detalles completos del pedido o un error si no se encuentra.
+    """
+    try:
+        pedido = Pedido.query.options(
+            db.joinedload(Pedido.usuario),
+            db.joinedload(Pedido.productos).joinedload(PedidoProducto.producto)
+        ).get(pedido_id)
+
+        if not pedido:
+            return jsonify({'success': False, 'message': 'Pedido no encontrado'}), 404
+
+        return jsonify({'success': True, 'pedido': pedido_detalle_to_dict(pedido)})
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener detalle del pedido {pedido_id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error al obtener los detalles del pedido'}), 500
 
 # API para obtener productos comprados por un usuario
 @detalle_cliente.route('/api/usuarios/<string:user_id>/productos-comprados', methods=['GET'])

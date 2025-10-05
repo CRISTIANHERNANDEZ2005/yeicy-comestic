@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${pedido.productos_count} productos</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${formatCurrency(pedido.total)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
-                    <button class="text-blue-600 hover:text-blue-800 font-medium flex items-center" onclick="verDetallePedido('${pedido.id}')">
+                    <button class="text-blue-600 hover:text-blue-800 font-medium flex items-center" onclick="abrirModalDetallePedido('${pedido.id}')">
                         <i class="fas fa-eye mr-1"></i>Ver
                     </button>
                 </td>
@@ -430,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     </div>
                     <div class="mt-4 md:mt-0 text-right">
                         <p class="text-2xl font-bold text-gray-800 mb-2">${formatCurrency(pedido.total)}</p>
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg" onclick="verDetallePedido('${pedido.id}')">
+                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-all duration-300 text-sm font-medium shadow-md hover:shadow-lg" onclick="abrirModalDetallePedido('${pedido.id}')">
                             <i class="fas fa-eye mr-2"></i>Ver Detalles
                         </button>
                     </div>
@@ -1301,10 +1301,142 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Función para ver detalle de pedido
-    function verDetallePedido(pedidoId) {
-        window.open(`/admin/pedidos/${pedidoId}`, '_blank');
+    // MEJORA PROFESIONAL: La función `verDetallePedido` se reemplaza por `abrirModalDetallePedido`.
+    // Esto evita abrir una nueva pestaña y muestra los detalles en una modal elegante.
+    window.abrirModalDetallePedido = function(pedidoId) {
+        const modal = document.getElementById('detalle-pedido-modal');
+        const modalContent = document.getElementById('detalle-pedido-modal-content');
+        const modalBody = document.getElementById('modal-pedido-body');
+        const modalTitle = document.getElementById('modal-pedido-title');
+        const modalId = document.getElementById('modal-pedido-id');
+        const skeletonTemplate = document.getElementById('modal-skeleton-template');
+
+        // 1. Mostrar la modal y el esqueleto de carga
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        modalBody.innerHTML = skeletonTemplate.innerHTML;
+        modalTitle.textContent = 'Detalles del Pedido';
+        modalId.textContent = 'Cargando...';
+
+        // Forzar reflow para que las animaciones se apliquen
+        void modal.offsetWidth;
+        modalContent.classList.remove('scale-95', 'opacity-0');
+
+        // 2. Realizar la petición a la nueva API
+        fetch(`/api/pedidos/${pedidoId}/detalle`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderDetallePedidoEnModal(data.pedido);
+                } else {
+                    modalBody.innerHTML = `<div class="text-center text-red-600 p-8">${data.message || 'Error al cargar los detalles del pedido.'}</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener detalles del pedido:', error);
+                modalBody.innerHTML = `<div class="text-center text-red-600 p-8">Error de conexión. Por favor, inténtalo de nuevo.</div>`;
+            });
     }
 
+    // Función para renderizar los detalles del pedido en la modal
+    function renderDetallePedidoEnModal(pedido) {
+        const modalBody = document.getElementById('modal-pedido-body');
+        const modalTitle = document.getElementById('modal-pedido-title');
+        const modalId = document.getElementById('modal-pedido-id');
+
+        modalTitle.textContent = `Detalles del Pedido`;
+        modalId.textContent = `#${pedido.id}`;
+
+        // --- MEJORA PROFESIONAL: Lógica para el badge de estado ---
+        let statusClass = '';
+        let statusIcon = '';
+        let statusText = pedido.estado_pedido.replace('_', ' ');
+
+        switch (pedido.estado_pedido) {
+            case 'completado':
+                statusClass = 'status-completed';
+                statusIcon = 'fa-check-circle';
+                break;
+            case 'en_proceso':
+                statusClass = 'status-pending';
+                statusIcon = 'fa-clock';
+                break;
+            case 'cancelado':
+                statusClass = 'status-cancelled';
+                statusIcon = 'fa-times-circle';
+                break;
+            default:
+                statusClass = 'bg-gray-200 text-gray-800';
+                statusIcon = 'fa-question-circle';
+        }
+
+        let productosHtml = pedido.productos.map(p => `
+            <div class="flex items-center gap-4 p-4 bg-white border border-gray-200 rounded-xl hover:shadow-md hover:border-blue-300 transition-all duration-300">
+                <img src="${p.producto_imagen_url || 'https://via.placeholder.com/80'}" alt="${p.producto_nombre}" class="w-16 h-16 md:w-20 md:h-20 rounded-lg object-cover shadow-sm">
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">${p.producto_nombre}</p>
+                    <p class="text-sm text-gray-500">Marca: ${p.producto_marca}</p>
+                    <p class="text-sm text-gray-500">Cantidad: ${p.cantidad}</p>
+                </div>
+                <div class="text-right">
+                    <p class="font-bold text-gray-800 text-lg">${formatCurrency(p.subtotal)}</p>
+                    <p class="text-xs text-gray-500">${formatCurrency(p.precio_unitario)} c/u</p>
+                </div>
+            </div>
+        `).join('');
+
+        modalBody.innerHTML = `
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <p class="text-sm text-gray-500 font-medium">CLIENTE</p>
+                        <p class="text-xl font-bold text-gray-800">${pedido.usuario.nombre} ${pedido.usuario.apellido}</p>
+                        <p class="text-sm text-gray-600 font-mono">${pedido.usuario.numero}</p>
+                    </div>
+                    <div class="text-left md:text-right">
+                        <p class="text-sm text-gray-500 font-medium">FECHA</p>
+                        <p class="text-lg font-semibold text-gray-800">${formatDate(pedido.created_at)}</p>
+                    </div>
+                    <div class="md:col-span-3 border-t border-gray-200 pt-4 mt-4 flex justify-between items-center">
+                        <div>
+                            <p class="text-sm text-gray-500 font-medium">ESTADO</p>
+                            <div class="modal-status-badge ${statusClass} mt-1">
+                                <i class="fas ${statusIcon} mr-2"></i>
+                                <span>${statusText}</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm text-gray-500 font-medium">TOTAL</p>
+                            <p class="text-3xl font-extrabold text-blue-600">${formatCurrency(pedido.total)}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <h3 class="text-xl font-bold text-gray-800 mb-4">Productos (${pedido.productos_count})</h3>
+            <div class="space-y-4">${productosHtml}</div>
+        `;
+    }
+
+    // Función para cerrar la modal de detalles
+    function cerrarModalDetallePedido() {
+        const modal = document.getElementById('detalle-pedido-modal');
+        const modalContent = document.getElementById('detalle-pedido-modal-content');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
+    }
+
+    // Asignar eventos de cierre a los botones y al fondo
+    document.getElementById('close-detalle-modal').addEventListener('click', cerrarModalDetallePedido);
+    document.getElementById('close-detalle-modal-footer').addEventListener('click', cerrarModalDetallePedido);
+    document.getElementById('detalle-pedido-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'detalle-pedido-modal') {
+            cerrarModalDetallePedido();
+        }
+    });
     // Función para ver detalle de producto
     function verDetalleProducto(productoId) {
         window.open(`/admin/productos/${productoId}`, '_blank');

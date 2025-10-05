@@ -1496,10 +1496,6 @@ window.pedidosApp = {
       if (seguimientoModalContainer) {
         if (isInactive) {
           seguimientoModalContainer.classList.add("inactive-order-controls");
-          seguimientoModalContainer.setAttribute(
-            "title",
-            "Activa el pedido para gestionar su seguimiento."
-          );
         } else {
           seguimientoModalContainer.classList.remove("inactive-order-controls");
           seguimientoModalContainer.removeAttribute("title");

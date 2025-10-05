@@ -128,6 +128,8 @@ if (!window.usuariosApp) {
         this.csrfToken = this.getCsrfToken(); // Obtener el token una sola vez.
         this.startAutoRefresh(); // Iniciar la actualización automática
         this.startHeartbeat(); // Iniciar el "latido" de actividad.
+        // MEJORA: Enviar un latido inicial para asegurar que el estado "En línea" se actualice de inmediato.
+        this.sendHeartbeatNow();
         this.loadInitialData();
         this.isInitialized = true;
       } catch (error) {

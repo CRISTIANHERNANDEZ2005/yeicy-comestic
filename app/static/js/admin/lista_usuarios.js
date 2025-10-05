@@ -1038,9 +1038,8 @@ if (!window.usuariosApp) {
                             <button 
                                 data-action="edit-cliente" 
                                 data-id="${cliente.id}"
-                                data-status="${cliente.estado}"
-                                class="action-btn text-blue-600 hover:text-blue-800 ${cliente.estado === 'inactivo' ? 'action-btn-disabled' : ''}"
-                                title="${cliente.estado === 'inactivo' ? 'Para editar, el cliente debe estar activo.' : 'Editar cliente'}"
+                                class="action-btn text-blue-600 hover:text-blue-800"
+                                title="Editar cliente"
                             >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
@@ -1071,11 +1070,6 @@ if (!window.usuariosApp) {
       const status = actionButton.dataset.status;
 
       //  Mostrar notificación si el usuario está inactivo.
-      if ((action === 'edit-cliente' || action === 'edit-admin') && status === 'inactivo') {
-        const userType = action === 'edit-cliente' ? 'cliente' : 'administrador';
-        window.toast.warning(`Para editar este ${userType}, primero debes cambiar su estado a "Activo".`);
-        return;
-      }
 
       // Si no está inactivo, proceder con la acción normal.
       this.performAction(action, id, actionButton.dataset.type, actionButton.dataset.page);
@@ -1189,9 +1183,8 @@ if (!window.usuariosApp) {
                             <button 
                                 data-action="edit-admin" 
                                 data-id="${admin.id}"
-                                data-status="${admin.estado}"
-                                class="action-btn text-blue-600 hover:text-blue-800 ${admin.estado === 'inactivo' ? 'action-btn-disabled' : ''}"
-                                title="${admin.estado === 'inactivo' ? 'Para editar, el administrador debe estar activo.' : 'Editar administrador'}"
+                                class="action-btn text-blue-600 hover:text-blue-800"
+                                title="Editar administrador"
                             >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>

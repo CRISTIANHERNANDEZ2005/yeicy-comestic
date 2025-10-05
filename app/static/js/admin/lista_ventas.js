@@ -341,6 +341,9 @@ const VentasPageModule = (() => {
     ventas.forEach((venta, index) => {
       const row = document.createElement("tr");
 
+      const isInactive = venta.estado === 'inactivo';
+      row.className = isInactive ? 'inactive-sale-row' : '';
+
       // Añadir animación de aparición escalonada
       row.style.opacity = "0";
       row.style.transform = "translateY(20px)";
@@ -351,7 +354,7 @@ const VentasPageModule = (() => {
       row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <div class="flex-shrink-0 h-10 w-10 ${isInactive ? 'bg-gray-200' : 'bg-blue-100'} rounded-full flex items-center justify-center">
                             <span class="text-blue-800 font-medium">${
                               venta.usuario_nombre
                                 ? venta.usuario_nombre.charAt(0).toUpperCase()
@@ -359,9 +362,9 @@ const VentasPageModule = (() => {
                             }</span>
                         </div>
                         <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">${
+                            <div class="text-sm font-medium text-gray-900 flex items-center">${
                               venta.usuario_nombre || "N/A"
-                            }</div>
+                            } ${isInactive ? '<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>' : ''}</div>
                             <div class="text-sm text-gray-500">${
                               venta.usuario ? venta.usuario.numero : ""
                             }</div>
@@ -687,16 +690,8 @@ const VentasPageModule = (() => {
                                         </div>
                                         <div>
                                             <p class="text-sm text-gray-500">Estado</p>
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                              venta.estado_pedido ===
-                                              "completado"
-                                                ? "bg-green-100 text-green-800"
-                                                : venta.estado_pedido ===
-                                                  "pendiente"
-                                                ? "bg-yellow-100 text-yellow-800"
-                                                : "bg-red-100 text-red-800"
-                                            }">
-                                                ${venta.estado_pedido}
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${venta.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}">
+                                                ${venta.estado === 'activo' ? 'Activo' : 'Inactivo'}
                                             </span>
                                         </div>
                                         <div>

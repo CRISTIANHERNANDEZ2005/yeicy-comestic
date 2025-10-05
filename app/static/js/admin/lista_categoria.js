@@ -393,13 +393,9 @@ window.categoriesApp = {
                                 }" class="action-button view" title="Ver detalles">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                ${category.estado === 'activo' ? `
                                 <button class="action-button edit" title="Editar Categoría" onclick="categoriesApp.editCategory('${category.id}', 'main')">
                                     <i class="fas fa-edit"></i>
-                                </button>` : `
-                                <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la categoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                    <i class="fas fa-edit"></i>
-                                </button>`}
+                                </button>
                             </div>
                         </div>
 
@@ -478,13 +474,9 @@ window.categoriesApp = {
                                            }>
                                     <span class="toggle-slider"></span>
                                 </label>
-                                ${subcategory.estado === 'activo' ? `
                                 <button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
                                     <i class="fas fa-edit"></i>
-                                </button>` : `
-                                <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la subcategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                    <i class="fas fa-edit"></i>
-                                </button>`}
+                                </button>
                             </div>
                         </div>
 
@@ -546,13 +538,9 @@ window.categoriesApp = {
                                        }>
                                 <span class="toggle-slider"></span>
                             </label>
-                            ${pseudocategory.estado === 'activo' ? `
                             <button class="action-button edit" title="Editar Seudocategoría" onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
                                 <i class="fas fa-edit"></i>
-                            </button>` : `
-                            <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la seudocategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                <i class="fas fa-edit"></i>
-                            </button>`}
+                            </button>
                         </div>
                     </div>
                 `;
@@ -787,14 +775,9 @@ window.categoriesApp = {
                                     }" class="action-button view" title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    ${category.estado === 'activo' ? `
                                     <button class="action-button edit" title="Editar Categoría" onclick="categoriesApp.editCategory('${category.id}', 'main')">
                                         <i class="fas fa-edit"></i>
-                                    </button>` : `
-                                    <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la categoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                        <i class="fas fa-edit"></i>
-                                    </button>`
-                                    }
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -862,14 +845,9 @@ window.categoriesApp = {
                             <td>${this.formatDate(subcategory.created_at)}</td>
                             <td>
                                 <div class="flex">
-                                    ${subcategory.estado === 'activo' ?
-                                    `<button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
+                                    <button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
                                         <i class="fas fa-edit"></i>
-                                    </button>` :
-                                    `<button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la subcategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                        <i class="fas fa-edit"></i>
-                                    </button>`
-                                    }
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -937,14 +915,9 @@ window.categoriesApp = {
                             )}</td>
                             <td>
                                 <div class="flex">
-                                    ${pseudocategory.estado === 'activo' ? `
                                     <button class="action-button edit" title="Editar Seudocategoría" onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
                                         <i class="fas fa-edit"></i>
-                                    </button>` : `
-                                    <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la seudocategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                        <i class="fas fa-edit"></i>
-                                    </button>`
-                                    }
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1249,13 +1222,6 @@ window.categoriesApp = {
         this.showNotification("Error de conexión al cargar datos", "error");
         modal.classList.add("hidden");
       });
-  },
-  // Función para mostrar un mensaje cuando se intenta editar una categoría inactiva
-  showInactiveEditMessage: function () {
-    this.showNotification(
-      "Para editar, la categoría debe estar activa.",
-      "warning"
-    );
   },
   //  Función centralizada para limpiar filtros.
   // Esto evita la duplicación de código y hace que el comportamiento sea consistente.

@@ -915,7 +915,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 6 : 7;
+      const colspan = type === "clientes" ? 7 : 7;
 
       tbody.innerHTML = `
                     <tr class="loading-row">
@@ -940,7 +940,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 6 : 7;
+      const colspan = type === "clientes" ? 7 : 7;
 
       tbody.innerHTML = `
                     <tr>
@@ -968,7 +968,7 @@ if (!window.usuariosApp) {
       if (!clientes || clientes.length === 0) {
         tbody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="px-8 py-16 text-center">
+                            <td colspan="7" class="px-8 py-16 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-users text-3xl mb-3"></i>
                                     <p class="text-lg font-medium">No se encontraron clientes</p>
@@ -980,6 +980,15 @@ if (!window.usuariosApp) {
         return;
       }
 
+      // Helper para formatear moneda
+      const formatCurrency = (value) => {
+        return new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
       tbody.innerHTML = clientes
         .map(
           (cliente) => { 
@@ -1020,6 +1029,9 @@ if (!window.usuariosApp) {
                         }</td>
                         <td class="px-8 py-5 whitespace-nowrap date-column">
                             ${new Date(cliente.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 currency-column">
+                          ${formatCurrency(cliente.total_invertido)}
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-status" data-id="${

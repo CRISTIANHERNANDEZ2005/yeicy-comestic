@@ -68,10 +68,17 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
             <!-- MEJORA PROFESIONAL: Indicador de estado dinámico y estilizado -->
             <div class="mt-4 flex items-center justify-center lg:justify-start">
+              {% if usuario.estado == 'inactivo' %}
+              <span class="status-indicator status-inactive-details">
+                <i class="fas fa-ban status-icon"></i>
+                Inactivo
+              </span>
+              {% else %}
               <span class="status-indicator {{ 'status-online' if usuario.is_online else 'status-offline' }}">
                 <i class="fas fa-circle status-icon"></i>
                 {{ 'En línea' if usuario.is_online else 'Desconectado' }}
               </span>
+              {% endif %}
             </div>
           </div>
         </div>
@@ -175,24 +182,6 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
             </div>
           </div>
 
-          <div
-            class="bg-gradient-to-r from-orange-50 to-yellow-50 p-4 rounded-xl border border-orange-100 card-hover"
-          >
-            <div class="flex items-center">
-              <div
-                class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mr-3"
-              >
-                <i class="fas fa-crown text-orange-600"></i>
-              </div>
-              <div>
-                <p class="text-xs text-gray-500 uppercase tracking-wide">
-                  Tipo de Cliente
-                </p>
-                <p class="font-semibold text-gray-800">Cliente VIP</p>
-                <p class="text-sm text-gray-600">Top 5% de clientes</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         <div class="mt-6 pt-6 border-t border-gray-200">
@@ -237,37 +226,33 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
         </div>
 
         <div id="categorias-preferidas-content" class="hidden">
-          <div class="chart-container">
-            <canvas id="categoriasChart"></canvas>
-          </div>
-          <!-- MEJORA PROFESIONAL: Inyectar los datos directamente desde el backend
-               para evitar una llamada AJAX redundante y mejorar el rendimiento de carga. -->
-          <script>
-            // Pasamos los datos de las categorías preferidas desde Jinja2 a una variable JavaScript.
-            // El filtro `|tojson` se encarga de serializar el objeto Python a un JSON válido.
-            const categoriasPreferidasData = {{ categorias_preferidas|tojson }};
-          </script>
-
-          <div class="mt-4 grid grid-cols-1 gap-2">
-            {% for categoria in categorias_preferidas %}
-            <div
-              class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors"
-            >
-              <div class="flex items-center">
-                <div
-                  class="w-4 h-4 rounded mr-2"
-                  style="background-color: {{ categoria.color }}"
-                ></div>
-                <span class="text-sm text-gray-700"
-                  >{{ categoria.nombre }}</span
-                >
-              </div>
-              <span class="text-sm font-semibold text-gray-800"
-                >{{ categoria.porcentaje }}%</span
-              >
+          {% if categorias_preferidas %}
+            <div class="chart-container">
+              <canvas id="categoriasChart"></canvas>
             </div>
-            {% endfor %}
-          </div>
+            <div class="mt-4 grid grid-cols-1 gap-2">
+              {% for categoria in categorias_preferidas %}
+              <div class="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-blue-50 transition-colors">
+                <div class="flex items-center">
+                  <div class="w-4 h-4 rounded mr-2" style="background-color: {{ categoria.color }}"></div>
+                  <span class="text-sm text-gray-700">{{ categoria.nombre }}</span>
+                </div>
+                <span class="text-sm font-semibold text-gray-800">{{ categoria.porcentaje }}%</span>
+              </div>
+              {% endfor %}
+              <!-- MEJORA PROFESIONAL: Inyectar los datos directamente desde el backend
+                   para evitar una llamada AJAX redundante y mejorar el rendimiento de carga. -->
+              <script type="application/json" id="categorias-data">
+                {{ categorias_preferidas|tojson }}
+              </script>
+            </div>
+          {% else %}
+            <div class="no-data-chart-container">
+              <div class="no-data-icon"><i class="fas fa-chart-pie"></i></div>
+              <h3 class="no-data-title">Sin Datos de Preferencias</h3>
+              <p class="no-data-message">Este cliente aún no ha completado compras para analizar sus categorías preferidas.</p>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -828,6 +813,14 @@ usuario.nombre }} {{ usuario.apellido }}{% endblock %} {% block content %}
         id="tendenciaChart"
         class="transition-opacity duration-300 opacity-0"
       ></canvas>
+      <!-- MEJORA PROFESIONAL: Contenedor para el mensaje de "sin datos" -->
+      <div id="tendencia-chart-no-data" class="absolute inset-0 flex items-center justify-center transition-opacity duration-300 opacity-0 hidden">
+        <div class="no-data-chart-container">
+          <div class="no-data-icon"><i class="fas fa-chart-line"></i></div>
+          <h3 class="no-data-title">Sin Tendencia de Compras</h3>
+          <p class="no-data-message">No hay suficientes datos de compras en el período seleccionado para generar una tendencia.</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>

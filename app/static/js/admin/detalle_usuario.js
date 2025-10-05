@@ -313,13 +313,11 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = '';
         
         if (pedidos.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-600">
-                        No se encontraron pedidos con los filtros aplicados.
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="6">${getNoDataHTML({
+                icon: 'fa-history',
+                title: 'Sin Historial de Pedidos',
+                message: 'Este cliente aún no ha realizado ningún pedido que coincida con los filtros aplicados.'
+            })}</td></tr>`;
             return;
         }
         
@@ -379,11 +377,11 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '';
         
         if (pedidos.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-8 text-gray-600">
-                    No se encontraron pedidos con los filtros aplicados.
-                </div>
-            `;
+            container.innerHTML = getNoDataHTML({
+                icon: 'fa-history',
+                title: 'Sin Historial de Pedidos',
+                message: 'Este cliente aún no ha realizado ningún pedido que coincida con los filtros aplicados.'
+            });
             return;
         }
         
@@ -520,13 +518,11 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = '';
         
         if (productos.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-600">
-                        No se encontraron productos con los filtros aplicados.
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="6">${getNoDataHTML({
+                icon: 'fa-shopping-bag',
+                title: 'Sin Productos Comprados',
+                message: 'Este cliente no ha comprado productos que coincidan con los filtros.'
+            })}</td></tr>`;
             return;
         }
         
@@ -568,11 +564,11 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '';
         
         if (productos.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-8 text-gray-600">
-                    No se encontraron productos con los filtros aplicados.
-                </div>
-            `;
+            container.innerHTML = getNoDataHTML({
+                icon: 'fa-shopping-bag',
+                title: 'Sin Productos Comprados',
+                message: 'Este cliente no ha comprado productos que coincidan con los filtros.'
+            });
             return;
         }
         
@@ -693,13 +689,11 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = '';
         
         if (productos.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="px-6 py-4 text-center text-gray-600">
-                        No se encontraron productos con los filtros aplicados.
-                    </td>
-                </tr>
-            `;
+            tbody.innerHTML = `<tr><td colspan="6">${getNoDataHTML({
+                icon: 'fa-star',
+                title: 'Sin Productos Frecuentes',
+                message: 'No hay productos comprados frecuentemente que coincidan con los filtros.'
+            })}</td></tr>`;
             return;
         }
         
@@ -761,11 +755,11 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '';
         
         if (productos.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-8 text-gray-600">
-                    No se encontraron productos con los filtros aplicados.
-                </div>
-            `;
+            container.innerHTML = getNoDataHTML({
+                icon: 'fa-star',
+                title: 'Sin Productos Frecuentes',
+                message: 'No hay productos comprados frecuentemente que coincidan con los filtros.'
+            });
             return;
         }
         
@@ -865,11 +859,11 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = '';
         
         if (reseñas.length === 0) {
-            container.innerHTML = `
-                <div class="col-span-full text-center py-8 text-gray-600">
-                    No se encontraron reseñas con los filtros aplicados.
-                </div>
-            `;
+            container.innerHTML = getNoDataHTML({
+                icon: 'fa-comments',
+                title: 'Sin Reseñas',
+                message: 'Este cliente no ha dejado ninguna reseña que coincida con los filtros.'
+            });
             return;
         }
         
@@ -1076,14 +1070,19 @@ document.addEventListener('DOMContentLoaded', function() {
         if (content) content.classList.remove('hidden');
 
         // MEJORA PROFESIONAL: Los datos ahora se inyectan directamente en el HTML.
-        // Ya no es necesario hacer una petición fetch, lo que mejora el rendimiento.
-        // La variable `categoriasPreferidasData` se define en `detalle_cliente.html`.
-        if (typeof categoriasPreferidasData === 'undefined' || !categoriasPreferidasData) {
-            console.error("Datos de categorías preferidas no encontrados. Asegúrate de que la variable 'categoriasPreferidasData' esté definida en el HTML.");
+        // Verificamos si el canvas del gráfico existe. Si no existe, es porque
+        // Jinja2 renderizó el mensaje de "sin datos" en su lugar.
+        const canvas = document.getElementById('categoriasChart');
+        if (!canvas) {
+            console.log("No se encontró el canvas 'categoriasChart'. Mostrando mensaje de 'sin datos'.");
             return;
         }
 
-        const ctx = document.getElementById('categoriasChart').getContext('2d');
+        // MEJORA: Inyectar los datos directamente desde el backend para evitar una llamada AJAX redundante.
+        // Se crea un script tag en el HTML para pasar los datos.
+        const categoriasPreferidasData = JSON.parse(document.getElementById('categorias-data').textContent);
+
+        const ctx = canvas.getContext('2d');
 
         // MEJORA: Destruir la instancia anterior del gráfico si existe.
         if (categoriasChartInstance) {
@@ -1139,10 +1138,14 @@ document.addEventListener('DOMContentLoaded', function() {
         // MEJORA PROFESIONAL: Gestionar la visibilidad con transiciones de opacidad para un efecto "cross-fade".
         const skeleton = document.getElementById('tendencia-chart-skeleton');
         const canvas = document.getElementById('tendenciaChart');
-
-        // 1. Mostrar el esqueleto y ocultar el gráfico con opacidad.
-        if (skeleton) skeleton.style.opacity = '1';
+        const noDataContainer = document.getElementById('tendencia-chart-no-data');
+        
+        // MEJORA PROFESIONAL: Estado de carga limpio usando opacidad.
+        // Ocultamos el canvas y el mensaje de "sin datos" y mostramos el esqueleto.
         if (canvas) canvas.style.opacity = '0';
+        if (noDataContainer) noDataContainer.style.opacity = '0';
+        if (skeleton) skeleton.style.opacity = '1';
+        
 
         // Pequeña demora para asegurar que la transición de opacidad se aplique antes de la petición.
 
@@ -1157,7 +1160,24 @@ document.addEventListener('DOMContentLoaded', function() {
         fetch(`/api/usuarios/${usuarioId}/tendencia-compras?periodo=${periodo}`)
             .then(response => response.json())
             .then(data => {
+                // MEJORA PROFESIONAL: Ocultar el esqueleto de carga tan pronto como tengamos una respuesta.
+                // Esto asegura que el esqueleto desaparezca tanto en caso de éxito como de error.
+                if (skeleton) skeleton.style.opacity = '0';
+
                 if (data.success) {
+                    // MEJORA PROFESIONAL: Verificar si hay datos para graficar.
+                    // CORRECCIÓN: La condición debe ser si no hay valores o si todos los valores son cero.
+                    const hasData = data.valores && data.valores.some(v => v > 0);
+                    if (!hasData) {
+                        console.log("No hay datos de tendencia para mostrar.");
+                        // Ocultar esqueleto y mostrar el mensaje de "sin datos".
+                        if (noDataContainer) {
+                            noDataContainer.classList.remove('hidden'); // Asegurarse de que no esté oculto por display:none
+                            noDataContainer.style.opacity = '1';
+                        }
+                        return; // Detener la ejecución si no hay datos.
+                    }
+
                     tendenciaChartInstance = new Chart(ctx, {
                         type: 'line',
                         data: {
@@ -1245,15 +1265,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             })
             .catch(error => {
-                console.error('Error en la petición:', error);
-                // En caso de error, ocultar el esqueleto para no dejarlo permanentemente.
+                console.error('Error en la petición de tendencia:', error);
                 if (skeleton) skeleton.style.opacity = '0';
+                if (noDataContainer) {
+                    noDataContainer.classList.remove('hidden');
+                    noDataContainer.style.opacity = '1'; // Mostrar mensaje de error/sin datos
+                }
             })
             .finally(() => {
-                // 2. Una vez que el gráfico está listo (o ha fallado), ocultar el esqueleto y mostrar el canvas.
-                // La transición de opacidad en el CSS se encargará de la animación suave.
-                if (skeleton) skeleton.style.opacity = '0';
-                if (canvas) canvas.style.opacity = '1';
+                // CORRECCIÓN: Mostrar el canvas del gráfico si se ha renderizado y contiene datos.
+                const hasData = tendenciaChartInstance && tendenciaChartInstance.data.datasets[0].data.some(v => v > 0);
+                if (hasData && canvas) canvas.style.opacity = '1';
             });
     }
 
@@ -1287,6 +1309,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function verDetalleProducto(productoId) {
         window.open(`/admin/productos/${productoId}`, '_blank');
     }
+
+    // --- MEJORA PROFESIONAL: Función reutilizable para generar HTML de "sin datos" ---
+    function getNoDataHTML({ icon, title, message }) {
+        return `
+            <div class="no-data-container">
+                <div class="no-data-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <h3 class="no-data-title">${title}</h3>
+                <p class="no-data-message">${message}</p>
+            </div>
+        `;
+    }
+
 
     // --- MEJORA PROFESIONAL: Función unificada para renderizar Skeletons ---
 

@@ -14,10 +14,11 @@ Funcionalidades Clave:
 """
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.models.domains.user_models import Usuarios, Admins
+from app.models.domains.order_models import Pedido
 from app.models.serializers import admin_to_dict
-from app.models.enums import EstadoEnum
+from app.models.enums import EstadoEnum, EstadoPedido
 from app.extensions import db
-from sqlalchemy import or_, case, desc
+from sqlalchemy import or_, case, desc, func
 from app.extensions import bcrypt
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
@@ -91,9 +92,17 @@ def get_usuarios(admin_user):
         status = request.args.get('status', '')
         sort = request.args.get('sort', 'online') #  El orden por defecto ahora es 'online'.
         
+        # MEJORA: Subconsulta para calcular el total invertido por cada usuario.
+        # Esto es más eficiente que un join+groupby en la consulta principal, especialmente con paginación.
+        total_spent_subquery = db.session.query(
+            Pedido.usuario_id,
+            func.sum(Pedido.total).label('total_invertido')
+        ).filter(Pedido.estado_pedido == EstadoPedido.COMPLETADO).group_by(Pedido.usuario_id).subquery()
+
         # Construir consulta base
-        query = Usuarios.query
-        
+        query = db.session.query(Usuarios, func.coalesce(total_spent_subquery.c.total_invertido, 0).label('total_invertido'))\
+            .outerjoin(total_spent_subquery, Usuarios.id == total_spent_subquery.c.usuario_id)
+
         # Aplicar filtro de búsqueda si existe
         if search:
             query = query.filter(
@@ -117,6 +126,10 @@ def get_usuarios(admin_user):
             query = query.order_by(Usuarios.nombre.desc())
         elif sort == 'antiguos':
             query = query.order_by(Usuarios.created_at.asc())
+        elif sort == 'total_invertido_desc':
+            query = query.order_by(desc('total_invertido'))
+        elif sort == 'total_invertido_asc':
+            query = query.order_by('total_invertido')
         elif sort == 'recientes':
             query = query.order_by(desc(Usuarios.created_at))
         elif sort == 'inactive':
@@ -148,10 +161,11 @@ def get_usuarios(admin_user):
         #  Añadir 'is_online' al diccionario del usuario.
         # El serializador base no incluye propiedades, así que lo agregamos aquí.
         usuarios_list = []
-        for usuario in usuarios.items:
+        for usuario, total_invertido in usuarios.items:
             user_dict = usuario_to_dict_lista(usuario)
             user_dict['is_online'] = usuario.is_online
             user_dict['last_seen_display'] = usuario.last_seen_display
+            user_dict['total_invertido'] = float(total_invertido)
             usuarios_list.append(user_dict)
 
         # Preparar respuesta

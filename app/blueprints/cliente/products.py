@@ -168,6 +168,16 @@ def productos_page():
     current_app.logger.info(f"Géneros encontrados en la base de datos (crudo): {generos_obj}")
     current_app.logger.info(f"Lista de géneros procesada para la plantilla: {generos}")
 
+    # MEJORA PROFESIONAL: Obtener funciones para el nuevo filtro.
+    # Se extraen los valores distintos de la clave 'Funcion' del campo JSON 'especificaciones'.
+    funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
+    funciones_obj = db.session.query(funcion_expression).filter(
+        Productos.estado == EstadoEnum.ACTIVO,
+        func.json_extract_path_text(Productos.especificaciones, 'Funcion').isnot(None)
+    ).distinct().order_by(funcion_expression).all()
+    funciones = [f[0] for f in funciones_obj if f[0]]
+    current_app.logger.info(f"Lista de funciones procesada para la plantilla: {funciones}")
+
     # Serializa los objetos para que sean compatibles con JSON y la plantilla.
     categorias_para_filtros = [categoria_principal_to_dict(c) for c in categorias_obj]
     subcategorias_para_filtros = [subcategoria_to_dict(s) for s in subcategorias_obj]
@@ -184,7 +194,8 @@ def productos_page():
         subcategorias=subcategorias_para_filtros,
         seudocategorias=seudocategorias_para_filtros,
         marcas=marcas,
-        generos=generos
+        generos=generos,
+        funciones=funciones  # Añadir funciones al contexto de la plantilla
     )
 
 
@@ -594,6 +605,51 @@ def get_generos_filtrados():
     except Exception as e:
         current_app.logger.error(f"Error en get_generos_filtrados: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
+    
+@products_bp.route('/api/filtros/funciones')
+def get_funciones_filtradas():
+    """
+    API: Devuelve las funciones disponibles según los filtros aplicados.
+
+    Endpoint para la actualización dinámica del filtro de "Función", mostrando solo
+    las opciones relevantes según las selecciones de categoría, marca, etc.
+    """
+    try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/funciones")
+        categoria_principal_nombre = request.args.get('categoria_principal')
+        subcategoria_nombre = request.args.get('subcategoria')
+        seudocategoria_nombre = request.args.get('seudocategoria')
+        marca = request.args.get('marca')
+        genero = request.args.get('genero')
+
+        # Usar json_extract_path_text para ser insensible a mayúsculas en la clave 'Funcion'.
+        funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
+
+        query = db.session.query(funcion_expression).filter(
+            Productos.estado == EstadoEnum.ACTIVO,
+            Productos._existencia > 0,
+            func.json_extract_path_text(Productos.especificaciones, 'Funcion').isnot(None)
+        ).distinct()
+
+        # Unir con otras tablas si hay filtros
+        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero]):
+            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
+
+        if categoria_principal_nombre and categoria_principal_nombre != 'all':
+            query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
+        if subcategoria_nombre and subcategoria_nombre != 'all':
+            query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
+        if seudocategoria_nombre and seudocategoria_nombre != 'all':
+            query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+        if marca and marca != 'all':
+            query = query.filter(func.lower(Productos.marca) == func.lower(marca))
+
+        funciones_obj = query.order_by(funcion_expression).all()
+        funciones = [row[0] for row in funciones_obj if row[0]]
+        return jsonify(funciones)
+    except Exception as e:
+        current_app.logger.error(f"Error en get_funciones_filtradas: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>/<slug_seudocategoria>/<slug_producto>')
 def producto_detalle(slug_categoria_principal, slug_subcategoria, slug_seudocategoria, slug_producto):
@@ -921,6 +977,7 @@ def filter_products():
     pseudocategory_name = request.args.get('pseudocategoria')
     marca = request.args.get('marca')
     genero = request.args.get('genero')
+    funcion = request.args.get('funcion') # Nuevo filtro
     sort_by = request.args.get('ordenar_por', 'featured')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
@@ -953,6 +1010,12 @@ def filter_products():
         # a mayúsculas tanto en la clave ('Genero') como en el valor (ej. 'Mujer', 'mujer').
         genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
         query = query.filter(genero_expression == func.lower(genero))
+
+    # MEJORA PROFESIONAL: Añadir filtro por función.
+    if funcion and funcion != 'all':
+        # Se utiliza `json_extract_path_text` para una comparación robusta.
+        funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
+        query = query.filter(funcion_expression == func.lower(funcion))
 
     if min_price_str:
         try:

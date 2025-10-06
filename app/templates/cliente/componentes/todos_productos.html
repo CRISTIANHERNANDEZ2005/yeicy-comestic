@@ -378,6 +378,31 @@
           {% endfor %}
         </div>
       </div>
+
+      <!-- MEJORA PROFESIONAL: Filtro por Función -->
+      <div>
+        <h4
+          class="filter-toggle font-medium text-gray-800 mb-3 flex items-center justify-between cursor-pointer bg-gray-50 p-3.5 rounded-xl hover:bg-gray-100 transition-colors duration-200 border border-gray-100"
+          data-target="function-filters-content"
+        >
+          <span class="flex items-center">
+            <i class="fas fa-cogs text-pink-600 mr-3 text-sm"></i>
+            <span class="font-semibold">Función</span>
+          </span>
+          <i
+            class="fas fa-chevron-down text-xs text-gray-500 transform transition-transform duration-200"
+          ></i>
+        </h4>
+        <div
+          id="function-filters-content"
+          class="space-y-2 custom-scrollbar max-h-52 overflow-y-auto pr-2 mt-3 pl-1 hidden"
+        >
+          <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+            <input type="radio" name="function" value="all" class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300" checked />
+            <span class="ml-3 text-gray-700 font-medium">Todas las funciones</span>
+          </label>
+        </div>
+      </div>
       
       <!-- Filtro de precio -->
       <div>
@@ -449,7 +474,8 @@
     subcategorias: {{ subcategorias | tojson }},
     seudocategorias: {{ seudocategorias | tojson }},
     marcas: {{ marcas | tojson }},
-    generos: {{ generos | tojson }}
+    generos: {{ generos | tojson }},
+    funciones: {{ funciones | tojson }}
   };
 </script>
 

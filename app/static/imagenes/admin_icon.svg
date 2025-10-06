@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Contorno del edificio/almacén -->
+    <path d="M58 61H6a2 2 0 0 1-2-2V23a2 2 0 0 1 2-2h52a2 2 0 0 1 2 2v36a2 2 0 0 1-2 2z" fill="#1E40AF" stroke="none"/>
+    <path d="M4 23l28-18 28 18" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Gráfico ascendente (símbolo de gestión y crecimiento) -->
+    <path d="M16 50l10-12 10 8 12-16" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+    <circle cx="16" cy="50" r="2.5" fill="white" stroke="none"/>
+    <circle cx="26" cy="38" r="2.5" fill="white" stroke="none"/>
+    <circle cx="36" cy="46" r="2.5" fill="white" stroke="none"/>
+    <circle cx="48" cy="30" r="2.5" fill="white" stroke="none"/>
+</svg>

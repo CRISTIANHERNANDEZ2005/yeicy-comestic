@@ -1200,12 +1200,6 @@ if (!window.usuariosApp) {
                             >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
-                            <span 
-                                class="text-gray-400 ml-4 cursor-default"
-                                title="Ver detalles (Próximamente)"
-                            >
-                                <i class="fas fa-eye text-lg"></i>
-                            </button>
                         </td>
                     </tr>
                 `;

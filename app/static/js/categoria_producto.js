@@ -38,6 +38,7 @@ document.addEventListener("DOMContentLoaded", function () {
     genero: 'all',
     funcion: 'all',
     ingrediente_clave: 'all',
+    resistente_al_agua: 'all',
     ordenar_por: 'newest'
   };
 
@@ -62,6 +63,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const functionFilters = document.getElementById("function-filters-content");
   const ingredientFilterSection = document.getElementById("ingredient-filter-section");
   const ingredientFilters = document.getElementById("ingredient-filters-content");
+  const waterproofFilterSection = document.getElementById("waterproof-filter-section");
+  const waterproofFilters = document.getElementById("waterproof-filters-content");
   const sortSelect = document.getElementById("sort-select");
   const minPriceInput = document.getElementById("min-price");
   const maxPriceInput = document.getElementById("max-price");
@@ -139,6 +142,7 @@ document.addEventListener("DOMContentLoaded", function () {
         currentFilters.genero = filterDrawer.querySelector('input[name="gender"]:checked')?.value || "all";
         currentFilters.funcion = filterDrawer.querySelector('input[name="function"]:checked')?.value || "all";
         currentFilters.ingrediente_clave = filterDrawer.querySelector('input[name="ingredient"]:checked')?.value || "all";
+        currentFilters.resistente_al_agua = filterDrawer.querySelector('input[name="waterproof"]:checked')?.value || "all";
         
         // Aplicar los cambios
         applyFilters();
@@ -242,6 +246,10 @@ document.addEventListener("DOMContentLoaded", function () {
     // Sincronizar ingrediente clave
     const ingredientInput = filterDrawer.querySelector(`input[name="ingredient"][value="${currentFilters.ingrediente_clave}"]`);
     if (ingredientInput) ingredientInput.checked = true;
+
+    // Sincronizar resistente al agua
+    const waterproofInput = filterDrawer.querySelector(`input[name="waterproof"][value="${currentFilters.resistente_al_agua}"]`);
+    if (waterproofInput) waterproofInput.checked = true;
     
     // Sincronizar precios
     minPriceInput.value = currentFilters.min_price || '';
@@ -272,6 +280,11 @@ document.addEventListener("DOMContentLoaded", function () {
       // Poblamos los ingredientes clave
       updateIngredientFilters();
     }
+    if (window.appData.resistente_al_agua && window.appData.resistente_al_agua.length > 0) {
+      waterproofFilterSection.classList.remove('hidden');
+      // Poblamos las opciones de resistencia al agua
+      updateWaterproofFilters();
+    }
   }
 
 
@@ -287,7 +300,8 @@ document.addEventListener("DOMContentLoaded", function () {
         updateBrandFilters(),
         updateGenderFilters(),
         updateFunctionFilters(),
-        updateIngredientFilters()
+        updateIngredientFilters(),
+        updateWaterproofFilters()
       ]);
       updateAppliedFiltersTags();
     } catch (error) {
@@ -306,6 +320,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
       if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
       
       const response = await fetch(`/api/filtros/subcategorias?${params.toString()}`);
@@ -419,6 +434,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       
       const response = await fetch(`/api/filtros/seudocategorias?${params.toString()}`);
@@ -532,6 +548,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
       if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
       
       const response = await fetch(`/api/filtros/marcas?${params.toString()}`);
@@ -646,6 +663,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
 
       const response = await fetch(`/api/filtros/generos?${params.toString()}`);
       if (!response.ok) throw new Error(`Error ${response.status}`);
@@ -698,6 +716,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
 
       const response = await fetch(`/api/filtros/funciones?${params.toString()}`);
       if (!response.ok) throw new Error(`Error ${response.status}`);
@@ -750,6 +769,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
 
       const response = await fetch(`/api/filtros/ingredientes_clave?${params.toString()}`);
       if (!response.ok) throw new Error(`Error ${response.status}`);
@@ -789,6 +809,59 @@ document.addEventListener("DOMContentLoaded", function () {
     } catch (error) {
       console.error('Error al actualizar ingredientes clave:', error);
       ingredientFilterSection.classList.add('hidden');
+    }
+  }
+
+  // Función para actualizar las opciones de resistente al agua
+  async function updateWaterproofFilters() {
+    try {
+      const params = new URLSearchParams();
+      if (currentFilters.categoria_principal) params.append('categoria_principal', currentFilters.categoria_principal);
+      if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') params.append('subcategoria', currentFilters.subcategoria);
+      if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
+      if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
+      if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
+      if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
+      if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+
+      const response = await fetch(`/api/filtros/resistente_al_agua?${params.toString()}`);
+      if (!response.ok) throw new Error(`Error ${response.status}`);
+
+      const opciones = await response.json();
+
+      if (opciones.length > 0) {
+        waterproofFilterSection.classList.remove('hidden');
+      } else {
+        waterproofFilterSection.classList.add('hidden');
+      }
+
+      waterproofFilters.innerHTML = `
+        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+          <input type="radio" name="waterproof" value="all" class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300" ${currentFilters.resistente_al_agua === 'all' ? 'checked' : ''}>
+          <span class="ml-3 text-gray-700 font-medium">Todos</span>
+        </label>
+      `;
+
+      opciones.forEach((opcion) => {
+        const waterproofHtml = `
+          <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+            <input type="radio" name="waterproof" value="${opcion}" class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300" ${currentFilters.resistente_al_agua === opcion ? 'checked' : ''}>
+            <span class="ml-3 text-gray-700">${opcion.charAt(0).toUpperCase() + opcion.slice(1)}</span>
+          </label>
+        `;
+        waterproofFilters.insertAdjacentHTML("beforeend", waterproofHtml);
+      });
+
+      waterproofFilters.querySelectorAll('input[name="waterproof"]').forEach(input => {
+        input.addEventListener('change', (e) => {
+          currentFilters.resistente_al_agua = e.target.value;
+          applyFilters();
+        });
+      });
+
+    } catch (error) {
+      console.error('Error al actualizar opciones de resistente al agua:', error);
+      waterproofFilterSection.classList.add('hidden');
     }
   }
 
@@ -846,6 +919,10 @@ document.addEventListener("DOMContentLoaded", function () {
       tags.push(createFilterTag('ingrediente_clave', currentFilters.ingrediente_clave, `Ingrediente: ${currentFilters.ingrediente_clave}`));
     }
 
+    if (currentFilters.resistente_al_agua !== 'all') {
+      tags.push(createFilterTag('resistente_al_agua', currentFilters.resistente_al_agua, `Resistente al agua: ${currentFilters.resistente_al_agua}`));
+    }
+
     if (currentFilters.min_price !== '') {
       tags.push(createFilterTag('min_price', currentFilters.min_price, `Min: $${currentFilters.min_price}`));
     }
@@ -888,6 +965,9 @@ document.addEventListener("DOMContentLoaded", function () {
       case 'ingrediente_clave':
         currentFilters.ingrediente_clave = 'all';
         break;
+      case 'resistente_al_agua':
+        currentFilters.resistente_al_agua = 'all';
+        break;
       case 'min_price':
         currentFilters.min_price = '';
         minPriceInput.value = '';
@@ -927,6 +1007,7 @@ document.addEventListener("DOMContentLoaded", function () {
       genero: 'all',
       funcion: 'all',
       ingrediente_clave: 'all',
+      resistente_al_agua: 'all',
       ordenar_por: 'newest'
     };
     

@@ -119,16 +119,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (minPriceInput) {
-      minPriceInput.addEventListener("input", () => {
+      minPriceInput.addEventListener("change", () => {
         updatePriceLabels();
-        debounceFilterProducts();
+        applyFilters();
       });
     }
     
     if (maxPriceInput) {
-      maxPriceInput.addEventListener("input", () => {
+      maxPriceInput.addEventListener("change", () => {
         updatePriceLabels();
-        debounceFilterProducts();
+        applyFilters();
       });
     }
 
@@ -1138,14 +1138,5 @@ document.addEventListener("DOMContentLoaded", function () {
     renderProducts(allProducts.slice(0, productsPerPage), true);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
-
-  let debounceTimeout;
-  function debounceFilterProducts() {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
-      applyFilters();
-    }, 500);
-  }
-
   init();
 });

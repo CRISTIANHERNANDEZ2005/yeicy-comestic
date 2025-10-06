@@ -487,13 +487,52 @@ def productos_por_seudocategoria(slug_categoria_principal, slug_subcategoria, sl
     ).distinct().order_by(Productos.marca).all()
     marcas = [marca[0] for marca in marcas_obj]
 
+    # --- MEJORA PROFESIONAL: Carga proactiva de todos los filtros de especificaciones ---
+    # Se obtienen todos los valores únicos para los filtros de especificaciones
+    # directamente en la carga de la página para esta seudocategoría.
+    # Esto evita múltiples llamadas AJAX al inicio y mejora el rendimiento percibido.
+    
+    # Expresiones para extraer los valores de forma insensible a mayúsculas.
+    genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
+    color_expression = func.lower(func.coalesce(func.json_extract_path_text(Productos.especificaciones, 'Color'), func.json_extract_path_text(Productos.especificaciones, 'Tono')))
+    tono_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Tono'))
+    funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
+    ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
+    resistente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Resistente al agua'))
+
+    # Base de la consulta para los filtros
+    base_filter_query = db.session.query(Productos).filter(
+        Productos.seudocategoria_id == seudocategoria.id,
+        Productos.estado == EstadoEnum.ACTIVO
+    )
+
+    # Función auxiliar para obtener valores distintos
+    def get_distinct_spec_values(expression):
+        query = base_filter_query.with_entities(expression).filter(expression.isnot(None)).distinct().order_by(expression)
+        return [val[0] for val in query.all() if val[0]]
+
+    # Obtener todos los filtros
+    generos = get_distinct_spec_values(genero_expression)
+    colores = get_distinct_spec_values(color_expression)
+    tonos = get_distinct_spec_values(tono_expression)
+    funciones = get_distinct_spec_values(funcion_expression)
+    ingredientes_clave = get_distinct_spec_values(ingrediente_expression)
+    resistente_al_agua = get_distinct_spec_values(resistente_expression)
+
     return render_template(
         'cliente/componentes/seudocategoria_producto.html',
         categoria_principal=categoria_principal_to_dict(categoria_principal),
         subcategoria_actual=subcategoria_to_dict(subcategoria),
         seudocategoria_actual=seudocategoria_to_dict(seudocategoria),
         marcas=marcas,
-        title=f"{seudocategoria.nombre} - YE & Ci Cosméticos"
+        # Inyectar los filtros de especificaciones en la plantilla
+        generos=generos,
+        colores=colores,
+        tonos=tonos,
+        funciones=funciones,
+        ingredientes_clave=ingredientes_clave,
+        resistente_al_agua=resistente_al_agua,
+        title=f"{seudocategoria.nombre} - YE & Ci Cosméticos",
     )
     
 @products_bp.route('/api/filtros/categorias')

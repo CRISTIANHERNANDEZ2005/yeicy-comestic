@@ -160,16 +160,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Event listeners para los inputs de precio
     if (minPriceInput) {
-      minPriceInput.addEventListener("input", () => {
+      minPriceInput.addEventListener("change", () => {
         updatePriceLabels();
-        debounceFilterProducts();
+        applyFilters();
       });
     }
     
     if (maxPriceInput) {
-      maxPriceInput.addEventListener("input", () => {
+      maxPriceInput.addEventListener("change", () => {
         updatePriceLabels();
-        debounceFilterProducts();
+        applyFilters();
       });
     }
 
@@ -1243,15 +1243,6 @@ document.addEventListener("DOMContentLoaded", function () {
   function showLessProducts() {
     renderProducts(allProducts.slice(0, productsPerPage), true);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  // Función para debounce
-  let debounceTimeout;
-  function debounceFilterProducts() {
-    clearTimeout(debounceTimeout);
-    debounceTimeout = setTimeout(() => {
-      applyFilters();
-    }, 500);
   }
 
   // Iniciar la aplicación

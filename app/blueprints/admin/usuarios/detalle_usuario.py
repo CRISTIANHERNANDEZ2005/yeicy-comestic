@@ -340,7 +340,8 @@ def get_usuario_productos_comprados(admin_user, user_id):
         subquery = db.session.query(
             PedidoProducto.producto_id,
             func.count(PedidoProducto.producto_id).label('veces_comprado'),
-            func.sum(PedidoProducto.cantidad).label('total_cantidad'),
+            # MEJORA PROFESIONAL: Añadir la suma de la cantidad total de unidades compradas.
+            func.sum(PedidoProducto.cantidad).label('unidades_totales'),
             func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_gastado'),
             func.max(Pedido.created_at).label('ultima_compra')
         ).join(
@@ -356,7 +357,7 @@ def get_usuario_productos_comprados(admin_user, user_id):
         query = db.session.query(
             Productos,
             subquery.c.veces_comprado,
-            subquery.c.total_cantidad,
+            subquery.c.unidades_totales,
             subquery.c.total_gastado,
             subquery.c.ultima_compra
         ).join(
@@ -400,7 +401,7 @@ def get_usuario_productos_comprados(admin_user, user_id):
         
         # Preparar respuesta
         productos_list = []
-        for producto, veces_comprado, total_cantidad, total_gastado, ultima_compra in productos.items:
+        for producto, veces_comprado, unidades_totales, total_gastado, ultima_compra in productos.items:
             # Obtener nombre de la categoría
             categoria_nombre = "Otras"
             if producto.seudocategoria and producto.seudocategoria.subcategoria:
@@ -412,10 +413,10 @@ def get_usuario_productos_comprados(admin_user, user_id):
                 'descripcion': producto.descripcion,
                 'imagen_url': producto.imagen_url,
                 'marca': producto.marca, # CORRECCIÓN: Añadir la marca del producto a la respuesta.
-                'sku': producto.sku if hasattr(producto, 'sku') else None,
                 'categoria': categoria_nombre,
                 'veces_comprado': veces_comprado,
-                'total_cantidad': total_cantidad,
+                # MEJORA PROFESIONAL: Devolver el nuevo campo de unidades totales.
+                'unidades_totales': int(unidades_totales) if unidades_totales else 0,
                 'total_gastado': total_gastado,
                 'ultima_compra': ultima_compra.isoformat() if ultima_compra else None,
                 'precio': producto.precio
@@ -475,6 +476,8 @@ def get_usuario_productos_frecuentes(admin_user, user_id):
             Pedido.estado_pedido == EstadoPedido.COMPLETADO
         ).group_by(
             PedidoProducto.producto_id
+        ).having(
+            func.count(PedidoProducto.producto_id) > 2
         ).subquery()
         
         # Construir consulta principal
@@ -788,3 +791,96 @@ def get_usuario_tendencia_compras(admin_user, user_id):
     except Exception as e:
         current_app.logger.error(f"Error al obtener tendencia de compras del usuario {user_id}: {str(e)}")
         return jsonify({'success': False, 'message': 'Error al obtener la tendencia de compras del usuario'}), 500
+
+# --- MEJORA PROFESIONAL: Endpoint para la modal de detalles de producto ---
+@detalle_cliente.route('/api/productos/<string:producto_id>/detalle-cliente/<string:user_id>', methods=['GET'])
+@admin_jwt_required
+def get_producto_detalle_para_cliente(admin_user, producto_id, user_id):
+    """
+    API: Obtiene los detalles de un producto y las estadísticas de compra
+    específicas para un cliente.
+
+    Esta función es el backend para la modal de detalles de producto en la
+    página de detalles del cliente. Combina información general del producto
+    con datos de interacción específicos del cliente.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        producto_id (str): El ID del producto a consultar.
+        user_id (str): El ID del cliente para el cual se calculan las estadísticas.
+
+    Returns:
+        JSON: Un objeto con los detalles completos del producto y las estadísticas
+              del cliente, o un error si no se encuentra.
+    """
+    try:
+        # 1. Obtener los detalles generales del producto
+        # MEJORA: Carga anticipada (eager loading) de las relaciones para evitar el problema N+1.
+        # Se cargan las reseñas y la jerarquía de categorías en una sola consulta.
+        producto = Productos.query.options(
+            db.joinedload(Productos.reseñas),
+            db.joinedload(Productos.seudocategoria).joinedload(Seudocategorias.subcategoria)
+        ).get(producto_id)
+        if not producto:
+            return jsonify({'success': False, 'message': 'Producto no encontrado'}), 404
+ 
+        # 2. Calcular estadísticas específicas del cliente para este producto
+        stats_cliente = db.session.query(
+            func.count(Pedido.id).label('veces_comprado'),
+            func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_gastado'),
+            func.max(Pedido.created_at).label('ultima_compra')
+        ).join(
+            PedidoProducto, Pedido.id == PedidoProducto.pedido_id
+        ).filter(
+            Pedido.usuario_id == user_id,
+            PedidoProducto.producto_id == producto_id,
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO
+        ).first()
+ 
+        # 3. MEJORA PROFESIONAL: Obtener el historial detallado de compras para este producto.
+        # Esta consulta recupera cada pedido individual donde el cliente compró el producto,
+        # junto con la cantidad específica en esa orden.
+        historial_compras = db.session.query(
+            Pedido.created_at,
+            PedidoProducto.cantidad
+        ).join(
+            PedidoProducto, Pedido.id == PedidoProducto.pedido_id
+        ).filter(
+            Pedido.usuario_id == user_id,
+            PedidoProducto.producto_id == producto_id,
+            Pedido.estado_pedido == EstadoPedido.COMPLETADO
+        ).order_by(
+            desc(Pedido.created_at)
+        ).all()
+
+        # 3. Preparar la respuesta JSON
+        producto_data = {
+            'id': producto.id,
+            'nombre': producto.nombre,
+            'descripcion': producto.descripcion,
+            'precio': producto.precio,
+            'costo': producto.costo,
+            'existencia': producto.existencia,
+            'imagen_url': producto.imagen_url,
+            'marca': producto.marca,
+            'slug': producto.slug,
+            'categoria': producto.seudocategoria.subcategoria.nombre if producto.seudocategoria and producto.seudocategoria.subcategoria else 'N/A',
+            'calificacion_promedio': float(producto.calificacion_promedio_almacenada or 0),
+            # CORRECCIÓN: Usar len() en la lista de reseñas ya cargada en lugar de .count()
+            'reviews_count': len(producto.reseñas),
+            'stats_cliente': {
+                'veces_comprado': stats_cliente.veces_comprado or 0,
+                'total_gastado': float(stats_cliente.total_gastado or 0),
+                'ultima_compra': stats_cliente.ultima_compra.isoformat() if stats_cliente.ultima_compra else None
+            },
+            'historial_compras': [
+                {'fecha': item.created_at.isoformat(), 'cantidad': item.cantidad}
+                for item in historial_compras
+            ]
+        }
+
+        return jsonify({'success': True, 'producto': producto_data}) 
+
+    except Exception as e:
+        current_app.logger.error(f"Error al obtener detalle de producto {producto_id} para cliente {user_id}: {str(e)}")
+        return jsonify({'success': False, 'message': 'Error interno al obtener los detalles del producto'}), 500

@@ -546,9 +546,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${producto.veces_comprado} veces</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(producto.ultima_compra)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-600">${formatCurrency(producto.total_gastado)}</td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm text-center font-medium text-gray-800">
+                    <!-- MEJORA: Mostrar la cantidad total de unidades compradas -->
+                    ${producto.unidades_totales}
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <button class="text-blue-600 hover:text-blue-800 font-medium flex items-center" onclick="verDetalleProducto('${producto.id}')">
-                        <i class="fas fa-eye mr-1"></i>Ver
+                        <i class="fas fa-eye mr-1"></i>Ver Detalles
                     </button>
                 </td>
             `;
@@ -592,6 +596,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             <p class="font-semibold text-gray-800">${producto.veces_comprado} veces</p>
                         </div>
                         <div>
+                            <p class="text-xs text-gray-500">Unidades Totales</p>
+                            <p class="font-semibold text-gray-800">${producto.unidades_totales} uds.</p>
+                        </div>
+                        <div>
                             <p class="text-xs text-gray-500">Última compra</p>
                             <p class="font-semibold text-gray-800">${formatDate(producto.ultima_compra)}</p>
                         </div>
@@ -603,7 +611,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="bg-gray-50 px-5 py-3 border-t border-gray-200">
                     <button class="w-full text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center text-sm" onclick="verDetalleProducto('${producto.id}')">
-                        <i class="fas fa-eye mr-2"></i>Ver Detalles del Producto
+                        <i class="fas fa-search-plus mr-2"></i>Ver Detalles del Producto
                     </button>
                 </div>
             `;
@@ -740,7 +748,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDate(producto.ultima_compra)}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm">
                     <button class="text-blue-600 hover:text-blue-800 font-medium flex items-center" onclick="verDetalleProducto('${producto.id}')">
-                        <i class="fas fa-eye mr-1"></i>Ver
+                        <i class="fas fa-eye mr-1"></i>Ver Detalles
                     </button>
                 </td>
             `;
@@ -777,29 +785,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const card = document.createElement('div');
-            card.className = 'flex items-center p-4 border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-yellow-300 group card-hover bg-gradient-to-r from-white to-yellow-50 fade-in';
+            card.className = 'border border-gray-200 rounded-xl hover:shadow-lg transition-all duration-300 hover:border-yellow-300 group card-hover bg-gradient-to-r from-white to-yellow-50 fade-in overflow-hidden flex flex-col';
             
             card.innerHTML = `
-                <img src="${producto.imagen_url || 'https://via.placeholder.com/80x80'}" alt="Producto" class="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md">
-                <div class="ml-4 flex-1">
-                    <h3 class="font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors">${producto.nombre}</h3>
-                    <p class="text-sm text-gray-600 mb-1">Comprado ${producto.veces_comprado} veces</p>
-                    <p class="text-lg font-bold text-green-600">${formatCurrency(producto.precio)}</p>
-                    <div class="flex items-center mt-1">
-                        <div class="flex text-yellow-400 text-sm mr-2">
-                            ${starsHtml}
+                <div class="p-4 flex-grow flex items-start">
+                    <img src="${producto.imagen_url || 'https://via.placeholder.com/80x80'}" alt="Producto" class="w-20 h-20 object-cover rounded-lg group-hover:scale-105 transition-transform duration-300 shadow-md">
+                    <div class="ml-4 flex-1">
+                        <h3 class="font-semibold text-gray-800 group-hover:text-yellow-600 transition-colors">${producto.nombre}</h3>
+                        <p class="text-sm text-gray-600 mb-1">Comprado ${producto.veces_comprado} veces</p>
+                        <div class="flex items-center mt-1">
+                            <div class="flex text-yellow-400 text-sm mr-2">${starsHtml}</div>
+                            <span class="text-xs text-gray-500">(${producto.calificacion_promedio})</span>
                         </div>
-                        <span class="text-xs text-gray-500">(${producto.calificacion_promedio})</span>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-4">
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block">Más vendido</span>
+                        <div class="text-xs text-gray-500"><p>Última compra:</p><p>${formatDate(producto.ultima_compra)}</p></div>
                     </div>
                 </div>
-                <div class="text-right">
-                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-2 inline-block">
-                        Más vendido
-                    </span>
-                    <div class="text-xs text-gray-500">
-                        <p>Última compra:</p>
-                        <p>${formatDate(producto.ultima_compra)}</p>
-                    </div>
+                <div class="bg-gray-50 px-5 py-3 border-t border-gray-200 mt-auto">
+                    <button class="w-full text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center text-sm" onclick="verDetalleProducto('${producto.id}')">
+                        <i class="fas fa-search-plus mr-2"></i>Ver Detalles
+                    </button>
                 </div>
             `;
             
@@ -1524,8 +1531,129 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     // Función para ver detalle de producto
-    function verDetalleProducto(productoId) {
-        window.open(`/admin/productos/${productoId}`, '_blank');
+    // MEJORA PROFESIONAL: La función `verDetalleProducto` se reemplaza por `abrirModalDetalleProducto`.
+    // Esto evita abrir una nueva pestaña y muestra los detalles en una modal elegante.
+    window.verDetalleProducto = function(productoId) {
+        const modal = document.getElementById('detalle-producto-modal');
+        const modalContent = document.getElementById('detalle-producto-modal-content');
+        const modalBody = document.getElementById('modal-producto-body');
+        const modalTitle = document.getElementById('modal-producto-title');
+        const skeletonTemplate = document.getElementById('modal-producto-skeleton-template');
+
+
+        // 1. Mostrar la modal y el esqueleto de carga
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.style.overflow = 'hidden';
+        modalBody.innerHTML = skeletonTemplate.innerHTML;
+        modalTitle.textContent = 'Detalles del Producto';
+
+        // Forzar reflow para que las animaciones se apliquen
+        void modal.offsetWidth;
+        modalContent.classList.remove('scale-95', 'opacity-0');
+
+
+        // 2. Realizar la petición a la nueva API (asumiendo que existe)
+        // Pasamos el usuarioId para obtener estadísticas específicas de este cliente.
+        fetch(`/api/productos/${productoId}/detalle-cliente/${usuarioId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    renderDetalleProductoEnModal(data.producto);
+                } else {
+                    modalBody.innerHTML = `<div class="text-center text-red-600 p-8">${data.message || 'Error al cargar los detalles del producto.'}</div>`;
+                }
+            })
+            .catch(error => {
+                console.error('Error al obtener detalles del producto:', error);
+                modalBody.innerHTML = `<div class="text-center text-red-600 p-8">Error de conexión. Por favor, inténtalo de nuevo.</div>`;
+            });
+    }
+
+    // Función para renderizar los detalles del producto en la modal
+    function renderDetalleProductoEnModal(producto) {
+        const modalBody = document.getElementById('modal-producto-body');
+        const modalTitle = document.getElementById('modal-producto-title');
+        // CORRECCIÓN: El ID ahora existe en el HTML, por lo que modalLink no será null.
+        const modalLink = document.getElementById('modal-producto-link');
+
+        // MEJORA: Convertir el título en un enlace también para una mejor UX.
+        modalTitle.innerHTML = `<a href="/admin/producto/${producto.slug}" class="hover:underline hover:text-blue-600 transition-colors" target="_blank">${producto.nombre}</a>`;
+        
+        // Asignar el href al botón del pie de página.
+        modalLink.href = `/admin/producto/${producto.slug}`; 
+        modalLink.target = "_blank"; // Abrir en una nueva pestaña para no interrumpir el flujo.
+
+        // Generar estrellas de calificación
+        let starsHtml = '';
+        for (let i = 1; i <= 5; i++) {
+            if (i <= Math.floor(producto.calificacion_promedio)) {
+                starsHtml += '<i class="fas fa-star text-yellow-400"></i>';
+            } else if (i - 0.5 <= producto.calificacion_promedio) {
+                starsHtml += '<i class="fas fa-star-half-alt text-yellow-400"></i>';
+            } else {
+                starsHtml += '<i class="far fa-star text-yellow-400"></i>';
+            }
+        }
+
+        // --- MEJORA PROFESIONAL: Generar el HTML para el historial de compras ---
+        let historialHtml = '';
+        if (producto.historial_compras && producto.historial_compras.length > 0) {
+            historialHtml = `
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h4 class="text-lg font-bold text-gray-700 mb-4">Historial de Compras de este Producto</h4>
+                    <div class="space-y-3 max-h-48 overflow-y-auto pr-2">
+                        ${producto.historial_compras.map(compra => `
+                            <div class="flex justify-between items-center p-3 bg-gray-100 rounded-lg hover:bg-blue-50 transition-colors">
+                                <span class="text-sm text-gray-600"><i class="fas fa-calendar-alt mr-2 text-gray-400"></i>${formatDate(compra.fecha)}</span>
+                                <span class="text-sm font-semibold text-blue-700 bg-blue-100 px-2 py-1 rounded">Cantidad: ${compra.cantidad}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        modalBody.innerHTML = `
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Columna de Imagen y Stats -->
+                <div class="lg:col-span-1 space-y-6">
+                    <img src="${producto.imagen_url || 'https://via.placeholder.com/400'}" alt="${producto.nombre}" class="w-full h-auto object-cover rounded-2xl shadow-lg border-4 border-white">
+                    <div class="bg-white rounded-xl shadow-md p-4 border border-gray-200">
+                        <h4 class="font-bold text-gray-700 mb-3">Estadísticas (Este Cliente)</h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between items-center"><span class="text-gray-500">Veces Comprado:</span><span class="font-semibold text-blue-600">${producto.stats_cliente.veces_comprado} veces</span></div>
+                            <div class="flex justify-between items-center"><span class="text-gray-500">Total Gastado:</span><span class="font-semibold text-green-600">${formatCurrency(producto.stats_cliente.total_gastado)}</span></div>
+                            <div class="flex justify-between items-center"><span class="text-gray-500">Última Compra:</span><span class="font-semibold text-gray-800">${formatDate(producto.stats_cliente.ultima_compra)}</span></div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Columna de Detalles -->
+                <div class="lg:col-span-2">
+                    <div class="flex items-center mb-2"><span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-semibold">${producto.categoria || 'N/A'}</span><span class="ml-3 text-sm text-gray-500">Marca: ${producto.marca || 'N/A'}</span></div>
+                    <p class="text-3xl font-bold text-gray-800 mb-2">${formatCurrency(producto.precio)}</p>
+                    <div class="flex items-center mb-4"><div class="flex text-lg mr-2">${starsHtml}</div><span class="text-gray-600 text-sm">(${producto.calificacion_promedio.toFixed(1)} de ${producto.reviews_count} reseñas)</span></div>
+                    <div class="prose max-w-none text-gray-600">${producto.descripcion || 'Sin descripción.'}</div>
+                    <div class="mt-6 pt-6 border-t border-gray-200 grid grid-cols-2 gap-4">
+                        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100"><p class="text-xs text-gray-500">Stock Actual</p><p class="text-2xl font-bold text-gray-800">${producto.existencia}</p></div>
+                        <div class="bg-white rounded-lg p-4 shadow-sm border border-gray-100"><p class="text-xs text-gray-500">Costo</p><p class="text-2xl font-bold text-gray-800">${formatCurrency(producto.costo)}</p></div>
+                    </div>
+                    <!-- Inyectar el historial de compras aquí -->
+                    ${historialHtml}
+                </div>
+            </div>
+        `;
+    }
+
+    // Función para cerrar la modal de detalles de producto
+    function cerrarModalDetalleProducto() {
+        const modal = document.getElementById('detalle-producto-modal');
+        const modalContent = document.getElementById('detalle-producto-modal-content');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }, 300);
     }
 
     // --- MEJORA PROFESIONAL: Función reutilizable para generar HTML de "sin datos" ---
@@ -1540,6 +1668,15 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
     }
+
+    // Asignar eventos de cierre a los botones y al fondo de la modal de producto
+    document.getElementById('close-producto-modal').addEventListener('click', cerrarModalDetalleProducto);
+    document.getElementById('close-producto-modal-footer').addEventListener('click', cerrarModalDetalleProducto);
+    document.getElementById('detalle-producto-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'detalle-producto-modal') {
+            cerrarModalDetalleProducto();
+        }
+    });
 
 
     // --- MEJORA PROFESIONAL: Función unificada para renderizar Skeletons ---

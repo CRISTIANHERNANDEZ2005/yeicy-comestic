@@ -474,6 +474,13 @@
   box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.1);
 }
 
+/* Estilos para la descripción del producto en la modal */
+.prose {
+  line-height: 1.6;
+}
+.prose p { margin-bottom: 1em; }
+.prose ul, .prose ol { margin-left: 1.5em; margin-bottom: 1em; }
+
 /* --- MEJORA PROFESIONAL: Rediseño del Timeline de Seguimiento en la Modal --- */
 .modal-timeline-container {
   position: relative;

@@ -723,12 +723,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       
       if (minPriceInput) {
-        minPriceInput.value = data.min_price || 0;
+        // MEJORA: No establecer el valor, sino el placeholder para evitar el filtrado automático.
+        minPriceInput.placeholder = data.min_price ? `Mín. ${data.min_price}` : 'Mín. 0';
       }
       if (maxPriceInput) {
-        maxPriceInput.value = data.max_price || 1000;
+        // MEJORA: No establecer el valor, sino el placeholder.
+        maxPriceInput.placeholder = data.max_price ? `Máx. ${data.max_price}` : 'Máx. 1000';
       }
-      updatePriceLabels();
     } catch (error) {
       console.error('Error al cargar el rango de precios:', error);
     }

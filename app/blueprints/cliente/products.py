@@ -13,7 +13,7 @@ Sus responsabilidades incluyen:
   con fines de análisis y mejora.
 """
 # --- Importaciones de Flask y Librerías Estándar ---
-from flask import Blueprint, render_template, request, jsonify, session
+from flask import Blueprint, render_template, request, jsonify, session, current_app
 from app.models.domains.product_models import Productos, CategoriasPrincipales, Subcategorias, Seudocategorias
 from app.models.domains.review_models import Reseñas, Likes
 from app.models.domains.search_models import BusquedaTermino
@@ -151,6 +151,23 @@ def productos_page():
     ).distinct().order_by(Productos.marca).all()
     marcas = [marca[0] for marca in marcas_obj]
 
+    # Obtener géneros para el nuevo filtro.
+    # Se extraen los valores distintos de la clave 'genero' del campo JSON 'especificaciones'.
+    # MEJORA: Se usa `isnot(None)` en lugar del obsoleto `has_key`.
+    # MEJORA PROFESIONAL: Se utiliza `json_extract_path_text` para hacer la búsqueda de la clave
+    # insensible a mayúsculas/minúsculas, lo que funciona de manera más fiable en PostgreSQL
+    # para claves JSON que pueden variar ('Genero', 'genero', etc.).
+    genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
+    generos_obj = db.session.query(genero_expression).filter(
+        Productos.estado == EstadoEnum.ACTIVO,
+        func.json_extract_path_text(Productos.especificaciones, 'Genero').isnot(None)
+    ).distinct().order_by(genero_expression).all()
+    generos = [g[0] for g in generos_obj if g[0]]
+
+    # LOG DE DEPURACIÓN: Añadido para verificar los géneros encontrados.
+    current_app.logger.info(f"Géneros encontrados en la base de datos (crudo): {generos_obj}")
+    current_app.logger.info(f"Lista de géneros procesada para la plantilla: {generos}")
+
     # Serializa los objetos para que sean compatibles con JSON y la plantilla.
     categorias_para_filtros = [categoria_principal_to_dict(c) for c in categorias_obj]
     subcategorias_para_filtros = [subcategoria_to_dict(s) for s in subcategorias_obj]
@@ -166,7 +183,8 @@ def productos_page():
         categorias=categorias_para_filtros,
         subcategorias=subcategorias_para_filtros,
         seudocategorias=seudocategorias_para_filtros,
-        marcas=marcas
+        marcas=marcas,
+        generos=generos
     )
 
 
@@ -370,6 +388,7 @@ def get_categorias_filtradas():
     (como marca, subcategoría, etc.), mostrando solo las opciones relevantes.
     """
     try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/categorias")
         marca = request.args.get('marca')
         subcategoria_nombre = request.args.get('subcategoria')
         seudocategoria_nombre = request.args.get('seudocategoria')
@@ -393,7 +412,7 @@ def get_categorias_filtradas():
         categorias = query.order_by(CategoriasPrincipales.nombre.asc()).all()
         return jsonify([categoria_principal_to_dict(c) for c in categorias])
     except Exception as e:
-        print(f"Error en get_categorias_filtradas: {str(e)}")
+        current_app.logger.error(f"Error en get_categorias_filtradas: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/api/filtros/subcategorias')
@@ -406,6 +425,7 @@ def get_subcategorias_filtradas():
     actuales del usuario en otros filtros.
     """
     try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/subcategorias")
         categoria_principal_nombre = request.args.get('categoria_principal')
         marca = request.args.get('marca')
         seudocategoria_nombre = request.args.get('seudocategoria')
@@ -434,7 +454,7 @@ def get_subcategorias_filtradas():
         subcategorias = query.all()
         return jsonify([subcategoria_to_dict(s) for s in subcategorias])
     except Exception as e:
-        print(f"Error en get_subcategorias_filtradas: {str(e)}")
+        current_app.logger.error(f"Error en get_subcategorias_filtradas: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/api/filtros/seudocategorias')
@@ -447,6 +467,7 @@ def get_seudocategorias_filtradas():
     de categoría principal, subcategoría o marca.
     """
     try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/seudocategorias")
         categoria_principal_nombre = request.args.get('categoria_principal')
         subcategoria_nombre = request.args.get('subcategoria')
         marca = request.args.get('marca')
@@ -473,7 +494,7 @@ def get_seudocategorias_filtradas():
         seudocategorias = query.all()
         return jsonify([seudocategoria_to_dict(s) for s in seudocategorias])
     except Exception as e:
-        print(f"Error en get_seudocategorias_filtradas: {str(e)}")
+        current_app.logger.error(f"Error en get_seudocategorias_filtradas: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/api/filtros/marcas')
@@ -486,6 +507,7 @@ def get_marcas_filtradas():
     por el usuario.
     """
     try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/marcas")
         categoria_principal_nombre = request.args.get('categoria_principal')
         subcategoria_nombre = request.args.get('subcategoria')
         seudocategoria_nombre = request.args.get('seudocategoria')
@@ -516,7 +538,61 @@ def get_marcas_filtradas():
         marcas = [row[0] for row in query.order_by(Productos.marca.asc()).all() if row[0]]
         return jsonify(marcas)
     except Exception as e:
-        print(f"Error en get_marcas_filtradas: {str(e)}")
+        current_app.logger.error(f"Error en get_marcas_filtradas: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@products_bp.route('/api/filtros/generos')
+def get_generos_filtrados():
+    """
+    API: Devuelve los géneros disponibles según los filtros aplicados.
+
+    Este endpoint es utilizado por el frontend para actualizar dinámicamente las opciones
+    del filtro de "Género", mostrando solo las opciones relevantes.
+    """
+    try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/generos")
+        categoria_principal_nombre = request.args.get('categoria_principal')
+        subcategoria_nombre = request.args.get('subcategoria')
+        seudocategoria_nombre = request.args.get('seudocategoria')
+        marca = request.args.get('marca')
+
+        # LOG DE DEPURACIÓN: Mostrar los filtros recibidos por la API de géneros.
+        current_app.logger.info(f"[API /api/filtros/generos] Filtros recibidos: categoria='{categoria_principal_nombre}', "
+                                f"subcategoria='{subcategoria_nombre}', seudocategoria='{seudocategoria_nombre}', "
+                                f"marca='{marca}'")
+
+        # MEJORA PROFESIONAL: Usar json_extract_path_text para ser insensible a mayúsculas en la clave 'Genero'.
+        genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
+
+        query = db.session.query(genero_expression).filter(
+            Productos.estado == EstadoEnum.ACTIVO,
+            Productos._existencia > 0,
+            func.json_extract_path_text(Productos.especificaciones, 'Genero').isnot(None)
+        ).distinct()
+
+        # Unir con otras tablas si hay filtros de categoría o marca
+        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca]):
+            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
+
+        if categoria_principal_nombre and categoria_principal_nombre != 'all':
+            query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
+        if subcategoria_nombre and subcategoria_nombre != 'all':
+            query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
+        if seudocategoria_nombre and seudocategoria_nombre != 'all':
+            query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+        if marca and marca != 'all':
+            query = query.filter(func.lower(Productos.marca) == func.lower(marca))
+
+        generos_obj = query.order_by(genero_expression).all()
+        generos = [row[0] for row in generos_obj if row[0]]
+
+        # LOG DE DEPURACIÓN: Mostrar los géneros encontrados por la consulta.
+        current_app.logger.info(f"[API /api/filtros/generos] Géneros encontrados (crudo): {generos_obj}")
+        current_app.logger.info(f"[API /api/filtros/generos] Lista de géneros a enviar: {generos}")
+
+        return jsonify(generos)
+    except Exception as e:
+        current_app.logger.error(f"Error en get_generos_filtrados: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>/<slug_seudocategoria>/<slug_producto>')
@@ -844,6 +920,7 @@ def filter_products():
     subcategory_name = request.args.get('subcategoria')
     pseudocategory_name = request.args.get('pseudocategoria')
     marca = request.args.get('marca')
+    genero = request.args.get('genero')
     sort_by = request.args.get('ordenar_por', 'featured')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
@@ -869,6 +946,13 @@ def filter_products():
     
     if marca and marca != 'all':
         query = query.filter(func.lower(Productos.marca) == func.lower(marca))
+
+    # MEJORA PROFESIONAL: Añadir filtro por género.
+    if genero and genero != 'all':
+        # MEJORA PROFESIONAL: Se utiliza `json_extract_path_text` para una comparación robusta e insensible
+        # a mayúsculas tanto en la clave ('Genero') como en el valor (ej. 'Mujer', 'mujer').
+        genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
+        query = query.filter(genero_expression == func.lower(genero))
 
     if min_price_str:
         try:

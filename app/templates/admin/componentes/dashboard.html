@@ -21,7 +21,8 @@
         <div class="mb-6">
             <h2 class="text-xl font-semibold text-gray-700 mb-4">Rendimiento del Período</h2>
         </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <!-- MEJORA PROFESIONAL: Reestructurado a un grid de 3 columnas para un diseño más limpio y profesional (3x2) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
             <!-- Ingresos Totales -->
             <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
@@ -32,6 +33,9 @@
                         <div>
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Ingresos</p>
                             <p id="total-ingresos" class="mt-2 text-3xl font-bold text-gray-800">$ 0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Σ (precio × cantidad)
+                            </p>
                         </div>
                         <div class="stat-icon bg-blue-100 text-blue-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
                             <i class="fas fa-dollar-sign text-xl"></i>
@@ -49,9 +53,32 @@
                         <div>
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Utilidad</p>
                             <p id="total-utilidad" class="mt-2 text-3xl font-bold text-gray-800">$ 0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Ingresos - Inversión
+                            </p>
                         </div>
                         <div class="stat-icon bg-green-100 text-green-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
                             <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Inversión -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-rose-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-rose-400 to-rose-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Inversión</p>
+                            <p id="total-inversion" class="mt-2 text-3xl font-bold text-gray-800">$ 0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Σ (costo × cantidad)
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-rose-100 text-rose-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-wallet text-xl"></i>
                         </div>
                     </div>
                 </div>
@@ -66,9 +93,32 @@
                         <div>
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Unidades Vendidas</p>
                             <p id="total-unidades-vendidas" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Σ (cantidad)
+                            </p>
                         </div>
                         <div class="stat-icon bg-yellow-100 text-yellow-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
                             <i class="fas fa-boxes-stacked text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Total Pedidos -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-cyan-400 to-cyan-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Pedidos</p>
+                            <p id="total-pedidos" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                COUNT (pedidos completados)
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-cyan-100 text-cyan-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-receipt text-xl"></i>
                         </div>
                     </div>
                 </div>
@@ -83,6 +133,9 @@
                         <div>
                             <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Margen de Ganancia</p>
                             <p id="margen-ganancia" class="mt-2 text-3xl font-bold text-gray-800">0%</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                (Utilidad / Ingresos) * 100
+                            </p>
                         </div>
                         <div class="stat-icon bg-purple-100 text-purple-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
                             <i class="fas fa-percentage text-xl"></i>
@@ -92,62 +145,125 @@
             </div>
         </div>
 
-        <!-- Stat Cards - Estado del Inventario -->
+        <!-- Stat Cards - Estado del Inventario (Global) -->
         <div class="mb-6">
-            <h2 class="text-xl font-semibold text-gray-700 mb-4">Estado del Inventario (Global)</h2>
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Estado de la tienda (Global)</h2>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-            <!-- Valor del Inventario -->
-            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border border-gray-100 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+        <!-- MEJORA PROFESIONAL: Reestructuración a un grid de 3x2 para un look más profesional y detallado -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Inversión en Inventario -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-indigo-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                 <div class="skeleton-loader"></div>
                 <div class="data-content">
-                    <div class="flex items-center mb-4">
-                        <div class="stat-icon bg-indigo-100 text-indigo-600 w-12 h-12 rounded-lg flex items-center justify-center mr-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Inversión en Inventario</p>
+                            <p id="inversion-inventario-total" class="mt-2 text-3xl font-bold text-gray-800">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Σ (costo × existencia)</p>
+                        </div>
+                        <div class="stat-icon bg-indigo-100 text-indigo-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
                             <i class="fas fa-sack-dollar text-xl"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-800">Valor del Inventario</h3>
                     </div>
-                    <div class="space-y-3">
-                        <div class="flex justify-between items-baseline">
-                            <span class="text-sm text-gray-500">Inversión Total (Costo)</span>
-                            <p id="inversion-inventario-total" class="font-bold text-xl text-gray-800">$0</p>
+                </div>
+            </div>
+            <!-- Ingresos Potenciales -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-green-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Ingresos Potenciales</p>
+                            <p id="ingresos-potenciales-totales" class="mt-2 text-3xl font-bold text-green-600">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Σ (precio × existencia)</p>
                         </div>
-                        <div class="flex justify-between items-baseline">
-                            <span class="text-sm text-gray-500">Ingresos Potenciales (Venta)</span>
-                            <p id="ingresos-potenciales-totales" class="font-bold text-xl text-green-600">$0</p>
+                        <div class="stat-icon bg-green-100 text-green-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-cash-register text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Existencias Totales -->
-            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border border-gray-100 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+            <!-- Utilidad Potencial -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-blue-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                 <div class="skeleton-loader"></div>
                 <div class="data-content">
-                    <div class="flex items-center mb-4">
-                        <div class="stat-icon bg-teal-100 text-teal-600 w-12 h-12 rounded-lg flex items-center justify-center mr-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Utilidad Potencial</p>
+                            <p id="utilidad-potencial-total" class="mt-2 text-3xl font-bold text-blue-600">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Ingresos Potenciales - Inversión</p>
+                        </div>
+                        <div class="stat-icon bg-blue-100 text-blue-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-chart-pie text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Existencias Totales -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-teal-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Existencias Totales</p>
+                            <p id="total-existencias" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Σ (existencia de cada producto)</p>
+                        </div>
+                        <div class="stat-icon bg-teal-100 text-teal-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
                             <i class="fas fa-warehouse text-xl"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-800">Existencias Totales</h3>
                     </div>
-                    <p id="total-existencias" class="text-4xl font-bold text-gray-800 text-center mt-4">0</p>
-                    <p class="text-sm text-gray-500 text-center">unidades en stock</p>
                 </div>
             </div>
-
-            <!-- Rotación de Inventario -->
-            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border border-gray-100 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+            <!-- SKUs Activos -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-cyan-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
                 <div class="skeleton-loader"></div>
                 <div class="data-content">
-                    <div class="flex items-center mb-4">
-                        <div class="stat-icon bg-orange-100 text-orange-600 w-12 h-12 rounded-lg flex items-center justify-center mr-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">SKUs Activos</p>
+                            <p id="total-skus-activos" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">COUNT (productos únicos)</p>
+                        </div>
+                        <div class="stat-icon bg-cyan-100 text-cyan-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-barcode text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Costo Promedio por Unidad -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-amber-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Costo Promedio / Unidad</p>
+                            <p id="costo-promedio-unidad" class="mt-2 text-3xl font-bold text-gray-800">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Inversión Total / Existencias</p>
+                        </div>
+                        <div class="stat-icon bg-amber-100 text-amber-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-calculator text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarjeta de Rotación de Inventario (Período) -->
+        <div class="grid grid-cols-1 mb-10">
+            <!-- Rotación de Inventario -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-orange-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Rotación de Inventario (Período)</p>
+                            <p id="rotacion-inventario" class="mt-2 text-3xl font-bold text-gray-800">0%</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">(Unidades Vendidas / (Unidades Vendidas + Existencias)) * 100</p>
+                        </div>
+                        <div class="stat-icon bg-orange-100 text-orange-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
                             <i class="fas fa-sync-alt text-xl"></i>
                         </div>
-                        <h3 class="text-lg font-bold text-gray-800">Rotación (Período)</h3>
-                    </div>
-                    <div class="text-center mt-4">
-                        <p id="rotacion-inventario" class="text-4xl font-bold text-gray-800">0%</p>
-                        <p class="text-sm text-gray-500">del stock vendido</p>
                     </div>
                 </div>
             </div>
@@ -386,6 +502,7 @@ const DashboardModule = (() => {
     function updateStatCards(stats) {
         document.getElementById('total-ingresos').textContent = formatCurrency(stats.total_ingresos);
         document.getElementById('total-utilidad').textContent = formatCurrency(stats.total_utilidad);
+        document.getElementById('total-inversion').textContent = formatCurrency(stats.total_inversion);
         document.getElementById('total-unidades-vendidas').textContent = (stats.total_unidades_vendidas || 0).toLocaleString('es-CO');
         // CORRECCIÓN: Añadir comprobaciones de seguridad (|| 0) a todas las métricas que usan .toFixed()
         document.getElementById('margen-ganancia').textContent = `${(stats.margen_ganancia || 0).toFixed(1)}%`;
@@ -393,11 +510,20 @@ const DashboardModule = (() => {
         // --- MEJORA PROFESIONAL: Actualizar las nuevas tarjetas de inventario ---
         document.getElementById('inversion-inventario-total').textContent = formatCurrency(stats.inversion_inventario_total);
         document.getElementById('ingresos-potenciales-totales').textContent = formatCurrency(stats.ingresos_potenciales_totales);
+        document.getElementById('utilidad-potencial-total').textContent = formatCurrency(stats.utilidad_potencial_total);
+        // MEJORA PROFESIONAL: Actualizar la nueva tarjeta de Total Pedidos
+        document.getElementById('total-pedidos').textContent = (stats.total_pedidos || 0).toLocaleString('es-CO');
+
         document.getElementById('total-existencias').textContent = (stats.total_existencias || 0).toLocaleString('es-CO');
+        document.getElementById('total-skus-activos').textContent = (stats.total_skus_activos || 0).toLocaleString('es-CO');
+        document.getElementById('costo-promedio-unidad').textContent = formatCurrency(stats.costo_promedio_unidad);
         
         // Calcular y mostrar la rotación de inventario para el período
-        const rotacion = (stats.total_existencias > 0) ? ((stats.total_unidades_vendidas / (stats.total_unidades_vendidas + stats.total_existencias)) * 100) : 0;
-        document.getElementById('rotacion-inventario').textContent = `${rotacion.toFixed(1)}%`;
+        // MEJORA: La fórmula correcta de rotación de inventario para un período es Unidades Vendidas / Inventario Promedio.
+        // Una simplificación común es (Unidades Vendidas / (Unidades Vendidas + Existencias Finales)) * 100
+        const denominadorRotacion = stats.total_unidades_vendidas + stats.total_existencias;
+        const rotacion = (denominadorRotacion > 0) ? ((stats.total_unidades_vendidas / denominadorRotacion) * 100) : 0;
+        document.getElementById('rotacion-inventario').textContent = `${(rotacion || 0).toFixed(1)}%`;
 
         // --- MEJORA: Actualizar las nuevas tarjetas de estadísticas ---
         document.getElementById('promedio-diario').textContent = formatCurrency(stats.promedio_diario || 0);

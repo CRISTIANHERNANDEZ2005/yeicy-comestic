@@ -163,7 +163,9 @@ def get_dashboard_stats(admin_user):
         # Si no hay ventas, 'financials' será (None, None). Debemos manejar esto.
         total_ingresos = float(financials.total_ingresos or 0)
         total_inversion = float(financials.total_inversion or 0)
+        # MEJORA PROFESIONAL: Calcular la utilidad explícitamente para mayor claridad.
         total_utilidad = total_ingresos - total_inversion
+
         margen_ganancia = (total_utilidad / total_ingresos * 100) if total_ingresos > 0 else 0
 
         # Procesar datos de gráficos
@@ -243,12 +245,20 @@ def get_dashboard_stats(admin_user):
         inventory_stats = db.session.query(
             func.sum(Productos._existencia).label('total_existencias'),
             func.sum(Productos.costo * Productos._existencia).label('inversion_inventario_total'),
-            func.sum(Productos.precio * Productos._existencia).label('ingresos_potenciales_totales')
+            func.sum(Productos.precio * Productos._existencia).label('ingresos_potenciales_totales'),
+            # MEJORA PROFESIONAL: Añadir el conteo de SKUs (productos únicos) activos.
+            func.count(Productos.id).label('total_skus_activos')
         ).filter(Productos.estado == 'activo').first()
 
         total_existencias = int(inventory_stats.total_existencias or 0)
         inversion_inventario_total = float(inventory_stats.inversion_inventario_total or 0)
         ingresos_potenciales_totales = float(inventory_stats.ingresos_potenciales_totales or 0)
+        total_skus_activos = int(inventory_stats.total_skus_activos or 0)
+
+        # MEJORA PROFESIONAL: Calcular métricas derivadas para las nuevas tarjetas.
+        utilidad_potencial_total = ingresos_potenciales_totales - inversion_inventario_total
+        costo_promedio_unidad = (inversion_inventario_total / total_existencias) if total_existencias > 0 else 0
+
 
         return jsonify({
             'success': True,
@@ -265,7 +275,10 @@ def get_dashboard_stats(admin_user):
                 'total_unidades_vendidas': total_unidades_vendidas,
                 'total_existencias': total_existencias,
                 'inversion_inventario_total': inversion_inventario_total,
-                'ingresos_potenciales_totales': ingresos_potenciales_totales
+                'ingresos_potenciales_totales': ingresos_potenciales_totales,
+                'utilidad_potencial_total': utilidad_potencial_total,
+                'total_skus_activos': total_skus_activos,
+                'costo_promedio_unidad': costo_promedio_unidad
             },
             'profits_chart': profits_chart,
             'categories_chart': categories_chart,

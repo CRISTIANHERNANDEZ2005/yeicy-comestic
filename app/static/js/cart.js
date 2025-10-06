@@ -901,7 +901,7 @@ animateFooter(show) {
         message += `\n*Total: ${this.formatCurrencyCOP(total)}*\n\n¿Podrían confirmar disponibilidad?`;
       }
       const encodedMessage = encodeURIComponent(message);
-      const phoneNumber = "3044931438"; // Reemplazar con tu número de WhatsApp.
+      const phoneNumber = "3018307170"; // Reemplazar con tu número de WhatsApp.
       whatsappBtn.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;
     }
     showLoadingState(button) {

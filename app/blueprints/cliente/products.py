@@ -245,6 +245,36 @@ def productos_por_categoria(slug_categoria):
     marcas = [marca[0] for marca in marcas_obj]
     print(f"DEBUG: productos_por_categoria - Cantidad de productos encontrados: {len(productos_data)}")
 
+    # --- MEJORA PROFESIONAL: Obtener géneros y funciones disponibles para la categoría ---
+    # Se obtienen los valores únicos de las especificaciones 'Genero' y 'Funcion'
+    # para los productos dentro de la categoría actual. Esto evita una llamada AJAX
+    # adicional al cargar la página.
+    
+    # Expresiones para extraer los valores de forma insensible a mayúsculas.
+    genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
+    funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
+
+    # Consulta para géneros
+    generos_obj = db.session.query(genero_expression).filter(
+        Productos.seudocategoria_id.in_(seudocategoria_ids),
+        Productos.estado == EstadoEnum.ACTIVO,
+        func.json_extract_path_text(Productos.especificaciones, 'Genero').isnot(None)
+    ).distinct().order_by(genero_expression).all()
+    generos = [g[0] for g in generos_obj if g[0]]
+
+    # Consulta para funciones (se realiza por separado para mantener la lógica simple)
+    funciones_obj = db.session.query(funcion_expression).filter(Productos.seudocategoria_id.in_(seudocategoria_ids), Productos.estado == EstadoEnum.ACTIVO, func.json_extract_path_text(Productos.especificaciones, 'Funcion').isnot(None)).distinct().order_by(funcion_expression).all()
+    funciones = [f[0] for f in funciones_obj if f[0]]
+
+    # --- MEJORA PROFESIONAL: Obtener ingredientes clave disponibles para la categoría ---
+    ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
+    ingredientes_obj = db.session.query(ingrediente_expression).filter(
+        Productos.seudocategoria_id.in_(seudocategoria_ids),
+        Productos.estado == EstadoEnum.ACTIVO,
+        func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave').isnot(None)
+    ).distinct().order_by(ingrediente_expression).all()
+    ingredientes_clave = [i[0] for i in ingredientes_obj if i[0]]
+
     subcategorias_obj = Subcategorias.query.filter_by(
         categoria_principal_id=categoria_principal.id,
         estado=EstadoEnum.ACTIVO
@@ -271,6 +301,9 @@ def productos_por_categoria(slug_categoria):
         subcategorias=subcategorias,
         seudocategorias=seudocategorias,
         marcas=marcas,
+        generos=generos,      # Inyectar géneros en la plantilla
+        funciones=funciones,  # Inyectar funciones en la plantilla
+        ingredientes_clave=ingredientes_clave, # Inyectar ingredientes clave en la plantilla
         title=f"{categoria_principal.nombre} - YE & Ci Cosméticos"
     )
 
@@ -522,6 +555,7 @@ def get_marcas_filtradas():
         categoria_principal_nombre = request.args.get('categoria_principal')
         subcategoria_nombre = request.args.get('subcategoria')
         seudocategoria_nombre = request.args.get('seudocategoria')
+        ingrediente_clave = request.args.get('ingrediente_clave')
 
         query = db.session.query(Productos.marca).filter(
             Productos.estado == EstadoEnum.ACTIVO,
@@ -532,7 +566,8 @@ def get_marcas_filtradas():
 
         if (categoria_principal_nombre and categoria_principal_nombre != 'all') or \
            (subcategoria_nombre and subcategoria_nombre != 'all') or \
-           (seudocategoria_nombre and seudocategoria_nombre != 'all'):
+           (seudocategoria_nombre and seudocategoria_nombre != 'all') or \
+           (ingrediente_clave and ingrediente_clave != 'all'):
             query = query.join(Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id)
             query = query.join(Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id)
             query = query.join(CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id)
@@ -545,6 +580,10 @@ def get_marcas_filtradas():
 
         if seudocategoria_nombre and seudocategoria_nombre != 'all':
             query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+
+        if ingrediente_clave and ingrediente_clave != 'all':
+            ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
+            query = query.filter(ingrediente_expression == func.lower(ingrediente_clave))
 
         marcas = [row[0] for row in query.order_by(Productos.marca.asc()).all() if row[0]]
         return jsonify(marcas)
@@ -566,6 +605,7 @@ def get_generos_filtrados():
         subcategoria_nombre = request.args.get('subcategoria')
         seudocategoria_nombre = request.args.get('seudocategoria')
         marca = request.args.get('marca')
+        ingrediente_clave = request.args.get('ingrediente_clave')
 
         # LOG DE DEPURACIÓN: Mostrar los filtros recibidos por la API de géneros.
         current_app.logger.info(f"[API /api/filtros/generos] Filtros recibidos: categoria='{categoria_principal_nombre}', "
@@ -582,7 +622,7 @@ def get_generos_filtrados():
         ).distinct()
 
         # Unir con otras tablas si hay filtros de categoría o marca
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca]):
+        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, ingrediente_clave]):
             query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
 
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
@@ -593,6 +633,10 @@ def get_generos_filtrados():
             query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
         if marca and marca != 'all':
             query = query.filter(func.lower(Productos.marca) == func.lower(marca))
+        
+        if ingrediente_clave and ingrediente_clave != 'all':
+            ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
+            query = query.filter(ingrediente_expression == func.lower(ingrediente_clave))
 
         generos_obj = query.order_by(genero_expression).all()
         generos = [row[0] for row in generos_obj if row[0]]
@@ -621,6 +665,7 @@ def get_funciones_filtradas():
         seudocategoria_nombre = request.args.get('seudocategoria')
         marca = request.args.get('marca')
         genero = request.args.get('genero')
+        ingrediente_clave = request.args.get('ingrediente_clave')
 
         # Usar json_extract_path_text para ser insensible a mayúsculas en la clave 'Funcion'.
         funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
@@ -632,7 +677,7 @@ def get_funciones_filtradas():
         ).distinct()
 
         # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero]):
+        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, ingrediente_clave]):
             query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
 
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
@@ -649,6 +694,59 @@ def get_funciones_filtradas():
         return jsonify(funciones)
     except Exception as e:
         current_app.logger.error(f"Error en get_funciones_filtradas: {str(e)}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+@products_bp.route('/api/filtros/ingredientes_clave')
+def get_ingredientes_clave_filtrados():
+    """
+    API: Devuelve los ingredientes clave disponibles según los filtros aplicados.
+
+    Endpoint para la actualización dinámica del filtro de "Ingrediente Clave".
+    """
+    try:
+        current_app.logger.info("API: Solicitud recibida en /api/filtros/ingredientes_clave")
+        categoria_principal_nombre = request.args.get('categoria_principal')
+        subcategoria_nombre = request.args.get('subcategoria')
+        seudocategoria_nombre = request.args.get('seudocategoria')
+        marca = request.args.get('marca')
+        genero = request.args.get('genero')
+        funcion = request.args.get('funcion')
+
+        ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
+
+        query = db.session.query(ingrediente_expression).filter(
+            Productos.estado == EstadoEnum.ACTIVO,
+            Productos._existencia > 0,
+            func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave').isnot(None)
+        ).distinct()
+
+        # Unir con otras tablas si hay filtros
+        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, funcion]):
+            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
+
+        if categoria_principal_nombre and categoria_principal_nombre != 'all':
+            query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
+        if subcategoria_nombre and subcategoria_nombre != 'all':
+            query = query.filter(func.lower(Subcategorias.nombre) == func.lower(subcategoria_nombre))
+        if seudocategoria_nombre and seudocategoria_nombre != 'all':
+            query = query.filter(func.lower(Seudocategorias.nombre) == func.lower(seudocategoria_nombre))
+        if marca and marca != 'all':
+            query = query.filter(func.lower(Productos.marca) == func.lower(marca))
+        if genero and genero != 'all':
+            genero_expression_filter = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
+            query = query.filter(genero_expression_filter == func.lower(genero))
+        if funcion and funcion != 'all':
+            funcion_expression_filter = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
+            query = query.filter(funcion_expression_filter == func.lower(funcion))
+
+        ingredientes_obj = query.order_by(ingrediente_expression).all()
+        ingredientes = [row[0] for row in ingredientes_obj if row[0]]
+        
+        current_app.logger.info(f"[API /api/filtros/ingredientes_clave] Ingredientes encontrados: {ingredientes}")
+
+        return jsonify(ingredientes)
+    except Exception as e:
+        current_app.logger.error(f"Error en get_ingredientes_clave_filtrados: {str(e)}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 
 @products_bp.route('/<slug_categoria_principal>/<slug_subcategoria>/<slug_seudocategoria>/<slug_producto>')
@@ -978,6 +1076,7 @@ def filter_products():
     marca = request.args.get('marca')
     genero = request.args.get('genero')
     funcion = request.args.get('funcion') # Nuevo filtro
+    ingrediente_clave = request.args.get('ingrediente_clave') # Nuevo filtro
     sort_by = request.args.get('ordenar_por', 'featured')
     min_price_str = request.args.get('min_price')
     max_price_str = request.args.get('max_price')
@@ -1016,6 +1115,12 @@ def filter_products():
         # Se utiliza `json_extract_path_text` para una comparación robusta.
         funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
         query = query.filter(funcion_expression == func.lower(funcion))
+
+    # MEJORA PROFESIONAL: Añadir filtro por ingrediente clave.
+    if ingrediente_clave and ingrediente_clave != 'all':
+        # Se utiliza `json_extract_path_text` para una comparación robusta.
+        ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
+        query = query.filter(ingrediente_expression == func.lower(ingrediente_clave))
 
     if min_price_str:
         try:

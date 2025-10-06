@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", function () {
     color: 'all',
     tono: 'all',
     funcion: 'all',
+    contenido: 'all',
     ingrediente_clave: 'all',
     resistente_al_agua: 'all',
     min_price: '',
@@ -34,6 +35,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const toneFilters = document.getElementById("tone-filters-content");
   const functionFilterSection = document.getElementById("function-filter-section");
   const functionFilters = document.getElementById("function-filters-content");
+  const contentFilterSection = document.getElementById("content-filter-section");
+  const contentFilters = document.getElementById("content-filters-content");
   const ingredientFilterSection = document.getElementById("ingredient-filter-section");
   const ingredientFilters = document.getElementById("ingredient-filters-content");
   const waterproofFilterSection = document.getElementById("waterproof-filter-section");
@@ -178,6 +181,9 @@ document.addEventListener("DOMContentLoaded", function () {
     const functionInput = filterDrawer.querySelector(`input[name="function"][value="${currentFilters.funcion}"]`);
     if (functionInput) functionInput.checked = true;
 
+    const contentInput = filterDrawer.querySelector(`input[name="content"][value="${currentFilters.contenido}"]`);
+    if (contentInput) contentInput.checked = true;
+
     const ingredientInput = filterDrawer.querySelector(`input[name="ingredient"][value="${currentFilters.ingrediente_clave}"]`);
     if (ingredientInput) ingredientInput.checked = true;
 
@@ -210,6 +216,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (window.appData.funciones && window.appData.funciones.length > 0) {
       functionFilterSection.classList.remove('hidden');
     }
+    if (window.appData.contenidos && window.appData.contenidos.length > 0) {
+      contentFilterSection.classList.remove('hidden');
+    }
     if (window.appData.ingredientes_clave && window.appData.ingredientes_clave.length > 0) {
       ingredientFilterSection.classList.remove('hidden');
     }
@@ -229,6 +238,7 @@ document.addEventListener("DOMContentLoaded", function () {
         updateColorFilters(),
         updateToneFilters(),
         updateFunctionFilters(),
+        updateContentFilters(),
         updateIngredientFilters(),
         updateWaterproofFilters()
       ]);
@@ -250,6 +260,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.color !== 'all') params.append('color', currentFilters.color);
       if (currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
+      if (currentFilters.contenido !== 'all') params.append('contenido', currentFilters.contenido);
       if (currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
       if (currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
       
@@ -419,6 +430,10 @@ document.addEventListener("DOMContentLoaded", function () {
     return updateDynamicFilter('function', 'funcion', '/api/filtros/funciones', functionFilterSection, functionFilters);
   }
 
+  function updateContentFilters() {
+    return updateDynamicFilter('content', 'contenido', '/api/filtros/contenidos', contentFilterSection, contentFilters);
+  }
+
   function updateIngredientFilters() {
     return updateDynamicFilter('ingredient', 'ingrediente_clave', '/api/filtros/ingredientes_clave', ingredientFilterSection, ingredientFilters);
   }
@@ -473,6 +488,10 @@ document.addEventListener("DOMContentLoaded", function () {
       tags.push(createFilterTag('funcion', currentFilters.funcion, `Función: ${currentFilters.funcion}`));
     }
 
+    if (currentFilters.contenido !== 'all') {
+      tags.push(createFilterTag('contenido', currentFilters.contenido, `Contenido: ${currentFilters.contenido}`));
+    }
+
     if (currentFilters.ingrediente_clave !== 'all') {
       tags.push(createFilterTag('ingrediente_clave', currentFilters.ingrediente_clave, `Ingrediente: ${currentFilters.ingrediente_clave}`));
     }
@@ -517,6 +536,9 @@ document.addEventListener("DOMContentLoaded", function () {
       case 'funcion':
         currentFilters.funcion = 'all';
         break;
+      case 'contenido':
+        currentFilters.contenido = 'all';
+        break;
       case 'ingrediente_clave':
         currentFilters.ingrediente_clave = 'all';
         break;
@@ -555,6 +577,7 @@ document.addEventListener("DOMContentLoaded", function () {
       color: 'all',
       tono: 'all',
       funcion: 'all',
+      contenido: 'all',
       ingrediente_clave: 'all',
       resistente_al_agua: 'all',
       min_price: '',
@@ -653,6 +676,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (currentFilters.color && currentFilters.color !== 'all') activeFilters.push(`de color <strong>"${currentFilters.color}"</strong>`);
     if (currentFilters.tono && currentFilters.tono !== 'all') activeFilters.push(`en tono <strong>"${currentFilters.tono}"</strong>`);
     if (currentFilters.funcion && currentFilters.funcion !== 'all') activeFilters.push(`con función <strong>"${currentFilters.funcion}"</strong>`);
+    if (currentFilters.contenido && currentFilters.contenido !== 'all') activeFilters.push(`con contenido <strong>"${currentFilters.contenido}"</strong>`);
     if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') activeFilters.push(`con <strong>"${currentFilters.ingrediente_clave}"</strong>`);
 
     if (currentFilters.min_price && currentFilters.max_price) {

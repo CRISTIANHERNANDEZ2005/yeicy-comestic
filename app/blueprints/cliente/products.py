@@ -28,6 +28,34 @@ from flask_login import current_user
 
 products_bp = Blueprint('products', __name__)
 
+def _build_active_spec_query(spec_expression):
+    """
+    Construye una consulta base para obtener valores de especificaciones de productos activos.
+
+    Esta función auxiliar centraliza la lógica para asegurar que solo se extraigan
+    especificaciones de productos que están completamente visibles para el cliente.
+    Un producto es visible si él y toda su jerarquía de categorías (principal,
+    subcategoría, seudocategoría) están activos y tiene stock.
+
+    Args:
+        spec_expression: La expresión de SQLAlchemy para extraer el valor de la especificación
+                         del campo JSON (ej. func.lower(func.json_extract_path_text(...))).
+
+    Returns:
+        Query: Un objeto de consulta de SQLAlchemy listo para ser filtrado y ejecutado.
+    """
+    return db.session.query(spec_expression).join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+    ).join(
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+    ).join(
+        CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
+    ).filter(
+        Productos.estado == EstadoEnum.ACTIVO, Productos._existencia > 0,
+        Seudocategorias.estado == EstadoEnum.ACTIVO, Subcategorias.estado == EstadoEnum.ACTIVO,
+        CategoriasPrincipales.estado == EstadoEnum.ACTIVO, spec_expression.isnot(None)
+    ).distinct()
+
 @products_bp.route('/')
 def index():
     """
@@ -502,10 +530,18 @@ def productos_por_seudocategoria(slug_categoria_principal, slug_subcategoria, sl
     resistente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Resistente al agua'))
 
     # Base de la consulta para los filtros
-    base_filter_query = db.session.query(Productos).filter(
-        Productos.seudocategoria_id == seudocategoria.id,
-        Productos.estado == EstadoEnum.ACTIVO
-    )
+    # CORRECCIÓN PROFESIONAL: Se asegura que la consulta base para los filtros iniciales
+    # valide el estado ACTIVO en toda la jerarquía de categorías (Principal, Sub, Seudo)
+    # y del propio producto. Esto evita mostrar opciones de filtros de productos inactivos.
+    base_filter_query = db.session.query(Productos).join(
+        Seudocategorias, Productos.seudocategoria_id == Seudocategorias.id
+    ).join(
+        Subcategorias, Seudocategorias.subcategoria_id == Subcategorias.id
+    ).join(
+        CategoriasPrincipales, Subcategorias.categoria_principal_id == CategoriasPrincipales.id
+    ).filter(Productos.seudocategoria_id == seudocategoria.id,
+             Productos.estado == EstadoEnum.ACTIVO, Seudocategorias.estado == EstadoEnum.ACTIVO,
+             Subcategorias.estado == EstadoEnum.ACTIVO, CategoriasPrincipales.estado == EstadoEnum.ACTIVO)
 
     # Función auxiliar para obtener valores distintos
     def get_distinct_spec_values(expression):
@@ -732,16 +768,9 @@ def get_colores_filtrados():
         resistente_al_agua = request.args.get('resistente_al_agua')
 
         color_expression = func.lower(func.coalesce(func.json_extract_path_text(Productos.especificaciones, 'Color'), func.json_extract_path_text(Productos.especificaciones, 'Tono')))
-
-        query = db.session.query(color_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.coalesce(func.json_extract_path_text(Productos.especificaciones, 'Color'), func.json_extract_path_text(Productos.especificaciones, 'Tono')).isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, funcion, tono, ingrediente_clave, resistente_al_agua]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
+        
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(color_expression)
 
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
@@ -792,16 +821,9 @@ def get_generos_filtrados():
         # MEJORA PROFESIONAL: Usar json_extract_path_text para ser insensible a mayúsculas en la clave 'Genero'.
         genero_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Genero'))
 
-        query = db.session.query(genero_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.json_extract_path_text(Productos.especificaciones, 'Genero').isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros de categoría o marca
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, color, tono, ingrediente_clave, resistente_al_agua]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
-
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(genero_expression)
+        
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
         if subcategoria_nombre and subcategoria_nombre != 'all':
@@ -860,16 +882,9 @@ def get_funciones_filtradas():
         # Usar json_extract_path_text para ser insensible a mayúsculas en la clave 'Funcion'.
         funcion_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Funcion'))
 
-        query = db.session.query(funcion_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.json_extract_path_text(Productos.especificaciones, 'Funcion').isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, color, tono, ingrediente_clave, resistente_al_agua]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
-
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(funcion_expression)
+        
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
         if subcategoria_nombre and subcategoria_nombre != 'all':
@@ -917,16 +932,9 @@ def get_ingredientes_clave_filtrados():
 
         ingrediente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave'))
 
-        query = db.session.query(ingrediente_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.json_extract_path_text(Productos.especificaciones, 'Ingrediente Clave').isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, funcion, color, tono, resistente_al_agua]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
-
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(ingrediente_expression)
+        
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
         if subcategoria_nombre and subcategoria_nombre != 'all':
@@ -981,16 +989,9 @@ def get_resistente_al_agua_filtrados():
 
         resistente_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Resistente al agua'))
 
-        query = db.session.query(resistente_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.json_extract_path_text(Productos.especificaciones, 'Resistente al agua').isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, funcion, color, tono, ingrediente_clave]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
-
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(resistente_expression)
+        
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
         if subcategoria_nombre and subcategoria_nombre != 'all':
@@ -1044,16 +1045,9 @@ def get_tonos_filtrados():
 
         tono_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Tono'))
 
-        query = db.session.query(tono_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.json_extract_path_text(Productos.especificaciones, 'Tono').isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, funcion, color, ingrediente_clave, resistente_al_agua]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
-
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(tono_expression)
+        
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
         if subcategoria_nombre and subcategoria_nombre != 'all':
@@ -1096,16 +1090,9 @@ def get_contenidos_filtrados():
 
         contenido_expression = func.lower(func.json_extract_path_text(Productos.especificaciones, 'Contenido'))
 
-        query = db.session.query(contenido_expression).filter(
-            Productos.estado == EstadoEnum.ACTIVO,
-            Productos._existencia > 0,
-            func.json_extract_path_text(Productos.especificaciones, 'Contenido').isnot(None)
-        ).distinct()
-
-        # Unir con otras tablas si hay filtros
-        if any(f and f != 'all' for f in [categoria_principal_nombre, subcategoria_nombre, seudocategoria_nombre, marca, genero, funcion, color, tono, ingrediente_clave, resistente_al_agua]):
-            query = query.join(Seudocategorias).join(Subcategorias).join(CategoriasPrincipales)
-
+        # Usar la función auxiliar para construir la consulta base.
+        query = _build_active_spec_query(contenido_expression)
+        
         if categoria_principal_nombre and categoria_principal_nombre != 'all':
             query = query.filter(func.lower(CategoriasPrincipales.nombre) == func.lower(categoria_principal_nombre))
         if subcategoria_nombre and subcategoria_nombre != 'all':

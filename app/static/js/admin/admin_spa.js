@@ -139,6 +139,12 @@ document.addEventListener('DOMContentLoaded', function () {
                         script.getAttributeNames().forEach(attr => newScript.setAttribute(attr, script.getAttribute(attr)));
                         newScript.setAttribute('data-spa-managed', 'true');
 
+                        // MEJORA: Si el script ya está en el body (cargado por una navegación anterior),
+                        // lo reemplazamos para forzar su re-ejecución, crucial para scripts de página como dashboard.js.
+                        const existingScript = document.querySelector(`script[src="${scriptURL}"]`);
+                        if (existingScript) existingScript.remove();
+
+
                         try {
                             await new Promise((resolve, reject) => {
                                 newScript.onload = () => {

@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", function () {
     marca: 'all',
     genero: 'all',
     color: 'all',
+    tono: 'all',
     funcion: 'all',
     ingrediente_clave: 'all',
     resistente_al_agua: 'all',
@@ -33,6 +34,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const genderFilters = document.getElementById("gender-filters-content");
   const colorFilterSection = document.getElementById("color-filter-section");
   const colorFilters = document.getElementById("color-filters-content");
+  const toneFilterSection = document.getElementById("tone-filter-section");
+  const toneFilters = document.getElementById("tone-filters-content");
   const functionFilterSection = document.getElementById("function-filter-section");
   const functionFilters = document.getElementById("function-filters-content");
   const ingredientFilterSection = document.getElementById("ingredient-filter-section");
@@ -187,6 +190,10 @@ document.addEventListener("DOMContentLoaded", function () {
     const colorInput = filterDrawer.querySelector(`input[name="color"][value="${currentFilters.color}"]`);
     if (colorInput) colorInput.checked = true;
 
+    // Sincronizar tono
+    const toneInput = filterDrawer.querySelector(`input[name="tone"][value="${currentFilters.tono}"]`);
+    if (toneInput) toneInput.checked = true;
+
     // Sincronizar función
     const functionInput = filterDrawer.querySelector(`input[name="function"][value="${currentFilters.funcion}"]`);
     if (functionInput) functionInput.checked = true;
@@ -218,6 +225,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (window.appData.colores && window.appData.colores.length > 0) {
       colorFilterSection.classList.remove('hidden');
     }
+    if (window.appData.tonos && window.appData.tonos.length > 0) {
+      toneFilterSection.classList.remove('hidden');
+    }
     if (window.appData.funciones && window.appData.funciones.length > 0) {
       functionFilterSection.classList.remove('hidden');
     }
@@ -239,6 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
         updateBrandFilters(),
         updateGenderFilters(),
         updateColorFilters(),
+        updateToneFilters(),
         updateFunctionFilters(),
         updateIngredientFilters(),
         updateWaterproofFilters()
@@ -258,6 +269,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') params.append('subcategoria', currentFilters.subcategoria);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
       if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
@@ -367,6 +379,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') params.append('subcategoria', currentFilters.subcategoria);
       if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
       if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
@@ -478,6 +491,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
       if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
@@ -528,6 +542,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
       if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
@@ -569,6 +584,56 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  // Función para actualizar las opciones de tono
+  async function updateToneFilters() {
+    try {
+      const params = new URLSearchParams();
+      if (currentFilters.categoria_principal) params.append('categoria_principal', currentFilters.categoria_principal);
+      if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') params.append('subcategoria', currentFilters.subcategoria);
+      if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
+      if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
+      if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
+      if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
+      if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
+      if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
+      if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
+
+      const response = await fetch(`/api/filtros/tonos?${params.toString()}`);
+      if (!response.ok) throw new Error(`Error ${response.status}`);
+      
+      const tonos = await response.json();
+      
+      toneFilterSection.classList.toggle('hidden', tonos.length === 0);
+
+      toneFilters.innerHTML = `
+        <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+          <input type="radio" name="tone" value="all" class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300" ${currentFilters.tono === 'all' ? 'checked' : ''}>
+          <span class="ml-3 text-gray-700 font-medium">Todos los tonos</span>
+        </label>
+      `;
+
+      tonos.forEach((tono) => {
+        const toneHtml = `
+          <label class="flex items-center p-2.5 hover:bg-pink-50 rounded-xl cursor-pointer transition-colors duration-200">
+            <input type="radio" name="tone" value="${tono}" class="rounded-full text-pink-600 focus:ring-pink-500 border-gray-300" ${currentFilters.tono === tono ? 'checked' : ''}>
+            <span class="ml-3 text-gray-700">${tono.charAt(0).toUpperCase() + tono.slice(1)}</span>
+          </label>
+        `;
+        toneFilters.insertAdjacentHTML("beforeend", toneHtml);
+      });
+
+      toneFilters.querySelectorAll('input[name="tone"]').forEach(input => {
+        input.addEventListener('change', (e) => {
+          currentFilters.tono = e.target.value;
+          applyFilters();
+        });
+      });
+    } catch (error) {
+      console.error('Error al actualizar tonos:', error);
+      toneFilterSection.classList.add('hidden');
+    }
+  }
+
   // Función para actualizar las opciones de función
   async function updateFunctionFilters() {
     try {
@@ -579,6 +644,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
       if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
 
@@ -629,6 +695,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') params.append('resistente_al_agua', currentFilters.resistente_al_agua);
 
@@ -679,6 +746,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
       if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
       if (currentFilters.color && currentFilters.color !== 'all') params.append('color', currentFilters.color);
+      if (currentFilters.tono && currentFilters.tono !== 'all') params.append('tono', currentFilters.tono);
       if (currentFilters.funcion && currentFilters.funcion !== 'all') params.append('funcion', currentFilters.funcion);
       if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') params.append('ingrediente_clave', currentFilters.ingrediente_clave);
 
@@ -761,6 +829,10 @@ document.addEventListener("DOMContentLoaded", function () {
       tags.push(createFilterTag('color', currentFilters.color, `Color: ${currentFilters.color}`));
     }
 
+    if (currentFilters.tono !== 'all') {
+      tags.push(createFilterTag('tono', currentFilters.tono, `Tono: ${currentFilters.tono}`));
+    }
+
     if (currentFilters.funcion !== 'all') {
       tags.push(createFilterTag('funcion', currentFilters.funcion, `Función: ${currentFilters.funcion}`));
     }
@@ -806,6 +878,9 @@ document.addEventListener("DOMContentLoaded", function () {
       case 'color':
         currentFilters.color = 'all';
         break;
+      case 'tono':
+        currentFilters.tono = 'all';
+        break;
       case 'funcion':
         currentFilters.funcion = 'all';
         break;
@@ -845,6 +920,7 @@ document.addEventListener("DOMContentLoaded", function () {
       marca: 'all',
       genero: 'all',
       color: 'all',
+      tono: 'all',
       funcion: 'all',
       ingrediente_clave: 'all',
       resistente_al_agua: 'all',
@@ -947,6 +1023,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') activeFilters.push(`en <strong>"${currentFilters.pseudocategoria}"</strong>`);
     if (currentFilters.genero && currentFilters.genero !== 'all') activeFilters.push(`para <strong>"${currentFilters.genero}"</strong>`);
     if (currentFilters.color && currentFilters.color !== 'all') activeFilters.push(`de color <strong>"${currentFilters.color}"</strong>`);
+    if (currentFilters.tono && currentFilters.tono !== 'all') activeFilters.push(`en tono <strong>"${currentFilters.tono}"</strong>`);
     if (currentFilters.funcion && currentFilters.funcion !== 'all') activeFilters.push(`con función <strong>"${currentFilters.funcion}"</strong>`);
     if (currentFilters.ingrediente_clave && currentFilters.ingrediente_clave !== 'all') activeFilters.push(`con ingrediente <strong>"${currentFilters.ingrediente_clave}"</strong>`);
     if (currentFilters.resistente_al_agua && currentFilters.resistente_al_agua !== 'all') activeFilters.push(`que sea <strong>"${currentFilters.resistente_al_agua}"</strong> al agua`);

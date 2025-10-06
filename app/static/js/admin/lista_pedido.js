@@ -620,8 +620,7 @@ window.pedidosApp = {
     if (pedido.productos && pedido.productos.length > 0) {
       productosHtml = pedido.productos
         .map((producto) => {
-          const imagenSrc =
-            producto.producto_imagen || "https://via.placeholder.com/50";
+          const imagenSrc = producto.producto_imagen_url || "https://via.placeholder.com/50";
 
           return `
                     <tr>
@@ -1314,8 +1313,7 @@ window.pedidosApp = {
     if (pedido.productos && pedido.productos.length > 0) {
       productosHtml = pedido.productos
         .map((producto) => {
-          const imagenSrc =
-            producto.producto_imagen || "https://via.placeholder.com/50";
+          const imagenSrc = producto.producto_imagen_url || "https://via.placeholder.com/50";
 
           return `
                     <tr>

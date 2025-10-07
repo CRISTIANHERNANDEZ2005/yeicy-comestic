@@ -72,6 +72,12 @@
             background-size: 200% 100%;
             animation: shine 2s infinite;
         }
+
+        /* Estilos para botones de paginación deshabilitados */
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
     </style>
     <!-- Contenido Principal -->
     <main
@@ -94,7 +100,7 @@
                 <div class="bg-white rounded-2xl shadow-xl overflow-hidden card-hover fade-in delay-1">
                     <div class="relative">
                         <div class="p-4 bg-gradient-to-br from-gray-100 to-gray-200 flex justify-center items-center h-80">
-                            <img src="{{ product.imagen_url or 'https://via.placeholder.com/300x300' }}" alt="Imagen de {{ product.nombre }}" class="max-h-full max-w-full object-contain">
+                            <img src="{{ product.imagen_url or 'https://via.placeholder.com/300x300' }}" alt="Imagen de {{ product.nombre }}" class="w-full h-full object-cover">
                         </div>
                         {% if product.es_nuevo %}
                             <div class="absolute top-4 right-4">
@@ -121,17 +127,10 @@
                                 <span class="text-sm text-gray-500">({{ product.reseñas_count }})</span>
                             </div>
                         </div>
-                        {% if product.estado == 'activo' %}
-                            <a href="{{ url_for('admin_editar.edit_product_page', product_slug=product.slug) }}" class="spa-edit-product-link w-full text-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl transition font-medium shadow-lg block">
-                                <i class="fas fa-edit mr-2"></i>
-                                Editar Producto
-                            </a>
-                        {% else %}
-                            <button type="button" id="edit-product-inactive-button" class="w-full text-center bg-gray-400 text-white py-3 px-4 rounded-xl cursor-not-allowed" title="Para editar, el producto debe estar activo">
-                                <i class="fas fa-edit mr-2"></i>
-                                Editar Producto
-                            </button>
-                        {% endif %}
+                        <a href="{{ url_for('admin_editar.edit_product_page', product_slug=product.slug) }}" class="spa-edit-product-link w-full text-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white py-3 px-4 rounded-xl transition font-medium shadow-lg block">
+                            <i class="fas fa-edit mr-2"></i>
+                            Editar Producto
+                        </a>
                     </div>
                 </div>
 
@@ -429,53 +428,6 @@
                             Siguiente
                             <i class="fas fa-arrow-right ml-2"></i>
                         </button>
-                    </div>
-                </div>
-
-                <!-- Historial de Cambios -->
-                <div class="bg-white rounded-2xl shadow-xl p-6 card-hover fade-in delay-4">
-                    <h3 class="text-2xl font-bold text-gray-800 mb-6 pb-2 border-b">Historial de Cambios</h3>
-                    <div class="space-y-5">
-                        <div class="flex">
-                            <div class="flex flex-col items-center mr-4">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
-                                    <i class="fas fa-edit text-white"></i>
-                                </div>
-                                <div class="h-full w-0.5 bg-gradient-to-b from-indigo-200 to-transparent my-1"></div>
-                            </div>
-                            <div class="pb-5">
-                                <p class="font-bold text-gray-800">Actualización de precio</p>
-                                <p class="text-gray-600">El precio se actualizó de $95.000 a $99.999</p>
-                                <p class="text-gray-500 text-sm mt-1">15 de septiempre de 2025 - 10:30 AM</p>
-                            </div>
-                        </div>
-
-                        <div class="flex">
-                            <div class="flex flex-col items-center mr-4">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center shadow-md">
-                                    <i class="fas fa-plus text-white"></i>
-                                </div>
-                                <div class="h-full w-0.5 bg-gradient-to-b from-emerald-200 to-transparent my-1"></div>
-                            </div>
-                            <div class="pb-5">
-                                <p class="font-bold text-gray-800">Reposición de inventario</p>
-                                <p class="text-gray-600">Se agregaron 20 unidades al inventario</p>
-                                <p class="text-gray-500 text-sm mt-1">15 de septiembre de 2025 - 12-00 PM</p>
-                            </div>
-                        </div>
-
-                        <div class="flex">
-                            <div class="flex flex-col items-center mr-4">
-                                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-purple-500 to-pink-600 flex items-center justify-center shadow-md">
-                                    <i class="fas fa-tag text-white"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <p class="font-bold text-gray-800">Creación del producto</p>
-                                <p class="text-gray-600">Producto agregado al inventario</p>
-                                <p class="text-gray-500 text-sm mt-1">{{ product.created_at|datetimeformat('%d de %B de %Y - %I:%M %p') }}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

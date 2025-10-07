@@ -18,9 +18,15 @@ class SimpleCarousel {
     this.slides = [];
     this.currentIndex = 0;
 
-    this.prevBtn.addEventListener('click', () => this.navigate('prev'));
-    this.nextBtn.addEventListener('click', () => this.navigate('next'));
-    window.addEventListener('resize', () => this.updateSlides());
+    // MEJORA PROFESIONAL: Código defensivo.
+    // Solo añadir listeners si los elementos existen para evitar errores.
+    if (this.track && this.prevBtn && this.nextBtn) {
+      this.prevBtn.addEventListener('click', () => this.navigate('prev'));
+      this.nextBtn.addEventListener('click', () => this.navigate('next'));
+      window.addEventListener('resize', () => this.updateSlides());
+    } else {
+      console.warn(`Carousel elements not found for trackId: ${options.trackId}. Carousel will not be initialized.`);
+    }
   }
 
   /**
@@ -80,17 +86,21 @@ class SimpleCarousel {
     // Ocultar controles e indicadores si solo hay una diapositiva o menos
     if (this.slides.length <= 1) {
       this.indicatorsContainer.style.display = 'none';
-      this.prevBtn.style.display = 'none';
-      this.nextBtn.style.display = 'none';
+      this.prevBtn.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+      this.nextBtn.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
       return;
     }
     
     // Mostrar indicadores solo en móvil
     // MEJORA PROFESIONAL: Mostrar indicadores en todas las resoluciones si hay más de una diapositiva.
     // Esto proporciona una navegación consistente tanto en móvil como en escritorio.
+    //  Animar la aparición de los botones.
+    this.prevBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+    // Forzar reflow para que la transición se aplique
+    void this.prevBtn.offsetWidth;
+    void this.nextBtn.offsetWidth;
+    this.nextBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
     this.indicatorsContainer.style.display = 'flex';
-    this.prevBtn.style.display = 'block'; // Mostrar botones en todas las resoluciones
-    this.nextBtn.style.display = 'block';
 
     this.slides.forEach((_, index) => {
       const indicator = document.createElement('button');
@@ -105,6 +115,29 @@ class SimpleCarousel {
 }
 
 /**
+ * MEJORA PROFESIONAL: Inicializa el carrusel de recomendaciones directamente con los datos del servidor.
+ * Esta función reemplaza la necesidad de una petición fetch, haciendo la carga instantánea.
+ * @param {Array} productos - Array de objetos de producto para las recomendaciones.
+ */
+function initializeRecomendacionesCarousel(productos) {
+  const container = document.getElementById("recomendaciones-container");
+  const loader = document.getElementById("recomendaciones-loader");
+  const noRecomendaciones = document.getElementById("no-recomendaciones");
+  const recomendacionesCarousel = new SimpleCarousel({
+    trackId: 'recomendaciones-track',
+    prevBtnId: 'recomendaciones-prev',
+    nextBtnId: 'recomendaciones-next',
+    indicatorsId: 'recomendaciones-indicators',
+  });
+
+  if (!container || !loader || !noRecomendaciones || !recomendacionesCarousel) return;
+
+  loader.style.display = "none";
+  recomendacionesCarousel.products = productos;
+  recomendacionesCarousel.updateSlides();
+}
+
+/**
  * @description Gestiona la interactividad de la página principal, incluyendo la carga
  *              dinámica de contenido exclusivo para usuarios autenticados y la gestión
  *              de modales para interacciones de usuarios no autenticados.
@@ -116,21 +149,11 @@ class HomePageManager {
   constructor() {
     this.likeAuthModalTimeout = null;
     this.init();
-    this.recomendacionesCarousel = new SimpleCarousel({
-      trackId: 'recomendaciones-track',
-      prevBtnId: 'recomendaciones-prev',
-      nextBtnId: 'recomendaciones-next',
-      indicatorsId: 'recomendaciones-indicators',
-    });
   }
 
   init() {
     this.bindEvents();
     this.updateLikeBtnStyles();
-    // Inicia la carga de recomendaciones si el usuario está autenticado.
-    if (window.USUARIO_AUTENTICADO) {
-      this.initRecomendaciones();
-    }
   }
 
   bindEvents() {
@@ -207,44 +230,7 @@ class HomePageManager {
       }
     });
   }
-
-  /**
-   * Carga y renderiza productos recomendados para el usuario autenticado.
-   */
-  async initRecomendaciones() {
-    const container = document.getElementById("recomendaciones-container");
-    const loader = document.getElementById("recomendaciones-loader");
-    const noRecomendaciones = document.getElementById("no-recomendaciones");
-
-    if (!container || !loader || !noRecomendaciones) return;
-
-    try {
-      // Simulación de llamada a la API. Reemplazar con el endpoint real.
-      // const response = await fetch('/api/productos/recomendados');
-      // const productos = await response.json();
-
-      // --- INICIO: Datos simulados ---
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simular retraso de red
-      const productos = window.PRODUCTS_DATA.slice(0, 8); // Usar 8 productos para el ejemplo
-      // --- FIN: Datos simulados ---
-
-      loader.style.display = "none";
-
-      if (productos && productos.length > 0) {
-        // MEJORA: Pasamos los productos al carrusel y él se encarga de la lógica responsiva.
-        this.recomendacionesCarousel.products = productos;
-        this.recomendacionesCarousel.updateSlides();
-
-      } else {
-        noRecomendaciones.style.display = 'block';
-      }
-    } catch (error) {
-      console.error("Error al cargar recomendaciones:", error);
-      loader.innerHTML = '<p class="text-red-500">No se pudieron cargar las recomendaciones.</p>';
-    }
-  }
 }
-
 document.addEventListener("DOMContentLoaded", () => {
   new HomePageManager();
 });

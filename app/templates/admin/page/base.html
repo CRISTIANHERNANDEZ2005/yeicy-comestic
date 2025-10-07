@@ -10,10 +10,30 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
     />
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='imagenes/admin_icon.svg') }}">
+
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/admin/styles.css') }}"
     />
+
+    <!-- Este script se ejecuta antes de que la página se renderice para aplicar el estado colapsado si es necesario. -->
+    <script>
+      (function() {
+          const isCollapsed = localStorage.getItem('adminSidebarCollapsed') === 'true';
+          try {
+              if (isCollapsed) {
+                  // Aplicamos la clase al elemento <html> porque <body> puede no existir aún.
+                  document.documentElement.classList.add('sidebar-collapsed');
+              } else {
+                  // MEJORA: Asegurarnos de que la clase no esté presente si el sidebar debe estar abierto.
+                  document.documentElement.classList.remove('sidebar-collapsed');
+              }
+          } catch (e) {
+              console.error('Error al aplicar el estado del sidebar desde localStorage:', e);
+          }
+      })();
+  </script>
   </head>
   <body class="bg-gray-50 font-sans">
     <!-- Header para móvil -->
@@ -92,46 +112,6 @@
       </div>
     </div>
 
-    <!-- Logout Modal -->
-    <div
-      id="logout-modal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden"
-    >
-      <div
-        class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white"
-      >
-        <div class="mt-3 text-center">
-          <div
-            class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100"
-          >
-            <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
-          </div>
-          <h3 class="text-lg leading-6 font-medium text-gray-900 mt-2">
-            Cerrar Sesión
-          </h3>
-          <div class="mt-2 px-7 py-3">
-            <p class="text-sm text-gray-500">
-              ¿Estás seguro de que quieres cerrar la sesión?
-            </p>
-          </div>
-          <div class="items-center px-4 py-3">
-            <button
-              id="cancel-logout-button"
-              class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md mr-2 hover:bg-gray-300"
-            >
-              Cancelar
-            </button>
-            <button
-              id="confirm-logout-button"
-              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-            >
-              Cerrar Sesión
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <script>
       // Funcionalidad para el sidebar móvil
       const mobileMenuButton = document.getElementById("mobile-menu-button");
@@ -167,56 +147,35 @@
         }
       });
 
-      // Logout functionality
-      const logoutModal = document.getElementById("logout-modal");
-      const cancelLogoutButton = document.getElementById(
-        "cancel-logout-button"
-      );
-      const confirmLogoutButton = document.getElementById(
-        "confirm-logout-button"
-      );
-      const logoutButtonDesktop = document.getElementById(
-        "logout-button-desktop"
-      );
-      const logoutButtonMobile = document.getElementById(
-        "logout-button-mobile"
-      );
-
-      function openLogoutModal() {
-        logoutModal.classList.remove("hidden");
-      }
-
-      function closeLogoutModal() {
-        logoutModal.classList.add("hidden");
-      }
-
-      logoutButtonDesktop.addEventListener("click", openLogoutModal);
-      logoutButtonMobile.addEventListener("click", openLogoutModal);
-      cancelLogoutButton.addEventListener("click", closeLogoutModal);
-
-      confirmLogoutButton.addEventListener("click", async () => {
-        try {
-          const response = await fetch("/admin/logout", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
-
-          if (response.ok) {
-            window.location.href = "/administracion";
-          } else {
-            console.error("Error al cerrar la sesión");
-          }
-        } catch (error) {
-          console.error("Error de red al cerrar la sesión", error);
-        }
-      });
     </script>
     {% include 'admin/ui/notifications.html' %}
     <script src="{{ url_for('static', filename='js/admin/admin_auth_interceptor.js') }}"></script>
     <script src="{{ url_for('static', filename='js/admin/filtro_producto.js') }}"></script>
     
+    <!-- MEJORA PROFESIONAL: El modal de logout se mueve aquí, al final del body, para que sea global y no se elimine con la navegación SPA. -->
+    <div id="admin-logout-modal" class="fixed inset-0 z-modal-top hidden items-center justify-center p-4 transition-opacity duration-300 flex">
+        <!-- Overlay -->
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" id="admin-logout-overlay"></div>
+
+        <!-- Modal Card -->
+        <div id="admin-logout-card" class="relative w-full max-w-md transform rounded-2xl bg-white p-6 text-center shadow-2xl transition-all duration-300 scale-95 opacity-0">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-blue-100 to-indigo-100">
+                <i class="fas fa-sign-out-alt fa-2x text-blue-500"></i>
+            </div>
+            <h3 class="mt-5 text-2xl font-semibold leading-6 text-gray-800">¿Cerrar Sesión?</h3>
+            <div class="mt-3">
+                <p class="text-base text-gray-600">¿Estás seguro de que quieres finalizar tu sesión de administrador?</p>
+            </div>
+            <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3">
+                <button id="admin-logout-cancel-btn" type="button" class="w-full rounded-lg bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors duration-200">Cancelar</button>
+                <button id="admin-logout-confirm-btn" type="button" class="w-full rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-3 text-sm font-semibold text-white shadow-md hover:from-blue-600 hover:to-indigo-600 transition-all duration-200 transform hover:scale-105">
+                    <span class="logout-confirm-text">Sí, cerrar sesión</span>
+                    <span class="logout-spinner hidden"><i class="fas fa-spinner fa-spin mr-2"></i>Cerrando...</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div
       id="loading-overlay"
       class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50 hidden transition-opacity duration-300 opacity-0"

@@ -11,10 +11,11 @@ Funcionalidades Clave:
 - **Protección de Lógica de Negocio**: Impide la edición de productos que se encuentren en estado 'inactivo'.
 """
 from flask import Blueprint, render_template, request, abort, current_app, jsonify, redirect, url_for, flash
+from app.utils.cloudinary_utils import upload_image_and_get_url
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 from app.models.domains.product_models import Productos, Seudocategorias, Subcategorias, CategoriasPrincipales
-from app.models.serializers import producto_to_dict
+from app.models.serializers import admin_producto_to_dict
 import cloudinary.uploader
 import cloudinary.api
 from app.extensions import db
@@ -47,12 +48,10 @@ def edit_product_page(admin_user, product_slug):
     if not product:
         abort(404, description="Producto no encontrado")
 
-    # Regla de negocio: no se pueden editar productos inactivos.
-    if product.estado == 'inactivo':
-        flash('No se puede editar un producto que está inactivo.', 'warning')
-        return redirect(url_for('admin_products.get_all_products'))
-
-    product_data = producto_to_dict(product)
+    # MEJORA PROFESIONAL: Usar el serializador de administrador.
+    # `producto_to_dict` devuelve None si el producto está inactivo, causando el error.
+    # `admin_producto_to_dict` serializa el producto sin importar su estado.
+    product_data = admin_producto_to_dict(product)
 
     # Extrae los IDs de la jerarquía de categorías para la preselección en los <select> del frontend.
     selected_seudocategoria_id = product.seudocategoria.id if product.seudocategoria else None
@@ -91,9 +90,6 @@ def update_product_api(admin_user, product_slug):
     product = Productos.query.filter_by(slug=product_slug).first()
     if not product:
         return jsonify({'success': False, 'message': 'Producto no encontrado'}), 404
-
-    if product.estado == 'inactivo':
-        return jsonify({'success': False, 'message': 'No se puede editar un producto que está inactivo.'}), 403
 
     try:
         # --- 1. Obtención de datos del formulario (multipart/form-data) ---
@@ -190,37 +186,57 @@ def update_product_api(admin_user, product_slug):
         if imagen_file:
             # A. Si se sube un archivo nuevo, se procesa.
             try:
-                upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
-                imagen_url_final = upload_result.get('secure_url')
+                # Lógica de subida profesional con deduplicación centralizada.
+                imagen_url_final = upload_image_and_get_url(imagen_file)
                 if not imagen_url_final:
                     raise Exception("La subida a Cloudinary no devolvió una URL.")
             except Exception as e:
                 current_app.logger.error(f"Error al subir nueva imagen a Cloudinary para producto {product.slug}: {e}", exc_info=True)
                 return jsonify({'success': False, 'message': 'Error al subir la nueva imagen.'}), 500
 
-            # B. PRÁCTICA PROFESIONAL: Eliminar la imagen antigua de Cloudinary para no acumular archivos basura.
-            if product.imagen_url:
-                try:
-                    # Extraer el public_id de la URL antigua.
-                    # El public_id incluye el nombre de la carpeta.
-                    start_index = product.imagen_url.find('yeicy-cosmetic/products/')
-                    if start_index != -1:
-                        end_index = product.imagen_url.rfind('.')
-                        public_id = product.imagen_url[start_index:end_index]
-                        cloudinary.api.delete_resources([public_id])
-                        current_app.logger.info(f"Imagen antigua '{public_id}' eliminada de Cloudinary para producto {product.slug}.")
-                except Exception as e:
-                    # No es un error crítico si no se puede borrar la imagen vieja, solo se registra.
-                    current_app.logger.error(f"No se pudo eliminar la imagen antigua '{product.imagen_url}' de Cloudinary: {e}", exc_info=True)
+            # B. PRÁCTICA PROFESIONAL: Eliminar la imagen antigua de Cloudinary solo si no está en uso por otros productos.
+            old_image_url = product.imagen_url
+            if old_image_url:
+                # Contar cuántos productos usan la imagen antigua.
+                # Si el conteo es 1, significa que solo este producto la usa y es seguro borrarla.
+                image_usage_count = Productos.query.filter_by(imagen_url=old_image_url).count()
+
+                if image_usage_count <= 1:
+                    try:
+                        # Extraer el public_id de la URL antigua.
+                        # El public_id incluye el nombre de la carpeta.
+                        start_index = old_image_url.find('yeicy-cosmetic/products/')
+                        if start_index != -1:
+                            end_index = old_image_url.rfind('.')
+                            public_id = old_image_url[start_index:end_index]
+                            cloudinary.api.delete_resources([public_id])
+                            current_app.logger.info(f"Imagen antigua '{public_id}' eliminada de Cloudinary para producto {product.slug} (no estaba en uso por otros productos).")
+                    except Exception as e:
+                        # No es un error crítico si no se puede borrar la imagen vieja, solo se registra.
+                        current_app.logger.error(f"No se pudo eliminar la imagen antigua '{old_image_url}' de Cloudinary: {e}", exc_info=True)
+                else:
+                    current_app.logger.info(
+                        f"La imagen antigua '{old_image_url}' no se eliminará de Cloudinary porque está siendo utilizada por {image_usage_count} productos."
+                    )
 
         # --- 6. Actualización de los campos del producto ---
         product.nombre = nombre
+        # El slug se actualiza antes si el nombre cambia
         product.marca = marca
         product.descripcion = descripcion
         product.imagen_url = imagen_url_final
         product.precio = precio
         product.costo = costo
-        product.existencia = int(existencia_str)
+        
+        # MEJORA PROFESIONAL: Evitar el cambio de estado automático.
+        # Se asigna directamente a `_existencia` para no disparar el setter de la propiedad `existencia`,
+        # que cambia el estado a 'activo' si la existencia es > 0.
+        # De esta forma, el estado del producto se mantiene como estaba al momento de la edición.
+        new_existencia = int(existencia_str)
+        product._existencia = new_existencia
+        if new_existencia == 0:
+            product.estado = 'inactivo' # Se mantiene la regla de negocio de desactivar si el stock es 0.
+
         product.stock_minimo = int(stock_minimo_str)
         product.stock_maximo = int(stock_maximo_str)
         product.seudocategoria_id = seudocategoria_id

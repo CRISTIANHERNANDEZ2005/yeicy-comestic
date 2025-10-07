@@ -544,7 +544,7 @@ def get_whatsapp_link(usuario, order_id):
         return jsonify({'success': False, 'message': 'Pedido no encontrado o no autorizado'}), 404
 
     # Número de WhatsApp del administrador (reemplazar con el número real)
-    admin_whatsapp_number = current_app.config.get('ADMIN_WHATSAPP_NUMBER', '573044931438')
+    admin_whatsapp_number = current_app.config.get('ADMIN_WHATSAPP_NUMBER', '573018307170')
 
     # Mensaje personalizado
     message = f"Hola, me gustaría confirmar mi pedido y adjunto la factura. Pedido ID: {order_id}."

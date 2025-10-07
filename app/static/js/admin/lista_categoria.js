@@ -246,33 +246,44 @@ window.categoriesApp = {
       });
   },
   // Función para cargar subcategorías para el filtro
-  loadSubcategoriesForFilter: function () {
-    const mainCategoryId = document.getElementById("mainCategoryFilter")?.value;
-    const subCategoryFilter = document.getElementById("subCategoryFilter");
-    if (!subCategoryFilter) return;
+  loadSubcategoriesForFilter: function (mainCategoryId = null) {
+    const subCategorySelect = document.getElementById("subCategoryFilter");
+    if (!subCategorySelect) return;
 
-    // Limpiar opciones actuales
-    subCategoryFilter.innerHTML =
-      '<option value="all">Todas las subcategorías</option>';
-    if (mainCategoryId !== "all") {
-      // Obtener subcategorías del servidor
-      fetch(`/admin/api/categorias-principales/${mainCategoryId}/subcategorias`)
-        .then((response) => response.json())
-        .then((data) => {
-          if (data.success && data.subcategorias) {
-            data.subcategorias.forEach((subcategory) => {
-              const option = document.createElement("option");
-              option.value = subcategory.id;
-              option.textContent = subcategory.nombre;
-              subCategoryFilter.appendChild(option);
-            });
-          }
-        })
-        .catch((error) => {
-          console.error("Error al cargar subcategorías:", error);
-          this.showNotification("Error al cargar subcategorías", "error");
-        });
+    // Lógica de carga independiente.
+    // Determina qué API usar: todas las subcategorías o las de una categoría principal.
+    let apiUrl;
+    if (mainCategoryId && mainCategoryId !== "all") {
+      apiUrl = `/admin/api/categorias-principales/${mainCategoryId}/subcategorias?estado=activo`;
+    } else {
+      // Si no hay categoría principal, carga TODAS las subcategorías activas.
+      apiUrl = `/admin/api/subcategorias/activas`;
     }
+
+    subCategorySelect.innerHTML = '<option value="">Cargando...</option>';
+
+    fetch(apiUrl)
+      .then((response) => response.json())
+      .then((data) => {
+        subCategorySelect.innerHTML =
+          '<option value="all">Todas las subcategorías</option>';
+        if (data.success && data.subcategorias) {
+          // Poblar el select con las opciones obtenidas.
+          data.subcategorias.forEach((subcategory) => {
+            const option = document.createElement("option");
+            option.value = subcategory.id;
+            option.textContent = subcategory.nombre;
+            subCategorySelect.appendChild(option);
+          });
+          // El filtro de subcategoría siempre está habilitado.
+          subCategorySelect.disabled = false;
+        }
+      })
+      .catch((error) => {
+        console.error("Error al cargar subcategorías para el filtro:", error);
+        subCategorySelect.innerHTML =
+          '<option value="all">Error al cargar</option>';
+      });
   },
   // Función para cargar categorías jerárquicas
   loadHierarchicalCategories: function () {
@@ -338,8 +349,12 @@ window.categoriesApp = {
           : 0;
         // Usar el total de productos ya calculado por el backend
         const totalProducts = category.total_productos || 0;
+        const isInactive = category.estado === 'inactivo';
+        const cardClass = isInactive ? 'bg-gray-100 opacity-75' : '';
+        const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
         html += `
-                    <div class="category-card">
+                    <div class="category-card ${cardClass}">
                         <div class="category-header">
                             <div class="category-info">
                                 <button class="category-toggle" data-target="sub-${
@@ -348,7 +363,10 @@ window.categoriesApp = {
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                                 <div class="category-details">
-                                    <h4>${category.nombre}</h4>
+                                    <h4 class="flex items-center">
+                                      <span>${category.nombre}</span>
+                                      ${nameBadge}
+                                    </h4>
                                     <p>${category.descripcion}</p>
                                     <div class="category-meta">
                                         <span class="inline-flex items-center mr-3">
@@ -382,13 +400,9 @@ window.categoriesApp = {
                                 }" class="action-button view" title="Ver detalles">
                                     <i class="fas fa-eye"></i>
                                 </a>
-                                ${category.estado === 'activo' ? `
                                 <button class="action-button edit" title="Editar Categoría" onclick="categoriesApp.editCategory('${category.id}', 'main')">
                                     <i class="fas fa-edit"></i>
-                                </button>` : `
-                                <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la categoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                    <i class="fas fa-edit"></i>
-                                </button>`}
+                                </button>
                             </div>
                         </div>
 
@@ -431,8 +445,12 @@ window.categoriesApp = {
           : 0;
         // Usar el total de productos ya calculado por el backend
         const totalProducts = subcategory.total_productos || 0;
+        const isInactive = subcategory.estado === 'inactivo';
+        const cardClass = isInactive ? 'bg-gray-100 opacity-75' : '';
+        const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
         html += `
-                    <div class="subcategory-card">
+                    <div class="subcategory-card ${cardClass}">
                         <div class="subcategory-header">
                             <div class="subcategory-info">
                                 <button class="subcategory-toggle" data-target="pseudo-${
@@ -441,7 +459,10 @@ window.categoriesApp = {
                                     <i class="fas fa-chevron-right"></i>
                                 </button>
                                 <div class="subcategory-details">
-                                    <h6>${subcategory.nombre}</h6>
+                                    <h6 class="flex items-center">
+                                      <span>${subcategory.nombre}</span>
+                                      ${nameBadge}
+                                    </h6>
                                     <p class="text-xs text-gray-500">${
                                       subcategory.descripcion
                                     }</p>
@@ -467,13 +488,9 @@ window.categoriesApp = {
                                            }>
                                     <span class="toggle-slider"></span>
                                 </label>
-                                ${subcategory.estado === 'activo' ? `
                                 <button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
                                     <i class="fas fa-edit"></i>
-                                </button>` : `
-                                <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la subcategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                    <i class="fas fa-edit"></i>
-                                </button>`}
+                                </button>
                             </div>
                         </div>
 
@@ -508,12 +525,17 @@ window.categoriesApp = {
       pseudocategories.forEach((pseudocategory) => {
         // Usar el total de productos ya calculado por el backend
         const totalProducts = pseudocategory.total_productos || 0;
+        const isInactive = pseudocategory.estado === 'inactivo';
+        const cardClass = isInactive ? 'bg-gray-100 opacity-75' : '';
+        const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
         html += `
-                    <div class="pseudocategory-card">
+                    <div class="pseudocategory-card ${cardClass}">
                         <div class="pseudocategory-info">
-                            <h6 class="font-medium text-gray-800 text-sm">${
-                              pseudocategory.nombre
-                            }</h6>
+                            <h6 class="font-medium text-gray-800 text-sm flex items-center">
+                              <span>${pseudocategory.nombre}</span>
+                              ${nameBadge}
+                            </h6>
                             <p class="text-xs text-gray-500">${
                               pseudocategory.descripcion
                             }</p>
@@ -535,13 +557,9 @@ window.categoriesApp = {
                                        }>
                                 <span class="toggle-slider"></span>
                             </label>
-                            ${pseudocategory.estado === 'activo' ? `
                             <button class="action-button edit" title="Editar Seudocategoría" onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
                                 <i class="fas fa-edit"></i>
-                            </button>` : `
-                            <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la seudocategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                <i class="fas fa-edit"></i>
-                            </button>`}
+                            </button>
                         </div>
                     </div>
                 `;
@@ -657,11 +675,14 @@ window.categoriesApp = {
     if (statusFilter !== "all") apiUrl += `&estado=${statusFilter}`;
 
     if (this.currentView === "sub" && mainCategoryFilter !== "all")
-      apiUrl += `&categoria_id=${mainCategoryFilter}`;
+      apiUrl += `&categoria_id=${encodeURIComponent(mainCategoryFilter)}`;
 
-    if (this.currentView === "pseudo" && subCategoryFilter !== "all")
-      apiUrl += `&subcategoria_id=${subCategoryFilter}`;
-
+    //  Enviar ambos filtros para seudocategorías.
+    // El backend priorizará subcategoría sobre categoría principal si ambos están presentes.
+    if (this.currentView === "pseudo") {
+      if (mainCategoryFilter !== "all") apiUrl += `&categoria_id=${encodeURIComponent(mainCategoryFilter)}`;
+      if (subCategoryFilter !== "all") apiUrl += `&subcategoria_id=${encodeURIComponent(subCategoryFilter)}`;
+    }
     // Agregar parámetros de ordenamiento
     let sortBy = "nombre";
     let sortOrder = "asc";
@@ -717,9 +738,18 @@ window.categoriesApp = {
     if (this.currentView === "main") {
       if (data.categorias && data.categorias.length > 0) {
         data.categorias.forEach((category) => {
+          const isInactive = category.estado === 'inactivo';
+          const rowClass = isInactive ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' : 'hover:bg-gray-50';
+          const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
           html += `
-                        <tr>
-                            <td>${category.nombre}</td>
+                        <tr class="transition-colors duration-200 ${rowClass}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>${category.nombre}</span>
+                                    ${nameBadge}
+                                </div>
+                            </td>
                             <td>${
                               category.subcategorias
                                 ? category.subcategorias.length
@@ -773,14 +803,9 @@ window.categoriesApp = {
                                     }" class="action-button view" title="Ver detalles">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    ${category.estado === 'activo' ? `
                                     <button class="action-button edit" title="Editar Categoría" onclick="categoriesApp.editCategory('${category.id}', 'main')">
                                         <i class="fas fa-edit"></i>
-                                    </button>` : `
-                                    <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la categoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                        <i class="fas fa-edit"></i>
-                                    </button>`
-                                    }
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -793,9 +818,18 @@ window.categoriesApp = {
     } else if (this.currentView === "sub") {
       if (data.subcategorias && data.subcategorias.length > 0) {
         data.subcategorias.forEach((subcategory) => {
+          const isInactive = subcategory.estado === 'inactivo';
+          const rowClass = isInactive ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' : 'hover:bg-gray-50';
+          const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
           html += `
-                        <tr>
-                            <td>${subcategory.nombre}</td>
+                        <tr class="transition-colors duration-200 ${rowClass}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>${subcategory.nombre}</span>
+                                    ${nameBadge}
+                                </div>
+                            </td>
                             <td>${
                               subcategory.categoria_principal_nombre || "-"
                             }</td>
@@ -848,14 +882,9 @@ window.categoriesApp = {
                             <td>${this.formatDate(subcategory.created_at)}</td>
                             <td>
                                 <div class="flex">
-                                    ${subcategory.estado === 'activo' ?
-                                    `<button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
+                                    <button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('${subcategory.id}', 'sub')">
                                         <i class="fas fa-edit"></i>
-                                    </button>` :
-                                    `<button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la subcategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                        <i class="fas fa-edit"></i>
-                                    </button>`
-                                    }
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -868,9 +897,18 @@ window.categoriesApp = {
     } else if (this.currentView === "pseudo") {
       if (data.seudocategorias && data.seudocategorias.length > 0) {
         data.seudocategorias.forEach((pseudocategory) => {
+          const isInactive = pseudocategory.estado === 'inactivo';
+          const rowClass = isInactive ? 'bg-gray-100 text-gray-500 opacity-75 hover:bg-gray-200' : 'hover:bg-gray-50';
+          const nameBadge = isInactive ? `<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>` : '';
+
           html += `
-                        <tr>
-                            <td>${pseudocategory.nombre}</td>
+                        <tr class="transition-colors duration-200 ${rowClass}">
+                            <td>
+                                <div class="flex items-center">
+                                    <span>${pseudocategory.nombre}</span>
+                                    ${nameBadge}
+                                </div>
+                            </td>
                             <td>${
                               pseudocategory.subcategoria_nombre || "-"
                             }</td>
@@ -923,14 +961,9 @@ window.categoriesApp = {
                             )}</td>
                             <td>
                                 <div class="flex">
-                                    ${pseudocategory.estado === 'activo' ? `
                                     <button class="action-button edit" title="Editar Seudocategoría" onclick="categoriesApp.editCategory('${pseudocategory.id}', 'pseudo')">
                                         <i class="fas fa-edit"></i>
-                                    </button>` : `
-                                    <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la seudocategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                                        <i class="fas fa-edit"></i>
-                                    </button>`
-                                    }
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -1236,12 +1269,27 @@ window.categoriesApp = {
         modal.classList.add("hidden");
       });
   },
-  // Función para mostrar un mensaje cuando se intenta editar una categoría inactiva
-  showInactiveEditMessage: function () {
-    this.showNotification(
-      "Para editar, la categoría debe estar activa.",
-      "warning"
-    );
+  //  Función centralizada para limpiar filtros.
+  // Esto evita la duplicación de código y hace que el comportamiento sea consistente.
+  clearFilters: function () {
+    const nameFilter = document.getElementById("nameFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const mainCategoryFilter = document.getElementById("mainCategoryFilter");
+    const subCategoryFilter = document.getElementById("subCategoryFilter");
+    const sortFilter = document.getElementById("sortFilter");
+
+    if (nameFilter) nameFilter.value = "";
+    if (statusFilter) statusFilter.value = "all";
+    if (mainCategoryFilter) mainCategoryFilter.value = "all";
+    if (subCategoryFilter) subCategoryFilter.value = "all";
+    // Restablecer al valor por defecto que es 'created_at' (más recientes)
+    if (sortFilter) sortFilter.value = "created_at";
+
+    // Si estamos en la vista de seudocategorías, al limpiar, debemos recargar
+    // la lista completa de subcategorías en el filtro.
+    if (this.currentView === "pseudo") {
+      this.loadSubcategoriesForFilter();
+    }
   },
   // Configurar event listeners
   setupEventListeners: function () {
@@ -1265,7 +1313,14 @@ window.categoriesApp = {
         btn.classList.add("active", "border-blue-500", "text-blue-600");
         btn.classList.remove("border-transparent", "text-gray-500");
         // Actualizar la vista actual
+        const previousView = this.currentView;
         this.currentView = btn.getAttribute("data-level");
+
+        // Limpiar filtros si se cambia de una vista de tabla a otra.
+        if (previousView !== this.currentView && this.currentView !== 'all') {
+            this.clearFilters();
+        }
+
         // Mostrar la vista correspondiente
         this.showView(this.currentView);
         // Actualizar la URL sin recargar la página
@@ -1311,48 +1366,65 @@ window.categoriesApp = {
     if (sortFilterInput) {
       sortFilterInput.addEventListener("change", () => this.loadTableData());
     }
-    const subCategoryFilterInput = document.getElementById("subCategoryFilter");
-    if (subCategoryFilterInput) {
-      subCategoryFilterInput.addEventListener("change", () =>
-        this.loadTableData()
-      );
-    }
-    const clearFiltersBtn = document.getElementById("clearFilters");
-    if (clearFiltersBtn) {
-      clearFiltersBtn.addEventListener("click", () => {
-        const nameFilter = document.getElementById("nameFilter");
-        const statusFilter = document.getElementById("statusFilter");
-        const mainCategoryFilter =
-          document.getElementById("mainCategoryFilter");
-        const subCategoryFilter = document.getElementById("subCategoryFilter");
-        const sortFilter = document.getElementById("sortFilter");
-        if (nameFilter) nameFilter.value = "";
-        if (statusFilter) statusFilter.value = "all";
-        if (mainCategoryFilter) mainCategoryFilter.value = "all";
-        if (subCategoryFilter) subCategoryFilter.value = "all";
-        if (sortFilter) sortFilter.value = "nombre";
+
+    //  Lógica interdependiente para filtros de categoría.
+    const mainCategoryFilter = document.getElementById("mainCategoryFilter");
+    const subCategoryFilter = document.getElementById("subCategoryFilter");
+
+    if (mainCategoryFilter) {
+      mainCategoryFilter.addEventListener("change", () => {
+        // Este evento ahora solo se dispara cuando el USUARIO cambia manualmente la categoría principal.
+        const mainCategoryId = mainCategoryFilter.value;
         if (this.currentView === "pseudo") {
-          this.loadSubcategoriesForFilter();
+          // Al cambiar la categoría principal, recargar las subcategorías correspondientes.
+          this.loadSubcategoriesForFilter(mainCategoryId);
         }
+        // Cuando el usuario elige una categoría principal, tiene sentido resetear la subcategoría
+        // para evitar un estado de filtro inconsistente.
+        if (subCategoryFilter) subCategoryFilter.value = "all";
+        // Recargar la tabla con el nuevo filtro principal.
         this.loadTableData();
       });
     }
-    const mainCategoryFilter = document.getElementById("mainCategoryFilter");
-    if (mainCategoryFilter) {
-      mainCategoryFilter.addEventListener("change", () => {
-        if (this.currentView === "pseudo") {
-          this.loadSubcategoriesForFilter();
+
+    if (subCategoryFilter) {
+      subCategoryFilter.addEventListener("change", () => {
+        const subcategoryId = subCategoryFilter.value;
+        if (subcategoryId && subcategoryId !== "all") {
+          // Si se selecciona una subcategoría, buscar su padre y seleccionarlo.
+          fetch(`/admin/api/subcategorias/${subcategoryId}/detalles-filtro`)
+            .then((res) => res.json())
+            .then((data) => {
+              if (data.success && mainCategoryFilter) {
+                // Auto-seleccionar la categoría principal padre.
+                // NO se dispara el evento 'change' del mainCategoryFilter.
+                mainCategoryFilter.value = data.subcategoria.categoria_principal_id;
+              }
+            })
+            .catch((err) => {
+              console.error("Error al obtener detalles del padre:", err);
+            })
+            .finally(() => this.loadTableData()); // Cargar tabla después de la operación.
+        } else {
+          // Si se selecciona "Todas", simplemente recargar.
+          this.loadTableData();
         }
+      });
+    }
+
+    const clearFiltersBtn = document.getElementById("clearFilters");
+    if (clearFiltersBtn) {
+      clearFiltersBtn.addEventListener("click", () => {
+        // Usar la nueva función centralizada
+        this.clearFilters();
         this.loadTableData();
       });
     }
     const clearFiltersViewBtn = document.getElementById("clearFiltersViewBtn");
     if (clearFiltersViewBtn) {
       clearFiltersViewBtn.addEventListener("click", () => {
-        const clearFiltersMenuBtn = document.getElementById("clearFilters");
-        if (clearFiltersMenuBtn) {
-          clearFiltersMenuBtn.click(); // Simula un clic en el botón del menú
-        }
+        this.clearFilters();
+        this.loadTableData();
       });
     }
     // --- FIN: Event Listeners para el NUEVO filtro ---

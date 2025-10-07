@@ -11,6 +11,7 @@ Funcionalidades Clave:
 - **Gestión de Imágenes**: Sube la imagen del producto al servicio de Cloudinary de forma segura.
 - **APIs Auxiliares**: Ofrece endpoints para poblar dinámicamente los selectores de categorías, subcategorías y seudocategorías, mejorando la usabilidad del formulario.
 """
+from app.utils.cloudinary_utils import upload_image_and_get_url
 from flask import Blueprint, render_template, request, abort, current_app, jsonify, redirect, url_for, flash
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
@@ -124,9 +125,8 @@ def create_product(admin_user):
             # --- 4. Subida de la Imagen a Cloudinary ---
             imagen_url = None
             try:
-                # El folder ayuda a organizar las imágenes en Cloudinary
-                upload_result = cloudinary.uploader.upload(imagen_file, folder="yeicy-cosmetic/products")
-                imagen_url = upload_result.get('secure_url')
+                # Lógica de subida profesional con deduplicación centralizada.
+                imagen_url = upload_image_and_get_url(imagen_file)
                 if not imagen_url:
                     raise Exception("La subida a Cloudinary no devolvió una URL.")
             except Exception as e:

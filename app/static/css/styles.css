@@ -21,6 +21,22 @@
   z-index: 60;
 }
 
+/*
+  MEJORA PROFESIONAL: Jerarquía de z-index para la aplicación del cliente.
+  - z-modal-backdrop: Para el fondo oscuro de las modales.
+  - z-modal: Para el contenido principal de las modales.
+  - z-notification: Para notificaciones toast, que deben estar por encima de todo.
+*/
+.z-modal-backdrop {
+  z-index: 9990;
+}
+.z-modal {
+  z-index: 9995;
+}
+.z-notification {
+  z-index: 9999;
+}
+
 @keyframes fadeInDown {
   from {
     opacity: 0;

@@ -1,12 +1,12 @@
-<button onclick="toggleFilters()" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-xl flex items-center justify-center z-30 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 animate-pulse-slow">
+<button id="toggle-filters-button" class="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-xl flex items-center justify-center z-30 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-blue-300 animate-pulse-slow">
     <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path>
     </svg>
 </button>
 <!-- Overlay para móvil y desktop -->
-<div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden transition-opacity duration-300"  onclick="toggleFilters()"></div>
+<div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-drawer-backdrop hidden transition-opacity duration-300"></div>
 <!-- Menú lateral de filtros -->
-<div id="filtersPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+<div id="filtersPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-drawer transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
     <div class="p-6 bg-gradient-to-b from-white to-gray-50 h-full">
         <!-- Encabezado del menú -->
         <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">
@@ -19,7 +19,7 @@
                 </h2>
                 <p class="text-gray-500 text-sm mt-1">Refina tus resultados</p>
             </div>
-            <button onclick="toggleFilters()" class="text-gray-500 hover:text-gray-700 focus:outline-none rounded-full p-2 hover:bg-gray-100 transition-colors duration-200">
+            <button id="close-filters-panel-button" class="text-gray-500 hover:text-gray-700 focus:outline-none rounded-full p-2 hover:bg-gray-100 transition-colors duration-200">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                 </svg>
@@ -27,7 +27,7 @@
         </div>
         
         <!-- Formulario de filtros -->
-        <form id="filterForm" method="GET" class="space-y-6" onsubmit="return false;">
+        <form id="filterForm" method="GET" class="space-y-6" onsubmit="applyFilters(); return false;">
             <!-- Filtro por nombre -->
             <div class="filter-section">
                 <label class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
@@ -55,6 +55,7 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="estado" value="{{ filter_params.get('estado', '') }}">
                         <div class="custom-select-options">
                             <div class="custom-select-option" data-value="">Todos</div>
                             <div class="custom-select-option {% if filter_params.get('estado') == 'activo' %}selected{% endif %}" data-value="activo">Activo</div>
@@ -80,11 +81,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="categoria_id" value="{{ filter_params.get('categoria_id', '') }}">
                         <div class="custom-select-options">
                             <div class="custom-select-option" data-value="">Todas</div>
                             {% for categoria in categorias %}
-                                <div class="custom-select-option {% if filter_params.get('categoria_id') == categoria.id %}selected{% endif %}" data-value="{{ categoria.id }}">
+                                <div class="custom-select-option {% if filter_params.get('categoria_id') == categoria.id %}selected{% endif %} {% if categoria.estado == 'inactivo' %}inactive-option{% endif %}" data-value="{{ categoria.id }}">
                                     {{ categoria.nombre }}
+                                    {% if categoria.estado == 'inactivo' %}
+                                        <span class="status-dot-inactive" title="Categoría inactiva"></span>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -108,11 +113,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="subcategoria_id" value="{{ filter_params.get('subcategoria_id', '') }}">
                         <div class="custom-select-options" id="subcategoriaOptions">
                             <div class="custom-select-option" data-value="">Todas</div>
                             {% for subcategoria in subcategorias %}
-                                <div class="custom-select-option {% if filter_params.get('subcategoria_id') == subcategoria.id %}selected{% endif %}" data-value="{{ subcategoria.id }}">
+                                <div class="custom-select-option {% if filter_params.get('subcategoria_id') == subcategoria.id %}selected{% endif %} {% if subcategoria.estado == 'inactivo' %}inactive-option{% endif %}" data-value="{{ subcategoria.id }}">
                                     {{ subcategoria.nombre }}
+                                    {% if subcategoria.estado == 'inactivo' %}
+                                        <span class="status-dot-inactive" title="Subcategoría inactiva"></span>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -136,11 +145,15 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="seudocategoria_id" value="{{ filter_params.get('seudocategoria_id', '') }}">
                         <div class="custom-select-options" id="seudocategoriaOptions">
                             <div class="custom-select-option" data-value="">Todas</div>
                             {% for seudocategoria in seudocategorias %}
-                                <div class="custom-select-option {% if filter_params.get('seudocategoria_id') == seudocategoria.id %}selected{% endif %}" data-value="{{ seudocategoria.id }}">
+                                <div class="custom-select-option {% if filter_params.get('seudocategoria_id') == seudocategoria.id %}selected{% endif %} {% if seudocategoria.estado == 'inactivo' %}inactive-option{% endif %}" data-value="{{ seudocategoria.id }}">
                                     {{ seudocategoria.nombre }}
+                                    {% if seudocategoria.estado == 'inactivo' %}
+                                        <span class="status-dot-inactive" title="Seudocategoría inactiva"></span>
+                                    {% endif %}
                                 </div>
                             {% endfor %}
                         </div>
@@ -164,8 +177,9 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                             </svg>
                         </div>
+                        <input type="hidden" name="marca" value="{{ filter_params.get('marca', '') }}">
                         <div class="custom-select-options">
-                            <div class="custom-select-option" data-value="">Todas</div>
+                            <div class="custom-select-option selected" data-value="">Todas</div>
                             {% for marca in marcas %}
                                 <div class="custom-select-option {% if filter_params.get('marca') == marca %}selected{% endif %}" data-value="{{ marca }}">
                                     {{ marca }}
@@ -233,14 +247,15 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-xs text-gray-500 mb-1">Ordenar por</label>
-                        <div class="custom-select-container">
-                            <div class="custom-select" data-name="sort_by">
+                        <div class="custom-select-container" >
+                            <div class="custom-select" data-name="sort_by" onchange="handleCustomSelectChange(this)">
                                 <div class="custom-select-trigger">
                                     <span class="custom-select-value">Fecha de creación</span>
                                     <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </div>
+                                <input type="hidden" name="sort_by" value="{{ filter_params.get('sort_by', 'created_at') }}">
                                 <div class="custom-select-options">
                                     <div class="custom-select-option {% if filter_params.get('sort_by', 'created_at') == 'created_at' %}selected{% endif %}" data-value="created_at">Fecha de creación</div>
                                     <div class="custom-select-option {% if filter_params.get('sort_by') == 'nombre' %}selected{% endif %}" data-value="nombre">Nombre</div>
@@ -253,13 +268,14 @@
                     <div>
                         <label class="block text-xs text-gray-500 mb-1">Orden</label>
                         <div class="custom-select-container">
-                            <div class="custom-select" data-name="sort_order">
+                            <div class="custom-select" data-name="sort_order" onchange="handleCustomSelectChange(this)">
                                 <div class="custom-select-trigger">
                                     <span class="custom-select-value">Descendente</span>
                                     <svg class="custom-select-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                                     </svg>
                                 </div>
+                                <input type="hidden" name="sort_order" value="{{ filter_params.get('sort_order', 'desc') }}">
                                 <div class="custom-select-options">
                                     <div class="custom-select-option {% if filter_params.get('sort_order', 'desc') == 'desc' %}selected{% endif %}" data-value="desc">Descendente</div>
                                     <div class="custom-select-option {% if filter_params.get('sort_order') == 'asc' %}selected{% endif %}" data-value="asc">Ascendente</div>
@@ -272,7 +288,7 @@
             
             <!-- Botón de acción -->
             <div class="pt-6 border-t border-gray-200 mt-8 flex justify-center">
-                <button type="button" onclick="resetFilters()" 
+                <button type="button" id="reset-panel-button"
                         class="flex items-center justify-center px-8 py-3 bg-gradient-to-r from-gray-200 to-gray-300 text-gray-800 rounded-xl hover:from-gray-300 hover:to-gray-400 transition-all duration-300 transform hover:scale-105 shadow-lg focus:outline-none focus:ring-4 focus:ring-gray-300 font-semibold">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
@@ -401,6 +417,23 @@
         background-color: #eff6ff;
         color: #1d4ed8;
         font-weight: 600;
+    }
+
+    .custom-select-option.inactive-option {
+        color: #9ca3af; /* Gris más claro para el texto */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .status-dot-inactive {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: #ef4444; /* Rojo */
+        border-radius: 50%;
+        margin-left: 8px;
+        flex-shrink: 0;
     }
     
     /* Estilos para el scrollbar */

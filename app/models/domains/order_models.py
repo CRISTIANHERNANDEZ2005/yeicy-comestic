@@ -51,6 +51,10 @@ class Pedido(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.
     )
     seguimiento_historial = db.Column(db.JSON, nullable=True)
     notas_seguimiento: Mapped[str] = mapped_column(db.Text, nullable=True)
+    # MEJORA: Campo para controlar que la notificación de estado final (completado/cancelado) se envíe solo una vez.
+    # Se resetea si el pedido vuelve a un estado 'en proceso'.
+    notificacion_final_enviada: Mapped[bool] = mapped_column(db.Boolean, nullable=False, default=False, server_default='false')
+
 
     usuario: Mapped["Usuarios"] = relationship(back_populates='pedidos')
     productos: Mapped[List["PedidoProducto"]] = relationship(back_populates='pedido', cascade="all, delete-orphan")

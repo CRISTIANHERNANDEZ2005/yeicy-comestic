@@ -163,7 +163,7 @@ de Administración {% endblock %} {% block content %}
         <!-- Contenedor para las categorías -->
         <div id="categoriesContainer" class="space-y-4">
           {% if categorias %} {% for category in categorias %}
-          <div class="category-card">
+          <div class="category-card {% if category.estado == 'inactivo' %}bg-gray-100 opacity-75{% endif %}">
             <div class="category-header">
               <div class="category-info">
                 <button
@@ -173,7 +173,12 @@ de Administración {% endblock %} {% block content %}
                   <i class="fas fa-chevron-right"></i>
                 </button>
                 <div class="category-details">
-                  <h4>{{ category.nombre }}</h4>
+                  <h4 class="flex items-center">
+                    <span>{{ category.nombre }}</span>
+                    {% if category.estado == 'inactivo' %}
+                      <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                    {% endif %}
+                  </h4>
                   <p>{{ category.descripcion }}</p>
                   <div class="category-meta">
                     <span class="inline-flex items-center mr-3">
@@ -206,15 +211,9 @@ de Administración {% endblock %} {% block content %}
                 >
                   <i class="fas fa-eye"></i>
                 </a>
-                {% if category.estado == 'activo' %} {# Botón de editar habilitado #}
                 <button class="action-button edit" title="Editar Categoría" onclick="categoriesApp.editCategory('{{ category.id }}', 'main')">
                   <i class="fas fa-edit"></i>
                 </button>
-                {% else %} {# Botón de editar deshabilitado con tooltip informativo #}
-                <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la categoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                  <i class="fas fa-edit"></i>
-                </button>
-                {% endif %}
               </div>
             </div>
 
@@ -226,8 +225,8 @@ de Administración {% endblock %} {% block content %}
 
               <div class="space-y-3 ml-4">
                 {% if category.subcategorias %} {% for subcategory in
-                category.subcategorias %}
-                <div class="subcategory-card">
+                category.subcategorias %} 
+                <div class="subcategory-card {% if subcategory.estado == 'inactivo' %}bg-gray-100 opacity-75{% endif %}">
                   <div class="subcategory-header">
                     <div class="subcategory-info">
                       <button
@@ -237,7 +236,12 @@ de Administración {% endblock %} {% block content %}
                         <i class="fas fa-chevron-right"></i>
                       </button>
                       <div class="subcategory-details">
-                        <h6>{{ subcategory.nombre }}</h6>
+                        <h6 class="flex items-center">
+                          <span>{{ subcategory.nombre }}</span>
+                          {% if subcategory.estado == 'inactivo' %}
+                            <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                          {% endif %}
+                        </h6>
                         <p class="text-xs text-gray-500">
                           {{ subcategory.descripcion }}
                         </p>
@@ -262,15 +266,9 @@ de Administración {% endblock %} {% block content %}
                         == 'activo' %}checked{% endif %}>
                         <span class="toggle-slider"></span>
                       </label>
-                      {% if subcategory.estado == 'activo' %} {# Botón de editar habilitado #}
                       <button class="action-button edit" title="Editar Subcategoría" onclick="categoriesApp.editCategory('{{ subcategory.id }}', 'sub')">
                         <i class="fas fa-edit"></i>
                       </button>
-                      {% else %} {# Botón de editar deshabilitado con tooltip informativo #}
-                      <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la subcategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                        <i class="fas fa-edit"></i>
-                      </button>
-                      {% endif %}
                     </div>
                   </div>
 
@@ -287,11 +285,14 @@ de Administración {% endblock %} {% block content %}
 
                     <div class="space-y-2 ml-4">
                       {% if subcategory.seudocategorias %} {% for pseudocategory
-                      in subcategory.seudocategorias %}
-                      <div class="pseudocategory-card">
+                      in subcategory.seudocategorias %} 
+                      <div class="pseudocategory-card {% if pseudocategory.estado == 'inactivo' %}bg-gray-100 opacity-75{% endif %}">
                         <div class="pseudocategory-info">
-                          <h6 class="font-medium text-gray-800 text-sm">
-                            {{ pseudocategory.nombre }}
+                          <h6 class="font-medium text-gray-800 text-sm flex items-center">
+                            <span>{{ pseudocategory.nombre }}</span>
+                            {% if pseudocategory.estado == 'inactivo' %}
+                              <span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>
+                            {% endif %}
                           </h6>
                           <p class="text-xs text-gray-500">
                             {{ pseudocategory.descripcion }}
@@ -311,15 +312,9 @@ de Administración {% endblock %} {% block content %}
                             %}>
                             <span class="toggle-slider"></span>
                           </label>
-                          {% if pseudocategory.estado == 'activo' %} {# Botón de editar habilitado #}
                           <button class="action-button edit" title="Editar Seudocategoría" onclick="categoriesApp.editCategory('{{ pseudocategory.id }}', 'pseudo')">
                             <i class="fas fa-edit"></i>
                           </button>
-                          {% else %} {# Botón de editar deshabilitado con tooltip informativo #}
-                          <button class="action-button edit opacity-50 cursor-not-allowed" title="Para editar, la seudocategoría debe estar activa" onclick="categoriesApp.showInactiveEditMessage()">
-                            <i class="fas fa-edit"></i>
-                          </button>
-                          {% endif %}
                         </div>
                       </div>
                       {% endfor %} {% else %}
@@ -403,13 +398,13 @@ de Administración {% endblock %} {% block content %}
 <!-- Overlay para móvil y desktop -->
 <div
   id="overlay"
-  class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden transition-opacity duration-300"
+  class="fixed inset-0 bg-black bg-opacity-60 z-drawer-backdrop hidden transition-opacity duration-300"
   onclick="toggleFilters()"
 ></div>
 <!-- Menú lateral de filtros -->
 <div
   id="filtersPanel"
-  class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto"
+  class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-drawer transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto"
 >
   <div class="p-6 bg-gradient-to-b from-white to-gray-50 h-full">
     <!-- Encabezado del menú -->

@@ -13,7 +13,6 @@
 
         <!-- Interceptor de autenticación -->
         <script src="{{ url_for('static', filename='js/auth_interceptor.js') }}"></script>
-
         <!-- importar el archivo de estilos -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     </head>
@@ -186,6 +185,35 @@
     {% include 'cliente/ui/modal_edicion_usuario.html' %}
     {% endif %}
 
+    <!-- Logout Confirmation Modal -->
+    <div id="logout-confirmation-modal" class="fixed inset-0 z-modal hidden items-center justify-center p-4 transition-opacity duration-300 flex">
+        <!-- Overlay -->
+        <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" id="logout-modal-overlay"></div>
+
+        <!-- Modal Card -->
+        <div id="logout-modal-card" class="relative w-full max-w-md transform rounded-2xl bg-white p-6 text-center shadow-2xl transition-all duration-300 scale-95 opacity-0">
+            <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-red-100 to-orange-100">
+                <i class="fas fa-sign-out-alt fa-2x text-red-500"></i>
+            </div>
+            <h3 class="mt-5 text-2xl font-semibold leading-6 text-gray-800">¿Cerrar Sesión?</h3>
+            <div class="mt-3">
+                <p class="text-base text-gray-600">¿Estás seguro de que quieres finalizar tu sesión actual?</p>
+            </div>
+            <div class="mt-8 flex flex-col-reverse sm:flex-row gap-3">
+                <button id="logout-cancel-btn" type="button" class="w-full rounded-lg bg-gray-100 px-4 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-200 transition-colors duration-200">
+                    Cancelar
+                </button>
+                <button id="logout-confirm-btn" type="button" class="w-full rounded-lg bg-gradient-to-r from-red-500 to-orange-500 px-4 py-3 text-sm font-semibold text-white shadow-md hover:from-red-600 hover:to-orange-600 transition-all duration-200 transform hover:scale-105">
+                    <span class="logout-confirm-text">Sí, cerrar sesión</span>
+                    <span class="logout-spinner hidden">
+                        <i class="fas fa-spinner fa-spin mr-2"></i>Cerrando...
+                    </span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Scripts -->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     <script src="{{ url_for('static', filename='js/realtime-notifications.js') }}"></script>
@@ -193,6 +221,7 @@
     <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
     <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
     <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/resenas.js') }}"></script>
     {% if g.user %}
         <script src="{{ url_for('static', filename='js/cliente/client_heartbeat.js') }}"></script>
     {% endif %}
@@ -200,7 +229,6 @@
         window.userId = {{ session.get('user_id') | tojson }};
         window.isAuthenticated = {{ 'true' if 'user' in session else 'false' }};
 
-        // Listen for profileUpdated event and update navbarUserName
         window.addEventListener('profileUpdated', function(event) {
             const updatedUser = event.detail.user;
             const navbarUserNameElement = document.getElementById("navbarUserName");

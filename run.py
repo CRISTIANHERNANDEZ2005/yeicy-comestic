@@ -27,10 +27,15 @@ flask_env = os.getenv('FLASK_ENV', 'production')
 # y la clase de configuración correspondiente al entorno.
 app = create_app(config_by_name[flask_env])
 
-# Este bloque se ejecuta solo cuando el script es llamado directamente.
-# Es el método estándar para ejecutar la aplicación en un entorno de desarrollo local.
+# --- NOTA DE MEJORA PROFESIONAL ---
+# El bloque `if __name__ == '__main__':` se elimina.
+# En producción, un servidor WSGI como Gunicorn importará directamente la variable `app`.
+# Para desarrollo local, se puede usar el comando `flask run`, que es el método moderno
+# y recomendado, en lugar de `python run.py`. Esto separa claramente el punto de entrada
+# de la lógica de ejecución.
 if __name__ == '__main__':
-    # El modo de depuración se habilita únicamente si el entorno es 'development'.
-    # Esto activa el recargado automático y el depurador interactivo.
-    debug_mode = flask_env == 'development'
-    app.run(debug=debug_mode)
+    # Para ejecutar en desarrollo:
+    # 1. Exporta la variable de entorno: export FLASK_APP=run.py
+    # 2. Ejecuta el comando: flask run
+    # El modo debug se activará automáticamente si FLASK_ENV=development.
+    app.run()

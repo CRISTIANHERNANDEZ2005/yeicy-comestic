@@ -81,12 +81,6 @@
   transform: scale(1.1);
 }
 .search-input {
-  border: 2px solid #e2e8f0;
-  transition: all 0.3s ease;
-}
-.search-input:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
 /* Animations for table rows */
@@ -135,22 +129,6 @@ tbody tr {
     rgba(255, 255, 255, 0) 100%
   );
   pointer-events: none;
-}
-
-/* Animación para los números de estadísticas */
-.stat-number {
-  transition: all 0.3s ease;
-}
-
-.stat-number:hover {
-  transform: scale(1.05);
-}
-
-
-.action-btn-disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  transform: none !important; /* Evita el efecto hover de escala */
 }
 
 /* Contenedor interno para asegurar que la barra de herramientas y la tabla se desplacen juntas */
@@ -325,4 +303,15 @@ tbody tr {
     font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
     font-size: 0.85rem;
     color: #4b5563; /* Tailwind 'gray-600' */
+}
+
+/* Estilo para la columna de moneda */
+.currency-column {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier,
+    monospace;
+  text-align: right;
+  font-weight: 600; /* Letras más gruesas (semibold) */
+  color: #14532d; /* Un verde oscuro para el texto (green-900) */
+  background-color: #f0fdf4; /* Un fondo verde muy claro (green-50) */
+  border-left: 1px solid #dcfce7; /* Un borde sutil para separar (green-100) */
 }

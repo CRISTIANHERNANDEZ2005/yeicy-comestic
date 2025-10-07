@@ -121,46 +121,44 @@
                                                     <button class="action-button view text-blue-600 hover:text-blue-800" title="Ver detalles" onclick="pedidosApp.viewPedido('{{ pedido.id }}')">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    {% if pedido.estado != 'inactivo' %}
-                                                        {% if pedido.estado_pedido == 'en proceso' %}
-                                                        <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
-                                                                title="Editar pedido" 
-                                                                onclick="pedidosApp.editPedido('{{ pedido.id }}')">
-                                                            <i class="fas fa-edit"></i>
-                                                        </button>
-                                                        <button class="action-button complete text-green-600 hover:text-green-800" 
-                                                                    title="Marcar como completado" 
-                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
-                                                            <i class="fas fa-check-circle"></i>
+                                                    {% if pedido.estado_pedido == 'en proceso' %}
+                                                    <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
+                                                            title="Editar pedido" 
+                                                            onclick="pedidosApp.editPedido('{{ pedido.id }}')">
+                                                        <i class="fas fa-edit"></i>
+                                                    </button>
+                                                    <button class="action-button complete text-green-600 hover:text-green-800" 
+                                                                title="Marcar como completado" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
+                                                        <i class="fas fa-check-circle"></i>
+                                                    </button>
+                                                    <button class="action-button cancel text-red-600 hover:text-red-800" 
+                                                                title="Cancelar pedido" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
+                                                        <i class="fas fa-times-circle"></i>
+                                                    </button>
+                                                    {% elif pedido.estado_pedido == 'completado' %}
+                                                        <button class="action-button process text-blue-600 hover:text-blue-800" 
+                                                                title="Poner en proceso" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
+                                                            <i class="fas fa-sync-alt"></i>
                                                         </button>
                                                         <button class="action-button cancel text-red-600 hover:text-red-800" 
-                                                                    title="Cancelar pedido" 
-                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
+                                                                title="Cancelar pedido" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
                                                             <i class="fas fa-times-circle"></i>
                                                         </button>
-                                                        {% elif pedido.estado_pedido == 'completado' %}
-                                                            <button class="action-button process text-blue-600 hover:text-blue-800" 
-                                                                    title="Poner en proceso" 
-                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
-                                                                <i class="fas fa-sync-alt"></i>
-                                                            </button>
-                                                            <button class="action-button cancel text-red-600 hover:text-red-800" 
-                                                                    title="Cancelar pedido" 
-                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'cancelado')">
-                                                                <i class="fas fa-times-circle"></i>
-                                                            </button>
-                                                        {% elif pedido.estado_pedido == 'cancelado' %}
-                                                            <button class="action-button process text-blue-600 hover:text-blue-800" 
-                                                                    title="Poner en proceso" 
-                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
-                                                                <i class="fas fa-sync-alt"></i>
-                                                            </button>
-                                                            <button class="action-button complete text-green-600 hover:text-green-800" 
-                                                                    title="Marcar como completado" 
-                                                                    onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
-                                                                <i class="fas fa-check-circle"></i>
-                                                            </button>
-                                                        {% endif %}
+                                                    {% elif pedido.estado_pedido == 'cancelado' %}
+                                                        <button class="action-button process text-blue-600 hover:text-blue-800" 
+                                                                title="Poner en proceso" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'en proceso')">
+                                                            <i class="fas fa-sync-alt"></i>
+                                                        </button>
+                                                        <button class="action-button complete text-green-600 hover:text-green-800" 
+                                                                title="Marcar como completado" 
+                                                                onclick="pedidosApp.showConfirmEstadoModal('{{ pedido.id }}', 'completado')">
+                                                            <i class="fas fa-check-circle"></i>
+                                                        </button>
                                                     {% endif %}
                                                 </div>
                                             </td>
@@ -320,6 +318,7 @@
                                             </div>
                                         </div>
                                     </div>
+                                    
                                 </div>
                             </div>
                         </div>
@@ -399,7 +398,7 @@
     </div>
     
     <!-- Modal de detalles del pedido -->
-    <div id="pedidoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-modal-top">
+    <div id="pedidoModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-modal">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-hidden transform transition-all duration-300 scale-95 opacity-0" id="pedidoModalContent">
             <!-- Cabecera con estado del pedido -->
             <div class="relative">
@@ -650,10 +649,10 @@
     </button>
     
     <!-- Overlay para móvil y desktop -->
-    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-40 hidden transition-opacity duration-300" onclick="toggleFilters()"></div>
+    <div id="overlay" class="fixed inset-0 bg-black bg-opacity-60 z-drawer-backdrop hidden transition-opacity duration-300" onclick="toggleFilters()"></div>
     
     <!-- Menú lateral de filtros -->
-    <div id="filtersPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-50 transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
+    <div id="filtersPanel" class="fixed top-0 right-0 h-full w-80 md:w-96 bg-white shadow-2xl z-drawer transform translate-x-full transition-transform duration-300 ease-in-out overflow-y-auto">
         <div class="p-6 bg-gradient-to-b from-white to-gray-50 h-full">
             <!-- Encabezado del menú -->
             <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-200">

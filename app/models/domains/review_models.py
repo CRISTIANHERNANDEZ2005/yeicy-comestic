@@ -10,12 +10,12 @@ como el texto y la calificación.
 from app.models.serializers import like_to_dict, resena_to_dict
 # --- Importaciones de Extensiones y Terceros ---
 from app.extensions import db
-from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
+from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum, func
 # --- Importaciones Locales de la Aplicación ---
 from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
 from app.models.enums import EstadoEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, List
 if TYPE_CHECKING:
     from app.models.domains.user_models import Usuarios
     from app.models.domains.product_models import Productos
@@ -121,61 +121,41 @@ class Likes(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.M
             self.id = id
 
 
+# En review_models.py
 
 class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, db.Model):
     """
     Representa una reseña (review) escrita por un usuario para un producto.
-
-    Este modelo almacena el contenido textual, la calificación y el título de una reseña.
-    Establece una restricción única para que un usuario solo pueda escribir una reseña
-    por producto.
-
-    Attributes:
-        usuario_id (str): Clave foránea que vincula al usuario que escribió la reseña.
-        producto_id (str): Clave foránea que vincula al producto reseñado.
-        texto (str): El contenido principal de la reseña.
-        calificacion (int): La puntuación numérica (1-5) de la reseña.
-        titulo (Optional[str]): Un título opcional para la reseña.
-        usuario (Usuarios): Relación con el modelo `Usuarios`.
-        producto (Productos): Relación con el modelo `Productos`.
     """
     __tablename__ = 'reseñas'
 
-    # id y timestamps heredados de los mixins
+    # Campos existentes
     usuario_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('usuarios.id'), nullable=False)
     producto_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('productos.id'), nullable=False)
     texto: Mapped[str] = mapped_column(db.String(1000), nullable=False)
     calificacion: Mapped[int] = mapped_column(db.Integer, nullable=False)
-    titulo: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True) # Added this line
-    # estado ya está en el mixin
+    titulo: Mapped[Optional[str]] = mapped_column(db.String(100), nullable=True)
+    
+    # Campos mejorados
+    visitas: Mapped[int] = mapped_column(db.Integer, default=0, nullable=False, server_default='0')     # Contador de visitas
+    votos_utiles_count: Mapped[int] = mapped_column(db.Integer, default=0, server_default='0')
+    
+    # Relaciones existentes
     usuario: Mapped['Usuarios'] = relationship('Usuarios', back_populates='reseñas')
     producto: Mapped['Productos'] = relationship('Productos', back_populates='reseñas')
 
-    # Restricciones e índices
+    # Restricciones e índices existentes
     __table_args__ = (
-        CheckConstraint("calificacion >= 1 AND calificacion <= 5",
-                        name='check_calificacion_rango'),
-        UniqueConstraint('usuario_id', 'producto_id',
-                         name='unique_usuario_producto_reseña'),
+        CheckConstraint("calificacion >= 1 AND calificacion <= 5", name='check_calificacion_rango'),
+        UniqueConstraint('usuario_id', 'producto_id', name='unique_usuario_producto_reseña'),
         db.Index('idx_reseña_usuario_id', 'usuario_id'),
         db.Index('idx_reseña_producto_id', 'producto_id'),
+        db.Index('idx_reseña_votos_utiles_count', 'votos_utiles_count'),
     )
+    votos: Mapped[List["ReseñaVoto"]] = relationship(back_populates='reseña', cascade="all, delete-orphan")
 
-    def __init__(self, usuario_id, producto_id, texto, calificacion, titulo=None, id=None): # Modified signature
-        """
-        Inicializa una nueva instancia de Reseña.
-
-        Args:
-            usuario_id (str): El ID del usuario.
-            producto_id (str): El ID del producto.
-            texto (str): El contenido de la reseña.
-            calificacion (int): La calificación (1-5).
-            titulo (Optional[str]): El título de la reseña.
-            id (Optional[str]): Un ID predefinido, si es necesario.
-
-        Raises:
-            ValueError: Si `usuario_id`, `producto_id`, `texto` o `calificacion` son inválidos.
-        """
+    def __init__(self, usuario_id, producto_id, texto, calificacion, titulo=None, id=None):
+        # Implementación existente
         if not usuario_id:
             raise ValueError("Debe indicar el usuario")
         if not producto_id:
@@ -184,6 +164,50 @@ class Reseñas(UUIDPrimaryKeyMixin, TimestampMixin, db.Model):
         self.producto_id = producto_id
         self.texto = str(TextoResena(texto))
         self.calificacion = int(Calificacion(calificacion))
-        self.titulo = titulo # Added this line
+        self.titulo = titulo
         if id:
             self.id = id
+        self.visitas = 0
+
+    def incrementar_visitas(self):
+        """Incrementa el contador de visitas de la reseña."""
+        # MEJORA PROFESIONAL: Usar una expresión F para una actualización atómica.
+        # Esto evita condiciones de carrera y es la forma idiomática de SQLAlchemy.
+        db.session.query(Reseñas).filter_by(id=self.id).update({'visitas': Reseñas.visitas + 1})
+        db.session.commit()
+
+    def actualizar_votos_count(self):
+        """Actualiza el contador de votos útiles y lo guarda en la BD."""
+        #  Actualización atómica y eficiente del contador.
+        # En lugar de cargar todos los votos en memoria con `len(self.votos)`,
+        # se realiza una subconsulta que cuenta los votos directamente en la base de datos.
+        # Esto es mucho más performante, especialmente si una reseña tiene muchos votos.
+        votos_count_subquery = db.session.query(func.count(ReseñaVoto.id)).filter(ReseñaVoto.reseña_id == self.id).scalar_subquery()
+        db.session.query(Reseñas).filter_by(id=self.id).update(
+            {'votos_utiles_count': votos_count_subquery}, synchronize_session=False
+        )
+        db.session.commit()
+
+class ReseñaVoto(UUIDPrimaryKeyMixin, TimestampMixin, db.Model):
+    """
+    Representa un voto (like) que un usuario da a una reseña.
+    """
+    __tablename__ = 'reseña_votos'
+
+    usuario_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('usuarios.id'), nullable=False)
+    reseña_id: Mapped[str] = mapped_column(db.String(36), db.ForeignKey('reseñas.id'), nullable=False)
+
+    usuario: Mapped['Usuarios'] = relationship()
+    reseña: Mapped['Reseñas'] = relationship(back_populates='votos')
+
+    __table_args__ = (
+        UniqueConstraint('usuario_id', 'reseña_id', name='uq_usuario_reseña_voto'),
+        db.Index('idx_reseña_voto_usuario_id', 'usuario_id'),
+        db.Index('idx_reseña_voto_reseña_id', 'reseña_id'),
+    )
+
+    def __init__(self, usuario_id, reseña_id):
+        if not usuario_id or not reseña_id:
+            raise ValueError("usuario_id y reseña_id son requeridos.")
+        self.usuario_id = usuario_id
+        self.reseña_id = reseña_id

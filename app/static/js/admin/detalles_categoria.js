@@ -272,73 +272,47 @@ function updateMetrics(metrics) {
   document.getElementById("total-sales").textContent = hasSales
     ? formatCurrency(metrics.total_ventas)
     : "Sin ventas";
+  // Actualizar tarjeta de Inversión Total
+  document.getElementById("total-investment").textContent = hasSales
+    ? formatCurrency(metrics.total_inversion)
+    : "Sin ventas";
+  // Actualizar tarjeta de Ganancia Neta (Utilidad)
+  document.getElementById("total-profit").textContent = hasSales
+    ? formatCurrency(metrics.total_utilidad)
+    : "Sin ventas";
   document.getElementById("units-sold").textContent = hasSales
     ? metrics.unidades_vendidas.toLocaleString()
     : "Sin ventas";
   document.getElementById("total-products").textContent =
     metrics.total_productos;
-  document.getElementById("avg-margin").textContent =
+  // MEJORA: Cambiar el nombre de la métrica de margen promedio para mayor claridad
+  const avgMarginElement = document.getElementById("avg-margin");
+  if (avgMarginElement)
+    avgMarginElement.textContent =
     hasProducts && metrics.margen_promedio > 0
       ? formatPercentage(metrics.margen_promedio)
       : "Sin datos";
 
   // Actualizar tendencias
-  const salesTrend = document.getElementById("sales-trend");
-  const unitsTrend = document.getElementById("units-trend");
-  const marginTrend = document.getElementById("margin-trend");
+  const profitTrend = document.getElementById("profit-trend");
 
   if (hasSales) {
-    salesTrend.innerHTML =
-      metrics.ventas_tendencia > 0
-        ? `<i class="fas fa-arrow-up mr-1"></i> ${formatPercentage(
-            metrics.ventas_tendencia
-          )}`
-        : `<i class="fas fa-arrow-down mr-1"></i> ${formatPercentage(
-            Math.abs(metrics.ventas_tendencia)
-          )}`;
-    salesTrend.className =
-      metrics.ventas_tendencia > 0
-        ? "text-green-600 text-sm flex items-center mt-1"
-        : "text-red-600 text-sm flex items-center mt-1";
-  } else {
-    salesTrend.innerHTML = '<i class="fas fa-minus mr-1"></i> Sin datos';
-    salesTrend.className = "text-gray-600 text-sm flex items-center mt-1";
-  }
+    // MEJORA PROFESIONAL: Mostrar la diferencia entre la utilidad y la inversión del período.
+    const utilidadPeriodo = metrics.utilidad_periodo_actual;
+    const inversionPeriodo = metrics.inversion_periodo_actual;
+    const diferencia = utilidadPeriodo - inversionPeriodo;
 
-  if (hasSales) {
-    unitsTrend.innerHTML =
-      metrics.unidades_tendencia > 0
-        ? `<i class="fas fa-arrow-up mr-1"></i> ${formatPercentage(
-            metrics.unidades_tendencia
-          )}`
-        : `<i class="fas fa-arrow-down mr-1"></i> ${formatPercentage(
-            Math.abs(metrics.unidades_tendencia)
-          )}`;
-    unitsTrend.className =
-      metrics.unidades_tendencia > 0
-        ? "text-green-600 text-sm flex items-center mt-1"
-        : "text-red-600 text-sm flex items-center mt-1";
-  } else {
-    unitsTrend.innerHTML = '<i class="fas fa-minus mr-1"></i> Sin datos';
-    unitsTrend.className = "text-gray-600 text-sm flex items-center mt-1";
-  }
+    profitTrend.textContent = `${diferencia >= 0 ? "+" : "-"} ${formatCurrency(
+      Math.abs(diferencia)
+    )}`;
 
-  if (hasProducts && metrics.margen_promedio > 0) {
-    marginTrend.innerHTML =
-      metrics.margen_tendencia > 0
-        ? `<i class="fas fa-arrow-up mr-1"></i> ${formatPercentage(
-            metrics.margen_tendencia
-          )}`
-        : `<i class="fas fa-arrow-down mr-1"></i> ${formatPercentage(
-            Math.abs(metrics.margen_tendencia)
-          )}`;
-    marginTrend.className =
-      metrics.margen_tendencia > 0
+    profitTrend.className =
+      diferencia >= 0
         ? "text-green-600 text-sm flex items-center mt-1"
         : "text-red-600 text-sm flex items-center mt-1";
   } else {
-    marginTrend.innerHTML = '<i class="fas fa-minus mr-1"></i> Sin datos';
-    marginTrend.className = "text-gray-600 text-sm flex items-center mt-1";
+    profitTrend.textContent = "Sin datos";
+    profitTrend.className = "text-gray-600 text-sm flex items-center mt-1";
   }
 }
 
@@ -1630,10 +1604,25 @@ function applyRelatedProductsFiltersWithDebounce() {
 // Función para restablecer filtros de productos relacionados
 function resetRelatedProductsFilters() {
   document.getElementById("related-product-search").value = "";
-  document.getElementById("related-sort-by").value = "nombre";
-  document.getElementById("related-order").value = "asc";
-  document.getElementById("related-status").value = "";
+  document.getElementById("related-sort-by").value = "nombre"; // Valor por defecto
+  document.getElementById("related-order").value = "asc"; // Valor por defecto
+  document.getElementById("related-status").value = ""; // "Todos"
 
+  // MEJORA: Restablecer los filtros de categoría que faltaban
+  const subcategoryFilter = document.getElementById(
+    "related-subcategory-filter"
+  );
+  if (subcategoryFilter) subcategoryFilter.value = ""; // "Todas"
+
+  const pseudocategoryFilter = document.getElementById(
+    "related-pseudocategory-filter"
+  );
+  if (pseudocategoryFilter) {
+    pseudocategoryFilter.value = ""; // "Todas"
+    pseudocategoryFilter.disabled = true; // Deshabilitar ya que no hay subcategoría seleccionada
+  }
+
+  // Restablecer la paginación y recargar los productos con los filtros limpios
   relatedProductsCurrentPage = 1;
   fetchRelatedProductsAdvanced();
 }

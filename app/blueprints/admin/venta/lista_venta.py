@@ -1,14 +1,15 @@
 """
 Módulo de Gestión de Ventas (Admin).
 
-Este blueprint se encarga de la administración y análisis de las ventas, que son
-pedidos con estado 'completado'. Proporciona una interfaz para listar, filtrar,
-crear y analizar las ventas, así como para generar facturas.
+Este blueprint se encarga de la administración y análisis de las ventas (pedidos
+con estado 'completado'). Proporciona una interfaz para listar, filtrar, crear,
+editar y analizar las ventas, así como para generar facturas.
 
 Funcionalidades Clave:
 - **Vista de Listado de Ventas**: Renderiza la tabla de ventas con paginación y filtros avanzados (ID, cliente, fecha, monto).
 - **API de Filtrado en Tiempo Real**: Un endpoint para que el frontend filtre, ordene y pagine la lista de ventas dinámicamente.
 - **Creación de Ventas Directas**: Un endpoint para crear una venta (un pedido ya completado) directamente desde el panel, descontando el stock y registrando la transacción.
+- **Edición de Ventas**: Un endpoint robusto y transaccional para editar ventas, ajustando el stock de forma inteligente y notificando al cliente de manera condicional.
 - **API de Estadísticas**: Un endpoint robusto para calcular métricas clave de negocio (ingresos, utilidad, margen, ticket promedio) y generar datos para gráficos de tendencias.
 - **Gestión de Estado**: Permite marcar ventas como 'activas' o 'inactivas' para control administrativo.
 - **Generación de Facturas**: Un endpoint para renderizar una vista de factura imprimible para una venta específica.
@@ -21,9 +22,9 @@ from app.models.domains.product_models import Productos
 from app.models.enums import EstadoPedido, EstadoEnum, EstadoSeguimiento
 from app.models.serializers import pedido_to_dict, pedido_detalle_to_dict
 from app.extensions import db
-from sqlalchemy import or_, and_, func, desc
-from sqlalchemy.orm import joinedload
-from datetime import datetime, timedelta, date
+from sqlalchemy import or_, and_, func, desc, case
+from sqlalchemy.orm import joinedload, attributes
+from datetime import datetime, timedelta, date, timezone
 from flask_wtf.csrf import generate_csrf
 
 admin_ventas_bp = Blueprint('admin_ventas', __name__)
@@ -369,15 +370,32 @@ def create_venta(admin_user):
                 'precio_unitario': producto.precio
             })
 
-        # Añadir historial de seguimiento para notificar al cliente.
-        # Al crear una venta directa, se genera una notificación de "Entregado".
-        nota_seguimiento = "Tu pedido esta completado con exito."
-        historial_inicial = [{
-            'estado': EstadoSeguimiento.ENTREGADO.value,
-            'notas': nota_seguimiento,
-            'timestamp': datetime.utcnow().isoformat() + "Z",
-            'notified_to_client': False  # Clave para que se muestre la notificación al cliente.
-        }]
+        # MEJORA PROFESIONAL: Al crear una venta directa, generar un historial de seguimiento completo.
+        # Esto le da al cliente una visión profesional de todo el proceso, aunque se haya completado en un solo paso.
+        nota_final = "Tu pedido ha sido completado y entregado con éxito."
+        timestamp_actual = datetime.utcnow().isoformat() + "Z"
+
+        # Secuencia completa de seguimiento con notas profesionales.
+        secuencia_completa = [
+            (EstadoSeguimiento.RECIBIDO, "Tu pedido fue recibido y está siendo procesado."),
+            (EstadoSeguimiento.EN_PREPARACION, "Tu pedido está en preparación."),
+            (EstadoSeguimiento.EN_CAMINO, "Tu pedido ya se encuentra en camino."),
+            (EstadoSeguimiento.ENTREGADO, nota_final)
+        ]
+
+        # Crear el historial completo.
+        # MEJORA PROFESIONAL: Marcar solo el estado 'ENTREGADO' para notificación.
+        # Los estados anteriores se añaden al historial para que el cliente vea un
+        # timeline completo, pero se marcan como ya notificados para no enviarle
+        # alertas innecesarias de 'recibido', 'en preparación', etc., en una venta directa.
+        historial_inicial = [
+            {
+                'estado': estado_secuencia.value,
+                'notas': nota_secuencia,
+                'timestamp': timestamp_actual,
+                'notified_to_client': True if estado_secuencia != EstadoSeguimiento.ENTREGADO else False
+            } for estado_secuencia, nota_secuencia in secuencia_completa
+        ]
 
         nueva_venta = Pedido(
             usuario_id=usuario_id,
@@ -385,7 +403,7 @@ def create_venta(admin_user):
             estado_pedido=EstadoPedido.COMPLETADO, # La diferencia clave: se crea como COMPLETADO
             estado=EstadoEnum.ACTIVO.value,
             seguimiento_estado=EstadoSeguimiento.ENTREGADO,
-            notas_seguimiento=nota_seguimiento,
+            notas_seguimiento=nota_final,
             seguimiento_historial=historial_inicial
         )
         db.session.add(nueva_venta)
@@ -452,6 +470,155 @@ def get_venta_detalle(admin_user, venta_id):
             'success': False,
             'message': 'Error al obtener detalle de la venta'
         }), 500
+
+@admin_ventas_bp.route('/api/ventas/<string:venta_id>', methods=['PUT'])
+@admin_jwt_required
+def update_venta(admin_user, venta_id):
+    """
+    API para actualizar una venta existente.
+
+    Esta función permite editar una venta (un pedido completado), ajustando
+    el cliente, los productos y las cantidades. La lógica es compleja y
+    transaccional para garantizar la integridad de los datos y el stock.
+
+    MEJORA PROFESIONAL: Al actualizar, se añade una entrada al historial de seguimiento. Si la venta está 'activa', se marca para notificar al cliente del cambio. Si está 'inactiva', el cambio se registra silenciosamente.
+    Lógica de Actualización:
+    1.  Inicia una transacción de base de datos.
+    2.  Calcula la diferencia de stock entre el estado original y el nuevo.
+    3.  Verifica si hay suficiente stock para los productos añadidos o incrementados.
+    4.  Revierte el stock de los productos eliminados o reducidos.
+    5.  Actualiza los `PedidoProducto` (elimina, actualiza, crea).
+    6.  Recalcula y actualiza el `total` del `Pedido`.
+    7.  Actualiza el `usuario_id` si ha cambiado.
+    8.  Añade una entrada al historial de seguimiento, notificando al cliente si la venta está activa.
+    8.  Confirma la transacción. Si algo falla, se revierte todo.
+
+    Args:
+        admin_user: El objeto del administrador autenticado.
+        venta_id (str): El ID de la venta a actualizar.
+
+    Returns:
+        JSON: Un objeto con el resultado de la operación.
+    """
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No se recibieron datos'}), 400
+
+        venta = Pedido.query.options(joinedload(Pedido.productos)).get(venta_id)
+        if not venta or venta.estado_pedido != EstadoPedido.COMPLETADO:
+            return jsonify({'success': False, 'message': 'Venta no encontrada'}), 404
+
+        new_usuario_id = data.get('usuario_id')
+        new_productos_payload = data.get('productos', [])
+
+        if not new_usuario_id or not new_productos_payload:
+            return jsonify({'success': False, 'message': 'Faltan datos: se requiere usuario_id y productos'}), 400
+
+        # --- Lógica Transaccional ---
+        with db.session.begin_nested():
+            # 1. Mapear productos y cantidades originales y nuevas
+            old_items = {str(p.producto_id): p.cantidad for p in venta.productos}
+            new_items = {str(p['id']): p['cantidad'] for p in new_productos_payload}
+            all_product_ids = set(old_items.keys()) | set(new_items.keys())
+            
+            # 2. Calcular diferencias de stock y verificar disponibilidad
+            stock_changes = {}
+            for prod_id in all_product_ids:
+                old_qty = old_items.get(prod_id, 0)
+                new_qty = new_items.get(prod_id, 0)
+                diff = new_qty - old_qty
+                if diff != 0:
+                    stock_changes[prod_id] = diff
+
+            # Verificar stock antes de aplicar cambios
+            for prod_id, diff in stock_changes.items():
+                if diff > 0: # Si se añaden productos
+                    producto = Productos.query.get(prod_id)
+                    if not producto or producto.existencia < diff:
+                        raise ValueError(f'Stock insuficiente para {producto.nombre}. Disponible: {producto.existencia}, solicitado adicional: {diff}')
+
+            # 3. Aplicar cambios de stock
+            for prod_id, diff in stock_changes.items():
+                producto = Productos.query.get(prod_id)
+                if producto:
+                    producto.existencia -= diff
+
+            # 4. Actualizar PedidoProducto y calcular nuevo total
+            venta.productos.clear()
+            db.session.flush() # Limpiar la relación
+            
+            new_total = 0
+            for item_payload in new_productos_payload:
+                producto = Productos.query.get(item_payload['id'])
+                cantidad = item_payload['cantidad']
+                precio_unitario = producto.precio # Usar el precio actual del producto
+                
+                pedido_producto = PedidoProducto(
+                    pedido_id=venta.id,
+                    producto_id=producto.id,
+                    cantidad=cantidad,
+                    precio_unitario=precio_unitario
+                )
+                db.session.add(pedido_producto)
+                new_total += cantidad * precio_unitario
+
+            # 5. Actualizar el pedido principal
+            # Si se cambia el cliente, actualizar las fechas clave.
+            # Esto asegura que el nuevo cliente vea una línea de tiempo consistente
+            # a partir de la fecha de la actualización, no de la venta original.
+            # MEJORA PROFESIONAL: Usar la hora de Colombia para evitar desfases de día.
+            # Se obtiene la hora actual en UTC y se convierte a la zona horaria de Colombia.
+            # Esto garantiza que si un admin edita a las 10 PM, la fecha refleje ese día.
+            import pytz
+            colombia_tz = pytz.timezone('America/Bogota')
+            now_colombia = datetime.now(colombia_tz)
+
+            if str(venta.usuario_id) != str(new_usuario_id):
+                current_app.logger.info(f"Cliente de la venta {venta.id} cambiado de {venta.usuario_id} a {new_usuario_id}. Actualizando fechas.")
+                new_timestamp_utc = now_colombia.astimezone(timezone.utc)
+                
+                # Actualizar la fecha de creación de la venta para el nuevo cliente.
+                venta.created_at = new_timestamp_utc
+                
+                # Actualizar las fechas del historial de seguimiento.
+                if venta.seguimiento_historial:
+                    for entry in venta.seguimiento_historial:
+                        entry['timestamp'] = new_timestamp_utc.isoformat()
+
+            venta.total = new_total
+            venta.usuario_id = new_usuario_id
+            venta.updated_at = now_colombia.astimezone(timezone.utc)
+
+            # 6. MEJORA PROFESIONAL: Añadir entrada al historial y notificar si está activo.
+            # Si el historial no existe, se inicializa.
+            if venta.seguimiento_historial is None:
+                venta.seguimiento_historial = []
+
+            # Determinar si se debe notificar al cliente.
+            notificar_cliente = venta.estado == EstadoEnum.ACTIVO.value
+
+            # Crear la nueva entrada en el historial.
+            historial_entry = {
+                'estado': venta.seguimiento_estado.value, # Usar el estado de seguimiento actual (ej. 'entregado')
+                'notas': "Tu pedido esta actualizado y completado",
+                'timestamp': now_colombia.isoformat(),
+                'notified_to_client': not notificar_cliente # notificar si es True (False para que el sistema lo envíe)
+            }
+            venta.seguimiento_historial.append(historial_entry)
+            attributes.flag_modified(venta, "seguimiento_historial")
+
+        db.session.commit()
+        current_app.logger.info(f"Venta {venta_id} actualizada por administrador {admin_user.id}")
+        return jsonify({'success': True, 'message': 'Venta actualizada exitosamente', 'pedido_id': venta.id}), 200
+
+    except ValueError as ve:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(ve)}), 400
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"Error al actualizar la venta {venta_id}: {e}", exc_info=True)
+        return jsonify({'success': False, 'message': 'Error interno al actualizar la venta'}), 500
 
 @admin_ventas_bp.route('/api/ventas/<string:venta_id>/estado', methods=['POST'])
 @admin_jwt_required
@@ -579,6 +746,17 @@ def get_ventas_estadisticas(admin_user):
             PedidoProducto.pedido_id.in_(pedidos_filtrados_ids)
         ).one()
 
+        # --- MEJORA PROFESIONAL: Calcular utilidad e inversión del período actual ---
+        # Estos valores se usarán en el frontend para mostrar la ganancia/pérdida sobre la inversión.
+        financials_periodo_actual = db.session.query(
+            func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ingresos'),
+            func.sum(PedidoProducto.cantidad * Productos.costo).label('total_inversion')
+        ).join(Productos, PedidoProducto.producto_id == Productos.id).filter(
+            PedidoProducto.pedido_id.in_(pedidos_filtrados_ids)
+        ).one()
+        utilidad_periodo_actual = (financials_periodo_actual.total_ingresos or 0) - (financials_periodo_actual.total_inversion or 0)
+        inversion_periodo_actual = financials_periodo_actual.total_inversion or 0
+
         total_ingresos = financials.total_ingresos or 0
         total_inversion = financials.total_inversion or 0
         total_utilidad = total_ingresos - total_inversion
@@ -655,6 +833,8 @@ def get_ventas_estadisticas(admin_user):
                 'total_inversion': float(total_inversion),
                 'total_utilidad': float(total_utilidad),
                 'margen_utilidad': float(margen_utilidad),
+                'utilidad_periodo_actual': float(utilidad_periodo_actual),
+                'inversion_periodo_actual': float(inversion_periodo_actual),
                 'grafico': {
                     'fechas': fechas,
                     'cantidades': cantidades,

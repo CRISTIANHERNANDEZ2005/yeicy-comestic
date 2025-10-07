@@ -2,7 +2,7 @@
 """
 Módulo de Gestión de Usuarios y Administradores (Admin).
 
-Este blueprint centraliza toda la lógica para la administración de las entidades
+Este blueprint centraliza toda la lógica para la administración de las entidades de
 de `Usuarios` (clientes) y `Admins` (administradores) desde el panel de control.
 
 Funcionalidades Clave:
@@ -14,20 +14,39 @@ Funcionalidades Clave:
 """
 from flask import Blueprint, jsonify, request, render_template, current_app
 from app.models.domains.user_models import Usuarios, Admins
-from app.models.serializers import usuario_to_dict, admin_to_dict
-from app.models.enums import EstadoEnum
+from app.models.domains.order_models import Pedido
+from app.models.serializers import admin_to_dict
+from app.models.enums import EstadoEnum, EstadoPedido
 from app.extensions import db
-from sqlalchemy import or_, case, desc
+from sqlalchemy import or_, case, desc, func
 from app.extensions import bcrypt
 from flask_wtf.csrf import generate_csrf
 from app.utils.admin_jwt_utils import admin_jwt_required
 import uuid, datetime
 
+# MEJORA: Crear un serializador específico para esta ruta que omita 'updated_at'.
+# Esto mantiene el serializador global intacto para otros usos.
+def usuario_to_dict_lista(usuario):
+    """
+    Convierte un objeto Usuario a un diccionario para la lista de usuarios,
+    omitiendo el campo 'updated_at'.
+    """
+    if not usuario:
+        return None
+    return {
+        'id': usuario.id,
+        'nombre': usuario.nombre,
+        'apellido': usuario.apellido,
+        'numero': usuario.numero,
+        'estado': usuario.estado,
+        'created_at': usuario.created_at.isoformat() if usuario.created_at else None,
+    }
+
 # Crear el blueprint
 user_bp = Blueprint('users', __name__)
 
 # Vista principal para renderizar el template
-@user_bp.route('/admin//lista-usuarios', methods=['GET'])
+@user_bp.route('/admin/lista-usuarios', methods=['GET'])
 @admin_jwt_required
 def usuarios_view(admin_user):
     """
@@ -73,9 +92,17 @@ def get_usuarios(admin_user):
         status = request.args.get('status', '')
         sort = request.args.get('sort', 'online') #  El orden por defecto ahora es 'online'.
         
+        # MEJORA: Subconsulta para calcular el total invertido por cada usuario.
+        # Esto es más eficiente que un join+groupby en la consulta principal, especialmente con paginación.
+        total_spent_subquery = db.session.query(
+            Pedido.usuario_id,
+            func.sum(Pedido.total).label('total_invertido')
+        ).filter(Pedido.estado_pedido == EstadoPedido.COMPLETADO).group_by(Pedido.usuario_id).subquery()
+
         # Construir consulta base
-        query = Usuarios.query
-        
+        query = db.session.query(Usuarios, func.coalesce(total_spent_subquery.c.total_invertido, 0).label('total_invertido'))\
+            .outerjoin(total_spent_subquery, Usuarios.id == total_spent_subquery.c.usuario_id)
+
         # Aplicar filtro de búsqueda si existe
         if search:
             query = query.filter(
@@ -99,6 +126,10 @@ def get_usuarios(admin_user):
             query = query.order_by(Usuarios.nombre.desc())
         elif sort == 'antiguos':
             query = query.order_by(Usuarios.created_at.asc())
+        elif sort == 'total_invertido_desc':
+            query = query.order_by(desc('total_invertido'))
+        elif sort == 'total_invertido_asc':
+            query = query.order_by('total_invertido')
         elif sort == 'recientes':
             query = query.order_by(desc(Usuarios.created_at))
         elif sort == 'inactive':
@@ -130,10 +161,11 @@ def get_usuarios(admin_user):
         #  Añadir 'is_online' al diccionario del usuario.
         # El serializador base no incluye propiedades, así que lo agregamos aquí.
         usuarios_list = []
-        for usuario in usuarios.items:
-            user_dict = usuario_to_dict(usuario)
+        for usuario, total_invertido in usuarios.items:
+            user_dict = usuario_to_dict_lista(usuario)
             user_dict['is_online'] = usuario.is_online
             user_dict['last_seen_display'] = usuario.last_seen_display
+            user_dict['total_invertido'] = float(total_invertido)
             usuarios_list.append(user_dict)
 
         # Preparar respuesta
@@ -214,7 +246,7 @@ def create_usuario(admin_user):
         return jsonify({
             'success': True,
             'message': 'Usuario creado correctamente',
-            'usuario': usuario_to_dict(usuario)
+            'usuario': usuario_to_dict_lista(usuario)
         }), 201
     
     except ValueError as e:
@@ -244,7 +276,7 @@ def handle_usuario(admin_user, user_id):
     if request.method == 'GET':
         return jsonify({
             'success': True,
-            'usuario': usuario_to_dict(usuario)
+            'usuario': usuario_to_dict_lista(usuario)
         })
 
     if request.method == 'PUT':
@@ -272,7 +304,7 @@ def handle_usuario(admin_user, user_id):
             return jsonify({
                 'success': True,
                 'message': 'Usuario actualizado correctamente',
-                'usuario': usuario_to_dict(usuario)
+                'usuario': usuario_to_dict_lista(usuario)
             })
         
         except ValueError as e:
@@ -309,7 +341,7 @@ def toggle_usuario_status(admin_user, user_id):
         return jsonify({
             'success': True,
             'message': 'Estado de usuario actualizado correctamente',
-            'usuario': usuario_to_dict(usuario)
+            'usuario': usuario_to_dict_lista(usuario)
         })
     
     except Exception as e:

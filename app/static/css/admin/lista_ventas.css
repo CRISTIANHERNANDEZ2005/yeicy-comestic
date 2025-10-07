@@ -17,7 +17,6 @@ body.no-scroll {
 .animate-pulse-slow {
     animation: pulse-slow 3s infinite;
 }
-
 /* Estilos para los selects personalizados */
 .custom-select-container {
     position: relative;
@@ -460,6 +459,17 @@ body.no-scroll {
 
 .row-updated {
     animation: highlightRow 2s ease-in-out;
+}
+
+/* Estilos para filas de ventas inactivas */
+.inactive-sale-row {
+    background-color: #f9fafb; /* bg-gray-50 */
+    opacity: 0.75;
+}
+
+.inactive-sale-row:hover {
+    background-color: #f3f4f6; /* bg-gray-100 */
+    opacity: 0.9;
 }
 
 /* Estilos para el selector de período del gráfico */

@@ -24,6 +24,7 @@
  * 7.  **Mejoras de Experiencia de Usuario (UX):** Incluye toggles para mostrar/ocultar contraseñas,
  *     cierre con la tecla Escape y prevención de mensajes de validación nativos del navegador.
  */
+
 (function () {
   // Constantes y elementos del DOM
   const bg = document.getElementById("auth-modal-bg");

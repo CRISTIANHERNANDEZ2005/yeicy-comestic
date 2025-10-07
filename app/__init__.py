@@ -19,7 +19,7 @@ Responsabilidades principales:
 - Definir manejadores de errores personalizados (ej. para errores 404).
 - Registrar filtros personalizados de Jinja2 para formateo de datos en las plantillas.
 """
-from flask import Flask, render_template, session, request
+from flask import Flask, render_template, session, request, send_from_directory
 import cloudinary
 from config import Config
 from .extensions import db, bcrypt, migrate, login_manager, jwt
@@ -186,7 +186,8 @@ def create_app(config_class=Config):
     from app.blueprints.admin.pedido.api import admin_api_bp
     from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
     from app.blueprints.admin.usuarios.user_routes import user_bp
-
+    from app.blueprints.admin.usuarios.detalle_usuario import detalle_cliente
+    
     # Blueprints del cliente
     app.register_blueprint(cart_bp)
     app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -209,6 +210,8 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_ventas_bp, url_prefix='/admin')
     app.register_blueprint(admin_api_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(detalle_cliente)
+
 
     # --- RUTAS PRINCIPALES DE LA APLICACIÓN ---
     @app.route('/perfil')
@@ -249,6 +252,21 @@ def create_app(config_class=Config):
         total_compras_formateado = format_currency_cop(total_compras_valor)
         
         return perfil(usuario, pedidos_realizados=pedidos_realizados, total_compras=total_compras_formateado)
+
+    @app.route('/documentacion-proyecto')
+    def documentacion_proyecto():
+        """
+        Sirve el archivo estático de la documentación del proyecto.
+
+        Esta ruta pública permite visualizar el análisis profesional del proyecto
+        contenido en 'explicacion_proyecto.html'. Se utiliza `send_from_directory`
+        para servir el archivo de forma segura desde el directorio raíz del proyecto.
+        """
+        import os
+        # app.root_path es la ruta a la carpeta 'app'. '..' sube un nivel al directorio raíz.
+        project_root = os.path.abspath(os.path.join(app.root_path, '..'))
+        return send_from_directory(project_root, 'explicacion_proyecto.html')
+
 
     # --- VERIFICACIÓN DE CONEXIÓN Y PROCESADORES DE CONTEXTO ADICIONALES ---
     with app.app_context():
@@ -398,6 +416,8 @@ def create_app(config_class=Config):
         final_formatted_string = formatted_string_with_placeholder.replace('___SPANISH_MONTH___', spanish_month_name)
         return final_formatted_string
     app.jinja_env.filters['datetimeformat'] = datetimeformat_filter
+    
+    app.jinja_env.filters['format_currency_cop'] = format_currency_cop
 
     # --- MANEJADOR DE ERRORES ---
     @app.errorhandler(404)

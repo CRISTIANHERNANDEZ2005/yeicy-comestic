@@ -174,6 +174,9 @@ function initializeSmartNavbar() {
     () => {
       const currentScrollY = window.scrollY;
 
+      // MEJORA PROFESIONAL: Si el navbar está "bloqueado", ignorar el evento de scroll.
+      if (navbarContainer.classList.contains("navbar-locked")) return;
+
       // No hacer nada si el cambio en el scroll es menor que el delta
       if (Math.abs(lastScrollY - currentScrollY) <= scrollDelta) return;
 
@@ -193,12 +196,74 @@ function initializeSmartNavbar() {
 }
 
 /**
+ * Gestiona la modal de confirmación de cierre de sesión.
+ */
+function initializeLogoutModal() {
+  const modal = document.getElementById("logout-confirmation-modal");
+  const overlay = document.getElementById("logout-modal-overlay");
+  const card = document.getElementById("logout-modal-card");
+  const confirmBtn = document.getElementById("logout-confirm-btn");
+  const cancelBtn = document.getElementById("logout-cancel-btn");
+
+  if (!modal || !confirmBtn || !cancelBtn || !overlay || !card) return;
+
+  const openLogoutModal = () => {
+    // SOLUCIÓN: Asegurarse de que las clases de centrado estén presentes y la modal sea visible.
+    // Esto corrige cualquier estado inconsistente y garantiza el centrado.
+    modal.classList.remove("hidden");
+    modal.classList.add("flex", "items-center", "justify-center");
+
+    document.body.style.overflow = "hidden";
+    // Forzar reflow para que las transiciones se apliquen
+    void modal.offsetWidth;
+    modal.classList.add("opacity-100");
+    card.classList.remove("scale-95", "opacity-0");
+  };
+
+  const closeLogoutModal = () => {
+    modal.classList.remove("opacity-100");
+    card.classList.add("scale-95", "opacity-0");
+    setTimeout(() => {
+      modal.classList.add("hidden");
+      document.body.style.overflow = "";
+      // Resetear el botón de confirmación
+      const text = confirmBtn.querySelector('.logout-confirm-text');
+      const spinner = confirmBtn.querySelector('.logout-spinner');
+      if (text) text.classList.remove('hidden');
+      if (spinner) spinner.classList.add('hidden');
+      confirmBtn.disabled = false;
+    }, 300); // Coincidir con la duración de la transición
+  };
+
+  // Asignar la función de abrir al objeto global para que sea accesible desde el HTML
+  window.openLogoutModal = openLogoutModal;
+
+  cancelBtn.addEventListener("click", closeLogoutModal);
+  overlay.addEventListener("click", closeLogoutModal);
+
+  confirmBtn.addEventListener("click", () => {
+    if (window.auth && typeof window.auth.logout === "function") {
+      // Mostrar spinner y deshabilitar botón
+      const text = confirmBtn.querySelector('.logout-confirm-text');
+      const spinner = confirmBtn.querySelector('.logout-spinner');
+      if (text) text.classList.add('hidden');
+      if (spinner) spinner.classList.remove('hidden');
+      confirmBtn.disabled = true;
+      
+      // Llamar a logout con el parámetro 'force' a true para saltar la modal.
+      window.auth.logout(true);
+    }
+  });
+}
+
+/**
  * Función principal de inicialización que se ejecuta cuando el DOM está listo.
  */
 function main() {
   initializeToastFallback();
   registerGlobalEventListeners();
   initializeSmartNavbar();
+  initializeLogoutModal();
 }
 
 // Punto de entrada de la aplicación.

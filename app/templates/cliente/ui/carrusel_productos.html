@@ -1,5 +1,5 @@
-<div class="relative group">
-  <!-- Contenedor con altura fija para evitar saltos -->
+<div id="product-carousel-container" class="relative group">
+    <!-- Contenedor con altura fija para evitar saltos -->
   <div
     class="carousel-container relative overflow-hidden min-h-[400px] md:min-h-[500px]"
   >
@@ -276,9 +276,9 @@
   let totalSlides = 0;   // Inicializar a 0
 
   // Función optimizada de carga (globalmente accesible)
-  function initializeProductCarousel() {
+  function initializeProductCarousel(containerId, productsData) {
     // Validar que existan productos
-    if (!window.PRODUCTS_DATA || window.PRODUCTS_DATA.length === 0) {
+    if (!productsData || productsData.length === 0) {
       loadingState.innerHTML = `
                   <div class="text-center py-12">
                       <p class="text-gray-500 text-lg">No hay productos disponibles en esta categoría</p>
@@ -287,8 +287,9 @@
       return;
     }
 
+      window.PRODUCTS_DATA = productsData; // Mantenemos la variable global por si otros scripts dependen de ella.
       // Calcular totalProducts y totalSlides aquí, después de asegurar que PRODUCTS_DATA está disponible
-      totalProducts = window.PRODUCTS_DATA.length;
+      totalProducts = productsData.length;
       productsPerSlide = isMobile ? 2 : 4; // Recalcular por si acaso el resize no se ha disparado
       totalSlides = Math.max(1, Math.ceil(totalProducts / productsPerSlide));
 
@@ -296,7 +297,7 @@
       loadingState.style.opacity = "0";
 
       setTimeout(() => {
-        loadingState.remove();
+        if (loadingState) loadingState.remove();
         createRealContent();
         showControlsWithAnimation();
       }, 400);
@@ -327,7 +328,7 @@
       const endIndex = Math.min(startIndex + productsPerSlide, totalProducts);
 
       for (let i = startIndex; i < endIndex; i++) {
-        const productData = window.PRODUCTS_DATA[i];
+        const productData = window.PRODUCTS_DATA[i]; // Asume que window.PRODUCTS_DATA está disponible globalmente
         if (productData) {
           const productCard = renderProductCard(
             productData,
@@ -473,9 +474,6 @@
 
     // La función toggleFavorite ha sido movida a favorites.js
 
-    // Auto-inicialización
-    // setTimeout(initializeProductCarousel, 800); // Eliminado
-
     // Inicialización de botones de favoritos
     const initFavoriteButton = (button) => {
       // Solo inicializar si no está ya inicializado
@@ -523,14 +521,16 @@
 
     // Inicializar botones existentes cuando el DOM esté listo
     document.addEventListener("DOMContentLoaded", function () {
-      // Notificación de productos nuevos
-      const nuevosProductos = window.PRODUCTS_DATA.filter((p) =>
-        verificarEsNuevo(p)
-      );
-      if (nuevosProductos.length > 0) {
-        console.log(
-          `✅ Hay ${nuevosProductos.length} productos nuevos disponibles`
+      if (window.PRODUCTS_DATA && Array.isArray(window.PRODUCTS_DATA)) {
+        // Notificación de productos nuevos
+        const nuevosProductos = window.PRODUCTS_DATA.filter((p) =>
+          verificarEsNuevo(p)
         );
+        if (nuevosProductos.length > 0) {
+          console.log(
+            `✅ Hay ${nuevosProductos.length} productos nuevos disponibles`
+          );
+        }
       }
 
       // Inicializar el gestor de favoritos si existe

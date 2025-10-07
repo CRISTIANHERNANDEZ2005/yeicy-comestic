@@ -608,12 +608,14 @@ def get_category_metrics(categoria_id):
     # Ventas y unidades totales (histórico) - optimizado
     query_total_historico = db.session.query(
         func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ventas'),
+        func.sum(PedidoProducto.cantidad * Productos.costo).label('total_inversion'),
         func.sum(PedidoProducto.cantidad).label('unidades_vendidas'),
         func.sum(PedidoProducto.cantidad * (PedidoProducto.precio_unitario - Productos.costo)).label('ganancia_total'),
         func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('ingresos_totales_para_margen')
     ).join(Pedido).join(Productos, PedidoProducto.producto_id == Productos.id).filter(
         Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
         PedidoProducto.producto_id.in_(product_ids_subquery),
+        # MEJORA: Asegurarse de que solo se incluyan productos con costo definido para cálculos precisos.
         PedidoProducto.precio_unitario > 0,
         Productos.costo > 0
     )
@@ -621,6 +623,7 @@ def get_category_metrics(categoria_id):
     total_result_historico = query_total_historico.one()
     total_ventas_historico = total_result_historico.total_ventas or 0
     unidades_vendidas_historico = total_result_historico.unidades_vendidas or 0
+    total_inversion_historico = total_result_historico.total_inversion or 0
     ganancia_total_historico = total_result_historico.ganancia_total or 0
     ingresos_totales_para_margen = total_result_historico.ingresos_totales_para_margen or 0
     margen_promedio = (ganancia_total_historico / ingresos_totales_para_margen) * 100 if ingresos_totales_para_margen > 0 else 0
@@ -628,8 +631,9 @@ def get_category_metrics(categoria_id):
     # Ventas y unidades del periodo actual
     query_actual = db.session.query(
         func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ventas'),
+        func.sum(PedidoProducto.cantidad * Productos.costo).label('total_inversion'),
         func.sum(PedidoProducto.cantidad).label('unidades_vendidas'),
-        func.avg(((PedidoProducto.precio_unitario - Productos.costo) / PedidoProducto.precio_unitario) * 100).label('margen_promedio_periodo')
+        func.sum(PedidoProducto.cantidad * (PedidoProducto.precio_unitario - Productos.costo)).label('total_utilidad')
     ).join(Pedido).join(Productos, PedidoProducto.producto_id == Productos.id).filter(
         Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
         PedidoProducto.producto_id.in_(product_ids_subquery),
@@ -640,14 +644,16 @@ def get_category_metrics(categoria_id):
     
     actual_result = query_actual.one()
     ventas_actual = actual_result.total_ventas or 0
+    inversion_actual = actual_result.total_inversion or 0
     unidades_actual = actual_result.unidades_vendidas or 0
-    margen_actual = actual_result.margen_promedio_periodo or 0
+    utilidad_actual = actual_result.total_utilidad or 0
 
     # Ventas y unidades del periodo anterior
     query_anterior = db.session.query(
         func.sum(PedidoProducto.cantidad * PedidoProducto.precio_unitario).label('total_ventas'),
+        func.sum(PedidoProducto.cantidad * Productos.costo).label('total_inversion'),
         func.sum(PedidoProducto.cantidad).label('unidades_vendidas'),
-        func.avg(((PedidoProducto.precio_unitario - Productos.costo) / PedidoProducto.precio_unitario) * 100).label('margen_promedio_periodo')
+        func.sum(PedidoProducto.cantidad * (PedidoProducto.precio_unitario - Productos.costo)).label('total_utilidad')
     ).join(Pedido).join(Productos, PedidoProducto.producto_id == Productos.id).filter(
         Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
         PedidoProducto.producto_id.in_(product_ids_subquery),
@@ -658,26 +664,40 @@ def get_category_metrics(categoria_id):
     
     anterior_result = query_anterior.one()
     ventas_anterior = anterior_result.total_ventas or 0
+    inversion_anterior = anterior_result.total_inversion or 0
     unidades_anterior = anterior_result.unidades_vendidas or 0
-    margen_anterior = anterior_result.margen_promedio_periodo or 0
+    utilidad_anterior = anterior_result.total_utilidad or 0
 
     # Calcular tendencias
     def calcular_tendencia(actual, anterior):
         if anterior > 0:
             return ((actual - anterior) / anterior) * 100
-        return 100 if actual > 0 else 0
+        return 100.0 if actual > 0 else 0.0
 
     ventas_tendencia = calcular_tendencia(ventas_actual, ventas_anterior)
     unidades_tendencia = calcular_tendencia(unidades_actual, unidades_anterior)
-    margen_tendencia = calcular_tendencia(margen_actual, margen_anterior)
+    inversion_tendencia = calcular_tendencia(inversion_actual, inversion_anterior)
+    # MEJORA PROFESIONAL: Cambiar el cálculo para que refleje la ganancia/pérdida del período actual, no la diferencia con el anterior.
+    utilidad_periodo_actual = utilidad_actual 
+    utilidad_tendencia = calcular_tendencia(utilidad_actual, utilidad_anterior)
+    # La tendencia del margen se calcula de forma diferente
+    margen_actual_calc = (utilidad_actual / ventas_actual) * 100 if ventas_actual > 0 else 0
+    margen_anterior_calc = (utilidad_anterior / ventas_anterior) * 100 if ventas_anterior > 0 else 0
+    margen_tendencia = calcular_tendencia(margen_actual_calc, margen_anterior_calc)
 
     return {
         'total_ventas': float(total_ventas_historico),
+        'total_inversion': float(total_inversion_historico),
+        'total_utilidad': float(ganancia_total_historico),
         'unidades_vendidas': int(unidades_vendidas_historico),
         'total_productos': total_productos,
         'margen_promedio': margen_promedio,
         'ventas_tendencia': ventas_tendencia,
         'unidades_tendencia': unidades_tendencia,
+        'inversion_tendencia': inversion_tendencia,
+        'utilidad_periodo_actual': float(utilidad_periodo_actual),
+        'inversion_periodo_actual': float(inversion_actual),
+        'utilidad_tendencia': utilidad_tendencia,
         'margen_tendencia': margen_tendencia
     }
 

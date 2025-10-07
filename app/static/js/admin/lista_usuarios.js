@@ -128,6 +128,8 @@ if (!window.usuariosApp) {
         this.csrfToken = this.getCsrfToken(); // Obtener el token una sola vez.
         this.startAutoRefresh(); // Iniciar la actualización automática
         this.startHeartbeat(); // Iniciar el "latido" de actividad.
+        // MEJORA: Enviar un latido inicial para asegurar que el estado "En línea" se actualice de inmediato.
+        this.sendHeartbeatNow();
         this.loadInitialData();
         this.isInitialized = true;
       } catch (error) {
@@ -913,7 +915,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 5 : 6; // Colspan para admin es 6
+      const colspan = type === "clientes" ? 7 : 7;
 
       tbody.innerHTML = `
                     <tr class="loading-row">
@@ -938,7 +940,7 @@ if (!window.usuariosApp) {
         console.error(`Table body for ${type} not found`);
         return;
       }
-      const colspan = type === "clientes" ? 5 : 6; // Colspan para admin es 6
+      const colspan = type === "clientes" ? 7 : 7;
 
       tbody.innerHTML = `
                     <tr>
@@ -966,7 +968,7 @@ if (!window.usuariosApp) {
       if (!clientes || clientes.length === 0) {
         tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="px-8 py-16 text-center">
+                            <td colspan="7" class="px-8 py-16 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-users text-3xl mb-3"></i>
                                     <p class="text-lg font-medium">No se encontraron clientes</p>
@@ -978,6 +980,15 @@ if (!window.usuariosApp) {
         return;
       }
 
+      // Helper para formatear moneda
+      const formatCurrency = (value) => {
+        return new Intl.NumberFormat('es-CO', {
+          style: 'currency',
+          currency: 'COP',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0,
+        }).format(value);
+      };
       tbody.innerHTML = clientes
         .map(
           (cliente) => { 
@@ -1019,8 +1030,8 @@ if (!window.usuariosApp) {
                         <td class="px-8 py-5 whitespace-nowrap date-column">
                             ${new Date(cliente.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </td>
-                        <td class="px-8 py-5 whitespace-nowrap date-column">
-                            ${new Date(cliente.updated_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        <td class="px-8 py-5 whitespace-nowrap text-base text-gray-600 currency-column">
+                          ${formatCurrency(cliente.total_invertido)}
                         </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-status" data-id="${
@@ -1039,12 +1050,20 @@ if (!window.usuariosApp) {
                             <button 
                                 data-action="edit-cliente" 
                                 data-id="${cliente.id}"
-                                data-status="${cliente.estado}"
-                                class="action-btn text-blue-600 hover:text-blue-800 ${cliente.estado === 'inactivo' ? 'action-btn-disabled' : ''}"
-                                title="${cliente.estado === 'inactivo' ? 'Para editar, el cliente debe estar activo.' : 'Editar cliente'}"
+                                class="action-btn text-blue-600 hover:text-blue-800"
+                                title="Editar cliente"
                             >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>
+                            <a 
+                              href="/admin/cliente/${cliente.id}/detalle"
+                              data-action="view-cliente" 
+                              data-id="${cliente.id}"
+                              class="action-btn text-gray-500 hover:text-gray-800 ml-2"
+                              title="Ver detalles del cliente"
+                            >
+                                <i class="fas fa-eye text-lg"></i>
+                            </a>
                         </td>
                     </tr>
                 `;
@@ -1063,11 +1082,6 @@ if (!window.usuariosApp) {
       const status = actionButton.dataset.status;
 
       //  Mostrar notificación si el usuario está inactivo.
-      if ((action === 'edit-cliente' || action === 'edit-admin') && status === 'inactivo') {
-        const userType = action === 'edit-cliente' ? 'cliente' : 'administrador';
-        window.toast.warning(`Para editar este ${userType}, primero debes cambiar su estado a "Activo".`);
-        return;
-      }
 
       // Si no está inactivo, proceder con la acción normal.
       this.performAction(action, id, actionButton.dataset.type, actionButton.dataset.page);
@@ -1088,6 +1102,11 @@ if (!window.usuariosApp) {
         case "edit-admin":
           this.editAdministrador(id);
           break;
+        case "view-cliente":
+          if (id && window.loadAdminContent) {
+            window.loadAdminContent(`/admin/cliente/${id}/detalle`);
+          }
+          break;
         case "change-page":
           if (type && page) this.changePage(type, parseInt(page));
       }
@@ -1106,7 +1125,7 @@ if (!window.usuariosApp) {
       if (!administradores || administradores.length === 0) {
         tbody.innerHTML = `
                         <tr>
-                            <td colspan="6" class="px-8 py-16 text-center">
+                            <td colspan="7" class="px-8 py-16 text-center">
                                 <div class="text-gray-500">
                                     <i class="fas fa-user-shield text-3xl mb-3"></i>
                                     <p class="text-lg font-medium">No se encontraron administradores</p>
@@ -1161,9 +1180,6 @@ if (!window.usuariosApp) {
                         <td class="px-8 py-5 whitespace-nowrap date-column">
                             ${new Date(admin.created_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
                         </td>
-                        <td class="px-8 py-5 whitespace-nowrap date-column">
-                            ${new Date(admin.updated_at).toLocaleDateString('es-CO', { year: 'numeric', month: 'short', day: 'numeric' })}
-                        </td>
                         <td class="px-8 py-5 whitespace-nowrap">
                             <button data-action="toggle-admin-status" data-id="${admin.id}" class="${
             admin.estado === "activo" ? "status-active" : "status-inactive"
@@ -1179,9 +1195,8 @@ if (!window.usuariosApp) {
                             <button 
                                 data-action="edit-admin" 
                                 data-id="${admin.id}"
-                                data-status="${admin.estado}"
-                                class="action-btn text-blue-600 hover:text-blue-800 ${admin.estado === 'inactivo' ? 'action-btn-disabled' : ''}"
-                                title="${admin.estado === 'inactivo' ? 'Para editar, el administrador debe estar activo.' : 'Editar administrador'}"
+                                class="action-btn text-blue-600 hover:text-blue-800"
+                                title="Editar administrador"
                             >
                                 <i class="fas fa-edit text-lg"></i>
                             </button>

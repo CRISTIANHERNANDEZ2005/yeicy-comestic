@@ -864,15 +864,7 @@
             priceElements.forEach(element => {
                 // Obtener el valor del atributo data-value
                 const value = element.getAttribute('data-value');
-                
-                // *** AÑADIR ESTAS LÍNEAS DE DEPURACIÓN ***
-                console.log(`Elemento: ${element.className}, data-value original: "${value}"`);
-                
-                // Formatear el valor
                 const formattedValue = formatNumberColombian(value);
-                
-                console.log(`Elemento: ${element.className}, valor formateado: "${formattedValue}"`);
-                // *** FIN DE LÍNEAS DE DEPURACIÓN ***
 
                 // Actualizar el texto del elemento
                 element.textContent = formattedValue;
@@ -1081,7 +1073,7 @@
         const whatsappHelpLink = document.getElementById('whatsapp-help-link');
         if (whatsappHelpLink) {
             const pedidoId = whatsappHelpLink.getAttribute('data-pedido-id');
-            const phoneNumber = '573044931438';
+            const phoneNumber = '573243113677';
             const message = `¡Hola! 👋 Necesito ayuda con mi pedido número #${pedidoId}. ¿Podrían asistirme, por favor?`;
             const encodedMessage = encodeURIComponent(message);
             whatsappHelpLink.href = `https://wa.me/${phoneNumber}?text=${encodedMessage}`;

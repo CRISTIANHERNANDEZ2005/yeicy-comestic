@@ -17,6 +17,7 @@ from app.models.domains.product_models import Productos, Seudocategorias, Subcat
 from app.models.serializers import producto_list_to_dict, seudocategoria_to_dict, subcategoria_to_dict, categoria_principal_to_dict, format_currency_cop
 from app.extensions import db
 from sqlalchemy import or_, and_
+from sqlalchemy.orm import subqueryload
 from datetime import datetime, timedelta
 from flask_wtf.csrf import generate_csrf
 
@@ -124,11 +125,17 @@ def get_all_products(admin_user):
             page=page, per_page=per_page, error_out=False)
 
         # --- 5. Obtención de datos para los menús de filtro ---
-        categorias = CategoriasPrincipales.query.filter_by(
-            estado='activo').all()
-        subcategorias = Subcategorias.query.filter_by(estado='activo').all()
-        seudocategorias = Seudocategorias.query.filter_by(
-            estado='activo').all()
+        # MEJORA PROFESIONAL: Optimización de consultas para evitar el problema N+1.
+        # Usamos `subqueryload` para cargar las relaciones jerárquicas de forma eficiente.
+        # Esto reduce drásticamente el número de consultas a la base de datos.
+        categorias = CategoriasPrincipales.query.options(
+            subqueryload(CategoriasPrincipales.subcategorias)
+        ).order_by(CategoriasPrincipales.nombre).all()
+        subcategorias = Subcategorias.query.options(
+            subqueryload(Subcategorias.seudocategorias)
+        ).order_by(Subcategorias.nombre).all()
+        seudocategorias = Seudocategorias.query.order_by(
+            Seudocategorias.nombre).all()
         marcas = db.session.query(Productos.marca).filter(
             Productos.marca.isnot(None),
             Productos.marca != ''
@@ -392,72 +399,138 @@ def filter_products_api(admin_user):
             'error': str(e) if current_app.debug else None
         }), 500
 
-# Endpoint para obtener subcategorías de una categoría
-@admin_lista_product_bp.route('/api/categories/<string:categoria_id>/subcategories', methods=['GET'])
+from sqlalchemy.orm import joinedload
+
+
+@admin_lista_product_bp.route('/api/products/category-dependencies', methods=['GET'])
 @admin_jwt_required
-def get_subcategories(admin_user, categoria_id):
+def get_category_dependencies(admin_user):
     """
-    API auxiliar para obtener las subcategorías activas de una categoría principal.
+    API para obtener las dependencias jerárquicas de las categorías.
 
-    Utilizado para poblar dinámicamente el selector de subcategorías en los filtros
-    cuando el usuario elige una categoría principal.
-
-    Args:
-        admin_user: El objeto del administrador autenticado.
-        categoria_id (str): El ID de la categoría principal padre.
+    Dado un nivel ('main', 'sub', 'pseudo') y un ID, devuelve los IDs de las
+    categorías padre y/o hijas, y las marcas asociadas. Esto permite que el
+    frontend actualice todos los filtros de categoría de forma dependiente y
+    eficiente con una sola llamada.
     """
-    try:
-        subcategorias = Subcategorias.query.filter_by(
-            categoria_principal_id=categoria_id,
-            estado='activo'
-        ).all()
+    level = request.args.get('level')
+    category_id = request.args.get('id', type=str)
 
-        subcategorias_data = [subcategoria_to_dict(
-            sub) for sub in subcategorias]
-
+    if not level or not category_id:
+        # Si no se especifica un nivel o ID, devuelve todas las marcas de todos los productos.
+        marcas_query = db.session.query(Productos.marca).filter(
+            Productos.marca.isnot(None), Productos.marca != ''
+        ).distinct().order_by(Productos.marca).all()
+        marcas = [marca[0] for marca in marcas_query]
         return jsonify({
             'success': True,
-            'subcategorias': subcategorias_data
+            'main_category_id': None,      # ID de la categoría principal padre
+            'sub_category_id': None,       # ID de la subcategoría padre
+            'sub_category_ids': [],        # IDs de las subcategorías hijas
+            'pseudo_category_ids': [],     # IDs de las seudocategorías hijas
+            'brands': marcas
         })
-    except Exception as e:
-        current_app.logger.error(f"Error al obtener subcategorías: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Error al obtener subcategorías'
-        }), 500
 
-@admin_lista_product_bp.route('/api/subcategories/<string:subcategoria_id>/pseudocategories', methods=['GET'])
-@admin_jwt_required
-def get_pseudocategories(admin_user, subcategoria_id):
-    """
-    API auxiliar para obtener las seudocategorías activas de una subcategoría.
+    main_category_id = None
+    sub_category_id = None
+    sub_category_ids_hijas = []
+    pseudo_category_ids_hijas = []
 
-    Utilizado para poblar dinámicamente el selector de seudocategorías en los filtros
-    cuando el usuario elige una subcategoría.
+    products_query = db.session.query(Productos.id)
 
-    Args:
-        admin_user: El objeto del administrador autenticado.
-        subcategoria_id (str): El ID de la subcategoría padre.
-    """
-    try:
-        seudocategorias = Seudocategorias.query.filter_by(
-            subcategoria_id=subcategoria_id,
-            estado='activo'
-        ).all()
+    if level == 'categoria_id': # El usuario seleccionó una Categoría Principal
+        main_category_id = category_id
+        # Obtener todas las subcategorías hijas
+        sub_query = db.session.query(Subcategorias.id).filter(
+            Subcategorias.categoria_principal_id == category_id)
+        sub_category_ids_hijas = [row[0] for row in sub_query.all()]
 
-        seudocategorias_data = [seudocategoria_to_dict(
-            seudo) for seudo in seudocategorias]
+        # Obtener todas las seudocategorías nietas
+        if sub_category_ids_hijas:
+            pseudo_query = db.session.query(Seudocategorias.id).filter(
+                Seudocategorias.subcategoria_id.in_(sub_category_ids_hijas))
+            pseudo_category_ids_hijas = [row[0] for row in pseudo_query.all()]
 
-        return jsonify({
-            'success': True,
-            'seudocategorias': seudocategorias_data
-        })
-    except Exception as e:
-        current_app.logger.error(f"Error al obtener seudocategorías: {e}")
-        return jsonify({
-            'success': False,
-            'message': 'Error al obtener seudocategorías'
-        }), 500
+        # Filtrar productos que pertenecen a esta jerarquía
+        products_query = products_query.join(Seudocategorias).join(Subcategorias).filter(
+            Subcategorias.categoria_principal_id == category_id)
+
+    elif level == 'subcategoria_id':  # El usuario seleccionó una Subcategoría
+        sub_category_id = category_id
+        # Usamos joinedload para cargar el padre eficientemente
+        sub = Subcategorias.query.options(
+            joinedload(Subcategorias.categoria_principal)
+        ).get(category_id)
+        if sub:
+            main_category_id = sub.categoria_principal_id
+
+        # Obtener todas las seudocategorías hijas
+        pseudo_query = db.session.query(Seudocategorias.id).filter(
+            Seudocategorias.subcategoria_id == category_id)
+        pseudo_category_ids_hijas = [row[0] for row in pseudo_query.all()]
+
+        # Filtrar productos que pertenecen a esta jerarquía
+        products_query = products_query.join(Seudocategorias).filter(
+            Seudocategorias.subcategoria_id == category_id)
+
+    elif level == 'seudocategoria_id':  # El usuario seleccionó una Seudocategoría
+        # Usamos joinedload para cargar toda la jerarquía hacia arriba de forma eficiente
+        pseudo = Seudocategorias.query.options(
+            joinedload(Seudocategorias.subcategoria)
+            .joinedload(Subcategorias.categoria_principal)
+        ).get(category_id)
+
+        if pseudo:
+            sub_category_id = pseudo.subcategoria_id
+            if pseudo.subcategoria:
+                main_category_id = pseudo.subcategoria.categoria_principal_id
+
+        # Filtrar productos que pertenecen a esta seudocategoría
+        products_query = products_query.filter(Productos.seudocategoria_id == category_id)
+
+    elif level == 'marca': # El usuario seleccionó una Marca
+        brand_name = category_id
+        # 1. Encontrar todos los productos de esa marca.
+        products_with_brand = db.session.query(Productos.seudocategoria_id).filter(Productos.marca == brand_name).distinct()
+        
+        # 2. Obtener las seudocategorías únicas de esos productos.
+        pseudo_ids_from_brand = [p[0] for p in products_with_brand.all()]
+        
+        if pseudo_ids_from_brand:
+            # 3. A partir de las seudocategorías, encontrar las subcategorías y categorías principales únicas.
+            sub_ids_query = db.session.query(Seudocategorias.subcategoria_id).filter(Seudocategorias.id.in_(pseudo_ids_from_brand)).distinct()
+            sub_ids_from_brand = [s[0] for s in sub_ids_query.all()]
+            
+            if sub_ids_from_brand:
+                main_ids_query = db.session.query(Subcategorias.categoria_principal_id).filter(Subcategorias.id.in_(sub_ids_from_brand)).distinct()
+                main_ids_from_brand = [m[0] for m in main_ids_query.all()]
+
+                # Asignar los IDs encontrados para la respuesta JSON.
+                pseudo_category_ids_hijas = pseudo_ids_from_brand
+                sub_category_ids_hijas = sub_ids_from_brand
+                main_category_id = main_ids_from_brand # Reutilizamos esta variable para enviar la lista de IDs.
+
+    else:
+        return jsonify({'success': False, 'message': 'Nivel de categoría no válido'}), 400
+
+    # Obtener marcas basadas en los productos filtrados
+    marcas_query = db.session.query(Productos.marca).filter(
+        Productos.id.in_(products_query.subquery()),
+        Productos.marca.isnot(None),
+        Productos.marca != ''
+    ).distinct().order_by(Productos.marca).all()
+    marcas = [marca[0] for marca in marcas_query]
+
+    return jsonify({
+        'success': True,
+        # MEJORA: Ahora puede ser un ID único o una lista de IDs si el nivel es 'marca'.
+        'main_category_id': main_category_id if level != 'marca' else None,
+        'main_category_ids': main_category_id if level == 'marca' else [],
+        'sub_category_id': sub_category_id,
+        'sub_category_ids': sub_category_ids_hijas,
+        'pseudo_category_ids': pseudo_category_ids_hijas,
+        'brands': marcas
+    })
 
 @admin_lista_product_bp.route('/api/brands', methods=['GET'])
 @admin_jwt_required

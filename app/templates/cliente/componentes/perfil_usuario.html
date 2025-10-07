@@ -109,6 +109,7 @@ Cosméticos{% endblock %} {% block content %}
         <!-- Cerrar Sesión -->
         <a
           href="#"
+          onclick="window.openLogoutModal(); return false;"
           onclick="window.auth.logout(); return false;"
           class="group relative overflow-hidden flex flex-col items-center py-4 px-3 rounded-2xl bg-gradient-to-br from-red-50 to-orange-50 hover:from-red-100 hover:to-orange-100 transition-all duration-300 transform hover:scale-105"
         >

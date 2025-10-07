@@ -504,18 +504,63 @@ def like_to_dict(like):
         'updated_at': like.updated_at.isoformat() if like.updated_at else None
     }
 
-def resena_to_dict(resena):
+
+def resena_to_dict(resena, current_user_id=None):
     """Serializa un objeto Reseña, incluyendo la información pública del usuario que la escribió."""
     if not resena:
         return None
+    
+    # Determina si el usuario actual (si existe) ha votado por esta reseña.
+    # Esto es crucial para que el frontend muestre el estado correcto del botón de voto.
+    current_user_voted = False
+    if current_user_id and hasattr(resena, 'votos'):
+        current_user_voted = any(voto.usuario_id == current_user_id for voto in resena.votos)
+
+    # Obtener el avatar del usuario de forma segura
+    # Se añade una comprobación para `resena.usuario` antes de acceder a sus atributos.
+    avatar_url = None
+    if resena.usuario and hasattr(resena.usuario, 'avatar_url') and resena.usuario.avatar_url:
+        avatar_url = resena.usuario.avatar_url
+
+    # Acceso seguro a la jerarquía de categorías para la URL del producto.
+    # Se utiliza `getattr` en cadena para evitar errores `AttributeError` si alguna
+    # categoría intermedia (subcategoría, etc.) es None. Es más limpio y robusto.
+    categoria_principal_slug_url = None
+    subcategoria_slug_url = None
+    seudocategoria_slug_url = None
+    if resena.producto:
+        seudocategoria_obj = getattr(resena.producto, 'seudocategoria', None)
+        if seudocategoria_obj:
+            seudocategoria_slug_url = getattr(seudocategoria_obj, 'slug', None)
+            subcategoria_obj = getattr(seudocategoria_obj, 'subcategoria', None)
+            if subcategoria_obj:
+                subcategoria_slug_url = getattr(subcategoria_obj, 'slug', None)
+                categoria_principal_obj = getattr(subcategoria_obj, 'categoria_principal', None)
+                if categoria_principal_obj:
+                    categoria_principal_slug_url = getattr(categoria_principal_obj, 'slug', None)
+
     return {
         'id': resena.id,
-        'usuario': usuario_publico_to_dict(resena.usuario),
-        'texto': resena.texto,
+        'usuario': usuario_publico_to_dict(resena.usuario) if resena.usuario else None,
+        'texto': resena.texto, 
         'titulo': resena.titulo,
         'calificacion': resena.calificacion,
         'created_at': resena.created_at,
-        'updated_at': resena.updated_at
+        'updated_at': resena.updated_at,
+        'votos_utiles_count': resena.votos_utiles_count or 0,
+        'current_user_voted': current_user_voted, # Flag para la UI
+        'visitas': resena.visitas,         # Nuevo campo
+        'producto': {
+            'id': resena.producto.id,
+            'nombre': resena.producto.nombre,
+            'slug': resena.producto.slug,
+            'imagen_url': resena.producto.imagen_url,
+            'marca': resena.producto.marca,
+            'precio': resena.producto.precio,
+            'categoria_principal_slug': categoria_principal_slug_url,
+            'subcategoria_slug': subcategoria_slug_url,
+            'seudocategoria_slug': seudocategoria_slug_url
+        }
     }
 
 

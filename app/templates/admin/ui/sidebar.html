@@ -1,62 +1,170 @@
-<div class="hidden lg:flex lg:flex-shrink-0 admin-sidebar">
-    <div class="flex flex-col w-64 bg-blue-900 text-white">
-        <div class="h-16 flex items-center px-6 border-b border-blue-800">
-            <h1 class="ml-3 text-xl font-bold text-white">YE&CI Management</h1>
+<div class="hidden lg:flex lg:flex-shrink-0 admin-sidebar" id="admin-sidebar">
+    <div class="flex flex-col w-64 bg-blue-900 text-white transition-all duration-300 ease-in-out" id="sidebar-content-wrapper">
+        <div class="h-16 flex items-center justify-between px-4 border-b border-blue-800">
+            <h1 class="ml-2 text-xl font-bold text-white sidebar-text whitespace-nowrap overflow-hidden">YE&CI Management</h1>
+            <button id="sidebar-toggle" class="p-2 rounded-full hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-transform duration-300 ease-in-out">
+                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" id="sidebar-toggle-icon">
+                    <!-- Icono de Hamburguesa -->
+                    <path class="line-1" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16"></path>
+                    <path class="line-2" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 12h16"></path>
+                    <path class="line-3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 18h7"></path>
+                </svg>
+            </button>
         </div>
         <div class="flex-1 flex flex-col pt-5 pb-4 overflow-y-auto">
             <nav class="mt-5 flex-1 px-2 space-y-1">
                 <a href="/admin/dashboard" class="sidebar-link text-blue-200 hover:bg-blue-800 hover:text-white group flex items-center px-4 py-3 text-sm font-medium rounded-md">
                     <i class="fas fa-tachometer-alt mr-3"></i>
-                    Dashboard
+                    <span class="sidebar-text">Dashboard</span>
                 </a>
                 <a href="/admin/lista-productos" class="sidebar-link text-blue-200 hover:bg-blue-800 hover:text-white group flex items-center px-4 py-3 text-sm font-medium rounded-md">
                     <i class="fas fa-boxes mr-3"></i>
-                    Productos
+                    <span class="sidebar-text">Productos</span>
                 </a>
                 <a href="/admin/lista-categorias" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
                     <i class="fas fa-warehouse mr-3"></i>
-                    Categorias
+                    <span class="sidebar-text">Categorias</span>
                 </a>
                 <a href="/admin/lista-pedidos" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
                     <i class="fas fa-file-invoice mr-3"></i>
-                    Pedidos
+                    <span class="sidebar-text">Pedidos</span>
                 </a>
                 <a href="/admin/lista-ventas" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
                     <i class="fas fa-chart-bar mr-3"></i>
-                    Ventas
+                    <span class="sidebar-text">Ventas</span>
                 </a>
                 <a href="/admin/lista-usuarios" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white transition-all duration-300 relative overflow-hidden">
                     <!-- Contenedor del icono con efecto de resplandor -->
                     <div class="relative flex-shrink-0 mr-3">
                         <i class="fas fa-users text-lg relative z-10"></i>
                     </div>
-                    
                     <!-- Texto del enlace -->
-                    <span class="relative z-10">Usuarios</span>
+                    <span class="relative z-10 sidebar-text">Usuarios</span>
                 </a>
                 <a href="#" id="logout-button-desktop" class="sidebar-link group flex items-center px-4 py-3 text-sm font-medium rounded-md text-blue-200 hover:bg-blue-800 hover:text-white">
                     <i class="fas fa-sign-out-alt mr-3"></i>
-                    Cerrar Sesión
+                    <span class="sidebar-text">Cerrar Sesión</span>
                 </a>
             </nav>
         </div>
         <div class="flex-shrink-0 flex border-t border-blue-800 p-4">
             <div class="flex items-center">
-                <div class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold">
+                <div class="h-8 w-8 rounded-full bg-blue-700 flex items-center justify-center text-white font-semibold sidebar-user-initials">
                     {% if admin_user %}
                         {{ admin_user.nombre[0]|upper }}{{ admin_user.apellido[0]|upper }}
                     {% endif %}
                 </div>
-                <div class="ml-3">
-                    <p class="text-sm font-medium text-white">
+                <div class="ml-3 sidebar-user-info">
+                    <p class="text-sm font-medium text-white whitespace-nowrap">
                         {% if admin_user %}
                             {{ admin_user.nombre | title }}
                             {{ admin_user.apellido | title }}
                         {% endif %}
                     </p>
-                    <p class="text-xs text-blue-300">Administrador</p>
+                    <p class="text-xs text-blue-300 whitespace-nowrap">Administrador</p>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    /* MEJORA: Transiciones más fluidas para el texto */
+    .sidebar-text,
+    .sidebar-user-info {
+        transition: opacity 0.2s ease-in-out, width 0.3s ease-in-out;
+        opacity: 1;
+        width: auto;
+        overflow: hidden;
+        white-space: nowrap;
+    }
+
+    /* Estilos para el sidebar colapsado */
+    html.sidebar-collapsed #sidebar-content-wrapper {
+        width: 5rem; /* w-20 */
+    }
+
+    /* MEJORA: Ocultar texto con opacidad para permitir transiciones */
+    html.sidebar-collapsed .sidebar-text,
+    html.sidebar-collapsed .sidebar-user-info {
+        opacity: 0;
+        width: 0;
+        pointer-events: none; /* Evita interacciones con el texto oculto */
+    }
+
+    /* MEJORA: Animación para el tooltip que aparece al hacer hover */
+    html.sidebar-collapsed .sidebar-link:hover .sidebar-text {
+        display: block;
+        position: absolute;
+        left: 5rem; /* Align with the collapsed width */
+        background-color: #1e3a8a; /* Darker blue for hover background */
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        z-index: 10;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        /* Animación de entrada */
+        opacity: 1;
+        width: auto;
+        transform: translateX(5px);
+        transition: opacity 0.2s ease-out 0.1s, transform 0.2s ease-out 0.1s;
+        pointer-events: auto;
+    }
+    html.sidebar-collapsed .sidebar-user-info {
+        display: none;
+    }
+    html.sidebar-collapsed .sidebar-user-initials {
+        margin-left: 0 !important; /* Override ml-3 */
+    }
+    html.sidebar-collapsed #sidebar-content-wrapper .h-16 { /* Target header */
+        justify-content: center; /* Center the toggle button when collapsed */
+        padding-left: 0.5rem; /* Adjust padding */
+        padding-right: 0.5rem; /* Adjust padding */
+    }
+    html.sidebar-collapsed #sidebar-content-wrapper .sidebar-link {
+        justify-content: center; /* Center icons when collapsed */
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    html.sidebar-collapsed #sidebar-content-wrapper .sidebar-link i {
+        margin-right: 0 !important; /* Remove margin from icons */
+    }
+    html.sidebar-collapsed #sidebar-content-wrapper .flex-shrink-0.flex.border-t.border-blue-800.p-4 { /* Target user section */
+        justify-content: center; /* Center user initials when collapsed */
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    html.sidebar-collapsed #sidebar-content-wrapper .sidebar-user-initials {
+        margin-right: 0 !important;
+    }
+
+    /* MEJORA: Ajuste del contenido principal con transición fluida */
+    @media (min-width: 1024px) { /* lg breakpoint */
+        .main-content-area {
+            margin-left: 16rem; /* Default w-64 */
+            transition: margin-left 0.3s ease-in-out;
+        }
+        html.sidebar-collapsed .main-content-area {
+            margin-left: 5rem; /* Match collapsed sidebar width */
+        }
+    }
+
+    /* MEJORA: Animación del icono de hamburguesa a flecha */
+    #sidebar-toggle-icon .line-1, #sidebar-toggle-icon .line-2, #sidebar-toggle-icon .line-3 {
+        transition: transform 0.3s ease-in-out, opacity 0.3s ease-in-out;
+        transform-origin: center;
+    }
+
+    html.sidebar-collapsed #sidebar-toggle {
+        transform: translateX(2px); /* Pequeño ajuste para centrar la flecha */
+    }
+
+    html.sidebar-collapsed #sidebar-toggle-icon .line-1 {
+        transform: translateX(-3px) translateY(6px) rotate(45deg) scaleX(0.7);
+    }
+    html.sidebar-collapsed #sidebar-toggle-icon .line-2 {
+        transform: scaleX(0.8);
+    }
+    html.sidebar-collapsed #sidebar-toggle-icon .line-3 {
+        transform: translateX(-3px) translateY(-6px) rotate(-45deg) scaleX(0.7);
+    }
+</style>

@@ -221,6 +221,7 @@ window.pedidosApp = {
 
     timelineItems.forEach((item) => {
       const estado = item.getAttribute("data-estado");
+      const esEstadoCancelado = estado === "cancelado";
       const timestampEl = document.getElementById(
         `${estado.replace(/ /g, "-")}-timestamp`
       );
@@ -240,7 +241,7 @@ window.pedidosApp = {
       }
       if (notasEl) {
         // El estado 'recibido' tiene un texto por defecto diferente.
-        if (estado === "recibido") {
+        if (estado === "recibido" && !esEstadoCancelado) {
           notasEl.textContent =
             "El pedido ha sido recibido en nuestro sistema.";
         } else {
@@ -276,17 +277,29 @@ window.pedidosApp = {
       }
 
       // Actualiza el estado visual (activo/completado)
-      if (ultimoEstado === "cancelado" && estado === "cancelado") {
-        item.classList.add("active");
-        if (dot) dot.classList.add("bg-red-500");
+      if (ultimoEstado === "cancelado") {
+        // Si el pedido está cancelado, el item 'cancelado' es el activo.
+        if (esEstadoCancelado) {
+          item.classList.add("active");
+          if (dot) dot.classList.add("bg-red-500");
+        }
+        // MEJORA PROFESIONAL: Solo marcar como completados los estados que realmente ocurrieron.
+        else if (statusHistoryMap[estado]) {
+          item.classList.add("completed");
+          if (dot) dot.classList.add("bg-green-500");
+        }
       } else {
         const itemIndex = estadosOrden.indexOf(estado);
         if (itemIndex !== -1) {
-          if (itemIndex < ultimoEstadoIndex || ultimoEstado === "entregado") {
+          // Si el estado es anterior al último, o si el pedido ya fue entregado, se marca como completado.
+          if (
+            statusHistoryMap[estado] &&
+            (itemIndex < ultimoEstadoIndex || ultimoEstado === "entregado")
+          ) {
             item.classList.add("completed");
             if (dot) dot.classList.add("bg-green-500");
           } else if (itemIndex === ultimoEstadoIndex) {
-            item.classList.add("active");
+                    item.classList.add("active");
             if (dot) dot.classList.add("bg-blue-500");
           }
         }
@@ -540,12 +553,6 @@ window.pedidosApp = {
     }
 
     const toggleInput = document.getElementById(`toggle-pedido-${pedidoId}`);
-    if (toggleInput && !toggleInput.checked) {
-      window.toast.warning(
-        "No se puede cambiar el estado de un pedido inactivo. Por favor, actívelo primero."
-      );
-      return;
-    }
 
     this.pedidoParaConfirmar = pedidoId;
     this.nuevoEstadoParaConfirmar = nuevoEstado;
@@ -613,8 +620,7 @@ window.pedidosApp = {
     if (pedido.productos && pedido.productos.length > 0) {
       productosHtml = pedido.productos
         .map((producto) => {
-          const imagenSrc =
-            producto.producto_imagen || "https://via.placeholder.com/50";
+          const imagenSrc = producto.producto_imagen_url || "https://via.placeholder.com/50";
 
           return `
                     <tr>
@@ -931,21 +937,23 @@ window.pedidosApp = {
 
     // Llenar el select con los nuevos pedidos.
     if (pedidos && pedidos.length > 0) {
-      // MEJORA PROFESIONAL: Filtrar para mostrar solo pedidos activos en el selector de seguimiento.
+      // MEJORA PROFESIONAL: Mostrar todos los pedidos, pero indicar visualmente si están inactivos.
       pedidos.forEach((pedido) => {
-        if (pedido.estado === "activo") {
-          const option = document.createElement("option");
-          option.value = pedido.id;
-          option.setAttribute(
-            "data-estado",
-            pedido.seguimiento_estado || "recibido"
-          );
-          option.setAttribute("data-notas", pedido.notas_seguimiento || "");
-          option.textContent = `#${pedido.id.substring(0, 8)}... - ${
-            pedido.usuario_nombre || "N/A"
-          } - $ ${pedido.total.toLocaleString()}`;
-          pedidoSelect.appendChild(option);
-        }
+        const option = document.createElement("option");
+        option.value = pedido.id;
+        option.setAttribute(
+          "data-estado",
+          pedido.seguimiento_estado || "recibido"
+        );
+        option.setAttribute("data-notas", pedido.notas_seguimiento || "");
+
+        // Añadir etiqueta "(Inactivo)" si corresponde para claridad del admin.
+        const estadoLabel =
+          pedido.estado === "inactivo" ? " (Inactivo)" : "";
+        option.textContent = `#${pedido.id.substring(0, 8)}... - ${
+          pedido.usuario_nombre || "N/A"
+        } - $ ${pedido.total.toLocaleString()}${estadoLabel}`;
+        pedidoSelect.appendChild(option);
       });
     } else {
       // Si no hay pedidos en la lista, nos aseguramos de que la sección de seguimiento esté cerrada.
@@ -1033,11 +1041,7 @@ window.pedidosApp = {
                                 }')">
                                     <i class="fas fa-eye"></i>
                                 </button>
-                                ${
-                                  !isInactive
-                                    ? this.renderActionButtons(pedido)
-                                    : ""
-                                }
+                                ${this.renderActionButtons(pedido)}
                             </div>
                         </td>
                     </tr>
@@ -1078,50 +1082,52 @@ window.pedidosApp = {
   },
 
   renderActionButtons: function (pedido) {
-    if (pedido.estado_pedido === "en proceso") {
+    let buttons = '';
+    if (pedido.estado_pedido === "en proceso") { // Pedidos en proceso
+      // El botón de editar siempre está disponible para pedidos "en proceso"
       return `
+                <button class="action-button complete text-green-600 hover:text-green-800" 
+                        title="Marcar como completado" 
+                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                    <i class="fas fa-check-circle"></i>
+                </button>
+                <button class="action-button cancel text-red-600 hover:text-red-800" 
+                        title="Cancelar pedido" 
+                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                    <i class="fas fa-times-circle"></i>
+                </button>
                 <button class="action-button edit text-yellow-600 hover:text-yellow-800" 
                         title="Editar pedido" 
                         onclick="pedidosApp.editPedido('${pedido.id}')">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="action-button complete text-green-600 hover:text-green-800" 
-                        title="Marcar como completado" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-                <button class="action-button cancel text-red-600 hover:text-red-800" 
-                        title="Cancelar pedido" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
-                    <i class="fas fa-times-circle"></i>
-                </button>
             `;
-    } else if (pedido.estado_pedido === "completado") {
+    } else if (pedido.estado_pedido === "completado") { // Pedidos completados
       return `
-                <button class="action-button process text-blue-600 hover:text-blue-800" 
-                        title="Poner en proceso" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="action-button cancel text-red-600 hover:text-red-800" 
-                        title="Cancelar pedido" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
-                    <i class="fas fa-times-circle"></i>
-                </button>
-            `;
-    } else if (pedido.estado_pedido === "cancelado") {
+              <button class="action-button process text-blue-600 hover:text-blue-800" 
+                      title="Poner en proceso" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                  <i class="fas fa-sync-alt"></i>
+              </button>
+              <button class="action-button cancel text-red-600 hover:text-red-800" 
+                      title="Cancelar pedido" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'cancelado')">
+                  <i class="fas fa-times-circle"></i>
+              </button>
+              `;
+    } else if (pedido.estado_pedido === "cancelado") { // Pedidos cancelados
       return `
-                <button class="action-button process text-blue-600 hover:text-blue-800" 
-                        title="Poner en proceso" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
-                    <i class="fas fa-sync-alt"></i>
-                </button>
-                <button class="action-button complete text-green-600 hover:text-green-800" 
-                        title="Marcar como completado" 
-                        onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
-                    <i class="fas fa-check-circle"></i>
-                </button>
-            `;
+              <button class="action-button process text-blue-600 hover:text-blue-800" 
+                      title="Poner en proceso" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
+                  <i class="fas fa-sync-alt"></i>
+              </button>
+              <button class="action-button complete text-green-600 hover:text-green-800" 
+                      title="Marcar como completado" 
+                      onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
+                  <i class="fas fa-check-circle"></i>
+              </button>
+              `;
     }
     return "";
   },
@@ -1307,8 +1313,7 @@ window.pedidosApp = {
     if (pedido.productos && pedido.productos.length > 0) {
       productosHtml = pedido.productos
         .map((producto) => {
-          const imagenSrc =
-            producto.producto_imagen || "https://via.placeholder.com/50";
+          const imagenSrc = producto.producto_imagen_url || "https://via.placeholder.com/50";
 
           return `
                     <tr>
@@ -1348,7 +1353,7 @@ window.pedidosApp = {
     }
 
     let accionesHtml = "";
-    if (pedido.estado_pedido === "en proceso" && pedido.estado === "activo") {
+    if (pedido.estado_pedido === "en proceso") {
       accionesHtml = `
                 <button class="modal-action-btn success" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'completado')">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1363,10 +1368,7 @@ window.pedidosApp = {
                     Cancelar Pedido
                 </button>
             `;
-    } else if (
-      pedido.estado_pedido === "completado" &&
-      pedido.estado === "activo"
-    ) {
+    } else if (pedido.estado_pedido === "completado") {
       accionesHtml = `
                 <button class="modal-action-btn primary" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1381,10 +1383,7 @@ window.pedidosApp = {
                     Cancelar Pedido
                 </button>
             `;
-    } else if (
-      pedido.estado_pedido === "cancelado" &&
-      pedido.estado === "activo"
-    ) {
+    } else if (pedido.estado_pedido === "cancelado") {
       accionesHtml = `
                 <button class="modal-action-btn primary" onclick="pedidosApp.showConfirmEstadoModal('${pedido.id}', 'en proceso')">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1480,30 +1479,23 @@ window.pedidosApp = {
     const seguimientoButtons = document.getElementById("seguimientoButtons");
     if (seguimientoButtons) {
       // MEJORA PROFESIONAL: Deshabilitar controles si el pedido está inactivo.
+      // ACTUALIZACIÓN: Ya no se deshabilita, solo se aplica un estilo visual.
       const isInactive = pedido.estado === "inactivo";
       seguimientoButtons.innerHTML = this.generateSeguimientoButtons(
         pedido.seguimiento_estado || "recibido",
         isInactive
       );
 
+      // MEJORA: Aplicar una clase para dar una pista visual si el pedido está inactivo,
+      // pero sin deshabilitar la funcionalidad.
       const seguimientoModalContainer = document.getElementById(
         "seguimientoModalContainer"
       );
       if (seguimientoModalContainer) {
         if (isInactive) {
-          seguimientoModalContainer.classList.add(
-            "opacity-50",
-            "pointer-events-none"
-          );
-          seguimientoModalContainer.setAttribute(
-            "title",
-            "Activa el pedido para gestionar su seguimiento."
-          );
+          seguimientoModalContainer.classList.add("inactive-order-controls");
         } else {
-          seguimientoModalContainer.classList.remove(
-            "opacity-50",
-            "pointer-events-none"
-          );
+          seguimientoModalContainer.classList.remove("inactive-order-controls");
           seguimientoModalContainer.removeAttribute("title");
         }
       }
@@ -1553,8 +1545,7 @@ window.pedidosApp = {
 
     estados.forEach((estado) => {
       const isActive = currentEstado === estado.value;
-      // MEJORA PROFESIONAL: Permitir cambiar el estado desde 'entregado' o 'cancelado',
-      // pero manteniendo la restricción para pedidos inactivos.
+      // ACTUALIZACIÓN: La restricción 'isInactive' se elimina para permitir la edición.
       const disabled = isInactive;
       const isFinalState =
         currentEstado === "entregado" || currentEstado === "cancelado";
@@ -1564,15 +1555,13 @@ window.pedidosApp = {
 
       buttonsHtml += `
                 <button class="seguimiento-btn ${isActive ? "active" : ""} ${
-        disabled ? "disabled" : ""
-      } ${
         isRevertAction ? "revert-action" : ""
       } seguimiento-btn-${formattedValue}"
                         data-estado="${estado.value}" 
                         onclick="pedidosApp.selectSeguimientoEstadoModal('${
                           estado.value
                         }')"
-                        ${disabled ? "disabled" : ""}>
+                        >
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${this.getIconPath(
                           estado.icon
@@ -1711,15 +1700,21 @@ window.pedidosApp = {
         this.isLoading = false;
       });
   },
-
-  clearFilters: function () {
+  
+  //  La función ahora acepta un parámetro `loadData` (por defecto true).
+  // Esto permite limpiar los campos de los filtros sin necesariamente disparar una recarga
+  // de datos, lo que es útil al cambiar de pestaña, donde la recarga se maneja por separado.
+  clearFilters: function (loadData = true) {
     document.getElementById("pedidoIdFilter").value = "";
     document.getElementById("clienteFilter").value = "";
     document.getElementById("fechaInicioFilter").value = "";
     document.getElementById("fechaFinFilter").value = "";
     document.getElementById("sortFilter").value = "created_at";
     document.getElementById("statusFilter").value = "all";
-    this.loadPedidos();
+    
+    if (loadData) {
+        this.loadPedidos();
+    }
   },
 
   showInactiveOrderMessage: function () {
@@ -1816,6 +1811,10 @@ window.pedidosApp = {
         btn.classList.add("active", "border-blue-500", "text-blue-600");
         btn.classList.remove("border-transparent", "text-gray-500");
 
+        // MEJORA PROFESIONAL: Limpiar los filtros al cambiar de pestaña.
+        // Se llama a clearFilters(false) para resetear los campos del formulario
+        // sin disparar una recarga extra, ya que loadPedidos() se llama justo después.
+        this.clearFilters(false);
         // Cerrar la sección de seguimiento al cambiar de tab
         this.closeSeguimientoSection();
 
@@ -2536,6 +2535,9 @@ function initializePedidosApp() {
     pedidosApp.init(paginationData);
   }
 
+  // El objeto crearPedidoApp ahora se inicializa desde su propio script,
+  // por lo que no es necesario inicializarlo aquí. Solo nos aseguramos
+  // de que el botón de "Agregar Pedido" funcione correctamente.
   if (typeof crearPedidoApp !== "undefined") {
     crearPedidoApp.init();
 
@@ -2547,21 +2549,25 @@ function initializePedidosApp() {
   }
 }
 
-// MEJORA PROFESIONAL: Patrón de inicialización robusto para SPA.
-// Este bloque asegura que la inicialización se ejecute correctamente en cualquier escenario.
-
 const runPedidosInitialization = () => {
-  // La función `initializePedidosApp` ya tiene una guardia de contexto,
-  // por lo que es seguro llamarla.
+  // La función `initializePedidosApp` ya tiene una guardia de contexto, por lo que es seguro llamarla.
   initializePedidosApp();
 };
 
-// 1. Para navegación SPA: Escuchar el evento personalizado de admin_spa.js
+const destroyPedidosModule = () => {
+    // Aunque pedidosApp no tiene timers, es una buena práctica tener una función de limpieza.
+    // Si en el futuro se añaden, se colocarían aquí.
+    if (window.pedidosApp && window.pedidosApp.initialized) {
+        console.log("Destroying PedidosApp module (placeholder).");
+        window.pedidosApp.initialized = false; // Marcar como no inicializado.
+    }
+};
+
+// --- MEJORA PROFESIONAL: GESTIÓN DEL CICLO DE VIDA SPA ---
+document.addEventListener("content-will-load", destroyPedidosModule);
 document.addEventListener("content-loaded", runPedidosInitialization);
 
-// 2. Para carga de página directa:
-// Si el DOM ya está cargado cuando el script se ejecuta (común en SPA), inicializar de inmediato.
-// Si no, esperar al evento DOMContentLoaded.
+// Para la carga inicial de la página (no SPA).
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', runPedidosInitialization);
 } else {

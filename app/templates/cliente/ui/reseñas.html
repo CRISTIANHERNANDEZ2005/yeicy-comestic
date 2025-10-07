@@ -1,18 +1,53 @@
-<!-- Contenedor Principal de Reseñas con Real-Time -->
+<!-- Contenedor Principal de Reseñas con Real-Time - Diseño Profesional -->
 <div
   class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"
   id="reviews-container"
 >
-  <!-- Header con Stats Animadas -->
-  <div class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-8 mb-8">
-    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-      <div>
-        <h2 class="text-4xl font-bold text-gray-900 mb-2">
-          Experiencias de Clientes
-        </h2>
+  <!-- Header con Stats Animadas - Diseño Mejorado -->
+  <div
+    class="bg-gradient-to-r from-pink-50 to-purple-50 rounded-2xl p-8 mb-8 shadow-lg border border-pink-100 relative overflow-hidden"
+  >
+    <!-- Elementos decorativos -->
+    <div
+      class="absolute top-0 right-0 w-32 h-32 bg-pink-200 rounded-full filter blur-3xl opacity-20 -translate-y-1/2 translate-x-1/2"
+    ></div>
+    <div
+      class="absolute bottom-0 left-0 w-40 h-40 bg-purple-200 rounded-full filter blur-3xl opacity-20 translate-y-1/2 -translate-x-1/2"
+    ></div>
+
+    <div
+      class="flex flex-col lg:flex-row lg:items-center lg:justify-between relative z-10"
+    >
+      <div class="mb-6 lg:mb-0">
+        <div class="flex items-center mb-4">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-r from-pink-500 to-purple-600 flex items-center justify-center mr-4 shadow-md"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-6 w-6 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+          </div>
+          <h2 class="text-4xl font-bold text-gray-900">
+            Experiencias de Clientes
+          </h2>
+        </div>
+
         <!-- Stats con Animación de Contador -->
-        <div class="flex items-center space-x-4">
-          <div class="flex items-center">
+        <div class="flex flex-wrap items-center gap-4 ml-16">
+          <div
+            class="flex items-center bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+          >
             <div
               class="flex"
               data-rating-stars="{{ producto.id }}"
@@ -29,20 +64,25 @@
               >/5
             </span>
           </div>
-          <span class="text-gray-600">
-            ·
-            <span
-              data-rating-count="{{ producto.id }}"
-              id="total-reviews"
-              class="counter"
-              >0</span
-            >
-            reseñas
-          </span>
+
+          <div
+            class="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-sm"
+          >
+            <span class="text-gray-600">
+              <span
+                data-rating-count="{{ producto.id }}"
+                id="total-reviews"
+                class="counter font-semibold"
+                >0</span
+              >
+              reseñas
+            </span>
+          </div>
         </div>
       </div>
 
-      <!-- Botón Inteligente con Estado -->
+      <!-- Botón Inteligente con Estado - Diseño Mejorado -->
+      {% if usuario_autenticado %}
       <div class="mt-4 lg:mt-0">
         <button
           type="button"
@@ -67,24 +107,62 @@
           <span id="write-review-text">Cargando...</span>
         </button>
       </div>
+      {% endif %}
     </div>
   </div>
 
-  <!-- Filtros Avanzados Rediseñados con Estrellas Premium -->
+  <!-- Filtros Avanzados Rediseñados con Estrellas Premium - Diseño Mejorado -->
   <div class="mb-8">
-    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+    <div
+      class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative overflow-hidden"
+    >
+      <!-- Elemento decorativo -->
       <div
-        class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"
+        class="absolute top-0 right-0 w-24 h-24 bg-pink-100 rounded-full filter blur-2xl opacity-30 -translate-y-1/2 translate-x-1/2"
+      ></div>
+
+      <div
+        class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 relative z-10"
       >
-        <div class="flex items-center space-x-4">
-          <label class="text-sm font-semibold text-gray-700"
-            >Filtrar por:</label
-          >
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <label class="text-sm font-bold text-gray-700 flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1 text-pink-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+              />
+            </svg>
+            Filtrar por:
+          </label>
           <div class="flex flex-wrap gap-3" id="rating-filters"></div>
         </div>
 
-        <div class="flex items-center space-x-4">
-          <label class="text-sm font-semibold text-gray-700">Ordenar:</label>
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+          <label class="text-sm font-bold text-gray-700 flex items-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-4 w-4 mr-1 text-purple-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"
+              />
+            </svg>
+            Ordenar:
+          </label>
           <div class="relative">
             <select
               id="sort-order"
@@ -140,16 +218,35 @@
       </div>
 
       <div id="active-filters" class="mt-4 flex flex-wrap gap-2 hidden">
-        <span class="text-xs font-medium text-gray-600">Filtros activos:</span>
+        <span class="text-xs font-medium text-gray-600 flex items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-3 w-3 mr-1 text-pink-500"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+          Filtros activos:
+        </span>
         <div id="active-filters-list" class="flex flex-wrap gap-2"></div>
       </div>
     </div>
   </div>
 
-  <!-- Lista de Reseñas con Grid Compacto y Scroll -->
-  <div class="p-1 shadow-2xl rounded-xl" id="reviews-scroll-container">
+  <!-- Lista de Reseñas con Grid Compacto y Scroll - Diseño Mejorado -->
+  <div
+    class="p-1 shadow-2xl rounded-xl bg-gradient-to-br from-gray-50 to-pink-50/30"
+    id="reviews-scroll-container"
+  >
     <div
-      class="h-[480px] lg:h-[320px] overflow-y-auto pr-2 relative custom-scrollbar rounded-lg bg-white"
+      class="h-[480px] lg:h-[320px] overflow-y-auto pr-2 relative custom-scrollbar rounded-lg bg-white border border-gray-100"
     >
       <div
         id="reviews-list"
@@ -185,10 +282,60 @@
     <!-- Se llenará dinámicamente con infinite scroll -->
   </div>
 
-  <!-- Estados Vacíos Animados -->
+  <!-- Mensaje de "No resultados" integrado - Diseño Mejorado -->
+  <div id="no-results-message" class="hidden text-center py-10"> <!-- MEJORA: Oculto por defecto para evitar parpadeos -->
+    <div
+      class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-pink-100 mb-4"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-8 w-8 text-pink-500"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+    </div>
+    <h2 id="no-results-title" class="text-2xl font-bold text-gray-800 mb-4">
+      No se encontraron resultados
+    </h2>
+    <p id="no-results-suggestion" class="text-gray-600 mb-6 max-w-lg mx-auto">
+      Parece que no hay productos que coincidan con tu búsqueda o filtros.
+    </p>
+    <div class="flex justify-center items-center space-x-4">
+      <svg
+        class="w-12 h-12 text-gray-400"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+        ></path>
+      </svg>
+    </div>
+    <button
+      data-action="clear-filters"
+      class="mt-8 px-6 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-lg shadow-md hover:from-pink-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:ring-opacity-50 transition duration-300 transform hover:scale-105"
+    >
+      Limpiar filtros
+    </button>
+  </div>
+
+  <!-- Estados Vacíos Animados - Diseño Mejorado -->
   <div id="empty-state" class="text-center py-20 hidden">
     <div
-      class="inline-flex items-center justify-center w-20 h-20 bg-pink-100 rounded-full mb-6 animate-bounce"
+      class="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-r from-pink-100 to-purple-100 rounded-full mb-6 animate-bounce shadow-lg"
     >
       <svg
         class="w-10 h-10 text-pink-600"
@@ -210,27 +357,31 @@
     <p class="text-gray-600 mb-6 max-w-md mx-auto">
       Sé el primero en compartir tu experiencia con este producto.
     </p>
-    <button
-      type="button"
-      id="write-first-review-btn"
-      data-action="write-review"
-      class="inline-flex items-center space-x-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:scale-105 transform transition-all duration-300"
-    >
-      <svg
-        class="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
+    <div id="write-first-review-btn-container">
+      {% if usuario_autenticado %}
+      <button
+        type="button"
+        id="write-first-review-btn"
+        data-action="write-review"
+        class="inline-flex items-center space-x-2 bg-gradient-to-r from-pink-600 to-purple-600 text-white font-semibold py-3 px-6 rounded-xl hover:scale-105 transform transition-all duration-300 shadow-lg"
       >
-        <path
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-        />
-      </svg>
-      <span>Escribir la primera reseña</span>
-    </button>
+        <svg
+          class="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+          />
+        </svg>
+        <span>Escribir la primera reseña</span>
+      </button>
+      {% endif %}
+    </div>
   </div>
 </div>
 
@@ -246,12 +397,12 @@
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
+    background: linear-gradient(to bottom, #f9a8d4, #c084fc);
     border-radius: 10px;
   }
 
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+    background: linear-gradient(to bottom, #f472b6, #a855f7);
   }
 
   /* Animaciones Profesionales */
@@ -441,7 +592,7 @@
 
   /* NUEVOS ESTILOS PARA TARJETAS COMPACTAS */
   .review-item {
-    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1 border border-gray-100 rounded-xl;
   }
 
   /* Grid responsive mejorado */
@@ -492,931 +643,13 @@
   .hover-lift:hover {
     transform: translateY(-2px);
   }
-</style>
 
-<script>
-  class ReviewsManager {
-    // Sistema de Reseñas 2.0 - Cliente API Profesional
-    constructor() {
-      const wrapper = document.getElementById("reviews-section-wrapper");
-      this.productId = wrapper ? wrapper.dataset.productId : null;
-      this.user = null;
-      this.userReview = null;
-
-      this.currentPage = 1;
-      this.currentRatingFilter = null;
-      this.currentSort = "newest";
-      this.isLoading = false;
-      this.hasMore = true;
-      this.reviews = new Map();
-      this.formRating = 0;
-
-      this.init();
-    }
-
-    async init() {
-      this.bindEvents();
-      await this.checkAuthentication();
-      this.loadReviews();
-      this.setupInfiniteScroll();
-      this.updateReviewButtonState();
-      this.renderFilterChips();
-      this.updateActiveFiltersDisplay();
-    }
-
-    bindEvents() {
-      document.addEventListener("click", this.handleClick.bind(this));
-      document.addEventListener("change", this.handleChange.bind(this));
-      document.addEventListener("input", this.handleInput.bind(this));
-      document.addEventListener("submit", this.handleSubmit.bind(this));
-      document.addEventListener("keydown", (e) => {
-        if (
-          e.key === "Escape" &&
-          !document.getElementById("reviewModal").classList.contains("hidden")
-        ) {
-          this.closeModal();
-        }
-      });
-      document.getElementById("reviewModal").addEventListener("click", (e) => {
-        if (e.target.id === "reviewModal") this.closeModal();
-      });
-
-      // Nuevo: eventos para modal de eliminación
-      document
-        .getElementById("cancel-delete")
-        .addEventListener("click", () => this.closeDeleteModal());
-      document
-        .getElementById("confirm-delete")
-        .addEventListener("click", () => this.confirmDeleteReview());
-      document
-        .getElementById("deleteReviewModal")
-        .addEventListener("click", (e) => {
-          if (e.target.id === "deleteReviewModal") this.closeDeleteModal();
-        });
-    }
-
-    handleClick(e) {
-      const target = e.target.closest("[data-action]");
-      if (!target) return;
-
-      const action = target.dataset.action;
-      const actionMap = {
-        "write-review": () => this.handleWriteReview(),
-        "close-modal": () => this.closeModal(),
-        "set-rating": () => this.setRating(parseInt(target.dataset.rating, 10)),
-        "edit-review": () => this.editReview(target.dataset.reviewId),
-        "delete-review": () => this.openDeleteModal(target.dataset.reviewId),
-        "close-delete-modal": () => this.closeDeleteModal(),
-        "filter-rating": () =>
-          this.filterByRating(
-            target.dataset.rating ? parseInt(target.dataset.rating, 10) : null
-          ),
-        "clear-filters": () => this.clearFilters(),
-        "remove-filter": () =>
-          this.removeSpecificFilter(target.dataset.filterType),
-      };
-
-      if (actionMap[action]) {
-        actionMap[action]();
-      }
-    }
-
-    handleChange(e) {
-      if (e.target.id === "sort-order") {
-        this.currentSort = e.target.value;
-        this.refreshReviews();
-        this.updateActiveFiltersDisplay();
-      }
-    }
-
-    handleInput(e) {
-      const { id, value } = e.target;
-      if (id === "review-text") this.updateCharCount(value.length);
-      if (["review-title", "review-text"].includes(id)) this.validateForm();
-    }
-
-    handleSubmit(e) {
-      if (e.target.id === "review-form") {
-        e.preventDefault();
-        this.submitReview();
-      }
-    }
-
-    getAuthHeaders() {
-      const token = localStorage.getItem("token");
-      return token
-        ? {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          }
-        : { "Content-Type": "application/json" };
-    }
-
-    async checkAuthentication() {
-      const token = localStorage.getItem("token");
-      if (token) {
-        try {
-          const payload = JSON.parse(atob(token.split(".")[1]));
-          this.user = { id: payload.user_id };
-        } catch (e) {
-          console.error("Token inválido o error al decodificar:", e);
-          this.user = null;
-          localStorage.removeItem("token");
-        }
-      } else {
-        console.log("No token found in localStorage.");
-      }
-      console.log("Final this.user after checkAuthentication:", this.user);
-    }
-
-    // Modal de agregar/editar reseña
-    openModal(isEdit = false, review = null) {
-      const modal = document.getElementById("reviewModal");
-      const form = document.getElementById("review-form");
-      const submitButtonText = document.querySelector("#submit-review .submit-text");
-      form.reset();
-      this.updateCharCount(0);
-
-      if (isEdit && review) {
-        document.getElementById("modal-title").textContent = "Editar tu reseña";
-        document.getElementById("review-id").value = review.id;
-        document.getElementById("review-title").value = review.titulo;
-        document.getElementById("review-text").value = review.texto;
-        this.setRating(review.calificacion);
-        if (submitButtonText) {
-          submitButtonText.textContent = "Editar reseña";
-        }
-      } else {
-        document.getElementById("modal-title").textContent =
-          "Escribir una reseña";
-        document.getElementById("review-id").value = "";
-        this.setRating(0);
-        if (submitButtonText) {
-          submitButtonText.textContent = "Publicar reseña";
-        }
-      }
-
-      this.validateForm();
-      modal.classList.remove("hidden");
-      document.body.style.overflow = "hidden";
-    }
-
-    closeModal() {
-      document.getElementById("reviewModal").classList.add("hidden");
-      document.body.style.overflow = "";
-    }
-
-    handleWriteReview() {
-      if (!this.user) {
-        this.showToast("Debes iniciar sesión para dejar una reseña.", "info");
-        return;
-      }
-      this.openModal(!!this.userReview, this.userReview);
-    }
-
-    editReview(reviewId) {
-      const review = this.reviews.get(reviewId);
-      if (review) {
-        this.openModal(true, review);
-      } else {
-        this.showToast("No se pudo encontrar la reseña para editar.", "error");
-      }
-    }
-
-    // Modal de eliminación
-    openDeleteModal(reviewId) {
-      this.reviewToDelete = reviewId;
-
-      document.getElementById("deleteReviewModal").classList.remove("hidden");
-      document.body.style.overflow = "hidden";
-    }
-
-    closeDeleteModal() {
-      document.getElementById("deleteReviewModal").classList.add("hidden");
-      document.body.style.overflow = "";
-      this.reviewToDelete = null;
-    }
-
-    async confirmDeleteReview() {
-      const reviewIdToDelete = this.reviewToDelete; // Store the ID in a local variable
-      if (!reviewIdToDelete) {
-        // Use the local variable for the check
-
-        return;
-      }
-
-      try {
-        this.setDeleteButtonLoading(true);
-        const response = await fetch(
-          `/api/productos/${this.productId}/reviews/${reviewIdToDelete}`,
-          { method: "DELETE", headers: this.getAuthHeaders() }
-        );
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          this.showToast(result.mensaje, "success");
-          this.closeDeleteModal();
-
-          const reviewElement = document.querySelector(
-            `[data-review-id="${reviewIdToDelete}"]`
-          );
-          if (reviewElement) {
-            reviewElement.style.transition = "opacity 0.3s, transform 0.3s";
-            reviewElement.style.opacity = "0";
-            reviewElement.style.transform = "scale(0.95)";
-            setTimeout(async () => {
-              reviewElement.remove();
-              this.reviews.delete(reviewIdToDelete);
-              if (
-                this.userReview &&
-                this.userReview.id === reviewIdToDelete
-              ) {
-                this.userReview = null;
-                this.updateReviewButtonState();
-              }
-              this.updateContainerVisibility();
-
-              const ratingResponse = await fetch(
-                `/api/productos/${this.productId}/rating`
-              );
-              const ratingData = await ratingResponse.json();
-              if (ratingData.success) {
-                if (typeof updateProductRatingDisplay === "function") {
-                  updateProductRatingDisplay(
-                    this.productId,
-                    ratingData.average_rating,
-                    ratingData.total_reviews_count
-                  );
-                }
-                this.updateStats(ratingData);
-              }
-            }, 300);
-          } else {
-          }
-        } else {
-          this.showToast(
-            result.error || "Error al eliminar la reseña.",
-            "error"
-          );
-        }
-      } catch (error) {
-        console.error("Error al eliminar la reseña:", error);
-        this.showToast("Error de conexión.", "error");
-      } finally {
-        this.setDeleteButtonLoading(false);
-      }
-    }
-
-    // Lógica del formulario
-    setRating(rating) {
-      this.formRating = rating;
-      document.getElementById("review-rating").value = rating;
-      const starsContainer = document.getElementById("rating-stars");
-      starsContainer.innerHTML = "";
-
-      for (let i = 1; i <= 5; i++) {
-        const star = document.createElement("div");
-        star.dataset.action = "set-rating";
-        star.dataset.rating = i;
-        star.classList.add("star");
-        if (i <= rating) star.classList.add("selected");
-        star.innerHTML = `<svg class="w-8 h-8 sm:w-10 sm:h-10" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
-        starsContainer.appendChild(star);
-      }
-      this.validateForm();
-    }
-
-    updateCharCount(length) {
-      document.getElementById("char-count").textContent = length;
-    }
-
-    validateForm() {
-      const title = document.getElementById("review-title").value;
-      const text = document.getElementById("review-text").value;
-      const rating = this.formRating;
-      const submitBtn = document.getElementById("submit-review");
-      const isValid =
-        title.trim().length >= 3 && text.trim().length >= 10 && rating > 0;
-      submitBtn.disabled = !isValid;
-    }
-
-    async submitReview() {
-      const submitBtn = document.getElementById("submit-review");
-      const reviewId = document.getElementById("review-id").value;
-
-      const body = {
-        calificacion: this.formRating,
-        titulo: document.getElementById("review-title").value,
-        texto: document.getElementById("review-text").value,
-      };
-
-      this.setButtonLoading(submitBtn, true);
-
-      try {
-        const method = reviewId ? "PUT" : "POST";
-        const endpoint = reviewId
-          ? `/api/productos/${this.productId}/reviews/${reviewId}`
-          : `/api/productos/${this.productId}/reviews`;
-
-        const response = await fetch(endpoint, {
-          method,
-          headers: this.getAuthHeaders(),
-          body: JSON.stringify(body),
-        });
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          this.showToast(result.mensaje, "success");
-          this.closeModal();
-
-          if (method === "POST") {
-            if (
-              this.user &&
-              result.review.usuario &&
-              this.user.id === result.review.usuario.id
-            ) {
-              result.review.puede_editar = true;
-            }
-            const newReviewElement = this.createReviewElement(result.review);
-            const container = document.getElementById("reviews-list");
-
-            container.prepend(newReviewElement);
-            this.reviews.set(result.review.id, result.review);
-            this.userReview = result.review;
-            this.updateReviewButtonState();
-            this.updateContainerVisibility();
-          } else {
-            const existingReviewElement = document.querySelector(
-              `[data-review-id="${result.review.id}"]`
-            );
-            if (existingReviewElement) {
-              if (
-                this.user &&
-                result.review.usuario &&
-                this.user.id === result.review.usuario.id
-              ) {
-                result.review.puede_editar = true;
-              }
-              const updatedReviewElement = this.createReviewElement(
-                result.review
-              );
-              existingReviewElement.replaceWith(updatedReviewElement);
-              this.reviews.set(result.review.id, result.review);
-              this.userReview = result.review;
-              this.updateReviewButtonState();
-              this.updateContainerVisibility();
-            } else {
-              this.refreshReviews();
-            }
-          }
-
-          const ratingResponse = await fetch(
-            `/api/productos/${this.productId}/rating`
-          );
-          const ratingData = await ratingResponse.json();
-          if (ratingData.success) {
-            if (typeof updateProductRatingDisplay === "function") {
-              updateProductRatingDisplay(
-                this.productId,
-                ratingData.average_rating,
-                ratingData.total_reviews_count
-              );
-            }
-            this.updateStats(ratingData);
-          }
-        } else {
-          this.showToast(
-            result.error || "Ocurrió un error en el servidor",
-            "error"
-          );
-        }
-      } catch (error) {
-        console.error("Error al enviar la reseña:", error);
-        this.showToast("Error de conexión al enviar la reseña.", "error");
-      } finally {
-        this.setButtonLoading(submitBtn, false);
-      }
-    }
-
-    // --- Lógica de Carga y Renderizado ---
-
-    showLoadingState(reset = true) {
-      const container = document.getElementById("reviews-list");
-      const scrollContainer = document.getElementById("reviews-scroll-container");
-      const emptyState = document.getElementById("empty-state");
-
-      emptyState.classList.add("hidden");
-      if (scrollContainer) scrollContainer.classList.remove("hidden");
-
-      if (reset && container) {
-        const skeleton = `<div class="animate-pulse"><div class="bg-white rounded-xl shadow-sm p-4 space-y-3 border border-gray-100"><div class="flex items-center space-x-3"><div class="w-8 h-8 bg-gray-300 rounded-full"></div><div class="flex-1 space-y-1"><div class="h-3 bg-gray-300 rounded w-3/4"></div><div class="h-2 bg-gray-200 rounded w-1/2"></div></div></div><div class="space-y-2"><div class="h-3 bg-gray-300 rounded w-full"></div><div class="h-3 bg-gray-200 rounded w-5/6"></div><div class="h-3 bg-gray-200 rounded w-4/6"></div></div></div></div>`;
-        container.innerHTML = skeleton.repeat(6);
-      }
-    }
-
-    hideLoadingState() {
-      document
-        .querySelectorAll("#reviews-list .animate-pulse")
-        .forEach((s) => s.remove());
-    }
-
-    showErrorState(message = "Error al cargar las reseñas.") {
-      const container = document.getElementById("reviews-list");
-      container.innerHTML = `<div class="text-center py-10 bg-red-50 rounded-lg border border-red-200"><p class="font-semibold text-red-600">${message}</p><p class="text-sm text-gray-600 mt-1">Por favor, intenta de nuevo más tarde.</p></div>`;
-    }
-
-    async loadReviews(reset = true) {
-      if (this.isLoading) return;
-      this.isLoading = true;
-      if (reset) {
-        this.currentPage = 1;
-        this.reviews.clear();
-        document.getElementById("reviews-list").innerHTML = "";
-      }
-
-      this.showLoadingState(reset);
-
-      try {
-        const params = new URLSearchParams({
-          page: this.currentPage,
-          per_page: 12,
-          sort: this.currentSort,
-          ...(this.currentRatingFilter && { rating: this.currentRatingFilter }),
-        });
-
-        const response = await fetch(
-          `/api/productos/${this.productId}/reviews?${params}`,
-          { headers: this.getAuthHeaders() }
-        );
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => null);
-          throw new Error(
-            errorData?.error || `HTTP error! status: ${response.status}`
-          );
-        }
-
-        const data = await response.json();
-
-        if (data.success) {
-          this.appendReviews(data);
-          this.hasMore = data.page < data.pages;
-          this.updateStats(data);
-        } else {
-          throw new Error(data.error || "La API devolvió un error.");
-        }
-      } catch (error) {
-        console.error("Error al cargar reseñas:", error);
-        this.showErrorState(error.message);
-      } finally {
-        this.isLoading = false;
-        this.hideLoadingState();
-      }
-    }
-
-    appendReviews(data) {
-      const container = document.getElementById("reviews-list");
-      const emptyState = document.getElementById("empty-state");
-      const scrollContainer = document.getElementById("reviews-scroll-container");
-      const emptyStateTitle = emptyState.querySelector("h3");
-      const emptyStateParagraph = emptyState.querySelector("p");
-      const writeFirstReviewBtn = document.getElementById(
-        "write-first-review-btn"
-      );
-
-      // Add reviews to the map
-      data.reviews.forEach((review) => {
-        // Check if the current user is the author of the review
-        if (this.user && review.usuario && this.user.id === review.usuario.id) {
-          review.puede_editar = true;
-        } else {
-          review.puede_editar = false; // Ensure it's false if not the owner
-        }
-        this.reviews.set(review.id, review);
-      });
-
-      // Clear previous reviews from the container if it's a fresh load (e.g., due to filter/sort change)
-      if (this.currentPage === 1) {
-        container.innerHTML = "";
-      }
-
-      if (data.reviews.length === 0 && this.currentPage === 1) {
-        container.innerHTML = ""; // Ensure the list is empty
-
-        if (this.currentRatingFilter !== null) {
-          emptyStateTitle.textContent =
-            "No hay reseñas que coincidan con este filtro.";
-          emptyStateParagraph.textContent =
-            "Intenta ajustar tus criterios de búsqueda o elimina el filtro.";
-          writeFirstReviewBtn.classList.add("hidden"); // Hide "Write first review" button for filtered empty state
-        } else if (this.currentSort !== "newest") {
-          emptyStateTitle.textContent =
-            "No se encontraron reseñas con el orden seleccionado.";
-          emptyStateParagraph.textContent =
-            "Intenta cambiar el criterio de ordenación.";
-          writeFirstReviewBtn.classList.add("hidden"); // Hide "Write first review" button for sorted empty state
-        } else {
-          emptyStateTitle.textContent = "Aún no hay reseñas";
-          if (!this.user) {
-            emptyStateParagraph.textContent = ""; // Empty paragraph for unauthenticated users
-            writeFirstReviewBtn.classList.add("hidden"); // Hide button for unauthenticated users
-          } else {
-            emptyStateParagraph.textContent =
-              "Sé el primero en compartir tu experiencia con este producto.";
-            writeFirstReviewBtn.classList.remove("hidden"); // Show for authenticated users
-          }
-        }
-        this.updateContainerVisibility(); // Update visibility after setting empty state text
-        return;
-      }
-
-      const fragment = document.createDocumentFragment();
-      data.reviews.forEach((review) => {
-        const reviewElement = this.createReviewElement(review);
-        fragment.appendChild(reviewElement);
-      });
-      container.appendChild(fragment);
-      this.animateReviewsIn();
-      this.updateContainerVisibility(); // Update visibility after reviews are appended
-    }
-
-    updateStats(data) {
-      document.getElementById("avg-rating-value").textContent = (
-        data.average_rating || 0
-      ).toFixed(1);
-      document.getElementById("total-reviews").textContent =
-        data.total_reviews_count || 0;
-      document.getElementById("average-rating").innerHTML =
-        this.generateStarsHTML(Math.round(data.average_rating || 0));
-    }
-
-    createReviewElement(review) {
-      const div = document.createElement("div");
-      div.className =
-        "bg-white rounded-xl shadow-sm p-4 border border-gray-100 review-item hover:shadow-md transition-shadow duration-300";
-      div.dataset.reviewId = review.id;
-
-      div.innerHTML = `
-        <div class="flex items-start justify-between mb-3">
-          <div class="flex items-center space-x-2">
-            <img class="h-8 w-8 rounded-full object-cover flex-shrink-0" src="${
-              review.usuario.avatar_url ||
-              "https://i.pravatar.cc/32?u=" + review.usuario.id
-            }" alt="${review.usuario.nombre}">
-            <div class="min-w-0">
-              <p class="text-sm font-semibold text-gray-900 truncate">${
-                review.usuario.nombre
-              }</p>
-              <p class="text-xs text-gray-500">${this.formatDate(
-                review.created_at
-              )}</p>
-            </div>
-          </div>
-          <div class="flex items-center flex-shrink-0">
-            ${this.generateStarsHTML(review.calificacion)}
-          </div>
-        </div>
-        
-        <div class="space-y-2">
-          <h4 class="font-semibold text-gray-800 text-sm leading-tight">${
-            review.titulo || ""
-          }</h4>
-          <p class="text-gray-600 text-xs leading-relaxed line-clamp-3">${
-            review.texto
-          }</p>
-        </div>
-        
-        ${
-          review.puede_editar
-            ? `
-          <div class="flex justify-end space-x-2 border-t pt-2 mt-2">
-            <button data-action="edit-review" data-review-id="${review.id}" class="text-xs font-medium text-indigo-600 hover:text-indigo-700 transition-colors">Editar</button>
-            <button data-action="delete-review" data-review-id="${review.id}" class="text-xs font-medium text-red-600 hover:text-red-700 transition-colors">Eliminar</button>
-          </div>`
-            : ""
-        }
-      `;
-      return div;
-    }
-
-    async deleteReview(reviewId) {
-      if (!this.user) return;
-
-      if (
-        !window.confirm(
-          "¿Estás seguro de que quieres eliminar esta reseña? Esta acción no se puede deshacer."
-        )
-      )
-        return;
-
-      try {
-        const response = await fetch(
-          `/api/productos/${this.productId}/reviews/${reviewId}`,
-          { method: "DELETE", headers: this.getAuthHeaders() }
-        );
-        const result = await response.json();
-
-        if (response.ok && result.success) {
-          this.showToast(result.mensaje, "success");
-          const reviewElement = document.querySelector(
-            `[data-review-id="${reviewId}"]`
-          );
-          if (reviewElement) {
-            reviewElement.style.transition = "opacity 0.3s, transform 0.3s";
-            reviewElement.style.opacity = "0";
-            reviewElement.style.transform = "scale(0.95)";
-            setTimeout(async () => {
-              reviewElement.remove();
-              // Actualizar el estado del frontend directamente
-              this.reviews.delete(reviewId);
-              if (this.userReview && this.userReview.id === reviewId) {
-                this.userReview = null;
-                this.updateReviewButtonState();
-              }
-              if (this.reviews.size === 0) {
-                document
-                  .getElementById("empty-state")
-                  .classList.remove("hidden");
-              }
-
-              // Fetch updated rating from backend
-              const ratingResponse = await fetch(
-                `/api/productos/${this.productId}/rating`
-              );
-              const ratingData = await ratingResponse.json();
-
-              if (ratingData.success) {
-                // Update global display
-                if (typeof updateProductRatingDisplay === "function") {
-                  updateProductRatingDisplay(
-                    this.productId,
-                    ratingData.average_rating,
-                    ratingData.total_reviews_count
-                  );
-                }
-                // Update local stats in reviews section
-                this.updateStats(ratingData);
-              }
-            }, 300);
-          }
-        } else {
-          this.showToast(
-            result.error || "Error al eliminar la reseña.",
-            "error"
-          );
-        }
-      } catch (error) {
-        console.error("Error al eliminar la reseña:", error);
-        this.showToast("Error de conexión.", "error");
-      }
-    }
-
-    calculateAverageRating() {
-      if (this.reviews.size === 0) return 0.0;
-      let totalRating = 0;
-      this.reviews.forEach((review) => {
-        totalRating += review.calificacion;
-      });
-      return totalRating / this.reviews.size;
-    }
-
-    // --- Filtros y Ordenamiento ---
-
-    renderFilterChips() {
-      const container = document.getElementById("rating-filters");
-      const ratings = [null, 5, 4, 3, 2, 1]; // null para "Todos"
-      container.innerHTML = ratings
-        .map((rating) => {
-          const isActive = this.currentRatingFilter === rating;
-          const text = rating ? `${rating} estrellas` : "Todos";
-          const starHtml = rating
-            ? `<span class="star-icon"></span>`.repeat(rating)
-            : "";
-          return `<button data-action="filter-rating" data-rating="${
-            rating || ""
-          }" class="rating-chip ${
-            isActive ? "active" : ""
-          }">${text} ${starHtml}</button>`;
-        })
-        .join("");
-    }
-
-    filterByRating(rating) {
-      this.currentRatingFilter = rating;
-      this.renderFilterChips();
-      this.refreshReviews();
-      this.updateActiveFiltersDisplay();
-    }
-
-    clearFilters() {
-      this.currentRatingFilter = null;
-      this.currentSort = "newest";
-      document.getElementById("sort-order").value = "newest"; // Update select dropdown
-      this.renderFilterChips(); // Re-render chips to show "Todos" active
-      this.refreshReviews(); // Reload reviews with cleared filters
-      this.updateActiveFiltersDisplay();
-    }
-
-    updateActiveFiltersDisplay() {
-      const activeFiltersContainer = document.getElementById("active-filters");
-      const activeFiltersList = document.getElementById("active-filters-list");
-
-      const activeFilters = [];
-
-      if (this.currentRatingFilter !== null) {
-        activeFilters.push({
-          type: "rating",
-          label: `${this.currentRatingFilter} estrellas`,
-          value: this.currentRatingFilter,
-        });
-      }
-
-      if (this.currentSort !== "newest") {
-        const sortLabels = {
-          oldest: "Más antiguas",
-          rating_desc: "Mejor valoradas",
-          rating_asc: "Peor valoradas",
-        };
-        activeFilters.push({
-          type: "sort",
-          label: sortLabels[this.currentSort] || this.currentSort,
-          value: this.currentSort,
-        });
-      }
-
-      if (activeFilters.length > 0) {
-        activeFiltersContainer.classList.remove("hidden");
-        activeFiltersList.innerHTML = activeFilters
-          .map(
-            (filter) => `
-                <div class="filter-tag">
-                    ${filter.label}
-                    <button data-action="remove-filter" data-filter-type="${filter.type}" class="ml-1 -mr-1 p-1 rounded-full hover:bg-amber-200 transition-colors">
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
-                </div>
-            `
-          )
-          .join("");
-      } else {
-        activeFiltersContainer.classList.add("hidden");
-      }
-    }
-
-    removeSpecificFilter(filterType) {
-      if (filterType === "rating") {
-        this.currentRatingFilter = null;
-        this.renderFilterChips();
-      } else if (filterType === "sort") {
-        this.currentSort = "newest";
-        document.getElementById("sort-order").value = "newest";
-      }
-
-      this.refreshReviews();
-      this.updateActiveFiltersDisplay();
-    }
-
-    refreshReviews() {
-      this.loadReviews(true);
-      this.updateReviewButtonState();
-    }
-
-    // --- Helpers ---
-
-    setupInfiniteScroll() {
-      const sentinel = document.createElement("div");
-      sentinel.id = "scroll-sentinel";
-      document.getElementById("reviews-container").appendChild(sentinel);
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting && !this.isLoading && this.hasMore) {
-            this.currentPage++;
-            this.loadReviews(false);
-          }
-        },
-        { rootMargin: "200px" }
-      );
-      observer.observe(sentinel);
-    }
-
-    animateReviewsIn() {
-      document
-        .querySelectorAll(".review-item:not(.animated-in)")
-        .forEach((review, index) => {
-          review.classList.add("animated-in");
-          review.style.opacity = "0";
-          review.style.transform = "translateY(20px)";
-          setTimeout(() => {
-            review.style.transition = "opacity 0.5s ease, transform 0.5s ease";
-            review.style.opacity = "1";
-            review.style.transform = "translateY(0)";
-          }, index * 50);
-        });
-    }
-
-    formatDate(dateString) {
-      return new Date(dateString).toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "short",
-        day: "numeric",
-      });
-    }
-
-    generateStarsHTML(rating) {
-      let stars = "";
-      for (let i = 1; i <= 5; i++) {
-        stars += `<svg class="w-4 h-4 ${
-          i <= rating ? "text-yellow-400" : "text-gray-300"
-        }" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>`;
-      }
-      return stars;
-    }
-
-    async updateReviewButtonState() {
-      const button = document.getElementById("write-review-btn");
-      const text = document.getElementById("write-review-text");
-      button.disabled = true; // Deshabilitar mientras se comprueba
-
-      if (!this.user) {
-        button.classList.add("hidden"); // Hide the button for unauthenticated users
-        return;
-      }
-      button.classList.remove("hidden"); // Ensure button is visible for authenticated users
-
-      try {
-        const response = await fetch(
-          `/api/productos/${this.productId}/my-reviews`,
-          { headers: this.getAuthHeaders() }
-        );
-        const data = await response.json();
-        if (response.ok && data.success) {
-          this.userReview = data.review;
-          text.textContent = "Editar mi reseña";
-        } else {
-          this.userReview = null;
-          text.textContent = "Escribir reseña";
-        }
-      } catch (error) {
-        console.error("Error al verificar la reseña del usuario:", error);
-        this.userReview = null;
-        text.textContent = "Escribir reseña";
-      } finally {
-        button.disabled = false;
-      }
-    }
-
-    setButtonLoading(button, isLoading) {
-      const text = button.querySelector(".submit-text");
-      const spinner = button.querySelector(".loading-spinner");
-      button.disabled = isLoading;
-      text.style.display = isLoading ? "none" : "inline-block";
-      spinner.style.display = isLoading ? "inline-block" : "none";
-    }
-
-    showToast(message, type = "info") {
-      if (type === "success") {
-        if (window.toast && typeof window.toast.success === "function") {
-          window.toast.success(message);
-        } else {
-          console.log("Éxito (sin toast):", message);
-        }
-      } else {
-        console.error(`Mensaje (${type}):`, message);
-      }
-    }
-
-    updateContainerVisibility() {
-        const emptyState = document.getElementById("empty-state");
-        const scrollContainer = document.getElementById("reviews-scroll-container");
-
-        if (this.reviews.size > 0) {
-            emptyState.classList.add("hidden");
-            if (scrollContainer) scrollContainer.classList.remove("hidden");
-        } else {
-            emptyState.classList.remove("hidden");
-            if (scrollContainer) scrollContainer.classList.add("hidden");
-        }
-    }
-
-    setDeleteButtonLoading(isLoading) {
-      const button = document.getElementById("confirm-delete");
-      if (!button) return;
-
-      if (isLoading) {
-        button.textContent = "Eliminando...";
-        button.disabled = true;
-        button.classList.add("opacity-50", "cursor-not-allowed");
-      } else {
-        button.textContent = "Eliminar";
-        button.disabled = false;
-        button.classList.remove("opacity-50", "cursor-not-allowed");
-      }
-    }
+  /* --- MEJORA PROFESIONAL: Estilo para Voto Activo --- */
+  .vote-button.voted {
+    color: #3b82f6; /* blue-500 */
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    window.reviewsManager = new ReviewsManager();
-  });
-</script>
+  .vote-button.voted:hover {
+    color: #2563eb; /* blue-600 */
+  }
+</style>

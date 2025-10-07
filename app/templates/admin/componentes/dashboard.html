@@ -1,151 +1,1010 @@
 {% extends 'admin/page/base.html' %}
 {% block title %} Dashboard- Panel de Administración{% endblock %} 
 {% block content %}
-    <div class="py-6">
-        <div
-            class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <!-- Mensaje principal sobre tareas de inventario -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg shadow-lg p-6 mb-8 fade-in">
-                <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <i class="fas fa-clipboard-check text-white text-3xl"></i>
-                    </div>
-                    <div class="ml-4">
-                        <h3 class="text-lg font-medium text-white">Gestión Eficiente de Inventario</h3>
-                        <p class="mt-1 text-blue-100">Hoy es el día ideal para revisar niveles de stock, actualizar productos y optimizar tu almacén. Un inventario bien gestionado es la clave del éxito.</p>
-                    </div>
-                </div>
+<div id="dashboard-container" class="p-4 sm:p-6 lg:p-8 bg-gradient-to-br from-gray-50 to-gray-100 min-h-full">
+    <div class="max-w-screen-2xl mx-auto">
+        <!-- Cabecera y Filtros -->
+        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 relative">
+            <div class="mb-4 md:mb-0">
+                <h1 class="text-3xl sm:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Dashboard de Rendimiento</h1>
+                <p class="mt-2 text-gray-600 text-lg">Una vista general del rendimiento de tu negocio.</p>
             </div>
+            <div id="dashboard-period-selector" class="mt-4 md:mt-0 flex items-center bg-white rounded-xl p-1 shadow-lg border border-gray-200">
+                <button data-period="7d" class="period-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 hover:bg-blue-50">7 Días</button>
+                <button data-period="30d" class="period-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 bg-blue-500 text-white shadow-md">30 Días</button>
+                <button data-period="90d" class="period-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 hover:bg-blue-50">90 Días</button>
+                <button data-period="1y" class="period-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 hover:bg-blue-50">1 Año</button>
+            </div>
+        </div>
 
-            <!-- Tarjetas de estadísticas -->
-            <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-blue-100 rounded-md p-3">
-                                <i class="fas fa-box text-blue-600"></i>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">Total Productos</dt>
-                                    <dd class="text-lg font-medium text-gray-900">{{ stats.total_productos }}</dd>
-                                </dl>
-                            </div>
+        <!-- Stat Cards - Rendimiento del Período -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Rendimiento del Período</h2>
+        </div>
+        <!-- MEJORA PROFESIONAL: Reestructurado a un grid de 3 columnas para un diseño más limpio y profesional (3x2) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Ingresos Totales -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-blue-400 to-blue-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Ingresos</p>
+                            <p id="total-ingresos" class="mt-2 text-3xl font-bold text-gray-800">$ 0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Σ (precio × cantidad)
+                            </p>
                         </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-green-100 rounded-md p-3">
-                                <i class="fas fa-check-circle text-green-600"></i>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">En Stock</dt>
-                                    <dd class="text-lg font-medium text-gray-900">{{ stats.en_stock }}</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-yellow-100 rounded-md p-3">
-                                <i class="fas fa-exclamation-triangle text-yellow-600"></i>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">Stock Bajo</dt>
-                                    <dd class="text-lg font-medium text-gray-900">{{ stats.stock_bajo }}</dd>
-                                </dl>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white overflow-hidden shadow rounded-lg">
-                    <div class="px-4 py-5 sm:p-6">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0 bg-red-100 rounded-md p-3">
-                                <i class="fas fa-times-circle text-red-600"></i>
-                            </div>
-                            <div class="ml-5 w-0 flex-1">
-                                <dl>
-                                    <dt class="text-sm font-medium text-gray-500 truncate">Sin Stock</dt>
-                                    <dd class="text-lg font-medium text-gray-900">{{ stats.sin_stock }}</dd>
-                                </dl>
-                            </div>
+                        <div class="stat-icon bg-blue-100 text-blue-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-dollar-sign text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Sección de Tareas Pendientes (Dinámica) -->
-            {% if tasks %}
-            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8">
-                <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Tareas Pendientes</h3>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Acciones requeridas para optimizar tu inventario.</p>
+            <!-- Utilidad -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-green-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-green-400 to-green-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Utilidad</p>
+                            <p id="total-utilidad" class="mt-2 text-3xl font-bold text-gray-800">$ 0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Ingresos - Inversión
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-green-100 text-green-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                    </div>
                 </div>
-                <ul class="divide-y divide-gray-200">
-                    {% for task in tasks %}
-                    <li>
-                        <a href="#" class="block hover:bg-gray-50"> {# Placeholder: El href debe apuntar a la página de edición del producto #}
-                            <div class="px-4 py-4 sm:px-6">
-                                <div class="flex items-center justify-between">
-                                    <p class="text-sm font-medium text-blue-600 truncate">{{ task.nombre }}</p>
-                                    <div class="ml-2 flex-shrink-0 flex">
-                                        {% if task.reason == 'Agotado' %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                            Agotado
-                                        </span>
-                                        {% else %}
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                            Bajo Stock
-                                        </span>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                                <div class="mt-2 sm:flex sm:justify-between">
-                                    <div class="sm:flex">
-                                        <p class="flex items-center text-sm text-gray-500">
-                                            <i class="fas fa-box-open mr-1.5 text-gray-400"></i>
-                                            Stock actual: {{ task.existencia }} (Mínimo: {{ task.stock_minimo }})
-                                        </p>
-                                    </div>
-                                    <div class="mt-2 flex items-center text-sm text-blue-500 sm:mt-0">
-                                        <p>Gestionar Stock &rarr;</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </a>
-                    </li>
-                    {% endfor %}
-                </ul>
             </div>
-            {% endif %}
-
-            <!-- Gráfico de resumen -->
-            <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-                <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
-                    <h3 class="text-lg leading-6 font-medium text-gray-900">Resumen de Inventario</h3>
-                    <p class="mt-1 max-w-2xl text-sm text-gray-500">Estado actual de tu inventario</p>
+            <!-- Inversión -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-rose-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-rose-400 to-rose-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Inversión</p>
+                            <p id="total-inversion" class="mt-2 text-3xl font-bold text-gray-800">$ 0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Σ (costo × cantidad)
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-rose-100 text-rose-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-wallet text-xl"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="px-4 py-5 sm:p-6">
-                    <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                        <div class="text-center">
-                            <i class="fas fa-chart-pie text-4xl text-gray-300 mb-3"></i>
-                            <p class="text-gray-500">Gráfico de distribución de inventario</p>
-                            <p class="text-sm text-gray-400 mt-2">Se mostraría un gráfico interactivo con la distribución de productos</p>
+            </div>
+            <!-- Unidades Vendidas -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-yellow-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-yellow-400 to-yellow-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Unidades Vendidas</p>
+                            <p id="total-unidades-vendidas" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                Σ (cantidad)
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-yellow-100 text-yellow-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-boxes-stacked text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Total Pedidos -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-cyan-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-cyan-400 to-cyan-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Total Pedidos</p>
+                            <p id="total-pedidos" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                COUNT (pedidos completados)
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-cyan-100 text-cyan-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-receipt text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Margen de Ganancia -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl overflow-hidden transform transition-all duration-300 hover:scale-105 hover:shadow-2xl relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-purple-100 rounded-full -mr-16 -mt-16 opacity-20"></div>
+                <div class="h-2 bg-gradient-to-r from-purple-400 to-purple-600"></div>
+                <div class="skeleton-loader"></div>
+                <div class="data-content p-6 relative z-10">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Margen de Ganancia</p>
+                            <p id="margen-ganancia" class="mt-2 text-3xl font-bold text-gray-800">0%</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">
+                                (Utilidad / Ingresos) * 100
+                            </p>
+                        </div>
+                        <div class="stat-icon bg-purple-100 text-purple-600 w-14 h-14 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="fas fa-percentage text-xl"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-{% endblock %}
 
+        <!-- Stat Cards - Estado del Inventario (Global) -->
+        <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4">Estado de la tienda (Global)</h2>
+        </div>
+        <!-- MEJORA PROFESIONAL: Reestructuración a un grid de 3x2 para un look más profesional y detallado -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+            <!-- Inversión en Inventario -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-indigo-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Inversión en Inventario</p>
+                            <p id="inversion-inventario-total" class="mt-2 text-3xl font-bold text-gray-800">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Σ (costo × existencia)</p>
+                        </div>
+                        <div class="stat-icon bg-indigo-100 text-indigo-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-sack-dollar text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Ingresos Potenciales -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-green-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Ingresos Potenciales</p>
+                            <p id="ingresos-potenciales-totales" class="mt-2 text-3xl font-bold text-green-600">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Σ (precio × existencia)</p>
+                        </div>
+                        <div class="stat-icon bg-green-100 text-green-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-cash-register text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Utilidad Potencial -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-blue-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Utilidad Potencial</p>
+                            <p id="utilidad-potencial-total" class="mt-2 text-3xl font-bold text-blue-600">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Ingresos Potenciales - Inversión</p>
+                        </div>
+                        <div class="stat-icon bg-blue-100 text-blue-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-chart-pie text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Existencias Totales -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-teal-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Existencias Totales</p>
+                            <p id="total-existencias" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Σ (existencia de cada producto)</p>
+                        </div>
+                        <div class="stat-icon bg-teal-100 text-teal-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-warehouse text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- SKUs Activos -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-cyan-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">SKUs Activos</p>
+                            <p id="total-skus-activos" class="mt-2 text-3xl font-bold text-gray-800">0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">COUNT (productos únicos)</p>
+                        </div>
+                        <div class="stat-icon bg-cyan-100 text-cyan-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-barcode text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Costo Promedio por Unidad -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-amber-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Costo Promedio / Unidad</p>
+                            <p id="costo-promedio-unidad" class="mt-2 text-3xl font-bold text-gray-800">$0</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">Inversión Total / Existencias</p>
+                        </div>
+                        <div class="stat-icon bg-amber-100 text-amber-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-calculator text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tarjeta de Rotación de Inventario (Período) -->
+        <div class="grid grid-cols-1 mb-10">
+            <!-- Rotación de Inventario -->
+            <div class="stat-card bg-white rounded-2xl shadow-xl p-6 border-l-4 border-orange-500 transform transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+                <div class="skeleton-loader"></div>
+                <div class="data-content">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 uppercase tracking-wide">Rotación de Inventario (Período)</p>
+                            <p id="rotacion-inventario" class="mt-2 text-3xl font-bold text-gray-800">0%</p>
+                            <p class="text-xs text-gray-400 font-mono mt-1">(Unidades Vendidas / (Unidades Vendidas + Existencias)) * 100</p>
+                        </div>
+                        <div class="stat-icon bg-orange-100 text-orange-600 w-12 h-12 rounded-lg flex items-center justify-center shadow-md">
+                            <i class="fas fa-sync-alt text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección Principal: Gráficos y Productos -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+            <!-- Gráfico de Ganancias Compacto -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-chart-line mr-2 text-blue-500"></i>
+                        Evolución de Ingresos
+                    </h3>
+                    <div class="flex space-x-2">
+                        <button class="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-600 transition-colors hover:bg-blue-200">Ingresos</button>
+                    </div>
+                </div>
+                <div class="h-64 relative">
+                    <div class="skeleton-loader absolute inset-0"></div>
+                    <div class="data-content h-full">
+                        <canvas id="profitsChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Estadísticas Adicionales -->
+                <div class="grid grid-cols-3 gap-4 mt-6">
+                    <div id="promedio-diario-card" class="text-center p-3 bg-blue-50 rounded-lg border border-blue-100 hover:bg-blue-100 transition-colors">
+                        <i class="fas fa-chart-bar text-blue-500 mb-1"></i>
+                        <p class="text-xs text-gray-500 uppercase">Promedio Diario</p>
+                        <p id="promedio-diario" class="text-lg font-bold text-blue-600">$0</p>
+                    </div>
+                    <div id="mejor-dia-card" class="text-center p-3 bg-green-50 rounded-lg border border-green-100 hover:bg-green-100 transition-colors">
+                        <i class="fas fa-trophy text-green-500 mb-1"></i>
+                        <p class="text-xs text-gray-500 uppercase">Mejor Día</p>
+                        <p id="mejor-dia" class="text-lg font-bold text-green-600">$0</p>
+                    </div>
+                    <div id="tendencia-card" class="text-center p-3 bg-purple-50 rounded-lg border border-purple-100 hover:bg-purple-100 transition-colors">
+                        <i class="fas fa-trending-up text-purple-500 mb-1"></i>
+                        <p class="text-xs text-gray-500 uppercase">Tendencia</p>
+                        <p id="tendencia" class="text-lg font-bold text-purple-600">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distribución por Categoría -->
+            <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-gray-800 flex items-center">
+                        <i class="fas fa-chart-pie mr-2 text-purple-500"></i>
+                        Categorías
+                    </h3>
+                </div>
+                <div class="h-64 relative">
+                    <div class="skeleton-loader absolute inset-0"></div>
+                    <div class="data-content h-full">
+                        <div id="categories-chart-container" class="h-full">
+                            <canvas id="categoriesChart"></canvas>
+                        </div>
+                        <div id="categories-chart-nodata" class="h-full flex-col items-center justify-center text-center text-gray-500 hidden">
+                            <i class="fas fa-chart-pie fa-3x text-gray-300 mb-3"></i>
+                            <p>No hay datos de categorías para mostrar.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Productos con Navegación -->
+        <div class="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+            <!-- Navegación de Pestañas -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 border-b border-gray-200">
+                <div class="flex space-x-1 mb-4 sm:mb-0">
+                    <button data-tab="top-products" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-all duration-300 bg-blue-500 text-white">
+                        <i class="fas fa-fire mr-2"></i>Productos Más Vendidos
+                    </button>
+                    <button data-tab="new-products" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-all duration-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-sparkles mr-2"></i>Productos Nuevos
+                    </button>
+                    <button data-tab="top-customers" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-all duration-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-users mr-2"></i>Clientes Top
+                    </button>
+                    <button data-tab="new-categories" class="tab-btn px-4 py-2 text-sm font-medium rounded-t-lg transition-all duration-300 text-gray-600 hover:text-gray-800 hover:bg-gray-100">
+                        <i class="fas fa-tags mr-2"></i>Categorías Nuevas
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Contenido de Pestañas -->
+            <div class="tab-content">
+                <!-- Productos Más Vendidos -->
+                <div id="top-products" class="tab-pane">
+                    <div id="top-products-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                        <!-- Skeleton Loader -->
+                        <div class="skeleton-loader">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden md:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden xl:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Productos Nuevos -->
+                <div id="new-products" class="tab-pane hidden">
+                    <div id="new-products-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Skeleton Loader -->
+                        <div class="skeleton-loader">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden md:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden lg:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Clientes Top -->
+                <div id="top-customers" class="tab-pane hidden">
+                    <div id="top-customers-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Skeleton Loader -->
+                        <div class="skeleton-loader">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden md:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden lg:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Categorías Nuevas -->
+                <div id="new-categories" class="tab-pane hidden">
+                    <div id="new-categories-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Skeleton Loader -->
+                        <div class="skeleton-loader">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden md:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                        <div class="skeleton-loader hidden lg:block">
+                            <div class="bg-gray-200 rounded-xl h-48 animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mensaje de Error Global -->
+        <div id="dashboard-error" class="hidden mt-8 bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-r-lg" role="alert">
+            <p class="font-bold">Ocurrió un error</p>
+            <p>No se pudieron cargar los datos del dashboard. Por favor, intenta recargar la página.</p>
+        </div>
+    </div>
+</div>
+
+<!-- MEJORA: Incluir el script del dashboard solo en esta página -->
+<script>
+    /**
+ * @file Módulo del Dashboard de Administración.
+ * @description Gestiona la carga de datos, la renderización de gráficos y la interactividad
+ *              del dashboard principal, permitiendo una experiencia en tiempo real.
+ *
+ * @funcionalidadesClave
+ * 1.  **Carga de Datos Asíncrona:** Obtiene todas las estadísticas del dashboard desde un único endpoint de API.
+ * 2.  **Renderizado de Gráficos:** Utiliza Chart.js para visualizar la evolución de ganancias y la distribución de ventas por categoría.
+ * 3.  **Interactividad:** Permite al usuario cambiar el período de tiempo (7d, 30d, etc.) y recarga los datos dinámicamente.
+ * 4.  **Actualización de UI:** Refresca las tarjetas de estadísticas y la tabla de productos más vendidos sin recargar la página.
+ * 5.  **Gestión de Estado de Carga:** Muestra esqueletos de carga (skeletons) para una mejor experiencia de usuario.
+ * 6.  **Navegación por Pestañas:** Permite cambiar entre diferentes vistas de productos, clientes y categorías.
+ */
+
+const ICONS = {
+    'Tecnología': 'fas fa-laptop',
+    'Hogar': 'fas fa-home',
+    'Ropa': 'fas fa-tshirt',
+    'default': 'fas fa-tag'
+};
+const DashboardModule = (() => {
+    let profitsChart = null;
+    let categoriesChart = null;
+    let isInitialized = false;
+
+    // --- Funciones de Utilidad ---
+
+    function formatCurrency(value) {
+        if (value === null || value === undefined) return '$ 0';
+        return new Intl.NumberFormat('es-CO', {
+            style: 'currency',
+            currency: 'COP',
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 0
+        }).format(value);
+    }
+    
+    function timeAgo(dateString) {
+        if (!dateString) return 'Fecha desconocida';
+        const date = new Date(dateString);
+        const now = new Date();
+        const seconds = Math.round((now - date) / 1000);
+        const minutes = Math.round(seconds / 60);
+        const hours = Math.round(minutes / 60);
+        const days = Math.round(hours / 24);
+
+        if (days > 1) return `Hace ${days} días`;
+        if (hours > 1) return `Hace ${hours} horas`;
+        if (minutes > 1) return `Hace ${minutes} minutos`;
+        return 'Justo ahora';
+    }
+
+    // --- Funciones de Renderizado y UI ---
+
+    function renderSkeletons(show) {
+        document.querySelectorAll('.skeleton-loader').forEach(el => {
+            el.style.display = show ? 'block' : 'none';
+        });
+        document.querySelectorAll('.data-content').forEach(el => {
+            el.style.visibility = show ? 'hidden' : 'visible';
+        });
+    }
+
+    function updateStatCards(stats) {
+        document.getElementById('total-ingresos').textContent = formatCurrency(stats.total_ingresos);
+        document.getElementById('total-utilidad').textContent = formatCurrency(stats.total_utilidad);
+        document.getElementById('total-inversion').textContent = formatCurrency(stats.total_inversion);
+        document.getElementById('total-unidades-vendidas').textContent = (stats.total_unidades_vendidas || 0).toLocaleString('es-CO');
+        // CORRECCIÓN: Añadir comprobaciones de seguridad (|| 0) a todas las métricas que usan .toFixed()
+        document.getElementById('margen-ganancia').textContent = `${(stats.margen_ganancia || 0).toFixed(1)}%`;
+
+        // --- MEJORA PROFESIONAL: Actualizar las nuevas tarjetas de inventario ---
+        document.getElementById('inversion-inventario-total').textContent = formatCurrency(stats.inversion_inventario_total);
+        document.getElementById('ingresos-potenciales-totales').textContent = formatCurrency(stats.ingresos_potenciales_totales);
+        document.getElementById('utilidad-potencial-total').textContent = formatCurrency(stats.utilidad_potencial_total);
+        // MEJORA PROFESIONAL: Actualizar la nueva tarjeta de Total Pedidos
+        document.getElementById('total-pedidos').textContent = (stats.total_pedidos || 0).toLocaleString('es-CO');
+
+        document.getElementById('total-existencias').textContent = (stats.total_existencias || 0).toLocaleString('es-CO');
+        document.getElementById('total-skus-activos').textContent = (stats.total_skus_activos || 0).toLocaleString('es-CO');
+        document.getElementById('costo-promedio-unidad').textContent = formatCurrency(stats.costo_promedio_unidad);
+        
+        // Calcular y mostrar la rotación de inventario para el período
+        // MEJORA: La fórmula correcta de rotación de inventario para un período es Unidades Vendidas / Inventario Promedio.
+        // Una simplificación común es (Unidades Vendidas / (Unidades Vendidas + Existencias Finales)) * 100
+        const denominadorRotacion = stats.total_unidades_vendidas + stats.total_existencias;
+        const rotacion = (denominadorRotacion > 0) ? ((stats.total_unidades_vendidas / denominadorRotacion) * 100) : 0;
+        document.getElementById('rotacion-inventario').textContent = `${(rotacion || 0).toFixed(1)}%`;
+
+        // --- MEJORA: Actualizar las nuevas tarjetas de estadísticas ---
+        document.getElementById('promedio-diario').textContent = formatCurrency(stats.promedio_diario || 0);
+        document.getElementById('mejor-dia').textContent = formatCurrency(stats.mejor_dia || 0);
+        
+        const tendenciaEl = document.getElementById('tendencia');
+        const tendenciaValue = stats.tendencia || 0; // Esta comprobación ya era correcta
+        const tendenciaIcon = tendenciaValue >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        const tendenciaColor = tendenciaValue >= 0 ? 'text-green-600' : 'text-red-600';
+        
+        tendenciaEl.innerHTML = `
+            <i class="fas ${tendenciaIcon} mr-1"></i>
+            ${(tendenciaValue || 0).toFixed(1)}%
+        `;
+        tendenciaEl.className = `text-lg font-bold ${tendenciaColor}`;
+    }
+
+    function updateTopProducts(products) {
+        const container = document.getElementById('top-products-list');
+        if (!container) return;
+
+        if (products.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full flex flex-col items-center justify-center py-12 text-center text-gray-500">
+                    <i class="fas fa-box-open fa-3x text-gray-300 mb-3"></i>
+                    <p class="text-gray-500">No hay datos de ventas en este período.</p>
+                </div>`;
+            return;
+        }
+
+        // Calcular el máximo de unidades vendidas para las barras de progreso
+        const maxUnits = Math.max(...products.map(p => p.unidades_vendidas));
+
+        container.innerHTML = products.map((p, index) => {
+            // Calcular el porcentaje de ventas para la barra de progreso
+            const percentage = (p.unidades_vendidas / maxUnits) * 100;
+            
+            // Determinar el color de la medalla según la posición
+            let medalColor = 'bg-gray-400';
+            let medalIcon = 'fas fa-medal';
+            if (index === 0) {
+                medalColor = 'bg-yellow-400';
+                medalIcon = 'fas fa-trophy';
+            }
+            else if (index === 1) {
+                medalColor = 'bg-gray-300';
+                medalIcon = 'fas fa-medal';
+            }
+            else if (index === 2) {
+                medalColor = 'bg-orange-400';
+                medalIcon = 'fas fa-medal';
+            }
+            
+            return `
+                <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 group">
+                    <div class="relative">
+                        <img src="${p.imagen_url}" alt="${p.nombre}" class="w-full h-40 object-cover">
+                        <div class="absolute top-2 right-2 ${medalColor} text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg">
+                            <i class="${medalIcon} text-sm"></i>
+                        </div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    </div>
+                    <div class="p-4">
+                        <h4 class="font-semibold text-gray-800 truncate mb-1">${p.nombre}</h4>
+                        <p class="text-xs text-gray-500 mb-3">${p.marca}</p>
+                        
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm text-gray-600">Unidades</span>
+                            <span class="font-bold text-blue-600 text-lg">${p.unidades_vendidas}</span>
+                        </div>
+                        
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
+                            <div class="bg-gradient-to-r from-blue-400 to-blue-600 h-2 rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                        </div>
+                        
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-gray-500">${percentage.toFixed(0)}% del máximo</span>
+                            <a href="/admin/producto/${p.slug}" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                                Ver <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function updateNewProducts(products) {
+        const container = document.getElementById('new-products-list');
+        if (!container) return;
+
+        if (products.length === 0) {
+            container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500">No hay productos nuevos.</div>`;
+            return;
+        }
+
+        container.innerHTML = products.map(p => `
+            <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 group">
+                <div class="relative">
+                    <img src="${p.imagen_url}" alt="${p.nombre}" class="w-full h-40 object-cover">
+                    <div class="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center">
+                        <i class="fas fa-sparkles mr-1"></i> NUEVO
+                    </div>
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                </div>
+                <div class="p-4">
+                    <h4 class="font-semibold text-gray-800 truncate mb-1">${p.nombre}</h4>
+                    <p class="text-xs text-gray-500 mb-3">${p.marca}</p>
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs text-gray-500 flex items-center">
+                            <i class="far fa-clock mr-1"></i>
+                            ${timeAgo(p.created_at)}
+                        </span>
+                        <a href="/admin/producto/${p.slug}" class="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center">
+                            Ver <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function updateTopCustomers(customers) {
+        const container = document.getElementById('top-customers-list');
+        if (!container) return;
+
+        if (customers.length === 0) {
+            container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500">No hay datos de clientes en este período.</div>`;
+            return;
+        }
+
+        container.innerHTML = customers.map((c, index) => {
+            const medalColors = ['bg-yellow-400', 'bg-gray-300', 'bg-orange-400'];
+            const medalColor = medalColors[index] || 'bg-gray-200';
+            const initial = c.usuario_nombre ? c.usuario_nombre.charAt(0).toUpperCase() : '?';
+            const avatarColors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500', 'bg-red-500', 'bg-indigo-500'];
+            const avatarColor = avatarColors[index % avatarColors.length];
+
+            return `
+                <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 group">
+                    <div class="p-6">
+                        <div class="flex items-center mb-4">
+                            <div class="relative">
+                                <div class="w-16 h-16 rounded-full ${avatarColor} flex items-center justify-center text-white text-2xl font-bold shadow-md">
+                                    ${initial}
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 ${medalColor} text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-md">
+                                    ${index + 1}
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="font-semibold text-gray-800 truncate" title="${c.usuario_nombre} ${c.usuario_apellido}">
+                                    ${c.usuario_nombre} ${c.usuario_apellido}
+                                </h4>
+                                <p class="text-xs text-gray-500 flex items-center">
+                                    <i class="fas fa-crown text-yellow-500 mr-1"></i>
+                                    Cliente VIP
+                                </p>
+                            </div>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 flex items-center">
+                                    <i class="fas fa-shopping-cart mr-1 text-blue-500"></i>
+                                    Total Compras
+                                </span>
+                                <span class="font-bold text-blue-600">${formatCurrency(c.total_gastado)}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 flex items-center">
+                                    <i class="fas fa-box mr-1 text-green-500"></i>
+                                    Pedidos
+                                </span>
+                                <span class="font-bold text-gray-800">${c.total_pedidos}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 flex items-center">
+                                    <i class="fas fa-calendar mr-1 text-purple-500"></i>
+                                    Última Compra
+                                </span>
+                                <span class="text-xs text-gray-500">${timeAgo(c.ultima_compra)}</span>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a href="/admin/cliente/${c.usuario_id}/detalle" class="w-full block text-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center">
+                                Ver Detalles <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function updateNewCategories(categories) {
+        const container = document.getElementById('new-categories-list');
+        if (!container) return;
+
+        if (categories.length === 0) {
+            container.innerHTML = `<div class="col-span-full text-center py-8 text-gray-500">No hay categorías nuevas.</div>`;
+            return;
+        }
+
+        container.innerHTML = categories.map(c => {
+            const iconClass = ICONS[c.nombre] || ICONS['default'];
+            return `
+                <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden transform hover:-translate-y-1 group">
+                    <div class="h-32 bg-gradient-to-r from-purple-400 to-purple-600 flex items-center justify-center relative">
+                        <i class="${iconClass} text-white text-4xl"></i>
+                        <div class="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold flex items-center">
+                            <i class="fas fa-sparkles mr-1"></i> NUEVO
+                        </div>
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="font-semibold text-gray-800 text-lg">${c.nombre}</h4>
+                        </div>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600 flex items-center">
+                                    <i class="fas fa-box mr-1 text-blue-500"></i>
+                                    Productos
+                                </span>
+                                <span class="font-bold text-gray-800">${c.product_count}</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs text-gray-500 flex items-center">
+                                    <i class="far fa-clock mr-1"></i>
+                                    Creada
+                                </span>
+                                <span class="text-xs text-gray-500">${timeAgo(c.created_at)}</span>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <a href="/admin/categorias-principales/${c.slug}" class="w-full block text-center bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors duration-300 flex items-center justify-center">
+                                Ver Categoría <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function createProfitsChart(data) {
+        const ctx = document.getElementById('profitsChart')?.getContext('2d');
+        if (!ctx) return;
+
+        if (profitsChart) {
+            profitsChart.destroy();
+        }
+
+        profitsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    label: 'Utilidad',
+                    data: data.values,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#3b82f6',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => formatCurrency(value)
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: context => `Ingreso: ${formatCurrency(context.raw)}`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function createCategoriesChart(data) {
+        const ctx = document.getElementById('categoriesChart')?.getContext('2d');
+        if (!ctx) return;
+
+        if (categoriesChart) {
+            categoriesChart.destroy();
+        }
+
+        const hasData = data.values && data.values.some(v => v > 0);
+
+        document.getElementById('categories-chart-container').style.display = hasData ? 'block' : 'none';
+        document.getElementById('categories-chart-nodata').style.display = hasData ? 'none' : 'flex';
+
+        if (!hasData) return;
+
+        categoriesChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.values,
+                    backgroundColor: [
+                        '#3b82f6', 
+                        '#10b981', 
+                        '#f59e0b', 
+                        '#ef4444', 
+                        '#8b5cf6', 
+                        '#64748b',
+                        '#ec4899',
+                        '#14b8a6'
+                    ],
+                    borderColor: '#fff',
+                    borderWidth: 2,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            boxWidth: 12,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: context => `${context.label}: ${context.raw} unidades`
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // --- Lógica de Carga de Datos ---
+
+    async function loadDashboardData(period = '30d') {
+        renderSkeletons(true);
+
+        try {
+            const response = await fetch(`/admin/api/dashboard-stats?period=${period}`);
+            if (!response.ok) {
+                throw new Error(`Error en la respuesta de la API: ${response.statusText}`);
+            }
+            const data = await response.json();
+
+            if (data.success) {
+                updateStatCards(data.stats);
+                updateTopProducts(data.top_products);
+                updateNewProducts(data.new_products);
+                updateTopCustomers(data.top_customers);
+                updateNewCategories(data.new_categories);
+                createProfitsChart(data.profits_chart);
+                createCategoriesChart(data.categories_chart);
+            } else {
+                throw new Error(data.message || 'No se pudieron cargar los datos del dashboard.');
+            }
+        } catch (error) {
+            console.error("Error al cargar datos del dashboard:", error);
+            const errorContainer = document.getElementById('dashboard-error');
+            if (errorContainer) {
+                errorContainer.classList.remove('hidden');
+                errorContainer.querySelector('p').textContent = error.message;
+            }
+        } finally {
+            renderSkeletons(false);
+        }
+    }
+
+    // --- Inicialización y Eventos ---
+
+    function setupEventListeners() {
+        // Selector de período
+        const periodSelector = document.getElementById('dashboard-period-selector');
+        if (periodSelector) {
+            periodSelector.addEventListener('click', (e) => {
+                const button = e.target.closest('.period-btn');
+                if (button && !button.classList.contains('active')) {
+                    document.querySelectorAll('.period-btn').forEach(btn => {
+                        btn.classList.remove('bg-blue-500', 'text-white', 'shadow-md');
+                        btn.classList.add('hover:bg-blue-50');
+                    });
+                    button.classList.add('bg-blue-500', 'text-white', 'shadow-md');
+                    button.classList.remove('hover:bg-blue-50');
+                    const period = button.dataset.period;
+                    loadDashboardData(period);
+                }
+            });
+        }
+        
+        // Navegación por pestañas
+        const tabButtons = document.querySelectorAll('.tab-btn');
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.dataset.tab;
+                
+                // Actualizar botones
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('bg-blue-500', 'text-white');
+                    btn.classList.add('text-gray-600', 'hover:text-gray-800', 'hover:bg-gray-100');
+                });
+                button.classList.add('bg-blue-500', 'text-white');
+                button.classList.remove('text-gray-600', 'hover:text-gray-800', 'hover:bg-gray-100');
+                
+                // Actualizar contenido
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    pane.classList.add('hidden');
+                });
+                document.getElementById(tabId).classList.remove('hidden');
+            });
+        });
+    }
+
+    function init() {
+        // Guardia de contexto: si no estamos en la página del dashboard, no hacer nada.
+        if (!document.getElementById('dashboard-container')) {
+            return;
+        }
+        if (isInitialized) {
+            return;
+        }
+        console.log("🚀 Initializing Dashboard Module...");
+
+        setupEventListeners();
+        loadDashboardData('30d'); // Carga inicial con 30 días
+
+        isInitialized = true;
+    }
+
+    function destroy() {
+        if (!isInitialized) {
+            return;
+        }
+        console.log("🔥 Destroying Dashboard Module...");
+
+        if (profitsChart) {
+            profitsChart.destroy();
+            profitsChart = null;
+        }
+        if (categoriesChart) {
+            categoriesChart.destroy();
+            categoriesChart = null;
+        }
+        // No es necesario remover los listeners si el contenedor principal se va a eliminar.
+        // Si el contenedor persiste, aquí se deberían remover.
+
+        isInitialized = false;
+    }
+
+    return {
+        init,
+        destroy
+    };
+})();
+
+// --- Integración con el ciclo de vida de la SPA ---
+document.addEventListener('content-loaded', DashboardModule.init);
+document.addEventListener('content-will-load', DashboardModule.destroy);
+
+// Carga inicial si no es una navegación SPA
+if (document.readyState !== 'loading') {
+    DashboardModule.init();
+} else {
+    document.addEventListener('DOMContentLoaded', DashboardModule.init);
+}
+</script>
+{% endblock %}

@@ -1,10 +1,10 @@
 // MEJORA PROFESIONAL: Patrón de Módulo para la página de Ventas.
 // Esto encapsula toda la lógica, evita colisiones de nombres en el ámbito global
 // y permite una reinicialización segura en un entorno SPA.
-
 const VentasPageModule = (() => {
   // Estado del módulo
   let ventasChart = null;
+  // MEJORA: `isInitialized` previene la doble inicialización.
   let isInitialized = false;
   let currentFilterParams = new URLSearchParams(window.location.search);
   let eventListenersAttached = false;
@@ -18,27 +18,19 @@ const VentasPageModule = (() => {
    */
   function init() {
     // Guardia de contexto: si no estamos en la página de ventas, no hacer nada.
-    // Y si ya está inicializado, tampoco.
     if (!document.getElementById("ventas-chart")) {
       console.log("Not on the Ventas page. Skipping initialization.");
       return;
     }
+    // Si ya está inicializado, no hacer nada para evitar duplicar listeners.
     if (isInitialized) {
-        console.log("Ventas page already initialized. Skipping.");
+        console.warn("Ventas page already initialized. Skipping.");
         return;
     }
     console.log("Initializing Ventas Page...");
 
     setupEventListeners();
     loadInitialData();
-
-    // Inicializar el módulo para crear pedidos/ventas si existe
-    if (typeof crearPedidoApp !== 'undefined') {
-      crearPedidoApp.init();
-      // Sobrescribir la URL de envío para que apunte a la creación de ventas
-      crearPedidoApp.submitUrl = '/admin/api/ventas';
-      crearPedidoApp.isVentaMode = true; // Flag para indicar que estamos creando una venta
-    }
 
     isInitialized = true;
   }
@@ -57,11 +49,13 @@ const VentasPageModule = (() => {
    * Esencial para el correcto funcionamiento de la SPA.
    */
   function destroy() {
+    // Si no está inicializado, no hay nada que limpiar.
     if (!isInitialized) {
       return;
     }
     console.log("Destroying Ventas Page module...");
     removeEventListeners();
+    // Destruir la instancia del gráfico para liberar memoria.
     if (ventasChart) {
       ventasChart.destroy();
       ventasChart = null;
@@ -84,11 +78,15 @@ const VentasPageModule = (() => {
 
   // Función para formatear fecha
   function formatDate(dateString) {
+    // MEJORA PROFESIONAL: Forzar la zona horaria de Colombia.
+    // Esto asegura que la fecha mostrada en la tabla sea siempre la correcta
+    // para el negocio, sin importar la configuración del navegador del administrador.
     const date = new Date(dateString);
     return date.toLocaleDateString("es-CO", {
       year: "numeric",
       month: "short",
       day: "numeric",
+      timeZone: "America/Bogota",
     });
   }
 
@@ -130,6 +128,25 @@ const VentasPageModule = (() => {
         if (margenElement) {
             const endValue = data.estadisticas.margen_utilidad;
             margenElement.textContent = `${endValue.toFixed(1)}%`;
+        }
+
+        // MEJORA PROFESIONAL: Mostrar la diferencia entre la utilidad y la inversión del período.
+        const utilidadDiferenciaElement = document.getElementById("utilidad-diferencia");
+        if (utilidadDiferenciaElement) {
+            const utilidadPeriodo = data.estadisticas.utilidad_periodo_actual;
+            const inversionPeriodo = data.estadisticas.inversion_periodo_actual;
+            const diferencia = utilidadPeriodo - inversionPeriodo;
+
+            if (data.estadisticas.total_ventas > 0) {
+                const sign = diferencia >= 0 ? "+" : "-";
+                // MEJORA: Colores que resaltan más sobre el fondo degradado de la tarjeta.
+                const colorClass = diferencia >= 0 ? "text-green-200" : "text-yellow-200";
+                utilidadDiferenciaElement.className = `text-sm font-semibold mt-1 ${colorClass}`;
+                utilidadDiferenciaElement.textContent = `${sign} ${formatCurrency(Math.abs(diferencia))}`;
+            } else {
+                utilidadDiferenciaElement.textContent = "+ $0";
+                utilidadDiferenciaElement.className = "text-sm font-semibold mt-1 text-white";
+            }
         }
 
         // Actualizar gráfico
@@ -324,6 +341,9 @@ const VentasPageModule = (() => {
     ventas.forEach((venta, index) => {
       const row = document.createElement("tr");
 
+      const isInactive = venta.estado === 'inactivo';
+      row.className = isInactive ? 'inactive-sale-row' : '';
+
       // Añadir animación de aparición escalonada
       row.style.opacity = "0";
       row.style.transform = "translateY(20px)";
@@ -334,7 +354,7 @@ const VentasPageModule = (() => {
       row.innerHTML = `
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                     <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                        <div class="flex-shrink-0 h-10 w-10 ${isInactive ? 'bg-gray-200' : 'bg-blue-100'} rounded-full flex items-center justify-center">
                             <span class="text-blue-800 font-medium">${
                               venta.usuario_nombre
                                 ? venta.usuario_nombre.charAt(0).toUpperCase()
@@ -342,9 +362,9 @@ const VentasPageModule = (() => {
                             }</span>
                         </div>
                         <div class="ml-4">
-                            <div class="text-sm font-medium text-gray-900">${
+                            <div class="text-sm font-medium text-gray-900 flex items-center">${
                               venta.usuario_nombre || "N/A"
-                            }</div>
+                            } ${isInactive ? '<span class="ml-2 px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-200 text-gray-700">Inactivo</span>' : ''}</div>
                             <div class="text-sm text-gray-500">${
                               venta.usuario ? venta.usuario.numero : ""
                             }</div>
@@ -375,6 +395,9 @@ const VentasPageModule = (() => {
                           venta.id
                         }" data-tooltip="Ver detalles de esta venta">
                             <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn edit tooltip" data-id="${venta.id}" data-tooltip="Editar esta venta">
+                            <i class="fas fa-edit"></i>
                         </button>
                         <button class="action-btn toggle ${
                           venta.estado === "activo" ? "active" : "inactive"
@@ -408,6 +431,13 @@ const VentasPageModule = (() => {
       btn.addEventListener("click", function () {
         const ventaId = this.getAttribute("data-id");
         showVentaDetail(ventaId);
+      });
+    });
+
+    document.querySelectorAll(".action-btn.edit").forEach((btn) => {
+      btn.addEventListener("click", function () {
+        const ventaId = this.getAttribute("data-id");
+        editVenta(ventaId);
       });
     });
 
@@ -660,16 +690,8 @@ const VentasPageModule = (() => {
                                         </div>
                                         <div>
                                             <p class="text-sm text-gray-500">Estado</p>
-                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                                              venta.estado_pedido ===
-                                              "completado"
-                                                ? "bg-green-100 text-green-800"
-                                                : venta.estado_pedido ===
-                                                  "pendiente"
-                                                ? "bg-yellow-100 text-yellow-800"
-                                                : "bg-red-100 text-red-800"
-                                            }">
-                                                ${venta.estado_pedido}
+                                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${venta.estado === 'activo' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}">
+                                                ${venta.estado === 'activo' ? 'Activo' : 'Inactivo'}
                                             </span>
                                         </div>
                                         <div>
@@ -785,6 +807,26 @@ const VentasPageModule = (() => {
     }
   }
 
+  // Función para editar una venta
+  async function editVenta(ventaId) {
+    try {
+      const response = await fetch(`/admin/api/ventas/${ventaId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        const venta = data.venta;
+        // Usar el módulo crearVentaApp para abrir el modal en modo edición
+        if (typeof crearVentaApp !== 'undefined') {
+          crearVentaApp.openModalForEdit(venta);
+        }
+      } else {
+        window.toast.error("Error al cargar los datos de la venta para editar.");
+      }
+    } catch (error) {
+      console.error("Error al editar venta:", error);
+      window.toast.error("Error al cargar los datos de la venta para editar.");
+    }
+  }
   // Función para cambiar el estado de una venta
   async function toggleVentaStatus(ventaId, newStatus) {
     try {
@@ -1186,15 +1228,12 @@ const VentasPageModule = (() => {
       applyFilters();
     }
 
-    // Botón de refrescar
+    // Botón para agregar una nueva venta
     if (e.target.closest("#addVentaBtn")) {
-      if (typeof crearPedidoApp !== 'undefined') {
-        // MEJORA PROFESIONAL: Configurar el modal para el modo "Venta"
-        crearPedidoApp.submitUrl = '/admin/api/ventas';
-        crearPedidoApp.isVentaMode = true;
-        crearPedidoApp.openModal();
-        // Cambiar el título del modal para que sea específico para ventas.
-        document.getElementById('pedidoModalTitle').textContent = 'Crear Nueva Venta';
+      if (typeof crearVentaApp !== 'undefined') {
+        // MEJORA PROFESIONAL: Abrir el modal de ventas dedicado.
+        // La configuración (URL, título) ya está en el propio script `crear_venta.js`.
+        crearVentaApp.openModal();
       }
     }
 
@@ -1318,22 +1357,27 @@ const VentasPageModule = (() => {
 // MEJORA PROFESIONAL: Exponer el módulo en el objeto window para que otros scripts puedan interactuar con él.
 // Esto es crucial para que el modal de creación de ventas pueda llamar a `reloadData`.
 window.VentasPageModule = VentasPageModule;
-
 const runVentasInitialization = () => {
   window.VentasPageModule.init();
 };
 const destroyVentasModule = () => {
     window.VentasPageModule.destroy();
 };
-
-// 1. Para carga de página directa (hard refresh)
-document.addEventListener("DOMContentLoaded", () => {
-    // Antes de inicializar, nos aseguramos de que cualquier módulo anterior sea destruido.
-    // Esto es una salvaguarda para recargas en caliente (hot-reloads) en desarrollo.
-    destroyVentasModule();
-    runVentasInitialization();
-});
-
-// 2. Para navegación SPA: Escuchar eventos de admin_spa.js
+// --- MEJORA PROFESIONAL: GESTIÓN DEL CICLO DE VIDA SPA ---
+// 1. Escuchar el evento `content-will-load` para limpiar el módulo antes de navegar a otra página.
+//    Esto detiene los timers y elimina listeners, evitando el error reportado.
 document.addEventListener("content-will-load", destroyVentasModule);
+// 2. Escuchar el evento `content-loaded` para inicializar el módulo cuando se carga esta página.
 document.addEventListener("content-loaded", runVentasInitialization);
+// 3. Para la carga inicial de la página (no SPA), también usamos `content-loaded`
+//    que es disparado por el SPA al final de su propia inicialización.
+//    Esto unifica el punto de entrada y evita la necesidad de `DOMContentLoaded`.
+if (document.readyState === 'loading') {
+    // En una SPA, es mejor depender de un solo evento de inicialización.
+    // El evento 'content-loaded' ya se encarga de esto.
+    document.addEventListener('DOMContentLoaded', runVentasInitialization);
+} else {
+    // La llamada inicial también debe ser manejada por el evento 'content-loaded'
+    // para evitar la doble ejecución al cargar la página por primera vez.
+    runVentasInitialization();
+}

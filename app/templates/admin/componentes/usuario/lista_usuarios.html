@@ -106,6 +106,8 @@
                     <option value="recientes">Más Recientes</option>
                     <option value="inactive">Inactivos</option>
                     <option value="antiguos">Más Antiguos</option>
+                    <option value="total_invertido_desc">Total Invertido (Mayor a Menor)</option>
+                    <option value="total_invertido_asc">Total Invertido (Menor a Mayor)</option>
                     <option value="nombre_asc">Nombre (A-Z)</option>
                     <option value="nombre_desc">Nombre (Z-A)</option>
                 </select>
@@ -144,7 +146,7 @@
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Apellido</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Teléfono</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha de Creación</th>
-                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Última Actualización</th>
+                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Total Invertido</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
                         </tr>
@@ -211,7 +213,6 @@
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Cédula</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Teléfono</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Fecha de Creación</th>
-                            <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Última Actualización</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Estado</th>
                             <th class="px-8 py-5 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Acciones</th>
                         </tr>
@@ -219,7 +220,7 @@
                     <tbody id="administradores-table-body" class="divide-y divide-gray-100">
                         <!-- Initial Loading Skeleton -->
                         <tr class="loading-row">
-                            <td colspan="8" class="px-8 py-16 text-center" data-col-span="8">
+                            <td colspan="7" class="px-8 py-16 text-center" data-col-span="7">
                                 <div class="flex justify-center">
                                     <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-600"></div>
                                 </div>

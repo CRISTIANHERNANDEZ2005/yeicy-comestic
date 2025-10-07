@@ -1,0 +1,554 @@
+/* Animaciones personalizadas */
+.tab-active {
+  @apply border-b-2 border-blue-600 text-blue-600 bg-blue-50;
+}
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:border-blue-300;
+}
+.table-row-hover {
+  @apply hover:bg-blue-50 transition-colors duration-200;
+}
+.gradient-bg {
+  background: linear-gradient(
+    135deg,
+    #1e3a8a 0%,
+    #1e40af 25%,
+    #3b82f6 50%,
+    #60a5fa 75%,
+    #93c5fd 100%
+  );
+}
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+.stat-card {
+  background: linear-gradient(135deg, var(--tw-gradient-stops));
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.profile-card {
+  background: linear-gradient(to bottom right, #ffffff, #f9fafb);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+.nav-tab {
+  position: relative;
+  transition: all 0.3s ease;
+}
+.nav-tab::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  transition: width 0.3s ease;
+}
+.nav-tab.active::after {
+  width: 100%;
+}
+.pulse-animation {
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
+.chart-container {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+@media (max-width: 768px) {
+  .chart-container {
+    height: 200px;
+  }
+}
+/* Estilos para filtros mejorados */
+.filter-card {
+  background: linear-gradient(to bottom right, #f8fafc, #e2e8f0);
+  border-left: 4px solid #3b82f6;
+}
+.filter-button {
+  transition: all 0.2s ease;
+}
+.filter-button:hover {
+  transform: translateY(-2px);
+}
+.filter-button.active {
+  background-color: #2563eb; /* Un color sólido para el estado activo */
+  color: white;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-color: transparent; /* Ocultar el borde cuando está activo */
+}
+/* Estilos para tablas mejoradas */
+.table-container {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
+    0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.table-header {
+  background: linear-gradient(to right, #1e40af, #3b82f6);
+  color: white;
+}
+.table-row:nth-child(even) {
+  background-color: #f8fafc;
+}
+.table-row:hover {
+  background-color: #dbeafe !important;
+  transform: scale(1.01);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  position: relative;
+}
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.status-completed {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+.status-cancelled {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+/* Animación para las tarjetas */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Estilos para Skeleton Loader */
+.skeleton {
+  background-color: #e2e8f0;
+  border-radius: 0.25rem;
+  animation: pulse-bg 1.5s infinite;
+}
+
+.skeleton-text {
+  height: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-avatar {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+}
+
+.skeleton-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+/* MEJORA: Estilos específicos para la tarjeta de esqueleto de pedido */
+.skeleton-card-pedido {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  animation: pulse-bg 1.5s infinite;
+}
+
+/* MEJORA: Estilos para el esqueleto de la tarjeta de reseña */
+.skeleton-card-reseña {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem; /* rounded-xl */
+  animation: pulse-bg 1.5s infinite;
+  /* Los estilos de padding y otros se manejan con Tailwind en el JS, 
+     pero mantenemos la base aquí para la animación. */
+}
+
+
+@keyframes pulse-bg {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* --- MEJORA PROFESIONAL: Estilos para el contenedor de "sin datos" genérico --- */
+.no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 3rem 1rem; /* Más padding vertical para tablas */
+  width: 100%;
+  min-height: 250px;
+  background-color: #f9fafb; /* gray-50 */
+  border-radius: 0.75rem; /* rounded-xl */
+  border: 2px dashed #e5e7eb; /* gray-200 */
+  box-sizing: border-box;
+}
+
+
+/* --- MEJORA PROFESIONAL: Estilos para el contenedor de "sin datos" en gráficos --- */
+.no-data-chart-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 2rem 1rem;
+  height: 250px; /* Altura similar a la del gráfico */
+  background-color: #f9fafb; /* gray-50 */
+  border: 2px dashed #e5e7eb; /* gray-200 */
+  border-radius: 0.75rem; /* rounded-xl */
+}
+
+/* --- Estilos compartidos para los elementos internos de "sin datos" --- */
+.no-data-container .no-data-icon,
+.no-data-chart-container .no-data-icon {
+  font-size: 2.5rem; /* text-4xl */
+  color: #9ca3af; /* gray-400 */
+  margin-bottom: 1rem;
+}
+
+.no-data-icon {
+  font-size: 2.5rem; /* text-4xl */
+  color: #9ca3af; /* gray-400 */
+  margin-bottom: 1rem;
+}
+
+.no-data-title {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600; /* font-semibold */
+  color: #374151; /* gray-700 */
+}
+
+.no-data-container .no-data-title,
+.no-data-chart-container .no-data-title {
+  font-size: 1.125rem; /* text-lg */
+  font-weight: 600; /* font-semibold */
+  color: #374151; /* gray-700 */
+}
+
+/*  Contenedor para las vistas de carta con scroll */
+.vista-scroll-container {
+  max-height: 800px; /* Altura máxima antes de que aparezca el scroll */
+  overflow-y: auto; /* Scroll vertical automático */
+  padding-right: 8px; /* Espacio para la barra de scroll */
+  padding-bottom: 8px; /* Espacio al final de la lista */
+}
+
+/* Estilos para el enlace de acción en las tarjetas */
+.action-link {
+  position: relative;
+  transition: color 0.3s ease;
+}
+
+.action-link-arrow {
+  position: absolute;
+  right: 0;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition: all 0.3s ease;
+}
+
+.action-link:hover .action-link-text { transform: translateX(-8px); }
+.action-link:hover .action-link-arrow { opacity: 1; transform: translateX(0); }
+.action-link .action-link-text { transition: transform 0.3s ease; display: inline-block; }
+
+/* --- MEJORA PROFESIONAL: Estilos para el indicador de estado (online/offline) --- */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.85rem; /* Relleno ajustado */
+  border-radius: 9999px; /* rounded-full */
+  font-size: 0.8rem; /* text-sm */
+  font-weight: 600; /* font-semibold */
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-indicator .status-icon {
+  margin-right: 0.5rem; /* mr-2 */
+  font-size: 0.5rem; /* text-xs */
+}
+
+/* Estado: En línea */
+.status-online {
+  background-color: #dcfce7; /* green-100 */
+  color: #166534; /* green-800 */
+}
+
+.status-online .status-icon {
+  color: #22c55e; /* green-500 */
+  animation: pulse-dot 1.5s infinite; /* Animación de pulso solo para el estado en línea */
+}
+
+/* Estado: Desconectado */
+.status-offline {
+  background-color: #f3f4f6; /* gray-100 */
+  color: #4b5563; /* gray-600 */
+}
+
+.status-offline .status-icon {
+  color: #9ca3af; /* gray-400 */
+}
+
+/* Estado: Inactivo (para la página de detalles) */
+.status-inactive-details {
+  background-color: #e5e7eb; /* gray-200 */
+  color: #4b5563; /* gray-600 */
+}
+
+.status-inactive-details .status-icon {
+  color: #6b7280; /* gray-500 */
+  font-size: 0.7rem; /* Un poco más pequeño para el ícono de 'ban' */
+}
+
+/* Animación para el punto de estado en línea */
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* --- MEJORA PROFESIONAL: Estilos para el indicador de estado en el avatar --- */
+.avatar-status-indicator {
+  position: absolute;
+  bottom: -0.25rem; /* -bottom-1 */
+  right: -0.25rem; /* -right-1 */
+  width: 2rem; /* w-8 */
+  height: 2rem; /* h-8 */
+  background-color: #22c55e; /* bg-green-500 */
+  border-radius: 9999px; /* rounded-full */
+  border: 4px solid #0f172a; /* border-4 border-slate-900 */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-status-dot {
+  width: 0.75rem; /* w-3 */
+  height: 0.75rem; /* h-3 */
+  background-color: #86efac; /* bg-green-300 */
+  border-radius: 9999px; /* rounded-full */
+  animation: pulse-dot 1.5s infinite; /* Reutilizamos la animación de pulso */
+}
+
+/* --- MEJORA PROFESIONAL: Estilos para la Modal de Detalles de Pedido --- */
+.z-modal-top {
+  z-index: 1000; /* Asegura que la modal esté por encima de todo, incluido el sidebar */
+}
+
+/* Animación de entrada para la modal */
+@keyframes modal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modal-scale-in {
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
+}
+
+/* Aplicar animación al abrir */
+#detalle-pedido-modal.flex {
+  animation: modal-fade-in 0.3s ease-out forwards;
+}
+#detalle-pedido-modal.flex #detalle-pedido-modal-content {
+  animation: modal-scale-in 0.3s ease-out forwards;
+}
+
+/* Estilos para el scrollbar dentro de la modal */
+#modal-pedido-body::-webkit-scrollbar { width: 8px; }
+#modal-pedido-body::-webkit-scrollbar-track { background: #f1f5f9; }
+#modal-pedido-body::-webkit-scrollbar-thumb { background-color: #94a3b8; border-radius: 10px; border: 2px solid #f1f5f9; }
+#modal-pedido-body::-webkit-scrollbar-thumb:hover { background-color: #64748b; }
+
+/* --- MEJORA PROFESIONAL: Estilos para el badge de estado en la modal --- */
+/* Reutilizamos los estilos de los badges de estado de la tabla de pedidos para consistencia */
+.modal-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 1rem; /* Un poco más de padding para que se vea mejor */
+  border-radius: 9999px;
+  font-size: 0.875rem; /* text-sm */
+  font-weight: 600; /* font-semibold */
+  text-transform: capitalize;
+  letter-spacing: 0.025em;
+}
+
+/* --- MEJORA PROFESIONAL: Rediseño del Timeline de Seguimiento en la Modal --- */
+.modal-timeline-container {
+  position: relative;
+  padding-left: 1.5rem; /* Espacio para la línea */
+}
+
+.modal-timeline-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+.modal-timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem; /* Espacio entre items */
+}
+
+.modal-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.modal-timeline-icon {
+  position: absolute;
+  left: -0.75rem; /* Centrado sobre la línea */
+  top: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background-color: #f9fafb; /* bg-gray-50, el fondo de la modal */
+  border: 2px solid #e5e7eb; /* gray-200 */
+  transition: all 0.3s ease;
+}
+
+.modal-timeline-item.completed .modal-timeline-icon {
+  background-color: #dcfce7; /* green-100 */
+  border-color: #22c55e; /* green-500 */
+  color: #16a34a; /* green-600 */
+}
+
+.modal-timeline-item.active .modal-timeline-icon {
+  background-color: #dbeafe; /* blue-100 */
+  border-color: #3b82f6; /* blue-500 */
+  color: #2563eb; /* blue-600 */
+  transform: scale(1.2);
+}
+
+.modal-timeline-item.cancelled .modal-timeline-icon {
+  background-color: #fee2e2; /* red-100 */
+  border-color: #ef4444; /* red-500 */
+  color: #b91c1c; /* red-700 */
+}
+
+.modal-timeline-content {
+  background-color: white;
+  border-radius: 0.75rem; /* rounded-xl */
+  padding: 1rem;
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  transition: all 0.3s ease;
+}
+
+.modal-timeline-item.active .modal-timeline-content {
+  border-color: #93c5fd; /* blue-300 */
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.1);
+}
+
+/* Estilos para la descripción del producto en la modal */
+.prose {
+  line-height: 1.6;
+}
+.prose p { margin-bottom: 1em; }
+.prose ul, .prose ol { margin-left: 1.5em; margin-bottom: 1em; }
+
+/* --- MEJORA PROFESIONAL: Rediseño del Timeline de Seguimiento en la Modal --- */
+.modal-timeline-container {
+  position: relative;
+  padding-left: 1.5rem; /* Espacio para la línea */
+}
+
+.modal-timeline-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: #e5e7eb; /* gray-200 */
+}
+
+.modal-timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem; /* Espacio entre items */
+}
+
+.modal-timeline-item:last-child {
+  margin-bottom: 0;
+}
+
+.modal-timeline-icon {
+  position: absolute;
+  left: -0.75rem; /* Centrado sobre la línea */
+  top: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  background-color: #f9fafb; /* bg-gray-50, el fondo de la modal */
+  border: 2px solid #e5e7eb; /* gray-200 */
+  transition: all 0.3s ease;
+}
+
+.modal-timeline-item.completed .modal-timeline-icon {
+  background-color: #dcfce7; /* green-100 */
+  border-color: #22c55e; /* green-500 */
+  color: #16a34a; /* green-600 */
+}
+
+.modal-timeline-item.active .modal-timeline-icon {
+  background-color: #dbeafe; /* blue-100 */
+  border-color: #3b82f6; /* blue-500 */
+  color: #2563eb; /* blue-600 */
+  transform: scale(1.2);
+}
+
+.modal-timeline-item.cancelled .modal-timeline-icon {
+  background-color: #fee2e2; /* red-100 */
+  border-color: #ef4444; /* red-500 */
+  color: #b91c1c; /* red-700 */
+}
+
+.modal-timeline-content {
+  background-color: white;
+  border-radius: 0.75rem; /* rounded-xl */
+  padding: 1rem;
+  border: 1px solid #e5e7eb; /* border-gray-200 */
+  transition: all 0.3s ease;
+}
+
+.modal-timeline-item.active .modal-timeline-content {
+  border-color: #93c5fd; /* blue-300 */
+  box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.1);
+}

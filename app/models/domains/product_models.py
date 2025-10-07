@@ -397,20 +397,15 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         Setter para la existencia que incluye lógica de negocio.
         Si la existencia llega a 0, el producto se desactiva automáticamente.
         Si la existencia es mayor a 0, se asegura que el producto esté activo.
+        MEJORA PROFESIONAL: Se elimina la lógica que activaba el producto automáticamente
+        si la existencia era > 0. Ahora solo desactiva si la existencia es 0.
         """
         if value < 0:
             raise ValueError("La existencia no puede ser negativa")
         self._existencia = value
         if self._existencia == 0:
             from app.models.enums import EstadoEnum # Importar aquí para evitar circular
-            self.estado = EstadoEnum.INACTIVO.value # Desactivar si la existencia es 0
-            db.session.add(self)
-            # Después de actualizar el producto, verificar el estado de la pseudocategoría
-            if self.seudocategoria:
-                self.seudocategoria.check_and_update_status()
-        else: # Si la existencia es > 0, asegurar que el producto esté activo
-            from app.models.enums import EstadoEnum # Importar aquí para evitar circular
-            if self.estado != EstadoEnum.ACTIVO.value:
+            if self.estado == EstadoEnum.ACTIVO.value:
                 self.estado = EstadoEnum.ACTIVO.value
                 db.session.add(self)
                 # Después de actualizar el producto, verificar el estado de la pseudocategoría
@@ -526,7 +521,10 @@ class Productos(UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, 
         self.precio = precio
         self.costo = costo
         self.imagen_url = imagen_url.strip()
-        self.existencia = existencia # Usar el setter para inicializar
+        # MEJORA PROFESIONAL: Asignar directamente a _existencia para evitar
+        # que el setter se dispare durante la inicialización y cambie el estado.
+        self._existencia = existencia
+
         self.stock_minimo = stock_minimo
         self.stock_maximo = stock_maximo
         self.seudocategoria_id = seudocategoria_id

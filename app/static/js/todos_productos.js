@@ -5,6 +5,8 @@ document.addEventListener("DOMContentLoaded", function () {
     subcategoria: 'all',
     pseudocategoria: 'all',
     marca: 'all',
+    genero: 'all',
+    funcion: 'all', // MEJORA: Añadir nuevo filtro de función
     min_price: '',
     max_price: '',
     ordenar_por: 'newest'
@@ -26,6 +28,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const subcategoryFilters = document.getElementById("subcategory-filters-content");
   const pseudocategoryFilters = document.getElementById("pseudocategory-filters-content");
   const brandFilters = document.getElementById("brand-filters-content");
+  const genderFilters = document.getElementById("gender-filters-content");
+  const functionFilters = document.getElementById("function-filters-content"); // MEJORA: Nuevo contenedor de filtro
   const sortSelect = document.getElementById("sort-select");
   const minPriceInput = document.getElementById("min-price");
   const maxPriceInput = document.getElementById("max-price");
@@ -121,6 +125,14 @@ document.addEventListener("DOMContentLoaded", function () {
     // Sincronizar marcas
     const brandInput = filterDrawer.querySelector(`input[name="brand"][value="${currentFilters.marca}"]`);
     if (brandInput) brandInput.checked = true;
+
+    // Sincronizar función
+    const functionInput = filterDrawer.querySelector(`input[name="function"][value="${currentFilters.funcion}"]`);
+    if (functionInput) functionInput.checked = true;
+
+    // Sincronizar género
+    const genderInput = filterDrawer.querySelector(`input[name="gender"][value="${currentFilters.genero}"]`);
+    if (genderInput) genderInput.checked = true;
     
     // Sincronizar precios
     minPriceInput.value = currentFilters.min_price || '';
@@ -146,7 +158,9 @@ document.addEventListener("DOMContentLoaded", function () {
         updateCategoryFilters(),
         updateSubcategoryFilters(),
         updatePseudocategoryFilters(),
-        updateBrandFilters()
+        updateBrandFilters(),
+        updateGenderFilters(),
+        updateFunctionFilters() // MEJORA: Llamar a la nueva función de actualización
       ]);
       updateAppliedFiltersTags();
     } catch (error) {
@@ -181,6 +195,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (currentFilters.subcategoria && currentFilters.subcategoria !== 'all') params.append('subcategoria', currentFilters.subcategoria);
       if (currentFilters.pseudocategoria && currentFilters.pseudocategoria !== 'all') params.append('seudocategoria', currentFilters.pseudocategoria);
       if (currentFilters.marca && currentFilters.marca !== 'all') params.append('marca', currentFilters.marca);
+      if (currentFilters.genero && currentFilters.genero !== 'all') params.append('genero', currentFilters.genero);
 
       const response = await fetch(`${endpoint}?${params.toString()}`);
       if (!response.ok) throw new Error(`Error ${response.status}`);
@@ -237,6 +252,16 @@ document.addEventListener("DOMContentLoaded", function () {
     return updateFilterGroup('/api/filtros/marcas', brandFilters, 'marca', 'Todas las marcas');
   }
 
+  // Función para actualizar las opciones de género
+  function updateGenderFilters() {
+    return updateFilterGroup('/api/filtros/generos', genderFilters, 'genero', 'Todos los géneros');
+  }
+
+  // MEJORA: Función para actualizar las opciones de función
+  function updateFunctionFilters() {
+    return updateFilterGroup('/api/filtros/funciones', functionFilters, 'funcion', 'Todas las funciones');
+  }
+
   // Función para actualizar las etiquetas de filtros aplicados
   function updateAppliedFiltersTags() {
     if (!appliedFiltersContainer) return;
@@ -264,6 +289,8 @@ document.addEventListener("DOMContentLoaded", function () {
       createFilterTag('subcategoria', currentFilters.subcategoria, currentFilters.subcategoria),
       createFilterTag('pseudocategoria', currentFilters.pseudocategoria, currentFilters.pseudocategoria),
       createFilterTag('marca', currentFilters.marca, currentFilters.marca),
+      createFilterTag('genero', currentFilters.genero, currentFilters.genero),
+      createFilterTag('funcion', currentFilters.funcion, currentFilters.funcion), // MEJORA: Añadir tag de función
       createFilterTag('min_price', currentFilters.min_price, `Min: $${currentFilters.min_price}`),
       createFilterTag('max_price', currentFilters.max_price, `Max: $${currentFilters.max_price}`)
     ].filter(Boolean); // filter(Boolean) elimina los nulos
@@ -290,6 +317,12 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       case 'marca':
         currentFilters.marca = 'all';
+        break;
+      case 'genero':
+        currentFilters.genero = 'all';
+        break;
+      case 'funcion': // MEJORA: Añadir caso para función
+        currentFilters.funcion = 'all';
         break;
       case 'min_price':
         currentFilters.min_price = '';
@@ -320,6 +353,8 @@ document.addEventListener("DOMContentLoaded", function () {
       subcategoria: 'all',
       pseudocategoria: 'all',
       marca: 'all',
+      genero: 'all',
+      funcion: 'all', // MEJORA: Resetear función
       min_price: '',
       max_price: '',
       ordenar_por: 'newest'
@@ -481,6 +516,8 @@ document.addEventListener("DOMContentLoaded", function () {
         currentFilters.subcategoria = filterDrawer.querySelector('input[name="subcategory"]:checked')?.value || "all";
         currentFilters.pseudocategoria = filterDrawer.querySelector('input[name="pseudocategory"]:checked')?.value || "all";
         currentFilters.marca = filterDrawer.querySelector('input[name="brand"]:checked')?.value || "all";
+        currentFilters.genero = filterDrawer.querySelector('input[name="gender"]:checked')?.value || "all";
+        currentFilters.funcion = filterDrawer.querySelector('input[name="function"]:checked')?.value || "all"; // MEJORA: Obtener valor de función
         applyFilters();
         toggleFilterDrawer(false);
       });
@@ -586,12 +623,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const data = await response.json();
       
       if (minPriceInput) {
-        minPriceInput.value = data.min_price || 0;
+        // MEJORA: No establecer el valor, sino el placeholder para evitar el filtrado automático.
+        minPriceInput.placeholder = data.min_price ? `Mín. ${data.min_price}` : 'Mín. 0';
       }
       if (maxPriceInput) {
-        maxPriceInput.value = data.max_price || 1000;
+        // MEJORA: No establecer el valor, sino el placeholder.
+        maxPriceInput.placeholder = data.max_price ? `Máx. ${data.max_price}` : 'Máx. 1000';
       }
-      updatePriceLabels();
     } catch (error) {
       console.error('Error al cargar el rango de precios:', error);
     }

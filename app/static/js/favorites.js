@@ -157,7 +157,7 @@ if (typeof FavoritesManager === "undefined") {
             try {
               // Cargar favoritos del servidor en segundo plano
               await this.loadServerFavorites();
-              console.log("Favoritos del servidor cargados correctamente");
+              // console.log("Favoritos del servidor cargados correctamente");
             } catch (error) {
               console.error("Error al cargar favoritos del servidor:", error);
               // Mostrar notificación solo si no hay datos locales
@@ -198,9 +198,9 @@ if (typeof FavoritesManager === "undefined") {
                   }
                 }, 5 * 60 * 1000);
                 this._syncIntervalActive = true;
-                console.log(
-                  "[Favoritos] Intervalo de sincronización restaurado"
-                );
+                // console.log(
+                  // "[Favoritos] Intervalo de sincronización restaurado"
+                // );
               }
             };
             this._handleVisibilityChange = () => {
@@ -218,9 +218,9 @@ if (typeof FavoritesManager === "undefined") {
                   this.syncInProgress = false;
                   this._activeSyncPromise = null;
                   this.pendingSync = false;
-                  console.log(
-                    "[Favoritos] Recursos liberados al ocultar pestaña y flags limpiados"
-                  );
+                  // console.log(
+                    // "[Favoritos] Recursos liberados al ocultar pestaña y flags limpiados"
+                  // );
                 } else if (document.visibilityState === "visible") {
                   this._startSyncInterval();
                   const now = Date.now();
@@ -253,14 +253,14 @@ if (typeof FavoritesManager === "undefined") {
                       setTimeout(() => {
                         this.enqueueSync();
                         this._syncRestorePending = false;
-                        console.log(
-                          "[Favoritos] Sincronización lanzada al restaurar pestaña"
-                        );
+                        // console.log(
+                          // "[Favoritos] Sincronización lanzada al restaurar pestaña"
+                        // );
                       }, 100);
                     } else {
-                      console.log(
-                        "[Favoritos] Sincronización ya en curso al restaurar pestaña"
-                      );
+                      // console.log(
+                        // "[Favoritos] Sincronización ya en curso al restaurar pestaña"
+                      // );
                     }
                   }
                 }
@@ -347,23 +347,23 @@ if (typeof FavoritesManager === "undefined") {
       this.syncInProgress = false;
       this.pendingSync = false;
 
-      console.log("Gestor de favoritos destruido correctamente");
+      // console.log("Gestor de favoritos destruido correctamente");
     }
 
     // Actualizar todos los botones de favoritos en la página
     updateAllFavoriteButtons() {
       // Depuración profesional: mostrar IDs en el Set y en los botones
-      console.log(
-        "[Favoritos] IDs en favoriteProducts:",
-        Array.from(this.favoriteProducts)
-      );
+      // console.log(
+        // "[Favoritos] IDs en favoriteProducts:",
+        // Array.from(this.favoriteProducts)
+      // );
       document.querySelectorAll(".favorite-btn").forEach((button) => {
         const productId = String(button.getAttribute("data-product-id"));
         if (!productId) return;
         const isFavorite = this.favoriteProducts.has(productId);
-        console.log(
-          `[Favoritos] Botón data-product-id: ${productId}, isFavorite: ${isFavorite}`
-        );
+        // console.log(
+          // `[Favoritos] Botón data-product-id: ${productId}, isFavorite: ${isFavorite}`
+        // );
         this.updateFavoriteButton(button, isFavorite);
       });
     }
@@ -575,14 +575,14 @@ if (typeof FavoritesManager === "undefined") {
       // Si ya hay una sincronización pendiente para este producto, se cancela para reemplazarla por la nueva.
       if (this.pendingSyncs.has(productId)) {
         clearTimeout(this.pendingSyncs.get(productId).timeoutId);
-        console.log(`Acción de favorito para ${productId} consolidada.`);
+        // console.log(`Acción de favorito para ${productId} consolidada.`);
       }
 
       // Se programa una nueva sincronización para dentro de 1.5 segundos.
       const timeoutId = setTimeout(() => {
-        console.log(
-          `Iniciando sincronización para producto ${productId} con estado final: ${newState}`
-        );
+        // console.log(
+          // `Iniciando sincronización para producto ${productId} con estado final: ${newState}`
+        // );
         // La sincronización real se encola para no sobrecargar el servidor
         this._syncWithServerInBackground(buttonElement, productId, newState);
         this.pendingSyncs.delete(productId); // Limpiar del mapa una vez ejecutado
@@ -634,7 +634,7 @@ if (typeof FavoritesManager === "undefined") {
             );
           }
 
-          console.log(`Sincronización exitosa para producto ${productIdNum}`);
+          // console.log(`Sincronización exitosa para producto ${productIdNum}`);
         } catch (error) {
           if (
             error.message.includes("autenticación") ||
@@ -705,10 +705,10 @@ if (typeof FavoritesManager === "undefined") {
 
     async syncWithServer(force = false) {
       this._lastSyncStartTime = Date.now();
-      console.log("🔄 Iniciando sincronización con el servidor", { force });
+      // console.log("🔄 Iniciando sincronización con el servidor", { force });
 
       if (!this.isAuthenticated) {
-        console.log("⏭️ Usuario no autenticado, omitiendo sincronización");
+        // console.log("⏭️ Usuario no autenticado, omitiendo sincronización");
         return { success: false, synced: false, reason: "No autenticado" };
       }
 
@@ -721,10 +721,10 @@ if (typeof FavoritesManager === "undefined") {
       try {
         // Obtener acciones pendientes de sincronización
         const pendingActions = this._getPendingSyncActions();
-        console.log(
-          `📋 Acciones pendientes: ${pendingActions.length}`,
-          pendingActions
-        );
+        // console.log(
+          // `📋 Acciones pendientes: ${pendingActions.length}`,
+          // pendingActions
+        // );
 
         // Verificar si hay cambios recientes
         const hasRecentChanges =
@@ -737,15 +737,15 @@ if (typeof FavoritesManager === "undefined") {
           this._lastSaveTimestamp > 0 &&
           hasRecentChanges
         ) {
-          console.log(
-            "🔍 No hay cambios pendientes, verificando estado de sincronización..."
-          );
+          // console.log(
+            // "🔍 No hay cambios pendientes, verificando estado de sincronización..."
+          // );
           try {
             const isSynced = await this._checkServerSyncStatus();
             if (isSynced) {
-              console.log(
-                "✅ Los datos ya están sincronizados con el servidor"
-              );
+              // console.log(
+                // "✅ Los datos ya están sincronizados con el servidor"
+              // );
               this.syncInProgress = false;
               this._showSyncIndicator(false);
               return { success: true, synced: true };
@@ -776,7 +776,7 @@ if (typeof FavoritesManager === "undefined") {
           },
           10000
         );
-        console.log("✅ Sincronización de favoritos exitosa");
+        // console.log("✅ Sincronización de favoritos exitosa");
         this.syncInProgress = false;
         this._showSyncIndicator(false);
         return { success: true, synced: true };
@@ -820,7 +820,7 @@ if (typeof FavoritesManager === "undefined") {
         })
       );
 
-      console.log(`Contador de favoritos actualizado: ${count} productos`);
+      // console.log(`Contador de favoritos actualizado: ${count} productos`);
     }
 
     slugify(text) {
@@ -835,7 +835,7 @@ if (typeof FavoritesManager === "undefined") {
 
     async loadFavorites() {
       if (!this.isAuthenticated) {
-        console.log("Usuario no autenticado, no se pueden cargar favoritos");
+        // console.log("Usuario no autenticado, no se pueden cargar favoritos");
         this.favoriteProducts.clear();
         this.updateFavoritesUI();
         this.updateFavoritesCounter();
@@ -843,7 +843,7 @@ if (typeof FavoritesManager === "undefined") {
       }
 
       try {
-        console.log("Cargando favoritos...");
+        // console.log("Cargando favoritos...");
         // Obtener el token JWT de las cookies
         const getCookie = (name) => {
           const value = `; ${document.cookie}`;
@@ -965,7 +965,7 @@ if (typeof FavoritesManager === "undefined") {
           document.body.clientWidth; // Forzar reflow
         });
       } else {
-        console.log(`[${type.toUpperCase()}] ${message}`);
+        // console.log(`[${type.toUpperCase()}] ${message}`);
       }
 
       // Devolver una promesa resuelta para permitir encadenamiento
@@ -1044,7 +1044,7 @@ if (typeof FavoritesManager === "undefined") {
     loadLocalFavorites(force = false) {
       // No cargar favoritos locales si el usuario no está autenticado
       if (!this.isAuthenticated) {
-        console.log("Usuario no autenticado, limpiando favoritos locales");
+        // console.log("Usuario no autenticado, limpiando favoritos locales");
         this.favoriteProducts = new Set();
         try {
           localStorage.removeItem(this.STORAGE_KEY);
@@ -1058,7 +1058,7 @@ if (typeof FavoritesManager === "undefined") {
       try {
         const cachedData = localStorage.getItem(this.STORAGE_KEY);
         if (!cachedData) {
-          console.log("No se encontraron favoritos en caché local");
+          // console.log("No se encontraron favoritos en caché local");
           return false;
         }
 
@@ -1075,22 +1075,22 @@ if (typeof FavoritesManager === "undefined") {
         const isStale = Date.now() - timestamp > maxAge;
 
         if (!force && isStale) {
-          console.log(
-            "La caché local está desactualizada, se requiere sincronización"
-          );
+          // console.log(
+            // "La caché local está desactualizada, se requiere sincronización"
+          // );
           return false;
         }
 
         // Cargar los favoritos desde el caché
         if (Array.isArray(favorites)) {
           this.favoriteProducts = new Set(favorites);
-          console.log(
-            `Favoritos cargados desde caché local (${this.favoriteProducts.size} items)`
-          );
+          // console.log(
+            // `Favoritos cargados desde caché local (${this.favoriteProducts.size} items)`
+          // );
 
           // Si los datos están desactualizados, iniciar sincronización en segundo plano
           if (isStale) {
-            console.log("Iniciando sincronización en segundo plano...");
+            // console.log("Iniciando sincronización en segundo plano...");
             this.enqueueSync().catch((error) => {
               console.error(
                 "Error durante la sincronización en segundo plano:",
@@ -1152,7 +1152,7 @@ if (typeof FavoritesManager === "undefined") {
           removed++;
         }
 
-        console.log(`Se eliminaron ${removed} entradas antiguas de la caché`);
+        // console.log(`Se eliminaron ${removed} entradas antiguas de la caché`);
       } catch (e) {
         console.error("Error al limpiar caché antigua:", e);
         throw e; // Relanzar para manejarlo en el método que lo llamó
@@ -1206,22 +1206,22 @@ if (typeof FavoritesManager === "undefined") {
       perPage = Math.min(100, Math.max(1, parseInt(perPage) || 50));
 
       if (!this.isAuthenticated) {
-        console.log(
-          "Usuario no autenticado, omitiendo carga de favoritos del servidor"
-        );
+        // console.log(
+          // "Usuario no autenticado, omitiendo carga de favoritos del servidor"
+        // );
         return this.favoriteProducts;
       }
 
       // Si no es forzado y ya tenemos favoritos cargados, devolver los existentes
       if (!forceRefresh && this.favoriteProducts.size > 0 && page === 1) {
-        console.log("Usando favoritos ya cargados");
+        // console.log("Usando favoritos ya cargados");
         return this.favoriteProducts;
       }
 
       try {
-        console.log(
-          `Cargando favoritos desde el servidor (página ${page}, ${perPage} por página)...`
-        );
+        // console.log(
+          // `Cargando favoritos desde el servidor (página ${page}, ${perPage} por página)...`
+        // );
 
         // Obtener el token de autenticación
         const token =
@@ -1271,7 +1271,7 @@ if (typeof FavoritesManager === "undefined") {
         }
 
         const data = await response.json();
-        console.log("Respuesta del servidor:", data);
+        // console.log("Respuesta del servidor:", data);
 
         // Verificar el formato de la respuesta y aceptar varios formatos
         let ids = [];
@@ -1287,10 +1287,10 @@ if (typeof FavoritesManager === "undefined") {
         }
 
         const serverFavorites = new Set(ids.map(String));
-        console.log(
-          `Favoritos recibidos (página ${page}):`,
-          Array.from(serverFavorites)
-        );
+        // console.log(
+          // `Favoritos recibidos (página ${page}):`,
+          // Array.from(serverFavorites)
+        // );
 
         // Si es la primera página, reemplazar los favoritos existentes
         // Si no, combinar con los existentes
@@ -1308,10 +1308,10 @@ if (typeof FavoritesManager === "undefined") {
         this.updateFavoritesCounter();
         this.updateAllFavoriteButtons();
 
-        console.log(
-          "Favoritos cargados correctamente. Total:",
-          this.favoriteProducts.size
-        );
+        // console.log(
+          // "Favoritos cargados correctamente. Total:",
+          // this.favoriteProducts.size
+        // );
 
         return this.favoriteProducts;
       } catch (error) {
@@ -1360,9 +1360,9 @@ if (typeof FavoritesManager === "undefined") {
         const actionsStr = localStorage.getItem("pending_favorite_actions");
 
         if (!actionsStr) {
-          console.log(
-            "ℹ️ No hay acciones pendientes en el almacenamiento local"
-          );
+          // console.log(
+            // "ℹ️ No hay acciones pendientes en el almacenamiento local"
+          // );
           return [];
         }
 
@@ -1403,11 +1403,11 @@ if (typeof FavoritesManager === "undefined") {
 
         // Si hay diferencias, actualizar el localStorage
         if (validActions.length !== actions.length) {
-          console.log(
-            `🔄 Se filtraron ${ 
-              actions.length - validActions.length
-            } acciones inválidas o antiguas`
-          );
+          // console.log(
+            // `🔄 Se filtraron ${
+              // actions.length - validActions.length
+            // } acciones inválidas o antiguas`
+          // );
 
           if (validActions.length > 0) {
             localStorage.setItem(
@@ -1419,9 +1419,9 @@ if (typeof FavoritesManager === "undefined") {
           }
         }
 
-        console.log(
-          `📋 ${validActions.length} acciones pendientes de sincronización`
-        );
+        // console.log(
+          // `📋 ${validActions.length} acciones pendientes de sincronización`
+        // );
         return validActions;
       } catch (error) {
         console.error("❌ Error al obtener acciones pendientes:", error);
@@ -1474,7 +1474,7 @@ if (typeof FavoritesManager === "undefined") {
 
     // Verificar el estado de sincronización con el servidor
     async _checkServerSyncStatus() {
-      console.log("🔍 Verificando estado de sincronización con el servidor...");
+      // console.log("🔍 Verificando estado de sincronización con el servidor...");
 
       try {
         const response = await fetch("/api/favoritos", {
@@ -1500,16 +1500,16 @@ if (typeof FavoritesManager === "undefined") {
         }
 
         const data = await response.json();
-        console.log("📊 Datos del servidor recibidos:", data);
+        // console.log("📊 Datos del servidor recibidos:", data);
 
         if (data.success && Array.isArray(data.favoritos)) {
           const serverFavorites = new Set(data.favoritos.map((fav) => fav.id));
           const localFavorites = this.favoriteProducts;
 
-          console.log("🔄 Comparando favoritos:", {
-            servidor: Array.from(serverFavorites),
-            local: Array.from(localFavorites),
-          });
+          // console.log("🔄 Comparando favoritos:", {
+            // servidor: Array.from(serverFavorites),
+            // local: Array.from(localFavorites),
+          // });
 
           // Verificar si los conjuntos son iguales
           const sizesMatch = serverFavorites.size === localFavorites.size;
@@ -1518,7 +1518,7 @@ if (typeof FavoritesManager === "undefined") {
           );
 
           if (sizesMatch && allMatch) {
-            console.log("✅ Los datos están sincronizados correctamente");
+            // console.log("✅ Los datos están sincronizados correctamente");
             return true;
           } else {
             console.warn("⚠️ Los datos NO están sincronizados:", {
@@ -1548,16 +1548,16 @@ if (typeof FavoritesManager === "undefined") {
     // Limpiar datos locales de favoritos
     _cleanupLocalData(showNotification = true) {
       try {
-        console.log("Iniciando limpieza del localStorage...");
+        // console.log("Iniciando limpieza del localStorage...");
 
         // Guardar una copia de los favoritos actuales
         const currentFavorites = Array.from(this.favoriteProducts);
-        console.log("Favoritos actuales guardados:", currentFavorites);
+        // console.log("Favoritos actuales guardados:", currentFavorites);
 
         // Limpiar el localStorage
         localStorage.removeItem(this.STORAGE_KEY);
         localStorage.removeItem("pending_favorite_actions");
-        console.log("Elementos eliminados del localStorage");
+        // console.log("Elementos eliminados del localStorage");
 
         // Actualizar el estado local
         this.favoriteProducts = new Set(currentFavorites);
@@ -1570,7 +1570,7 @@ if (typeof FavoritesManager === "undefined") {
         };
 
         this.saveLocalFavorites(cleanState);
-        console.log("Nuevo estado guardado en localStorage:", cleanState);
+        // console.log("Nuevo estado guardado en localStorage:", cleanState);
 
         if (showNotification) {
           this._showNotification(
@@ -1580,7 +1580,7 @@ if (typeof FavoritesManager === "undefined") {
           );
         }
 
-        console.log("✅ Caché local limpiada correctamente");
+        // console.log("✅ Caché local limpiada correctamente");
         return true;
       } catch (error) {
         console.error("❌ Error al limpiar la caché local:", error);
@@ -1625,9 +1625,9 @@ if (typeof FavoritesManager === "undefined") {
       // Eliminar claves antiguas
       keysToRemove.forEach((key) => localStorage.removeItem(key));
 
-      console.log(
-        `Se eliminaron ${keysToRemove.length} elementos antiguos del caché`
-      );
+      // console.log(
+        // `Se eliminaron ${keysToRemove.length} elementos antiguos del caché`
+      // );
 
       // Notificar al usuario si se eliminaron elementos
       if (keysToRemove.length > 0) {

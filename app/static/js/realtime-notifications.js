@@ -56,7 +56,7 @@ class PageLoadNotifier {
     }
 
     async checkForNotifications() {
-        console.log('Buscando notificaciones de pedidos...');
+        // console.log('Buscando notificaciones de pedidos...');
         try {
             const response = await fetch('/events/api/check-notifications');
             if (!response.ok) {
@@ -65,13 +65,13 @@ class PageLoadNotifier {
             const data = await response.json();
 
             if (data.success && data.notifications && data.notifications.length > 0) {
-                console.log(`Se encontraron ${data.notifications.length} notificaciones. Mostrando la más reciente.`);
+                // console.log(`Se encontraron ${data.notifications.length} notificaciones. Mostrando la más reciente.`);
                 // Mostrar solo la primera (la más reciente) para no abrumar al usuario
                 this.showModal(data.notifications[0]);
             } else if (!data.success) {
                 console.error('La API de notificaciones devolvió un error:', data.message);
             } else {
-                console.log('No hay notificaciones nuevas.');
+                // console.log('No hay notificaciones nuevas.');
             }
         } catch (error) {
             console.error('Error al buscar notificaciones:', error);

@@ -1096,7 +1096,7 @@ class ReviewsManager {
       if (window.toast && typeof window.toast.success === "function") {
         window.toast.success(message);
       } else {
-        console.log("Éxito (sin toast):", message);
+        // console.log("Éxito (sin toast):", message);
       }
     } else {
       console.error(`Mensaje (${type}):`, message);

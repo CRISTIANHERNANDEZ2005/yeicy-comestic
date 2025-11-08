@@ -141,7 +141,7 @@
         function mostrarDropdownDesktop() {
             if (isDropdownOpenDesktop) return;
             
-            console.log('Mostrando dropdown Desktop');
+            // console.log('Mostrando dropdown Desktop');
             isDropdownOpenDesktop = true;
             searchDropdownDesktop.classList.remove('hidden');
             
@@ -159,7 +159,7 @@
         function ocultarDropdownDesktop() {
             if (!isDropdownOpenDesktop) return;
             
-            console.log('Ocultando dropdown Desktop');
+            // console.log('Ocultando dropdown Desktop');
             isDropdownOpenDesktop = false;
             searchDropdownDesktop.classList.remove('show');
             
@@ -198,7 +198,7 @@
 
         // Event listeners para desktop
         searchInputDesktop.addEventListener('focus', function () {
-            console.log('Focus en input Desktop');
+            // console.log('Focus en input Desktop');
             mostrarDropdownDesktop();
         });
 
@@ -206,7 +206,7 @@
         document.addEventListener('click', (e) => {
             const isClickInside = e.target.closest('#searchFormDesktop') || e.target.closest('#searchDropdownDesktop');
             if (!isClickInside && isDropdownOpenDesktop) {
-                console.log('Click fuera del buscador Desktop');
+                // console.log('Click fuera del buscador Desktop');
                 ocultarDropdownDesktop();
             }
         });
@@ -214,7 +214,7 @@
         // Cerrar con tecla Escape
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && isDropdownOpenDesktop) {
-                console.log('Tecla Escape presionada Desktop');
+                // console.log('Tecla Escape presionada Desktop');
                 e.preventDefault();
                 ocultarDropdownDesktop();
                 searchInputDesktop.blur();
@@ -228,12 +228,12 @@
 
             searchTimeoutDesktop = setTimeout(() => {
                 if (query.length > 0) {
-                    console.log('Buscando productos Desktop para:', query);
+                    // console.log('Buscando productos Desktop para:', query);
                     hasQuery = true;
                     cambiarAModoResultados();
                     buscarProductosDesktop(query);
                 } else {
-                    console.log('Input vacío Desktop - Mostrando sugerencias');
+                    // console.log('Input vacío Desktop - Mostrando sugerencias');
                     hasQuery = false;
                     cambiarAModoSugerencias();
                     cargarSugerenciasDesktop();
@@ -243,7 +243,7 @@
 
         // Función para mostrar estado de carga en desktop
         function mostrarCargandoDesktop() {
-            console.log('Mostrando estado de carga Desktop...');
+            // console.log('Mostrando estado de carga Desktop...');
             resultadosListDesktop.innerHTML = `
                 <div class="col-span-2 flex justify-center p-4">
                     <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-pink-500"></div>
@@ -253,9 +253,9 @@
 
         // Función para buscar productos en desktop
         async function buscarProductosDesktop(query) {
-            console.log('Iniciando búsqueda Desktop para:', query);
+            // console.log('Iniciando búsqueda Desktop para:', query);
             if (query.length === 0) {
-                console.log('Query vacío Desktop - Cargando sugerencias');
+                // console.log('Query vacío Desktop - Cargando sugerencias');
                 hasQuery = false;
                 cambiarAModoSugerencias();
                 cargarSugerenciasDesktop();
@@ -265,7 +265,7 @@
             mostrarCargandoDesktop();
 
             try {
-                console.log('Realizando petición Desktop a /buscar?q=' + encodeURIComponent(query));
+                // console.log('Realizando petición Desktop a /buscar?q=' + encodeURIComponent(query));
                 const response = await fetch(`/buscar?q=${encodeURIComponent(query)}`);
                 
                 if (!response.ok) {
@@ -273,7 +273,7 @@
                 }
 
                 const data = await response.json();
-                console.log('Respuesta recibida Desktop:', data);
+                // console.log('Respuesta recibida Desktop:', data);
 
                 if (data.error) {
                     console.error('Error en la respuesta Desktop:', data.error);
@@ -281,7 +281,7 @@
                     return;
                 }
 
-                console.log('Mostrando resultados Desktop:', data.resultados.length, 'productos encontrados');
+                // console.log('Mostrando resultados Desktop:', data.resultados.length, 'productos encontrados');
                 mostrarResultadosDesktop(data.resultados);
             } catch (error) {
                 console.error('Error en la búsqueda Desktop:', error);
@@ -291,11 +291,11 @@
 
         // Mostrar resultados en desktop
         function mostrarResultadosDesktop(productos) {
-            console.log('Renderizando resultados Desktop:', productos.length, 'productos');
+            // console.log('Renderizando resultados Desktop:', productos.length, 'productos');
             resultadosListDesktop.innerHTML = '';
 
             if (productos.length === 0) {
-                console.log('No se encontraron productos Desktop');
+                // console.log('No se encontraron productos Desktop');
                 resultadosListDesktop.innerHTML = '<p class="text-gray-500 col-span-2">No se encontraron productos</p>';
                 return;
             }
@@ -326,7 +326,7 @@
                     </div>
                 `;
                 div.addEventListener('click', async () => {
-                    console.log('Producto clickeado Desktop:', producto.id, producto.nombre);
+                    // console.log('Producto clickeado Desktop:', producto.id, producto.nombre);
                     await logSearchClick(producto, searchInputDesktop.value.trim());
                     window.location.href = `/${producto.categoria_principal_slug}/${producto.subcategoria_slug}/${producto.seudocategoria_slug}/${producto.slug}`;
                 });
@@ -351,14 +351,14 @@
 
         // Mostrar sugerencias en desktop
         function mostrarSugerenciasDesktop(terminos) {
-            console.log('Mostrando sugerencias Desktop:', terminos.length, 'términos');
+            // console.log('Mostrando sugerencias Desktop:', terminos.length, 'términos');
             sugerenciasListDesktop.innerHTML = '';
             terminos.forEach((termino, idx) => {
                 const li = document.createElement('li');
                 li.className = 'sugerencia-item-desktop';
                 li.innerHTML = `<span class="sugerencia-numero-desktop">${idx + 1}</span> <span>${termino}</span>`;
                 li.addEventListener('click', () => {
-                    console.log('Sugerencia seleccionada Desktop:', termino);
+                    // console.log('Sugerencia seleccionada Desktop:', termino);
                     searchInputDesktop.value = termino;
                     hasQuery = true;
                     cambiarAModoResultados();
@@ -370,11 +370,11 @@
 
         // Cargar sugerencias iniciales para desktop
         async function cargarSugerenciasDesktop() {
-            console.log('Cargando sugerencias iniciales Desktop...');
+            // console.log('Cargando sugerencias iniciales Desktop...');
             try {
                 const response = await fetch('/buscar?q=');
                 const data = await response.json();
-                console.log('Sugerencias recibidas Desktop:', data.sugerencias);
+                // console.log('Sugerencias recibidas Desktop:', data.sugerencias);
                 mostrarSugerenciasDesktop(data.sugerencias);
             } catch (error) {
                 console.error('Error al cargar sugerencias Desktop:', error);

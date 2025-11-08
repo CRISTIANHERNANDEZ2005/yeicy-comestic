@@ -186,7 +186,7 @@ function setAuthToken(token) {
 async function logout(force = false, isDeactivated = false) {
   // Si no se está forzando el logout, mostrar la modal de confirmación primero.
   if (!force && window.openLogoutModal && typeof window.openLogoutModal === 'function') {
-    console.log("Solicitud de logout recibida. Abriendo modal de confirmación...");
+    // console.log("Solicitud de logout recibida. Abriendo modal de confirmación...");
     window.openLogoutModal();
     return; // Detener la ejecución aquí. La modal se encargará del resto.
   }
@@ -196,7 +196,7 @@ async function logout(force = false, isDeactivated = false) {
     // Limpiar el carrito local.
     if (window.cart && typeof window.cart.clearCartOnLogout === 'function') {
       window.cart.clearCartOnLogout();
-      console.log("Función clearCartOnLogout() llamada exitosamente.");
+      // console.log("Función clearCartOnLogout() llamada exitosamente.");
     } else {
       console.warn("No se encontró window.cart.clearCartOnLogout() para llamar.");
     }
@@ -221,7 +221,7 @@ async function logout(force = false, isDeactivated = false) {
         'Content-Type': 'application/json'
       }
     });
-    console.log("Notificación de logout enviada al servidor.");
+    // console.log("Notificación de logout enviada al servidor.");
   } catch (e) {
     console.error("Error al notificar al servidor sobre el logout. La limpieza del cliente ya se realizó.", e);
   }
@@ -230,7 +230,7 @@ async function logout(force = false, isDeactivated = false) {
   // MEJORA: Añadir un pequeño retardo antes de redirigir para que el usuario
   // pueda ver el mensaje de "Cerrando sesión...".
   setTimeout(() => {
-    console.log("Redirigiendo a la página principal...");
+    // console.log("Redirigiendo a la página principal...");
     window.location.replace("/");
   }, 500); // 500ms de retardo
 }
@@ -324,4 +324,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   await restoreSession();
 });
 
-console.log("Interceptor de autenticación cargado correctamente");
+// console.log("Interceptor de autenticación cargado correctamente");

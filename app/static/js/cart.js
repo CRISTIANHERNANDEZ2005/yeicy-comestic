@@ -195,7 +195,7 @@ if (typeof ShoppingCart === "undefined") {
             this.saveToStorage();
             this.updateCartCounter();
             this.refreshCartModal();
-            console.log("Local cart merged with server cart.");
+            // console.log("Local cart merged with server cart.");
             // Manejar advertencias del backend.
             if (data.warnings && data.warnings.length > 0) {
               data.warnings.forEach((warningMsg) => {
@@ -275,7 +275,7 @@ if (typeof ShoppingCart === "undefined") {
             this.saveToStorage();
             this.updateCartCounter();
             this.refreshCartModal();
-            console.log("Carrito hidratado desde el servidor.");
+            // console.log("Carrito hidratado desde el servidor.");
           } else {
             console.error(
               "Error al hidratar el carrito desde el servidor:",
@@ -837,7 +837,7 @@ animateFooter(show) {
       this.cartItems = [];
       this.saveToStorage();
       this.updateCartCounter();
-      console.log("Carrito local limpiado por cierre de sesión.");
+      // console.log("Carrito local limpiado por cierre de sesión.");
     }
    async updateQuantity(itemId, change) {
     if (this.isUpdating) return;

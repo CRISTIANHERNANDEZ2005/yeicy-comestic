@@ -1,564 +1,633 @@
 <div id="product-carousel-container" class="relative group">
     <!-- Contenedor con altura fija para evitar saltos -->
-  <div
-    class="carousel-container relative overflow-hidden min-h-[400px] md:min-h-[500px]"
-  >
     <div
-      class="carousel-track flex transition-all duration-500 ease-in-out"
-      id="carouselTrack"
+        class="carousel-container relative overflow-hidden min-h-[400px] md:min-h-[500px]"
     >
-      <!-- Estado de carga profesional - AJUSTADO PARA MÓVIL -->
-      <div class="loading-state w-full" id="loadingState">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {% set mobile_limit = 2 %} {% set desktop_limit = 4 %} {% set
-          actual_limit = mobile_limit if request.user_agent.is_mobile else
-          desktop_limit %} {% for i in range(actual_limit) %}
-          <div
-            class="product-skeleton bg-white rounded-xl shadow-lg overflow-hidden animate-pulse"
-          >
-            <div class="relative overflow-hidden aspect-square">
-              <div
-                class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"
-              ></div>
+        <div
+            class="carousel-track flex transition-all duration-500 ease-in-out"
+            id="carouselTrack"
+        >
+            <!-- Estado de carga profesional - AJUSTADO PARA MÓVIL -->
+            <div class="loading-state w-full" id="loadingState">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {% set mobile_limit = 2 %} {% set desktop_limit = 4 %} {%
+                    set actual_limit = mobile_limit if
+                    request.user_agent.is_mobile else desktop_limit %} {% for i
+                    in range(actual_limit) %}
+                    <div
+                        class="product-skeleton bg-white rounded-xl shadow-lg overflow-hidden animate-pulse"
+                    >
+                        <div class="relative overflow-hidden aspect-square">
+                            <div
+                                class="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300"
+                            ></div>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="h-4 w-1/3 bg-gray-200 rounded"></div>
+                            <div class="h-5 w-3/4 bg-gray-200 rounded"></div>
+                            <div class="h-3 w-full bg-gray-200 rounded"></div>
+                            <div class="h-3 w-2/3 bg-gray-200 rounded"></div>
+                            <div class="flex justify-between items-center pt-2">
+                                <div
+                                    class="h-6 w-1/4 bg-gray-200 rounded"
+                                ></div>
+                                <div
+                                    class="h-8 w-1/3 bg-gray-200 rounded-full"
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
-            <div class="p-4 space-y-3">
-              <div class="h-4 w-1/3 bg-gray-200 rounded"></div>
-              <div class="h-5 w-3/4 bg-gray-200 rounded"></div>
-              <div class="h-3 w-full bg-gray-200 rounded"></div>
-              <div class="h-3 w-2/3 bg-gray-200 rounded"></div>
-              <div class="flex justify-between items-center pt-2">
-                <div class="h-6 w-1/4 bg-gray-200 rounded"></div>
-                <div class="h-8 w-1/3 bg-gray-200 rounded-full"></div>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
         </div>
-      </div>
     </div>
-  </div>
 
-  <!-- Controles con estados mejorados -->
-  <button
-    class="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-pink-600 p-3 rounded-full shadow-xl z-20 opacity-0 scale-90 transition-all duration-300 hover:scale-110"
-    aria-label="Anterior"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-5 w-5 md:h-6 md:w-6"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
+    <!-- Controles con estados mejorados -->
+    <button
+        class="carousel-prev absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-pink-600 p-3 rounded-full shadow-xl z-20 opacity-0 scale-90 transition-all duration-300 hover:scale-110"
+        aria-label="Anterior"
     >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M15 19l-7-7 7-7"
-      />
-    </svg>
-  </button>
-  <button
-    class="carousel-next absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-pink-600 p-3 rounded-full shadow-xl z-20 opacity-0 scale-90 transition-all duration-300 hover:scale-110"
-    aria-label="Siguiente"
-  >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      class="h-5 w-5 md:h-6 md:w-6"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 md:h-6 md:w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+            />
+        </svg>
+    </button>
+    <button
+        class="carousel-next absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 hover:bg-white text-pink-600 p-3 rounded-full shadow-xl z-20 opacity-0 scale-90 transition-all duration-300 hover:scale-110"
+        aria-label="Siguiente"
     >
-      <path
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        stroke-width="2"
-        d="M9 5l7 7-7 7"
-      />
-    </svg>
-  </button>
+        <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5 md:h-6 md:w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+        >
+            <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 5l7 7-7 7"
+            />
+        </svg>
+    </button>
 </div>
 
 <!-- Indicadores mejorados - OCULTOS SI ES SOLO UNA PÁGINA -->
 <div class="flex justify-center mt-8 space-x-2" id="carouselIndicators"></div>
 <style>
-  .product-card {
-    position: relative;
-    background: white;
-    text-decoration: none;
-    color: inherit;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    cursor: pointer;
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    transform-origin: center;
-    will-change: transform, box-shadow;
-    z-index: 1;
-    overflow: hidden;
-  }
-
-  .product-card:hover {
-    transform: scale(1.03); /* Zoom más sutil (3%) */
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
-      0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    z-index: 2;
-  }
-
-  /* Efecto de imagen más sutil */
-  .product-card:hover .product-image {
-    transform: scale(1.1) translateY(-2px);
-    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-
-  .product-card:hover .product-image-container::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      135deg,
-      rgba(236, 72, 153, 0.1) 0%,
-      transparent 50%,
-      rgba(168, 85, 247, 0.1) 100%
-    );
-    opacity: 1;
-    transition: opacity 0.3s ease;
-  }
-
-  .carousel-container {
-    position: relative;
-    padding: 2rem 0; /* Espacio vertical para el zoom */
-    margin: -2rem 1rem; /* Compensar el padding */
-  }
-
-  .carousel-viewport {
-    position: relative;
-    overflow: hidden;
-    border-radius: 0.75rem;
-    /* Altura dinámica que se ajusta al contenido */
-    min-height: 400px;
-    transition: min-height 0.3s ease;
-  }
-
-  @media (min-width: 768px) {
-    .carousel-viewport {
-      min-height: 500px;
-    }
-  }
-
-  /* Contenedor de track con espacio para transformaciones */
-  .carousel-track-wrapper {
-    position: relative;
-    padding: 1rem 0.5rem; /* Espacio para el zoom */
-    margin: -1rem -0.5rem; /* Compensar padding */
-  }
-
-  /* Mejoras en las tarjetas para el efecto hover */
-  .product-card-container {
-    perspective: 1000px; /* Para efectos 3D suaves */
-    padding: 0.5rem; /* Espacio alrededor de cada tarjeta */
-  }
-
-  /* Prevenir que las tarjetas se superpongan incorrectamente */
-  .carousel-slide .grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1.5rem; /* Mayor espacio entre tarjetas */
-    padding: 0 0.5rem;
-  }
-
-  @media (min-width: 768px) {
-    .carousel-slide .grid {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 2rem;
-    }
-  }
-
-  /* Efecto de elevación refinado */
-  .product-card::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 0.75rem;
-    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-
-  .product-card:hover::before {
-    opacity: 1;
-  }
-
-  /* Optimización para dispositivos táctiles */
-  @media (hover: none) {
     .product-card {
-      transform: none !important;
+        position: relative;
+        background: white;
+        text-decoration: none;
+        color: inherit;
+        transition:
+            transform 0.3s ease,
+            box-shadow 0.3s ease;
+        cursor: pointer;
+        border-radius: 0.75rem;
+        box-shadow:
+            0 4px 6px -1px rgba(0, 0, 0, 0.1),
+            0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        transform-origin: center;
+        will-change: transform, box-shadow;
+        z-index: 1;
+        overflow: hidden;
     }
 
-    .product-card:active {
-      transform: scale(0.98) !important;
+    .product-card:hover {
+        transform: scale(1.03); /* Zoom más sutil (3%) */
+        box-shadow:
+            0 10px 15px -3px rgba(0, 0, 0, 0.1),
+            0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        z-index: 2;
     }
-  }
 
-  /* Corrección de posicionamiento de elementos internos */
-  .product-image-container {
-    position: relative;
-    overflow: hidden;
-    border-radius: 0.5rem 0.5rem 0 0;
-  }
+    /* Efecto de imagen más sutil */
+    .product-card:hover .product-image {
+        transform: scale(1.1) translateY(-2px);
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
 
-  /* Indicadores más elegantes */
-  .carousel-indicator {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    background: rgba(236, 72, 153, 0.3);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    cursor: pointer;
-    position: relative;
-  }
+    .product-card:hover .product-image-container::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(
+            135deg,
+            rgba(236, 72, 153, 0.1) 0%,
+            transparent 50%,
+            rgba(168, 85, 247, 0.1) 100%
+        );
+        opacity: 1;
+        transition: opacity 0.3s ease;
+    }
 
-  .carousel-indicator.active {
-    width: 32px;
-    height: 8px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #ec4899, #a855f7);
-  }
+    .carousel-container {
+        position: relative;
+        padding: 2rem 0; /* Espacio vertical para el zoom */
+        margin: -2rem 1rem; /* Compensar el padding */
+    }
 
-  /* Controles mejorados con mejor posicionamiento */
-  .carousel-controls {
-    position: absolute;
-    top: 50%;
-    left: -1rem;
-    right: -1rem;
-    transform: translateY(-50%);
-    display: flex;
-    justify-content: space-between;
-    pointer-events: none;
-    z-index: 20;
-  }
+    .carousel-viewport {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.75rem;
+        /* Altura dinámica que se ajusta al contenido */
+        min-height: 400px;
+        transition: min-height 0.3s ease;
+    }
 
-  .carousel-prev,
-  .carousel-next {
-    pointer-events: all;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    z-index: 20;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
-  }
+    @media (min-width: 768px) {
+        .carousel-viewport {
+            min-height: 500px;
+        }
+    }
 
-  .carousel-prev:hover,
-  .carousel-next:hover {
-    background: white;
-    transform: scale(1.1);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
-  }
+    /* Contenedor de track con espacio para transformaciones */
+    .carousel-track-wrapper {
+        position: relative;
+        padding: 1rem 0.5rem; /* Espacio para el zoom */
+        margin: -1rem -0.5rem; /* Compensar padding */
+    }
+
+    /* Mejoras en las tarjetas para el efecto hover */
+    .product-card-container {
+        perspective: 1000px; /* Para efectos 3D suaves */
+        padding: 0.5rem; /* Espacio alrededor de cada tarjeta */
+    }
+
+    /* Prevenir que las tarjetas se superpongan incorrectamente */
+    .carousel-slide .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem; /* Mayor espacio entre tarjetas */
+        padding: 0 0.5rem;
+    }
+
+    @media (min-width: 768px) {
+        .carousel-slide .grid {
+            grid-template-columns: repeat(4, 1fr);
+            gap: 2rem;
+        }
+    }
+
+    /* Efecto de elevación refinado */
+    .product-card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 0.75rem;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .product-card:hover::before {
+        opacity: 1;
+    }
+
+    /* Optimización para dispositivos táctiles */
+    @media (hover: none) {
+        .product-card {
+            transform: none !important;
+        }
+
+        .product-card:active {
+            transform: scale(0.98) !important;
+        }
+    }
+
+    /* Corrección de posicionamiento de elementos internos */
+    .product-image-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 0.5rem 0.5rem 0 0;
+    }
+
+    /* Indicadores más elegantes */
+    .carousel-indicator {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: rgba(236, 72, 153, 0.3);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+    }
+
+    .carousel-indicator.active {
+        width: 32px;
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #ec4899, #a855f7);
+    }
+
+    /* Controles mejorados con mejor posicionamiento */
+    .carousel-controls {
+        position: absolute;
+        top: 50%;
+        left: -1rem;
+        right: -1rem;
+        transform: translateY(-50%);
+        display: flex;
+        justify-content: space-between;
+        pointer-events: none;
+        z-index: 20;
+    }
+
+    .carousel-prev,
+    .carousel-next {
+        pointer-events: all;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        z-index: 20;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+    }
+
+    .carousel-prev:hover,
+    .carousel-next:hover {
+        background: white;
+        transform: scale(1.1);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+    }
 </style>
 <script>
-  // Elementos DOM (globalmente accesibles)
-  const track = document.getElementById("carouselTrack");
-  const prevBtn = document.querySelector(".carousel-prev");
-  const nextBtn = document.querySelector(".carousel-next");
-  const indicatorsContainer = document.getElementById("carouselIndicators");
-  const loadingState = document.getElementById("loadingState");
+    // Elementos DOM (globalmente accesibles)
+    const track = document.getElementById("carouselTrack");
+    const prevBtn = document.querySelector(".carousel-prev");
+    const nextBtn = document.querySelector(".carousel-next");
+    const indicatorsContainer = document.getElementById("carouselIndicators");
+    const loadingState = document.getElementById("loadingState");
 
-  // Estado mejorado (globalmente accesibles)
-  let currentIndex = 0;
-  let isMobile = window.IS_MOBILE || window.innerWidth < 768;
-  let productsPerSlide = isMobile ? 2 : 4;
-  let totalProducts = 0; // Inicializar a 0
-  let totalSlides = 0;   // Inicializar a 0
+    // Estado mejorado (globalmente accesibles)
+    let currentIndex = 0;
+    let isMobile = window.IS_MOBILE || window.innerWidth < 768;
+    let productsPerSlide = isMobile ? 2 : 4;
+    let totalProducts = 0; // Inicializar a 0
+    let totalSlides = 0; // Inicializar a 0
 
-  // Función optimizada de carga (globalmente accesible)
-  function initializeProductCarousel(containerId, productsData) {
-    // Validar que existan productos
-    if (!productsData || productsData.length === 0) {
-      loadingState.innerHTML = `
+    // Variables para auto-play
+    let autoSlideInterval = null;
+    let isCarouselHovered = false;
+
+    // Función optimizada de carga (globalmente accesible)
+    function initializeProductCarousel(containerId, productsData) {
+        // Validar que existan productos
+        if (!productsData || productsData.length === 0) {
+            loadingState.innerHTML = `
                   <div class="text-center py-12">
                       <p class="text-gray-500 text-lg">No hay productos disponibles en esta categoría</p>
                   </div>
               `;
-      return;
-    }
+            return;
+        }
 
-      window.PRODUCTS_DATA = productsData; // Mantenemos la variable global por si otros scripts dependen de ella.
-      // Calcular totalProducts y totalSlides aquí, después de asegurar que PRODUCTS_DATA está disponible
-      totalProducts = productsData.length;
-      productsPerSlide = isMobile ? 2 : 4; // Recalcular por si acaso el resize no se ha disparado
-      totalSlides = Math.max(1, Math.ceil(totalProducts / productsPerSlide));
+        window.PRODUCTS_DATA = productsData; // Mantenemos la variable global por si otros scripts dependen de ella.
+        // Calcular totalProducts y totalSlides aquí, después de asegurar que PRODUCTS_DATA está disponible
+        totalProducts = productsData.length;
+        productsPerSlide = isMobile ? 2 : 4; // Recalcular por si acaso el resize no se ha disparado
+        totalSlides = Math.max(1, Math.ceil(totalProducts / productsPerSlide));
 
-      // Fade out del skeleton
-      loadingState.style.opacity = "0";
+        // Fade out del skeleton
+        loadingState.style.opacity = "0";
 
-      setTimeout(() => {
-        if (loadingState) loadingState.remove();
-        createRealContent();
-        showControlsWithAnimation();
-      }, 400);
+        setTimeout(() => {
+            if (loadingState) loadingState.remove();
+            createRealContent();
+            showControlsWithAnimation();
+
+            // Configurar eventos hover para pausar/reanudar auto-play
+            const carouselContainer = document.querySelector(
+                ".carousel-container",
+            );
+            if (carouselContainer) {
+                carouselContainer.addEventListener("mouseenter", () => {
+                    isCarouselHovered = true;
+                });
+
+                carouselContainer.addEventListener("mouseleave", () => {
+                    isCarouselHovered = false;
+                });
+            }
+
+            // Iniciar auto-play después de un breve delay
+            setTimeout(() => {
+                startAutoSlide();
+            }, 1000);
+        }, 400);
     }
 
     // Crear contenido real con manejo preciso
     function createRealContent() {
-      track.innerHTML = "";
+        track.innerHTML = "";
 
-      for (let slideIndex = 0; slideIndex < totalSlides; slideIndex++) {
-        const slide = createOptimizedSlide(slideIndex);
-        track.appendChild(slide);
-      }
+        for (let slideIndex = 0; slideIndex < totalSlides; slideIndex++) {
+            const slide = createOptimizedSlide(slideIndex);
+            track.appendChild(slide);
+        }
 
-      renderSmartIndicators();
-      updateCarouselPosition();
+        renderSmartIndicators();
+        updateCarouselPosition();
     }
 
     // Crear slide optimizado
     function createOptimizedSlide(slideIndex) {
-      const slide = document.createElement("div");
-      slide.className = "carousel-slide w-full flex-shrink-0";
+        const slide = document.createElement("div");
+        slide.className = "carousel-slide w-full flex-shrink-0";
 
-      const grid = document.createElement("div");
-      grid.className = `grid gap-4 ${isMobile ? "grid-cols-2" : "grid-cols-4"}`;
+        const grid = document.createElement("div");
+        grid.className = `grid gap-4 ${isMobile ? "grid-cols-2" : "grid-cols-4"}`;
 
-      const startIndex = slideIndex * productsPerSlide;
-      const endIndex = Math.min(startIndex + productsPerSlide, totalProducts);
+        const startIndex = slideIndex * productsPerSlide;
+        const endIndex = Math.min(startIndex + productsPerSlide, totalProducts);
 
-      for (let i = startIndex; i < endIndex; i++) {
-        const productData = window.PRODUCTS_DATA[i]; // Asume que window.PRODUCTS_DATA está disponible globalmente
-        if (productData) {
-          const productCard = renderProductCard(
-            productData,
-            i - startIndex
-          );
-          grid.appendChild(productCard);
+        for (let i = startIndex; i < endIndex; i++) {
+            const productData = window.PRODUCTS_DATA[i]; // Asume que window.PRODUCTS_DATA está disponible globalmente
+            if (productData) {
+                const productCard = renderProductCard(
+                    productData,
+                    i - startIndex,
+                );
+                grid.appendChild(productCard);
+            }
         }
-      }
 
-      slide.appendChild(grid);
-      return slide;
+        slide.appendChild(grid);
+        return slide;
     }
 
     // Renderizar indicadores inteligentes
     function renderSmartIndicators() {
-      indicatorsContainer.innerHTML = "";
+        indicatorsContainer.innerHTML = "";
 
-      if (totalSlides <= 1) {
-        indicatorsContainer.style.display = "none";
-        return;
-      }
+        if (totalSlides <= 1) {
+            indicatorsContainer.style.display = "none";
+            return;
+        }
 
-      indicatorsContainer.style.display = "flex";
+        indicatorsContainer.style.display = "flex";
 
-      for (let i = 0; i < totalSlides; i++) {
-        const indicator = document.createElement("button");
-        indicator.className = `carousel-indicator ${i === 0 ? "active" : ""}`;
-        indicator.setAttribute("data-index", i);
-        indicator.setAttribute("aria-label", `Diapositiva ${i + 1}`);
+        for (let i = 0; i < totalSlides; i++) {
+            const indicator = document.createElement("button");
+            indicator.className = `carousel-indicator ${i === 0 ? "active" : ""}`;
+            indicator.setAttribute("data-index", i);
+            indicator.setAttribute("aria-label", `Diapositiva ${i + 1}`);
 
-        indicator.addEventListener("click", () => {
-          currentIndex = i;
-          updateCarouselPosition();
-          updateActiveIndicator();
-        });
+            indicator.addEventListener("click", () => {
+                currentIndex = i;
+                updateCarouselPosition();
+                updateActiveIndicator();
+                resetAutoSlide();
+            });
 
-        indicatorsContainer.appendChild(indicator);
-      }
+            indicatorsContainer.appendChild(indicator);
+        }
     }
 
     // Actualizar indicador activo
     function updateActiveIndicator() {
-      const indicators = indicatorsContainer.querySelectorAll(
-        ".carousel-indicator"
-      );
-      indicators.forEach((indicator, idx) => {
-        indicator.classList.toggle("active", idx === currentIndex);
-      });
+        const indicators = indicatorsContainer.querySelectorAll(
+            ".carousel-indicator",
+        );
+        indicators.forEach((indicator, idx) => {
+            indicator.classList.toggle("active", idx === currentIndex);
+        });
     }
 
     // Mostrar controles con animación suave
     function showControlsWithAnimation() {
-      setTimeout(() => {
-        const shouldShow = totalSlides > 1;
-        prevBtn.style.opacity = shouldShow ? "1" : "0";
-        nextBtn.style.opacity = shouldShow ? "1" : "0";
-        prevBtn.style.transform = "scale(1)";
-        nextBtn.style.transform = "scale(1)";
-        prevBtn.style.pointerEvents = shouldShow ? "auto" : "none";
-        nextBtn.style.pointerEvents = shouldShow ? "auto" : "none";
-      }, 300);
+        setTimeout(() => {
+            const shouldShow = totalSlides > 1;
+            prevBtn.style.opacity = shouldShow ? "1" : "0";
+            nextBtn.style.opacity = shouldShow ? "1" : "0";
+            prevBtn.style.transform = "scale(1)";
+            nextBtn.style.transform = "scale(1)";
+            prevBtn.style.pointerEvents = shouldShow ? "auto" : "none";
+            nextBtn.style.pointerEvents = shouldShow ? "auto" : "none";
+        }, 300);
     }
 
     // Actualizar posición del carrusel
     function updateCarouselPosition() {
-      const slideWidth = 100;
-      track.style.transform = `translateX(-${currentIndex * slideWidth}%)`;
-      updateActiveIndicator();
+        const slideWidth = 100;
+        track.style.transform = `translateX(-${currentIndex * slideWidth}%)`;
+        updateActiveIndicator();
 
-      // Ajustar altura dinámicamente
-      setTimeout(adjustCarouselHeight, 100);
+        // Ajustar altura dinámicamente
+        setTimeout(adjustCarouselHeight, 100);
     }
 
     // Navegación mejorada
     function navigate(direction) {
-      if (totalSlides <= 1) return;
+        if (totalSlides <= 1) return;
 
-      const newIndex =
-        direction === "next"
-          ? (currentIndex + 1) % totalSlides
-          : (currentIndex - 1 + totalSlides) % totalSlides;
+        const newIndex =
+            direction === "next"
+                ? (currentIndex + 1) % totalSlides
+                : (currentIndex - 1 + totalSlides) % totalSlides;
 
-      currentIndex = newIndex;
-      updateCarouselPosition();
+        currentIndex = newIndex;
+        updateCarouselPosition();
+    }
+
+    // Funciones de auto-play
+    function startAutoSlide() {
+        if (totalSlides <= 1) return;
+
+        clearInterval(autoSlideInterval);
+        autoSlideInterval = setInterval(() => {
+            if (!isCarouselHovered) {
+                navigate("next");
+            }
+        }, 4000); // Cambiar cada 4 segundos
+    }
+
+    function stopAutoSlide() {
+        clearInterval(autoSlideInterval);
+        autoSlideInterval = null;
+    }
+
+    function resetAutoSlide() {
+        stopAutoSlide();
+        startAutoSlide();
     }
 
     // Event listeners mejorados
-    prevBtn?.addEventListener("click", () => navigate("prev"));
-    nextBtn?.addEventListener("click", () => navigate("next"));
+    prevBtn?.addEventListener("click", () => {
+        navigate("prev");
+        resetAutoSlide();
+    });
+    nextBtn?.addEventListener("click", () => {
+        navigate("next");
+        resetAutoSlide();
+    });
 
     // Touch/swipe optimizado
     let touchStartX = 0;
     let touchEndX = 0;
 
     track.addEventListener("touchstart", (e) => {
-      touchStartX = e.changedTouches[0].screenX;
+        touchStartX = e.changedTouches[0].screenX;
     });
 
     track.addEventListener("touchend", (e) => {
-      touchEndX = e.changedTouches[0].screenX;
-      handleSwipe();
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
     });
 
     function handleSwipe() {
-      if (totalSlides <= 1) return;
+        if (totalSlides <= 1) return;
 
-      if (touchEndX < touchStartX - 50) navigate("next");
+        if (touchEndX < touchStartX - 50) navigate("next");
 
-      if (touchEndX > touchStartX + 50) navigate("prev");
+        if (touchEndX > touchStartX + 50) navigate("prev");
     }
 
     function adjustCarouselHeight() {
-      const viewport = document.querySelector(".carousel-viewport");
-      const track = document.getElementById("carouselTrack");
+        const viewport = document.querySelector(".carousel-viewport");
+        const track = document.getElementById("carouselTrack");
 
-      if (viewport && track) {
-        const activeSlide = track.children[currentIndex];
-        if (activeSlide) {
-          const slideHeight = activeSlide.offsetHeight;
-          viewport.style.minHeight = `${slideHeight + 40}px`; // 40px extra para el zoom
+        if (viewport && track) {
+            const activeSlide = track.children[currentIndex];
+            if (activeSlide) {
+                const slideHeight = activeSlide.offsetHeight;
+                viewport.style.minHeight = `${slideHeight + 40}px`; // 40px extra para el zoom
+            }
         }
-      }
     }
 
     // Responsive con throttling
     let resizeTimeout;
     window.addEventListener("resize", () => {
-      clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(() => {
-        const wasMobile = isMobile;
-        isMobile = window.innerWidth < 768;
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const wasMobile = isMobile;
+            isMobile = window.innerWidth < 768;
 
-        if (wasMobile !== isMobile) {
-          productsPerSlide = isMobile ? 2 : 4;
-          totalSlides = Math.max(
-            1,
-            Math.ceil(totalProducts / productsPerSlide)
-          );
-          createRealContent();
-        }
-      }, 250);
+            if (wasMobile !== isMobile) {
+                productsPerSlide = isMobile ? 2 : 4;
+                totalSlides = Math.max(
+                    1,
+                    Math.ceil(totalProducts / productsPerSlide),
+                );
+                createRealContent();
+                resetAutoSlide();
+            }
+        }, 250);
     });
 
     // La función toggleFavorite ha sido movida a favorites.js
 
     // Inicialización de botones de favoritos
     const initFavoriteButton = (button) => {
-      // Solo inicializar si no está ya inicializado
-      if (button.getAttribute("data-initialized") === "true") return;
+        // Solo inicializar si no está ya inicializado
+        if (button.getAttribute("data-initialized") === "true") return;
 
-      const productId = parseInt(button.getAttribute("data-product-id"));
-      if (!productId || isNaN(productId)) return;
+        const productId = parseInt(button.getAttribute("data-product-id"));
+        if (!productId || isNaN(productId)) return;
 
-      // Verificar si el gestor de favoritos está disponible
-      if (window.favoritesManager) {
-        // Verificar si el usuario está autenticado
-        const isAuthenticated = window.favoritesManager.isAuthenticated;
+        // Verificar si el gestor de favoritos está disponible
+        if (window.favoritesManager) {
+            // Verificar si el usuario está autenticado
+            const isAuthenticated = window.favoritesManager.isAuthenticated;
 
-        // Si no está autenticado, actualizar el botón en consecuencia
-        if (!isAuthenticated) {
-          button.classList.remove("text-red-500", "text-gray-400");
-          button.classList.add("text-gray-300");
-          button.setAttribute(
-            "title",
-            "Inicia sesión para guardar en favoritos"
-          );
-          button.setAttribute(
-            "aria-label",
-            "Inicia sesión para guardar en favoritos"
-          );
-          const svg = button.querySelector("svg");
-          if (svg) {
-            svg.setAttribute("fill", "none");
-            svg.style.opacity = "0.6";
-          }
-        } else {
-          // Obtener el estado actual del favorito solo si está autenticado
-          const isFavorite =
-            window.favoritesManager.favoriteProducts.has(productId);
-          // Actualizar la apariencia del botón
-          window.favoritesManager.updateFavoriteButton(button, isFavorite);
+            // Si no está autenticado, actualizar el botón en consecuencia
+            if (!isAuthenticated) {
+                button.classList.remove("text-red-500", "text-gray-400");
+                button.classList.add("text-gray-300");
+                button.setAttribute(
+                    "title",
+                    "Inicia sesión para guardar en favoritos",
+                );
+                button.setAttribute(
+                    "aria-label",
+                    "Inicia sesión para guardar en favoritos",
+                );
+                const svg = button.querySelector("svg");
+                if (svg) {
+                    svg.setAttribute("fill", "none");
+                    svg.style.opacity = "0.6";
+                }
+            } else {
+                // Obtener el estado actual del favorito solo si está autenticado
+                const isFavorite =
+                    window.favoritesManager.favoriteProducts.has(productId);
+                // Actualizar la apariencia del botón
+                window.favoritesManager.updateFavoriteButton(
+                    button,
+                    isFavorite,
+                );
+            }
+
+            // Marcar como inicializado
+            button.setAttribute("data-initialized", "true");
+
+            // No necesitamos agregar manejadores de eventos aquí ya que usamos delegación de eventos
         }
-
-        // Marcar como inicializado
-        button.setAttribute("data-initialized", "true");
-
-        // No necesitamos agregar manejadores de eventos aquí ya que usamos delegación de eventos
-      }
     };
 
     // Inicializar botones existentes cuando el DOM esté listo
     document.addEventListener("DOMContentLoaded", function () {
-      if (window.PRODUCTS_DATA && Array.isArray(window.PRODUCTS_DATA)) {
-        // Notificación de productos nuevos
-        const nuevosProductos = window.PRODUCTS_DATA.filter((p) =>
-          verificarEsNuevo(p)
-        );
-        if (nuevosProductos.length > 0) {
-          console.log(
-            `✅ Hay ${nuevosProductos.length} productos nuevos disponibles`
-          );
+        if (window.PRODUCTS_DATA && Array.isArray(window.PRODUCTS_DATA)) {
+            // Notificación de productos nuevos
+            const nuevosProductos = window.PRODUCTS_DATA.filter((p) =>
+                verificarEsNuevo(p),
+            );
+            if (nuevosProductos.length > 0) {
+                console.log(
+                    `✅ Hay ${nuevosProductos.length} productos nuevos disponibles`,
+                );
+            }
         }
-      }
 
-      // Inicializar el gestor de favoritos si existe
-      if (window.favoritesManager) {
-        // Inicializar botones existentes
-        document.querySelectorAll(".favorite-btn").forEach(initFavoriteButton);
+        // Inicializar el gestor de favoritos si existe
+        if (window.favoritesManager) {
+            // Inicializar botones existentes
+            document
+                .querySelectorAll(".favorite-btn")
+                .forEach(initFavoriteButton);
 
-        // Configurar un observador de mutación para manejar contenido dinámico
-        const observer = new MutationObserver((mutations) => {
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              if (node.nodeType === 1) {
-                // Solo elementos
-                const newButtons = node.matches(".favorite-btn")
-                  ? [node]
-                  : node.querySelectorAll(".favorite-btn");
+            // Configurar un observador de mutación para manejar contenido dinámico
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === 1) {
+                            // Solo elementos
+                            const newButtons = node.matches(".favorite-btn")
+                                ? [node]
+                                : node.querySelectorAll(".favorite-btn");
 
-                newButtons.forEach((button) => initFavoriteButton(button));
-              }
+                            newButtons.forEach((button) =>
+                                initFavoriteButton(button),
+                            );
+                        }
+                    });
+                });
             });
-          });
-        });
 
-        // Observar cambios en el cuerpo del documento
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
-      }
+            // Observar cambios en el cuerpo del documento
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true,
+            });
+        }
     });
 </script>

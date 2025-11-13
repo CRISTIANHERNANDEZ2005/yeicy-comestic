@@ -18,14 +18,41 @@ class SimpleCarousel {
     this.slides = [];
     this.currentIndex = 0;
 
+    // Variables para auto-play
+    this.autoSlideInterval = null;
+    this.isCarouselHovered = false;
+
     // MEJORA PROFESIONAL: Código defensivo.
     // Solo añadir listeners si los elementos existen para evitar errores.
     if (this.track && this.prevBtn && this.nextBtn) {
-      this.prevBtn.addEventListener('click', () => this.navigate('prev'));
-      this.nextBtn.addEventListener('click', () => this.navigate('next'));
-      window.addEventListener('resize', () => this.updateSlides());
+      this.prevBtn.addEventListener("click", () => {
+        this.navigate("prev");
+        this.resetAutoSlide();
+      });
+      this.nextBtn.addEventListener("click", () => {
+        this.navigate("next");
+        this.resetAutoSlide();
+      });
+      window.addEventListener("resize", () => {
+        this.updateSlides();
+        this.resetAutoSlide();
+      });
+
+      // Configurar eventos hover para pausar/reanudar auto-play
+      const carouselContainer = this.track.closest(".carousel-container");
+      if (carouselContainer) {
+        carouselContainer.addEventListener("mouseenter", () => {
+          this.isCarouselHovered = true;
+        });
+
+        carouselContainer.addEventListener("mouseleave", () => {
+          this.isCarouselHovered = false;
+        });
+      }
     } else {
-      console.warn(`Carousel elements not found for trackId: ${options.trackId}. Carousel will not be initialized.`);
+      console.warn(
+        `Carousel elements not found for trackId: ${options.trackId}. Carousel will not be initialized.`,
+      );
     }
   }
 
@@ -41,17 +68,17 @@ class SimpleCarousel {
 
     this.slides = [];
     for (let i = 0; i < this.products.length; i += itemsPerSlide) {
-      const slide = document.createElement('div');
+      const slide = document.createElement("div");
       // MEJORA: Se añade la clase 'carousel-slide' para que coincida con el carrusel principal.
-      slide.className = 'carousel-slide w-full flex-shrink-0';
+      slide.className = "carousel-slide w-full flex-shrink-0";
 
-      const grid = document.createElement('div');
+      const grid = document.createElement("div");
       // Clases responsivas para la cuadrícula dentro de la diapositiva.
-      grid.className = 'grid grid-cols-2 md:grid-cols-4 gap-4 px-2';
-      
+      grid.className = "grid grid-cols-2 md:grid-cols-4 gap-4 px-2";
+
       const slideProducts = this.products.slice(i, i + itemsPerSlide);
-      slideProducts.forEach(producto => {
-        if (typeof renderProductCard === 'function') {
+      slideProducts.forEach((producto) => {
+        if (typeof renderProductCard === "function") {
           const card = renderProductCard(producto);
           grid.appendChild(card);
         }
@@ -61,16 +88,44 @@ class SimpleCarousel {
       this.slides.push(slide);
     }
 
-    this.track.innerHTML = '';
-    this.slides.forEach(slide => this.track.appendChild(slide));
+    this.track.innerHTML = "";
+    this.slides.forEach((slide) => this.track.appendChild(slide));
     this.currentIndex = 0; // Reset index on rebuild
     this.update();
+
+    // Iniciar auto-play después de actualizar slides
+    setTimeout(() => {
+      this.startAutoSlide();
+    }, 1000);
   }
 
   navigate(direction) {
-    const newIndex = direction === 'next' ? this.currentIndex + 1 : this.currentIndex - 1;
+    const newIndex =
+      direction === "next" ? this.currentIndex + 1 : this.currentIndex - 1;
     this.currentIndex = (newIndex + this.slides.length) % this.slides.length;
     this.update();
+  }
+
+  // Funciones de auto-play
+  startAutoSlide() {
+    if (this.slides.length <= 1) return;
+
+    clearInterval(this.autoSlideInterval);
+    this.autoSlideInterval = setInterval(() => {
+      if (!this.isCarouselHovered) {
+        this.navigate("next");
+      }
+    }, 4000); // Cambiar cada 4 segundos
+  }
+
+  stopAutoSlide() {
+    clearInterval(this.autoSlideInterval);
+    this.autoSlideInterval = null;
+  }
+
+  resetAutoSlide() {
+    this.stopAutoSlide();
+    this.startAutoSlide();
   }
 
   update() {
@@ -81,33 +136,50 @@ class SimpleCarousel {
   updateIndicators() {
     if (!this.indicatorsContainer) return;
     const isMobile = window.innerWidth < 768;
-    this.indicatorsContainer.innerHTML = '';
+    this.indicatorsContainer.innerHTML = "";
 
     // Ocultar controles e indicadores si solo hay una diapositiva o menos
     if (this.slides.length <= 1) {
-      this.indicatorsContainer.style.display = 'none';
-      this.prevBtn.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
-      this.nextBtn.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+      this.indicatorsContainer.style.display = "none";
+      this.prevBtn.classList.add(
+        "opacity-0",
+        "scale-90",
+        "pointer-events-none",
+      );
+      this.nextBtn.classList.add(
+        "opacity-0",
+        "scale-90",
+        "pointer-events-none",
+      );
       return;
     }
-    
+
     // Mostrar indicadores solo en móvil
     // MEJORA PROFESIONAL: Mostrar indicadores en todas las resoluciones si hay más de una diapositiva.
     // Esto proporciona una navegación consistente tanto en móvil como en escritorio.
     //  Animar la aparición de los botones.
-    this.prevBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
+    this.prevBtn.classList.remove(
+      "opacity-0",
+      "scale-90",
+      "pointer-events-none",
+    );
     // Forzar reflow para que la transición se aplique
     void this.prevBtn.offsetWidth;
     void this.nextBtn.offsetWidth;
-    this.nextBtn.classList.remove('opacity-0', 'scale-90', 'pointer-events-none');
-    this.indicatorsContainer.style.display = 'flex';
+    this.nextBtn.classList.remove(
+      "opacity-0",
+      "scale-90",
+      "pointer-events-none",
+    );
+    this.indicatorsContainer.style.display = "flex";
 
     this.slides.forEach((_, index) => {
-      const indicator = document.createElement('button');
-      indicator.className = `w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === this.currentIndex ? 'bg-pink-500 scale-125' : 'bg-gray-300'}`;
+      const indicator = document.createElement("button");
+      indicator.className = `w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === this.currentIndex ? "bg-pink-500 scale-125" : "bg-gray-300"}`;
       indicator.onclick = () => {
         this.currentIndex = index;
         this.update();
+        this.resetAutoSlide();
       };
       this.indicatorsContainer.appendChild(indicator);
     });
@@ -124,13 +196,14 @@ function initializeRecomendacionesCarousel(productos) {
   const loader = document.getElementById("recomendaciones-loader");
   const noRecomendaciones = document.getElementById("no-recomendaciones");
   const recomendacionesCarousel = new SimpleCarousel({
-    trackId: 'recomendaciones-track',
-    prevBtnId: 'recomendaciones-prev',
-    nextBtnId: 'recomendaciones-next',
-    indicatorsId: 'recomendaciones-indicators',
+    trackId: "recomendaciones-track",
+    prevBtnId: "recomendaciones-prev",
+    nextBtnId: "recomendaciones-next",
+    indicatorsId: "recomendaciones-indicators",
   });
 
-  if (!container || !loader || !noRecomendaciones || !recomendacionesCarousel) return;
+  if (!container || !loader || !noRecomendaciones || !recomendacionesCarousel)
+    return;
 
   loader.style.display = "none";
   recomendacionesCarousel.products = productos;
@@ -179,8 +252,9 @@ class HomePageManager {
     const modalMsg = document.getElementById("like-auth-modal-msg");
 
     if (modal && modalMsg && modalInner) {
-      modalMsg.textContent = msg || "Debes iniciar sesión para guardar productos.";
-      
+      modalMsg.textContent =
+        msg || "Debes iniciar sesión para guardar productos.";
+
       if (window.innerWidth < 768) {
         modal.classList.remove("items-end", "justify-start");
         modal.classList.add("items-end", "justify-center");
@@ -200,7 +274,10 @@ class HomePageManager {
       modalInner.classList.add("modal-animate-in");
 
       clearTimeout(this.likeAuthModalTimeout);
-      this.likeAuthModalTimeout = setTimeout(() => this.hideLikeAuthModal(), 5000);
+      this.likeAuthModalTimeout = setTimeout(
+        () => this.hideLikeAuthModal(),
+        5000,
+      );
     }
   }
 

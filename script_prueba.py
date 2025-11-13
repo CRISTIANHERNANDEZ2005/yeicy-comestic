@@ -16,7 +16,6 @@ def get_or_create(session, model, defaults=None, **kwargs):
         model: La clase del modelo a consultar.
         defaults (dict, optional): Diccionario con los atributos a establecer o actualizar.
         **kwargs: Atributos para buscar la instancia (ej. nombre='Producto X').
-
     Returns:
         tuple: Una tupla con (instance, created), donde `created` es un booleano
                que indica si la instancia fue creada.

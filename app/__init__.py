@@ -19,20 +19,25 @@ Responsabilidades principales:
 - Definir manejadores de errores personalizados (ej. para errores 404).
 - Registrar filtros personalizados de Jinja2 para formateo de datos en las plantillas.
 """
-from flask import Flask, render_template, session, request, send_from_directory
-import cloudinary
-from config import Config
-from .extensions import db, bcrypt, migrate, login_manager, jwt
-from .models.domains.user_models import Usuarios, Admins
-from .models.domains.order_models import Pedido, PedidoProducto
-from .models.enums import EstadoPedido, EstadoEnum
-from app.blueprints.cliente.auth import perfil
-from app.utils.jwt_utils import jwt_required, decode_jwt_token
-from app.utils.admin_jwt_utils import decode_admin_jwt_token
+
 from datetime import datetime
+
+import cloudinary
 import pytz
-from sqlalchemy import func, not_, and_
+from flask import Flask, g, render_template, request, send_from_directory, session
+from sqlalchemy import and_, func, not_
+
+from app.blueprints.cliente.auth import perfil
 from app.models.serializers import format_currency_cop
+from app.utils.admin_jwt_utils import decode_admin_jwt_token
+from app.utils.jwt_utils import decode_jwt_token, jwt_required
+from config import Config
+
+from .extensions import bcrypt, db, jwt, login_manager, migrate
+from .models.domains.order_models import Pedido, PedidoProducto
+from .models.domains.user_models import Admins, Usuarios
+from .models.enums import EstadoEnum, EstadoPedido
+
 
 def create_app(config_class=Config):
     """
@@ -50,34 +55,35 @@ def create_app(config_class=Config):
         Flask: La instancia de la aplicación Flask configurada y lista para ejecutarse.
     """
     app = Flask(__name__)
-    app.jinja_env.add_extension('jinja2.ext.do')
+    app.jinja_env.add_extension("jinja2.ext.do")
     app.config.from_object(config_class)
 
     # --- CONFIGURACIÓN DE CLOUDINARY ---
     # La librería de Cloudinary leerá automáticamente la variable de entorno CLOUDINARY_URL.
     cloudinary.config(secure=True)
-    app.logger.info('Cloudinary configurado profesionalmente.')
+    app.logger.info("Cloudinary configurado profesionalmente.")
 
     # --- LOGGING PROFESIONAL ---
     import logging
-    formatter = logging.Formatter('[%(asctime)s] %(levelname)s in %(module)s: %(message)s')
+
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s in %(module)s: %(message)s"
+    )
     # Solo se registra en la consola en producción/serverless (Vercel no permite escribir archivos).
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(formatter)
     console_handler.setLevel(logging.DEBUG)
     app.logger.addHandler(console_handler)
     app.logger.setLevel(logging.DEBUG)
-    app.logger.info('Logging profesional inicializado (solo consola)')
+    app.logger.info("Logging profesional inicializado (solo consola)")
     # --- CONFIGURACIÓN DE BASE DE DATOS ---
     # Configuración adicional para SQLAlchemy
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-        'pool_pre_ping': True,
-        'pool_recycle': 3600,
-        'pool_timeout': 30,
-        'max_overflow': 10,
-        'connect_args': {
-            'sslmode': 'require'
-        }
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_pre_ping": True,
+        "pool_recycle": 3600,
+        "pool_timeout": 30,
+        "max_overflow": 10,
+        "connect_args": {"sslmode": "require"},
     }
 
     # --- INICIALIZACIÓN DE EXTENSIONES ---
@@ -90,9 +96,9 @@ def create_app(config_class=Config):
     jwt.init_app(app)
 
     # Configuración de login_manager después de asociar la app
-    login_manager.login_view = 'auth.login'
-    login_manager.login_message = 'Por favor inicia sesión para acceder a esta página.'
-    login_manager.login_message_category = 'info'
+    login_manager.login_view = "auth.login"
+    login_manager.login_message = "Por favor inicia sesión para acceder a esta página."
+    login_manager.login_message_category = "info"
 
     @login_manager.user_loader
     def load_user(id):
@@ -114,15 +120,15 @@ def create_app(config_class=Config):
         del panel de administración y otros elementos comunes de la UI.
         """
         admin_user = None
-        token = request.cookies.get('admin_jwt')
+        token = request.cookies.get("admin_jwt")
         if token:
             payload = decode_admin_jwt_token(token)
-            if payload and 'user_id' in payload:
-                admin_user = Admins.query.get(payload['user_id'])
+            if payload and "user_id" in payload:
+                admin_user = Admins.query.get(payload["user_id"])
         return dict(admin_user=admin_user)
 
     @app.before_request
-    def before_request_tasks(): # pragma: no cover
+    def before_request_tasks():  # pragma: no cover
         """
         Middleware que se ejecuta antes de cada petición para realizar tareas globales.
 
@@ -134,29 +140,31 @@ def create_app(config_class=Config):
         3. **Actualización de `last_seen` del Admin**: Actualiza el timestamp `last_seen` del
            administrador en cada petición para mantener un seguimiento preciso de su actividad.
         """
-        from flask import g
         from datetime import datetime, timezone
+
+        from flask import g
+
         from .blueprints.cliente.auth import restore_session_from_jwt
-        
+
         # 1. Restaurar sesión de cliente y asignar a g.user si existe
         # La actualización de last_seen se maneja ahora en el login y en la restauración de sesión.
         restore_session_from_jwt()
-        
+
         # 2. Asignar admin a g.admin_user si está autenticado
         # La actualización de last_seen se maneja en el login del admin.
-        client_token = request.cookies.get('token')
+        client_token = request.cookies.get("token")
         if client_token:
             payload = decode_jwt_token(client_token)
-            if payload and 'user_id' in payload:
-                user = Usuarios.query.get(payload['user_id'])
+            if payload and "user_id" in payload:
+                user = Usuarios.query.get(payload["user_id"])
                 if user:
                     g.user = user
-        
-        admin_token = request.cookies.get('admin_jwt')
+
+        admin_token = request.cookies.get("admin_jwt")
         if admin_token:
             payload = decode_admin_jwt_token(admin_token)
-            if payload and 'user_id' in payload:
-                admin = Admins.query.get(payload['user_id'])
+            if payload and "user_id" in payload:
+                admin = Admins.query.get(payload["user_id"])
                 if admin:
                     g.admin_user = admin
                     # Actualizar last_seen en cada petición del admin.
@@ -165,32 +173,35 @@ def create_app(config_class=Config):
                     db.session.commit()
 
     # --- REGISTRO DE BLUEPRINTS ---
-    from app.blueprints.cliente.auth import auth_bp
-    from app.blueprints.cliente.products import products_bp
-    from app.blueprints.cliente.cart import cart_bp
-    from app.blueprints.cliente.favorites import favorites_bp
-    from app.blueprints.cliente.reviews import reviews_bp
-    from app.blueprints.cliente.order import order_bp
-    from app.blueprints.cliente.events import events_bp
-
     # Registrar blueprints admin
     from app.blueprints.admin.auth_admin import admin_auth_bp
+    from app.blueprints.admin.categoria.categoria_detalle import (
+        admin_categoria_detalle_bp,
+    )
+    from app.blueprints.admin.categoria.lista_categorias import (
+        admin_lista_categorias_bp,
+    )
     from app.blueprints.admin.dashboard import admin_dashboard_bp
-    from app.blueprints.admin.product.lista_product import admin_lista_product_bp
-    from app.blueprints.admin.product.detalle_product import admin_detalle_product_bp
-    from app.blueprints.admin.product.crear_product import admin_crear_product_bp
-    from app.blueprints.admin.product.editar_product import admin_editar_product_bp
-    from app.blueprints.admin.categoria.lista_categorias import admin_lista_categorias_bp
-    from app.blueprints.admin.categoria.categoria_detalle import admin_categoria_detalle_bp
-    from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
     from app.blueprints.admin.pedido.api import admin_api_bp
-    from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
-    from app.blueprints.admin.usuarios.user_routes import user_bp
+    from app.blueprints.admin.pedido.lista_pedidos import admin_lista_pedidos_bp
+    from app.blueprints.admin.product.crear_product import admin_crear_product_bp
+    from app.blueprints.admin.product.detalle_product import admin_detalle_product_bp
+    from app.blueprints.admin.product.editar_product import admin_editar_product_bp
+    from app.blueprints.admin.product.lista_product import admin_lista_product_bp
     from app.blueprints.admin.usuarios.detalle_usuario import detalle_cliente
-    
+    from app.blueprints.admin.usuarios.user_routes import user_bp
+    from app.blueprints.admin.venta.lista_venta import admin_ventas_bp
+    from app.blueprints.cliente.auth import auth_bp
+    from app.blueprints.cliente.cart import cart_bp
+    from app.blueprints.cliente.events import events_bp
+    from app.blueprints.cliente.favorites import favorites_bp
+    from app.blueprints.cliente.order import order_bp
+    from app.blueprints.cliente.products import products_bp
+    from app.blueprints.cliente.reviews import reviews_bp
+
     # Blueprints del cliente
     app.register_blueprint(cart_bp)
-    app.register_blueprint(auth_bp, url_prefix='/auth')
+    app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(products_bp)
     app.register_blueprint(favorites_bp)
     app.register_blueprint(reviews_bp)
@@ -206,15 +217,14 @@ def create_app(config_class=Config):
     app.register_blueprint(admin_editar_product_bp)
     app.register_blueprint(admin_lista_categorias_bp)
     app.register_blueprint(admin_categoria_detalle_bp)
-    app.register_blueprint(admin_lista_pedidos_bp, url_prefix='/admin')
-    app.register_blueprint(admin_ventas_bp, url_prefix='/admin')
+    app.register_blueprint(admin_lista_pedidos_bp, url_prefix="/admin")
+    app.register_blueprint(admin_ventas_bp, url_prefix="/admin")
     app.register_blueprint(admin_api_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(detalle_cliente)
 
-
     # --- RUTAS PRINCIPALES DE LA APLICACIÓN ---
-    @app.route('/perfil')
+    @app.route("/perfil")
     @jwt_required
     def root_perfil(usuario):
         """
@@ -238,22 +248,31 @@ def create_app(config_class=Config):
             not_(
                 and_(
                     Pedido.estado_pedido == EstadoPedido.EN_PROCESO.value,
-                    Pedido.estado == 'inactivo'
+                    Pedido.estado == "inactivo",
                 )
-            )
+            ),
         ).count()
 
         # El total de compras debe sumar todos los pedidos 'completados', sin importar si están activos o inactivos.
-        total_compras_valor = db.session.query(func.sum(Pedido.total)).filter(
-            Pedido.usuario_id == usuario.id,
-            Pedido.estado_pedido == EstadoPedido.COMPLETADO.value
-        ).scalar() or 0
+        total_compras_valor = (
+            db.session.query(func.sum(Pedido.total))
+            .filter(
+                Pedido.usuario_id == usuario.id,
+                Pedido.estado_pedido == EstadoPedido.COMPLETADO.value,
+            )
+            .scalar()
+            or 0
+        )
 
         total_compras_formateado = format_currency_cop(total_compras_valor)
-        
-        return perfil(usuario, pedidos_realizados=pedidos_realizados, total_compras=total_compras_formateado)
 
-    @app.route('/documentacion-proyecto')
+        return perfil(
+            usuario,
+            pedidos_realizados=pedidos_realizados,
+            total_compras=total_compras_formateado,
+        )
+
+    @app.route("/documentacion-proyecto")
     def documentacion_proyecto():
         """
         Sirve el archivo estático de la documentación del proyecto.
@@ -263,10 +282,10 @@ def create_app(config_class=Config):
         para servir el archivo de forma segura desde el directorio raíz del proyecto.
         """
         import os
-        # app.root_path es la ruta a la carpeta 'app'. '..' sube un nivel al directorio raíz.
-        project_root = os.path.abspath(os.path.join(app.root_path, '..'))
-        return send_from_directory(project_root, 'explicacion_proyecto.html')
 
+        # app.root_path es la ruta a la carpeta 'app'. '..' sube un nivel al directorio raíz.
+        project_root = os.path.abspath(os.path.join(app.root_path, ".."))
+        return send_from_directory(project_root, "explicacion_proyecto.html")
 
     # --- VERIFICACIÓN DE CONEXIÓN Y PROCESADORES DE CONTEXTO ADICIONALES ---
     with app.app_context():
@@ -290,53 +309,79 @@ def create_app(config_class=Config):
         - `usuario_autenticado`: Un booleano para cambiar la UI según el estado de sesión.
         - `now`: La fecha y hora actual para comparaciones en las plantillas.
         """
-        from app.models.serializers import categoria_principal_to_dict
-        from app.blueprints.cliente.cart import get_or_create_cart, get_cart_items
-        from app.models.domains.product_models import Productos, CategoriasPrincipales, Subcategorias, Seudocategorias
         from sqlalchemy.orm import joinedload
-        
+
+        from app.blueprints.cliente.cart import get_cart_items, get_or_create_cart
+        from app.models.domains.product_models import (
+            CategoriasPrincipales,
+            Productos,
+            Seudocategorias,
+            Subcategorias,
+        )
+        from app.models.serializers import categoria_principal_to_dict
+
         # Datos del carrito
         cart_info = get_or_create_cart()
         items = get_cart_items(cart_info)
-        total_items = sum(item['quantity'] for item in items)
-        total_price = sum(item['subtotal'] for item in items)
-        
+        total_items = sum(item["quantity"] for item in items)
+        total_price = sum(item["subtotal"] for item in items)
+
         # Obtener las 7 categorías más antiguas y activas
-        categorias_obj = CategoriasPrincipales.query\
-            .filter(CategoriasPrincipales.estado == 'activo')\
-            .order_by(CategoriasPrincipales.created_at.asc())\
-            .limit(7)\
-            .options(\
-                joinedload(CategoriasPrincipales.subcategorias.and_(Subcategorias.estado == 'activo'))\
-                .joinedload(Subcategorias.seudocategorias.and_(Seudocategorias.estado == 'activo'))\
-            )\
+        categorias_obj = (
+            CategoriasPrincipales.query.filter(CategoriasPrincipales.estado == "activo")
+            .order_by(CategoriasPrincipales.created_at.asc())
+            .limit(7)
+            .options(
+                joinedload(
+                    CategoriasPrincipales.subcategorias.and_(
+                        Subcategorias.estado == "activo"
+                    )
+                ).joinedload(
+                    Subcategorias.seudocategorias.and_(
+                        Seudocategorias.estado == "activo"
+                    )
+                )
+            )
             .all()
+        )
 
         # Convertir objetos SQLAlchemy a diccionarios para una serialización JSON consistente
         categorias_data = [categoria_principal_to_dict(c) for c in categorias_obj]
 
         # Exponer favoritos y autenticación global
         from flask import session
+
         from app.models.domains.review_models import Likes
+
         #  La verificación ahora es más robusta.
         # Comprueba si el diccionario 'user' existe en la sesión y si tiene una clave 'id'.
         # Esto se alinea con cómo se establece la sesión en auth.py.
-        usuario_autenticado = 'user' in session and 'id' in session['user']
+        usuario_autenticado = "user" in session and "id" in session["user"]
         total_favoritos = 0
         if usuario_autenticado:
-            total_favoritos = Likes.query.join(Productos).filter(
-                Likes.usuario_id == session['user']['id'],
-                Likes.estado == 'activo',
-                Productos.estado == 'activo'
-            ).count()
+            total_favoritos = (
+                Likes.query.join(Productos)
+                .filter(
+                    Likes.usuario_id == session["user"]["id"],
+                    Likes.estado == "activo",
+                    Productos.estado == "activo",
+                )
+                .count()
+            )
+        # Obtener el usuario actual desde g si está disponible
+        from flask import g
+
+        current_user = getattr(g, "user", None)
+
         return {
-            'cart_items': items,
-            'total_price': total_price,
-            'categorias': categorias_data,
-            'categorias_principales': categorias_obj,
-            'total_favoritos': total_favoritos,
-            'usuario_autenticado': usuario_autenticado,
-            'now': datetime.utcnow()
+            "cart_items": items,
+            "total_price": total_price,
+            "categorias": categorias_data,
+            "categorias_principales": categorias_obj,
+            "total_favoritos": total_favoritos,
+            "usuario_autenticado": usuario_autenticado,
+            "usuario": current_user,  # Usuario actual para acceso a avatar_url y otros campos
+            "now": datetime.utcnow(),
         }
 
     # --- FILTROS PERSONALIZADOS DE JINJA2 ---
@@ -346,7 +391,8 @@ def create_app(config_class=Config):
         Ejemplo: "Mi Producto" -> "mi-producto".
         """
         return s.lower().replace(" ", "-").replace("_", "-")
-    app.jinja_env.filters['slugify'] = slugify_filter
+
+    app.jinja_env.filters["slugify"] = slugify_filter
 
     def format_date_filter(value):
         """
@@ -357,26 +403,35 @@ def create_app(config_class=Config):
             return ""
         if isinstance(value, str):
             # Try to parse ISO format string
-            if value.endswith('Z'):
-                value = value[:-1] + '+00:00'
+            if value.endswith("Z"):
+                value = value[:-1] + "+00:00"
             try:
                 value = datetime.fromisoformat(value)
             except ValueError:
-                return value # Return original string if parsing fails
+                return value  # Return original string if parsing fails
         if isinstance(value, datetime):
-            return value.strftime('%d/%m/%Y')
+            return value.strftime("%d/%m/%Y")
         return value
 
-    app.jinja_env.filters['format_date'] = format_date_filter
+    app.jinja_env.filters["format_date"] = format_date_filter
 
     # Diccionario para los nombres de los meses en español.
     SPANISH_MONTHS = {
-        1: "enero", 2: "febrero", 3: "marzo", 4: "abril",
-        5: "mayo", 6: "junio", 7: "julio", 8: "agosto",
-        9: "septiembre", 10: "octubre", 11: "noviembre", 12: "diciembre"
+        1: "enero",
+        2: "febrero",
+        3: "marzo",
+        4: "abril",
+        5: "mayo",
+        6: "junio",
+        7: "julio",
+        8: "agosto",
+        9: "septiembre",
+        10: "octubre",
+        11: "noviembre",
+        12: "diciembre",
     }
 
-    def datetimeformat_filter(value, format='%Y-%m-%d %H:%M:%S'):
+    def datetimeformat_filter(value, format="%Y-%m-%d %H:%M:%S"):
         """
         Filtro Jinja2 avanzado para formatear fechas y horas.
 
@@ -392,32 +447,35 @@ def create_app(config_class=Config):
         if isinstance(value, str):
             try:
                 # Maneja el formato ISO con o sin 'Z' para UTC.
-                if value.endswith('Z'):
-                    value = value[:-1] + '+00:00'
+                if value.endswith("Z"):
+                    value = value[:-1] + "+00:00"
                 value = datetime.fromisoformat(value)
             except ValueError:
                 # Si la conversión falla, devuelve la cadena original.
                 return value
-        
+
         # Asegura que el objeto datetime sea consciente de la zona horaria (asumiendo UTC si es 'naive').
         if value.tzinfo is None:
             value = pytz.utc.localize(value)
 
         # Convierte a la hora de Colombia (America/Bogota).
-        colombia_tz = pytz.timezone('America/Bogota')
+        colombia_tz = pytz.timezone("America/Bogota")
         colombian_time = value.astimezone(colombia_tz)
 
         # Obtiene el nombre del mes en español.
         spanish_month_name = SPANISH_MONTHS[colombian_time.month]
 
         # Reemplaza la directiva %B con el nombre del mes en español.
-        temp_format = format.replace('%B', '___SPANISH_MONTH___')
+        temp_format = format.replace("%B", "___SPANISH_MONTH___")
         formatted_string_with_placeholder = colombian_time.strftime(temp_format)
-        final_formatted_string = formatted_string_with_placeholder.replace('___SPANISH_MONTH___', spanish_month_name)
+        final_formatted_string = formatted_string_with_placeholder.replace(
+            "___SPANISH_MONTH___", spanish_month_name
+        )
         return final_formatted_string
-    app.jinja_env.filters['datetimeformat'] = datetimeformat_filter
-    
-    app.jinja_env.filters['format_currency_cop'] = format_currency_cop
+
+    app.jinja_env.filters["datetimeformat"] = datetimeformat_filter
+
+    app.jinja_env.filters["format_currency_cop"] = format_currency_cop
 
     # --- MANEJADOR DE ERRORES ---
     @app.errorhandler(404)
@@ -426,6 +484,6 @@ def create_app(config_class=Config):
         Manejador de errores global para el código de estado 404 (Página no encontrada).
         Renderiza una plantilla personalizada en lugar de la página de error por defecto.
         """
-        return render_template('cliente/componentes/404.html'), 404
+        return render_template("cliente/componentes/404.html"), 404
 
     return app

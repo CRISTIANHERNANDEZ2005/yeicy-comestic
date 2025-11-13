@@ -8,22 +8,33 @@ modelo `Admins` para los administradores del panel. Gestiona la autenticación,
 perfiles, seguridad de contraseñas y la generación de tokens JWT. También contiene
 `Value Objects` para la validación de datos como números de teléfono y contraseñas.
 """
+
 # --- Importaciones de Serializadores ---
-from app.models.serializers import usuario_to_dict, admin_to_dict
-# --- Importaciones de la Librería Estándar --- 
+# --- Importaciones de la Librería Estándar ---
 from datetime import datetime, timedelta, timezone
-# --- Importaciones de Extensiones y Terceros ---
-from app.extensions import db, bcrypt
-from sqlalchemy import CheckConstraint, UniqueConstraint, Enum as SAEnum
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from flask_login import UserMixin
+
 # --- Importaciones Locales de la Aplicación ---
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING, List
+
+from flask_login import UserMixin
+from sqlalchemy import CheckConstraint, UniqueConstraint
+from sqlalchemy import Enum as SAEnum
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+# --- Importaciones de Extensiones y Terceros ---
+from app.extensions import bcrypt, db
+from app.models.serializers import admin_to_dict, usuario_to_dict
+
 if TYPE_CHECKING:
-    from app.models.domains.review_models import Likes, Reseñas
     from app.models.domains.order_models import Pedido
-from app.models.mixins import TimestampMixin, UUIDPrimaryKeyMixin, EstadoActivoInactivoMixin
+    from app.models.domains.review_models import Likes, Reseñas
 from app.models.enums import EstadoEnum
+from app.models.mixins import (
+    EstadoActivoInactivoMixin,
+    TimestampMixin,
+    UUIDPrimaryKeyMixin,
+)
+
 
 class NumeroTelefono:
     """
@@ -31,6 +42,7 @@ class NumeroTelefono:
 
     Asegura que el número de teléfono tenga exactamente 10 dígitos numéricos.
     """
+
     def __init__(self, numero: str):
         """
         Inicializa el Value Object.
@@ -44,8 +56,10 @@ class NumeroTelefono:
         if not numero or len(numero) != 10 or not numero.isdigit():
             raise ValueError("El número debe tener 10 dígitos numéricos")
         self.value = numero
+
     def __str__(self):
         return self.value
+
 
 class NumeroUsuario:
     """
@@ -54,6 +68,7 @@ class NumeroUsuario:
     Asegura que el número de usuario (que funciona como identificador) tenga
     exactamente 10 dígitos numéricos.
     """
+
     def __init__(self, numero: str):
         """
         Inicializa el Value Object.
@@ -67,8 +82,10 @@ class NumeroUsuario:
         if not numero or len(numero) != 10 or not numero.isdigit():
             raise ValueError("El número debe tener 10 dígitos numéricos")
         self.value = numero
+
     def __str__(self):
         return self.value
+
 
 class Password:
     """
@@ -80,6 +97,7 @@ class Password:
     - Al menos una letra minúscula.
     - Al menos un número.
     """
+
     def __init__(self, contraseña: str):
         """
         Inicializa el Value Object.
@@ -91,15 +109,21 @@ class Password:
             ValueError: Si la contraseña no cumple con los criterios de fortaleza.
         """
         import re
+
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d@$!%*?&]{8,}$"
         if not contraseña or not re.match(pattern, contraseña):
-            raise ValueError("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.")
+            raise ValueError(
+                "La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número."
+            )
         self.value = contraseña
+
     def __str__(self):
         return self.value
 
 
-class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+class Usuarios(
+    UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model
+):
     """
     Representa a un usuario cliente registrado en el sistema.
 
@@ -119,8 +143,9 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         reseñas (List['Reseñas']): Relación con las reseñas que ha escrito el usuario.
         pedidos (List['Pedido']): Relación con los pedidos que ha realizado el usuario.
     """
-    __tablename__ = 'usuarios'
-    
+
+    __tablename__ = "usuarios"
+
     # Propiedades requeridas por Flask-Login
     @property
     def is_active(self):
@@ -128,7 +153,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Indica si el usuario está activo. Requerido por Flask-Login.
         """
         return self.estado == EstadoEnum.ACTIVO
-    
+
     @property
     def is_authenticated(self):
         """
@@ -136,7 +161,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Requerido por Flask-Login.
         """
         return True
-    
+
     @property
     def is_anonymous(self):
         """
@@ -144,7 +169,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Requerido por Flask-Login.
         """
         return False
-    
+
     def get_id(self):
         """
         Devuelve el ID del usuario como una cadena. Requerido por Flask-Login.
@@ -164,8 +189,14 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             return False
         # Asegurarse de que last_seen tenga timezone para una comparación correcta.
         # Si la BD guarda naive datetimes (sin tz), asumimos que es UTC.
-        last_seen_utc = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
-        return (datetime.now(timezone.utc) - last_seen_utc) < timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+        last_seen_utc = (
+            self.last_seen.replace(tzinfo=timezone.utc)
+            if self.last_seen.tzinfo is None
+            else self.last_seen
+        )
+        return (datetime.now(timezone.utc) - last_seen_utc) < timedelta(
+            minutes=ONLINE_THRESHOLD_MINUTES
+        )
 
     @property
     def last_seen_display(self):
@@ -177,13 +208,18 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             return "Nunca"
 
         # Asegurarse de que last_seen tenga timezone para una comparación correcta
-        last_seen_aware = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
+        last_seen_aware = (
+            self.last_seen.replace(tzinfo=timezone.utc)
+            if self.last_seen.tzinfo is None
+            else self.last_seen
+        )
         now_aware = datetime.now(timezone.utc)
-        
+
         # Convertir a la zona horaria local (ej. Colombia) para la visualización
         try:
             import pytz
-            local_tz = pytz.timezone('America/Bogota')
+
+            local_tz = pytz.timezone("America/Bogota")
             last_seen_local = last_seen_aware.astimezone(local_tz)
             now_local = now_aware.astimezone(local_tz)
         except ImportError:
@@ -199,13 +235,36 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             return f"Última vez ayer a las {last_seen_local.strftime('%H:%M')}"
         elif delta.days < 7:
             # Nombres de los días en español
-            dias = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+            dias = [
+                "lunes",
+                "martes",
+                "miércoles",
+                "jueves",
+                "viernes",
+                "sábado",
+                "domingo",
+            ]
             return f"Última vez el {dias[last_seen_local.weekday()]} a las {last_seen_local.strftime('%H:%M')}"
         else:
             # Nombres de los meses en español
-            meses = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
-            return f"Última vez el {last_seen_local.day} de {meses[last_seen_local.month]}"
-
+            meses = [
+                "",
+                "ene",
+                "feb",
+                "mar",
+                "abr",
+                "may",
+                "jun",
+                "jul",
+                "ago",
+                "sep",
+                "oct",
+                "nov",
+                "dic",
+            ]
+            return (
+                f"Última vez el {last_seen_local.day} de {meses[last_seen_local.month]}"
+            )
 
     def generar_jwt(self):
         """
@@ -216,18 +275,20 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Returns:
             str: El token JWT codificado.
         """
-        import jwt
         from datetime import datetime, timedelta
+
+        import jwt
         from flask import current_app
+
         payload = {
-            'user_id': self.id,
-            'numero': self.numero,
-            'nombre': self.nombre,
-            'apellido': self.apellido,
-            'exp': datetime.utcnow() + timedelta(days=7)
+            "user_id": self.id,
+            "numero": self.numero,
+            "nombre": self.nombre,
+            "apellido": self.apellido,
+            "exp": datetime.utcnow() + timedelta(days=7),
         }
-        secret = current_app.config.get('SECRET_KEY', 'super-secret')
-        return jwt.encode(payload, secret, algorithm='HS256')
+        secret = current_app.config.get("SECRET_KEY", "super-secret")
+        return jwt.encode(payload, secret, algorithm="HS256")
 
     @staticmethod
     def verificar_jwt(token):
@@ -243,10 +304,11 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         """
         import jwt
         from flask import current_app
+
         try:
-            secret = current_app.config.get('SECRET_KEY', 'super-secret')
-            payload = jwt.decode(token, secret, algorithms=['HS256'])
-            user_id = payload.get('user_id')
+            secret = current_app.config.get("SECRET_KEY", "super-secret")
+            payload = jwt.decode(token, secret, algorithms=["HS256"])
+            user_id = payload.get("user_id")
             if user_id:
                 return Usuarios.query.get(user_id)
             return None
@@ -264,19 +326,28 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
     numero: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
-    _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
+    _contraseña: Mapped[str] = mapped_column(
+        "contraseña", db.String(256), nullable=False
+    )
     reset_token: Mapped[str] = mapped_column(db.String(256), nullable=True, unique=True)
     reset_token_expiration: Mapped[datetime] = mapped_column(db.DateTime, nullable=True)
+    avatar_url: Mapped[str] = mapped_column(db.String(500), nullable=True)
+    avatar_public_id: Mapped[str] = mapped_column(db.String(200), nullable=True)
     last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True)
     # estado ya está en el mixin
-    likes: Mapped[List['Likes']] = relationship('Likes', back_populates='usuario', lazy=True)
-    reseñas: Mapped[List['Reseñas']] = relationship('Reseñas', back_populates='usuario', lazy=True)
-    pedidos: Mapped[List['Pedido']] = relationship(back_populates='usuario', lazy=True)
+    likes: Mapped[List["Likes"]] = relationship(
+        "Likes", back_populates="usuario", lazy=True
+    )
+    reseñas: Mapped[List["Reseñas"]] = relationship(
+        "Reseñas", back_populates="usuario", lazy=True
+    )
+    pedidos: Mapped[List["Pedido"]] = relationship(back_populates="usuario", lazy=True)
 
     # Restricciones
     __table_args__ = (
         CheckConstraint(
-            "LENGTH(numero) = 10 AND numero ~ '^[0-9]+$'", name='check_usuario_numero'),
+            "LENGTH(numero) = 10 AND numero ~ '^[0-9]+$'", name="check_usuario_numero"
+        ),
     )
 
     @property
@@ -284,7 +355,7 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         """
         Getter para la contraseña. Lanza un error si se intenta leer el hash.
         """
-        raise AttributeError('contraseña no es un atributo legible.')
+        raise AttributeError("contraseña no es un atributo legible.")
 
     @contraseña.setter
     def contraseña(self, password_plano: str):
@@ -292,9 +363,11 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         Setter profesional que hashea la contraseña automáticamente al asignarla.
         """
         validated_password = str(Password(password_plano))
-        self._contraseña = bcrypt.generate_password_hash(validated_password).decode('utf-8')
+        self._contraseña = bcrypt.generate_password_hash(validated_password).decode(
+            "utf-8"
+        )
 
-    def __init__(self, numero, nombre, apellido, contraseña, estado='activo', id=None):
+    def __init__(self, numero, nombre, apellido, contraseña, estado="activo", id=None):
         """
         Inicializa una nueva instancia de Usuario.
 
@@ -321,7 +394,6 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         if id:
             self.id = id
 
-
     def verificar_contraseña(self, contraseña):
         """
         Verifica si una contraseña proporcionada coincide con la contraseña hasheada del usuario.
@@ -342,9 +414,12 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         """
         import random
         from datetime import datetime, timedelta
+
         # Generamos un código numérico de 6 dígitos
         self.reset_token = str(random.randint(100000, 999999))
-        self.reset_token_expiration = datetime.utcnow() + timedelta(minutes=10) # El código expira en 10 minutos
+        self.reset_token_expiration = datetime.utcnow() + timedelta(
+            minutes=10
+        )  # El código expira en 10 minutos
         db.session.add(self)
         db.session.commit()
         return self.reset_token
@@ -357,8 +432,11 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
         """
         import secrets
         from datetime import datetime, timedelta
+
         self.reset_token = secrets.token_urlsafe(32)
-        self.reset_token_expiration = datetime.utcnow() + timedelta(minutes=10) # El código expira en 10 minutos
+        self.reset_token_expiration = datetime.utcnow() + timedelta(
+            minutes=10
+        )  # El código expira en 10 minutos
         db.session.add(self)
         db.session.commit()
         return self.reset_token
@@ -375,12 +453,20 @@ class Usuarios(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInact
             Optional[Usuarios]: La instancia del usuario si el token es válido, de lo contrario `None`.
         """
         from datetime import datetime
+
         usuario = Usuarios.query.filter_by(reset_token=token).first()
-        if usuario and usuario.reset_token_expiration and usuario.reset_token_expiration > datetime.utcnow():
+        if (
+            usuario
+            and usuario.reset_token_expiration
+            and usuario.reset_token_expiration > datetime.utcnow()
+        ):
             return usuario
         return None
 
-class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model):
+
+class Admins(
+    UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactivoMixin, db.Model
+):
     """
     Representa a un usuario administrador del sistema.
 
@@ -394,7 +480,8 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         numero_telefono (str): Número de teléfono del administrador.
         contraseña (str): Hash de la contraseña del administrador.
     """
-    __tablename__ = 'admins'
+
+    __tablename__ = "admins"
 
     # Propiedades requeridas por Flask-Login
     @property
@@ -429,8 +516,14 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
             return False
         # Asegurarse de que last_seen tenga timezone para una comparación correcta.
         # Si la BD guarda naive datetimes (sin tz), asumimos que es UTC.
-        last_seen_utc = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
-        return (datetime.now(timezone.utc) - last_seen_utc) < timedelta(minutes=ONLINE_THRESHOLD_MINUTES)
+        last_seen_utc = (
+            self.last_seen.replace(tzinfo=timezone.utc)
+            if self.last_seen.tzinfo is None
+            else self.last_seen
+        )
+        return (datetime.now(timezone.utc) - last_seen_utc) < timedelta(
+            minutes=ONLINE_THRESHOLD_MINUTES
+        )
 
     @property
     def last_seen_display(self):
@@ -442,13 +535,18 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
             return "Nunca"
 
         # Asegurarse de que last_seen tenga timezone para una comparación correcta
-        last_seen_aware = self.last_seen.replace(tzinfo=timezone.utc) if self.last_seen.tzinfo is None else self.last_seen
+        last_seen_aware = (
+            self.last_seen.replace(tzinfo=timezone.utc)
+            if self.last_seen.tzinfo is None
+            else self.last_seen
+        )
         now_aware = datetime.now(timezone.utc)
-        
+
         # Convertir a la zona horaria local (ej. Colombia) para la visualización
         try:
             import pytz
-            local_tz = pytz.timezone('America/Bogota')
+
+            local_tz = pytz.timezone("America/Bogota")
             last_seen_local = last_seen_aware.astimezone(local_tz)
             now_local = now_aware.astimezone(local_tz)
         except ImportError:
@@ -464,29 +562,58 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
             return f"Última vez ayer a las {last_seen_local.strftime('%H:%M')}"
         elif delta.days < 7:
             # Nombres de los días en español
-            dias = ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"]
+            dias = [
+                "lunes",
+                "martes",
+                "miércoles",
+                "jueves",
+                "viernes",
+                "sábado",
+                "domingo",
+            ]
             return f"Última vez el {dias[last_seen_local.weekday()]} a las {last_seen_local.strftime('%H:%M')}"
         else:
             # Nombres de los meses en español
-            meses = ["", "ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"]
-            return f"Última vez el {last_seen_local.day} de {meses[last_seen_local.month]}"
-
+            meses = [
+                "",
+                "ene",
+                "feb",
+                "mar",
+                "abr",
+                "may",
+                "jun",
+                "jul",
+                "ago",
+                "sep",
+                "oct",
+                "nov",
+                "dic",
+            ]
+            return (
+                f"Última vez el {last_seen_local.day} de {meses[last_seen_local.month]}"
+            )
 
     # id y timestamps heredados de los mixins
     cedula: Mapped[str] = mapped_column(db.String(20), nullable=False, unique=True)
     nombre: Mapped[str] = mapped_column(db.String(50), nullable=False)
     apellido: Mapped[str] = mapped_column(db.String(50), nullable=False)
-    numero_telefono: Mapped[str] = mapped_column(db.String(10), nullable=False, unique=True)
-    _contraseña: Mapped[str] = mapped_column("contraseña", db.String(256), nullable=False)
+    numero_telefono: Mapped[str] = mapped_column(
+        db.String(10), nullable=False, unique=True
+    )
+    _contraseña: Mapped[str] = mapped_column(
+        "contraseña", db.String(256), nullable=False
+    )
     # estado ya está en el mixin
     last_seen: Mapped[datetime] = mapped_column(db.DateTime, nullable=True, index=True)
 
     # Restricciones e índices
     __table_args__ = (
         CheckConstraint(
-            "LENGTH(numero_telefono) = 10 AND numero_telefono ~ '^[0-9]+$'", name='check_numero_telefono'),
-        db.Index('idx_admin_cedula', 'cedula'),
-        db.Index('idx_admin_numero_telefono', 'numero_telefono'),
+            "LENGTH(numero_telefono) = 10 AND numero_telefono ~ '^[0-9]+$'",
+            name="check_numero_telefono",
+        ),
+        db.Index("idx_admin_cedula", "cedula"),
+        db.Index("idx_admin_numero_telefono", "numero_telefono"),
     )
 
     @property
@@ -501,9 +628,20 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         """
         # Validar y hashear la contraseña en texto plano.
         validated_password = str(Password(password_plano))
-        self._contraseña = bcrypt.generate_password_hash(validated_password).decode('utf-8')
+        self._contraseña = bcrypt.generate_password_hash(validated_password).decode(
+            "utf-8"
+        )
 
-    def __init__(self, cedula, nombre, apellido, numero_telefono, contraseña, estado='activo', id=None):
+    def __init__(
+        self,
+        cedula,
+        nombre,
+        apellido,
+        numero_telefono,
+        contraseña,
+        estado="activo",
+        id=None,
+    ):
         """
         Inicializa una nueva instancia de Admin.
 
@@ -534,7 +672,6 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         if id:
             self.id = id
 
-
     def verificar_contraseña(self, contraseña):
         """
         Verifica si una contraseña proporcionada coincide con la contraseña hasheada del admin.
@@ -554,15 +691,17 @@ class Admins(UserMixin, UUIDPrimaryKeyMixin, TimestampMixin, EstadoActivoInactiv
         Returns:
             str: El token JWT codificado, con un flag `is_admin`.
         """
-        import jwt
         from datetime import datetime, timedelta
+
+        import jwt
         from flask import current_app
+
         payload = {
-            'user_id': self.id,
-            'cedula': self.cedula,
-            'nombre': self.nombre,
-            'is_admin': True,
-            'exp': datetime.utcnow() + timedelta(days=7)
+            "user_id": self.id,
+            "cedula": self.cedula,
+            "nombre": self.nombre,
+            "is_admin": True,
+            "exp": datetime.utcnow() + timedelta(days=7),
         }
-        secret = current_app.config.get('SECRET_KEY', 'super-secret')
-        return jwt.encode(payload, secret, algorithm='HS256')
+        secret = current_app.config.get("SECRET_KEY", "super-secret")
+        return jwt.encode(payload, secret, algorithm="HS256")

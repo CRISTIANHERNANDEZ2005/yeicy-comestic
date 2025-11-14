@@ -12,7 +12,7 @@
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
 
         <!-- Interceptor de autenticación -->
-        <script src="{{ url_for('static', filename='js/auth_interceptor.js') }}"></script>
+        <script src="{{ url_for('static', filename='js/cliente/auth_interceptor.js') }}"></script>
         <!-- importar el archivo de estilos -->
         <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
     </head>
@@ -215,13 +215,13 @@
 
 
     <!-- Scripts -->
-    <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/realtime-notifications.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/product_card.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/cart.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/auth_modals.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/favorites.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/resenas.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/scripts.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/realtime-notifications.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/product_card.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/cart.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/auth_modals.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/favorites.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/cliente/resenas.js') }}"></script>
     {% if g.user %}
         <script src="{{ url_for('static', filename='js/cliente/client_heartbeat.js') }}"></script>
     {% endif %}
